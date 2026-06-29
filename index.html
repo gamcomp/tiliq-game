@@ -3434,14 +3434,24 @@ window._authSignIn = async function(provider){
       if(user) _onFirebaseUser(user);
     }catch(e){console.warn('Native Google auth:',e);}
   } else {
-    // Web redirect (mobil uyumlu)
+    // Web: popup önce dene, başarısız olursa redirect
     try{
-      const {GoogleAuthProvider,signInWithRedirect,getRedirectResult}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+      const {GoogleAuthProvider,signInWithPopup,signInWithRedirect}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
       const authP=new GoogleAuthProvider();
       authP.setCustomParameters({client_id:FB_WEB_CLIENT_ID});
-      await signInWithRedirect(_fbAuth, authP);
+      try{
+        const result=await signInWithPopup(_fbAuth, authP);
+        if(result?.user) _onFirebaseUser(result.user);
+      }catch(popupErr){
+        // Popup engellenirse redirect'e geç (mobil tarayıcılar)
+        if(popupErr.code==='auth/popup-blocked'||popupErr.code==='auth/popup-closed-by-user'){
+          await signInWithRedirect(_fbAuth, authP);
+        } else {
+          console.warn('Web Google auth popup:', popupErr);
+        }
+      }
     }catch(e){
-      console.warn('Web Google auth:',e);
+      console.warn('Web Google auth:', e);
     }
   }
 };
