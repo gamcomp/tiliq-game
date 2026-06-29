@@ -848,8 +848,13 @@ input[type="text"]::placeholder{color:var(--dim);}
       <div class="avatar-center"><div class="av-big" id="av-big">G</div></div>
       <div class="color-row" id="color-row"></div>
       <div class="input-group">
-        <label class="input-label" data-t="username">Kullanıcı Adı</label>
+        <label class="input-label" data-t="username">Takma Ad</label>
         <input type="text" id="username-input" maxlength="16"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">🌍 Ülke</label>
+        <button id="acct-country-btn" onclick="toggleAcctCountry()" style="width:100%;background:var(--glass);border:1.5px solid var(--gb);border-radius:12px;padding:10px 14px;font-size:14px;font-weight:700;color:var(--text);font-family:inherit;cursor:pointer;text-align:left">🏳️ Seç...</button>
+        <div id="acct-country-grid" style="display:none;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:6px;max-height:180px;overflow-y:auto;padding:2px"></div>
       </div>
       <div class="stats-box">
         <div class="stat-item"><div class="stat-n" id="st-best">0</div><div class="stat-l" data-t="highScore">En Yüksek</div></div>
@@ -954,6 +959,25 @@ input[type="text"]::placeholder{color:var(--dim);}
   </div>
 </div>
 
+<!-- PROFILE SETUP MODAL (ilk Google girişinde) -->
+<div id="modal-profile-setup" class="modal" style="z-index:9999">
+  <div class="modal-card" style="max-width:360px">
+    <div class="modal-head"><h3>🎮 Profili Tamamla</h3></div>
+    <div class="modal-body" style="gap:14px">
+      <p style="font-size:12px;color:var(--dim);text-align:center">Dünya sıralamasında görünmek için bilgilerini gir</p>
+      <div class="input-group">
+        <label class="input-label">Takma Ad</label>
+        <input type="text" id="setup-nickname" maxlength="16" placeholder="Adın..." style="background:var(--glass);border:1.5px solid var(--gb);border-radius:12px;padding:11px 14px;font-size:15px;font-weight:700;color:var(--text);font-family:inherit;outline:none;width:100%"/>
+      </div>
+      <div>
+        <label class="input-label" style="display:block;margin-bottom:8px">🌍 Ülken</label>
+        <div id="setup-country-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;max-height:200px;overflow-y:auto;padding:2px"></div>
+      </div>
+      <button class="btn-play" onclick="saveProfileSetup()" style="width:100%;padding:14px;font-size:15px">Başla 🚀</button>
+    </div>
+  </div>
+</div>
+
 <!-- STORE MODAL -->
 <div id="modal-store-tm" class="modal">
   <div class="modal-card">
@@ -1002,7 +1026,7 @@ input[type="text"]::placeholder{color:var(--dim);}
           <div class="my-code-lbl" data-t="lbMyCode">Your Code</div>
           <div class="my-code-val" id="my-code-lb">------</div>
         </div>
-        <button class="btn-copy-code" id="copy-code-lb-btn" data-t="lbShare" onclick="copyMyCode()">Share</button>
+        <button class="btn-copy-code" id="copy-code-lb-btn" data-t="lbShare" onclick="shareMyCode()">Paylaş</button>
       </div>
       <div id="my-banner-friends" style="margin:8px 14px 0;background:linear-gradient(135deg,rgba(196,113,74,.18),rgba(212,168,67,.1));border:1px solid rgba(212,168,67,.3);border-radius:11px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <div><div class="rank-lbl" data-t="lbAmongFriends">Among Friends</div><div class="rank-n" id="my-rank-friends">#--</div></div>
@@ -1346,9 +1370,81 @@ const AV_COLORS=['#7C4DFF','#FF6B9D','#56CFE1','#FFD93D','#6BCB77','#FF9F43'];
 let acct=JSON.parse(localStorage.getItem('tm_acct')||'null')||{name:'',color:'#7C4DFF',games:0,best:0,total:0};
 
 const LB_FLAGS={TR:'🇹🇷',EN:'🇺🇸',JA:'🇯🇵',KO:'🇰🇷',DE:'🇩🇪',FR:'🇫🇷',ES:'🇪🇸',PT:'🇧🇷',AR:'🇸🇦',ZH:'🇨🇳'};
-function myFlag(){return LB_FLAGS[lang]||'🏳️';}
+
+const COUNTRIES=[
+  {f:'🇹🇷',n:'Türkiye'},{f:'🇺🇸',n:'USA'},{f:'🇬🇧',n:'UK'},{f:'🇩🇪',n:'Almanya'},{f:'🇫🇷',n:'Fransa'},
+  {f:'🇯🇵',n:'Japonya'},{f:'🇰🇷',n:'Kore'},{f:'🇨🇳',n:'Çin'},{f:'🇧🇷',n:'Brezilya'},{f:'🇷🇺',n:'Rusya'},
+  {f:'🇸🇦',n:'S.Arabistan'},{f:'🇮🇳',n:'Hindistan'},{f:'🇳🇱',n:'Hollanda'},{f:'🇪🇸',n:'İspanya'},{f:'🇮🇹',n:'İtalya'},
+  {f:'🇵🇹',n:'Portekiz'},{f:'🇦🇺',n:'Avustralya'},{f:'🇨🇦',n:'Kanada'},{f:'🇲🇽',n:'Meksika'},{f:'🇦🇷',n:'Arjantin'},
+  {f:'🇮🇩',n:'Endonezya'},{f:'🇵🇭',n:'Filipinler'},{f:'🇻🇳',n:'Vietnam'},{f:'🇹🇭',n:'Tayland'},{f:'🇪🇬',n:'Mısır'},
+  {f:'🇵🇰',n:'Pakistan'},{f:'🇧🇩',n:'Bangladeş'},{f:'🇳🇬',n:'Nijerya'},{f:'🇿🇦',n:'G.Afrika'},{f:'🇮🇷',n:'İran'},
+  {f:'🇺🇦',n:'Ukrayna'},{f:'🇵🇱',n:'Polonya'},{f:'🇸🇪',n:'İsveç'},{f:'🇳🇴',n:'Norveç'},{f:'🇫🇮',n:'Finlandiya'},
+  {f:'🇬🇷',n:'Yunanistan'},{f:'🇷🇴',n:'Romanya'},{f:'🇭🇺',n:'Macaristan'},{f:'🇨🇿',n:'Çekya'},{f:'🇦🇿',n:'Azerbaycan'},
+];
+
+let _selectedCountry=acct.country||'';
+
+function _buildCountryGrid(gridId, onSelect){
+  const g=document.getElementById(gridId);
+  if(!g)return;
+  g.innerHTML=COUNTRIES.map(c=>`
+    <button onclick="(${onSelect.toString()})('${c.f}','${c.n}')" title="${c.n}"
+      style="border:2px solid ${_selectedCountry===c.f?'var(--accent)':'var(--gb)'};background:${_selectedCountry===c.f?'rgba(196,113,74,.2)':'var(--glass)'};border-radius:10px;padding:6px 2px;font-size:22px;cursor:pointer;transition:all .15s" id="cg-${gridId}-${c.f.codePointAt(0)}">
+      ${c.f}
+    </button>`).join('');
+}
+
+function _selectCountryInGrid(gridId, flag, name){
+  _selectedCountry=flag;
+  document.querySelectorAll('[id^="cg-'+gridId+'"]').forEach(b=>{
+    b.style.border='2px solid var(--gb)';b.style.background='var(--glass)';
+  });
+  const btn=document.getElementById('cg-'+gridId+'-'+flag.codePointAt(0));
+  if(btn){btn.style.border='2px solid var(--accent)';btn.style.background='rgba(196,113,74,.2)';}
+}
+
+function myFlag(){return acct.country||LB_FLAGS[lang]||'🏳️';}
 function displayName(){return acct.nickname||acct.name||t('guest');}
 function playerLabel(){return myFlag()+' '+displayName();}
+
+// ── ÜLKE + NİCKNAME SETUP MODAL ──
+function showProfileSetup(){
+  _selectedCountry=acct.country||'';
+  const ni=document.getElementById('setup-nickname');
+  if(ni) ni.value=acct.nickname||'';
+  _buildCountryGrid('setup-country-grid', function(f,n){
+    window._selectCountryInGrid('setup-country-grid',f,n);
+  });
+  document.getElementById('modal-profile-setup').classList.add('active');
+}
+
+function saveProfileSetup(){
+  const ni=document.getElementById('setup-nickname');
+  const name=(ni?ni.value:'').trim();
+  if(!name||name.length<2){if(ni){ni.style.borderColor='#FF6B6B';setTimeout(()=>ni.style.borderColor='',800);}return;}
+  if(!_selectedCountry){alert('Lütfen ülkeni seç');return;}
+  acct.nickname=name;
+  acct.country=_selectedCountry;
+  localStorage.setItem('tm_acct',JSON.stringify(acct));
+  updateMenuAvatar();
+  _firestorePushScore();
+  document.getElementById('modal-profile-setup').classList.remove('active');
+}
+
+function toggleAcctCountry(){
+  const g=document.getElementById('acct-country-grid');
+  if(!g)return;
+  const open=g.style.display==='grid';
+  g.style.display=open?'none':'grid';
+  if(!open){
+    _buildCountryGrid('acct-country-grid', function(f,n){
+      window._selectCountryInGrid('acct-country-grid',f,n);
+      const btn=document.getElementById('acct-country-btn');
+      if(btn) btn.textContent=f+' '+n;
+      document.getElementById('acct-country-grid').style.display='none';
+    });
+  }
+}
 
 // ── WEB AUTH (tarayıcı fallback) ──────────────────────────────────────────────
 const _isCapacitor=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform());
@@ -1407,6 +1503,7 @@ function webGuestLogout(){
 function saveAccount(){
   const val=document.getElementById('username-input').value.trim();
   if(val) acct.nickname=val;
+  if(_selectedCountry) acct.country=_selectedCountry;
   localStorage.setItem('tm_acct',JSON.stringify(acct));
   updateMenuAvatar();
   _firestorePushScore();
@@ -1421,6 +1518,10 @@ function openAccountModal(){
   document.getElementById('av-big').textContent=displayName().charAt(0).toUpperCase()||'G';
   document.getElementById('av-big').style.background=acct.color;
   document.getElementById('username-input').value=acct.nickname||acct.name||'';
+  _selectedCountry=acct.country||'';
+  const cb=document.getElementById('acct-country-btn');
+  if(cb){const found=COUNTRIES.find(c=>c.f===acct.country);cb.textContent=found?found.f+' '+found.n:'🏳️ Seç...';}
+  const cg=document.getElementById('acct-country-grid');if(cg)cg.style.display='none';
   document.getElementById('st-best').textContent=acct.best.toLocaleString();
   document.getElementById('st-games').textContent=acct.games;
   initAuthUI();
@@ -3432,9 +3533,10 @@ async function _initLeaderboardManager(){
     window._leaderboardManager={
       _db:db,
       async getTopScores(n=50){
-        const q=query(collection(db,'users'),orderBy('best','desc'),limit(n));
-        const snap=await getDocs(q);
-        return snap.docs.map(d=>({uid:d.id,...d.data()}));
+        // orderBy yerine client-side sort (index gerekmez)
+        const snap=await getDocs(query(collection(db,'users'),limit(200)));
+        const all=snap.docs.map(d=>({uid:d.id,...d.data()}));
+        return all.filter(u=>(u.best||0)>0).sort((a,b)=>(b.best||0)-(a.best||0)).slice(0,n);
       },
       async getMyRank(){return null;}
     };
@@ -3442,9 +3544,9 @@ async function _initLeaderboardManager(){
 }
 
 function _onFirebaseUser(user){
-  // Google adını sadece ilk kez (henüz nickname yoksa) uygula
-  if(!acct.nickname) acct.nickname = user.displayName || user.email || '';
+  const isFirstLogin=!acct._fbLogged;
   acct._googleName = user.displayName || user.email || '';
+  if(!acct.nickname) acct.nickname = acct._googleName;
   acct.uid  = user.uid;
   acct._fbLogged = true;
   localStorage.setItem('tm_acct', JSON.stringify(acct));
@@ -3458,9 +3560,13 @@ function _onFirebaseUser(user){
   if(na){na.style.display='none';}
   if(wa){wa.style.display='none';}
   const inp=document.getElementById('username-input');
-  if(inp) inp.value=acct.nickname||acct._googleName||'';
+  if(inp) inp.value=acct.nickname||'';
   // Firestore'dan skor + kod senkronizasyonu
   _firestoreSync(user.uid);
+  // İlk girişte veya ülke yoksa setup modal aç
+  if(isFirstLogin||!acct.country){
+    setTimeout(()=>showProfileSetup(),800);
+  }
 }
 
 window._authSignIn = async function(provider){
@@ -3761,12 +3867,12 @@ async function renderLB(ps){
       const myUID = window._authManager?.getUID?.();
       const myName = playerLabel();
       // Kullanıcı listede yoksa ekle
-      let rows = top.map(p=>({n:p.name||'Misafir',s:p.score,uid:p.uid}));
+      let rows = top.map(p=>({n:(p.country||'🏳️')+' '+(p.name||t('guest')),s:p.best||0,uid:p.uid}));
       const inList = rows.some(r=>r.uid===myUID);
-      if(!inList) rows.push({n:myName,s:ps,uid:myUID,me:true});
+      if(!inList&&myUID) rows.push({n:myFlag()+' '+myName,s:ps,uid:myUID,me:true});
       rows.sort((a,b)=>b.s-a.s);
       const myIdx=rows.findIndex(r=>r.uid===myUID||r.me);
-      rankEl.textContent='#'+(myIdx+1);
+      rankEl.textContent=myIdx>=0?'#'+(myIdx+1):'#--';
       list.innerHTML=rows.map((r,i)=>_lbRow(i,r.n,r.s,i===myIdx)).join('');
       setTimeout(()=>{const el=list.querySelector('.me');if(el)el.scrollIntoView({block:'nearest',behavior:'smooth'});},120);
       return;
@@ -3820,7 +3926,7 @@ async function _firestoreSync(uid){
       // En güncel yerel değerleri geri yaz
       await updateDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase()});
     }else{
-      await setDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid});
+      await setDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||''});
     }
     _refreshCodeDisplays();
   }catch(e){console.warn('Firestore sync:',e);}
@@ -3831,7 +3937,7 @@ async function _firestorePushScore(){
   try{
     const {getFirestore,doc,updateDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     const db=getFirestore(_fbApp);
-    await updateDoc(doc(db,'users',acct.uid),{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase()});
+    await updateDoc(doc(db,'users',acct.uid),{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||''});
     // Dünya sıralaması açıksa anlık yenile
     const lbPanel=document.getElementById('lb-panel');
     if(lbPanel&&lbPanel.classList.contains('open')&&currentLBTab==='global'){
@@ -3988,20 +4094,35 @@ function renderFriendsLB(){
   },120);
 }
 
+function _copyText(txt){
+  if(navigator.clipboard){return navigator.clipboard.writeText(txt);}
+  const ta=document.createElement('textarea');
+  ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');}catch(_){}
+  document.body.removeChild(ta);
+  return Promise.resolve();
+}
+
 function copyMyCode(){
-  navigator.clipboard?.writeText(myCode).catch(()=>{});
-  const btn=document.querySelector('.friend-code-btn');
-  if(btn){const o=btn.innerHTML;btn.innerHTML='✅ '+t('codeCopied');setTimeout(()=>btn.innerHTML=o,2000);}
+  _copyText(myCode);
+  const btns=document.querySelectorAll('.friend-code-btn');
+  btns.forEach(btn=>{const o=btn.innerHTML;btn.innerHTML='✅ '+t('codeCopied');setTimeout(()=>btn.innerHTML=o,2000);});
   vibrate(12);
 }
 
 function shareMyCode(){
-  const text=`Tiliq - ${t('yourCode')}: ${myCode}\n${t('shareOrEnter')} 🎮`;
+  const text=`Tiliq oyun kodum: ${myCode}\nEkle ve yarış → https://gamcomp.github.io/tiliq-game/ 🎮`;
   if(navigator.share){
-    navigator.share({title:'Tiliq',text}).catch(()=>{});
+    navigator.share({title:'Tiliq',text}).catch(()=>{
+      _copyText(text);
+      const btn=document.getElementById('copy-code-lb-btn');
+      if(btn){const o=btn.textContent;btn.textContent='✅ Kopyalandı';setTimeout(()=>btn.textContent=o,2000);}
+    });
   } else {
-    navigator.clipboard?.writeText(text).catch(()=>{});
-    alert(t('codeCopied'));
+    _copyText(text);
+    const btn=document.getElementById('copy-code-lb-btn');
+    if(btn){const o=btn.textContent;btn.textContent='✅ Kopyalandı';setTimeout(()=>btn.textContent=o,2000);}
   }
   vibrate(12);
 }
