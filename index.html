@@ -2607,8 +2607,8 @@ function place(pi,row,col){
   const tot=cR.length+cC.length;
 
   if(tot>0){
-    // Combo: her başarılı hamlede +1 (kaç satır patladığı puan çarpanını etkiler)
-    combo+=1;
+    // Combo: temizlenen satır+sütun sayısı kadar artar
+    combo+=tot;
     const cm=combo;
     const now2=performance.now(),cs=new Set();
     cR.forEach(r=>{for(let c=0;c<GRID;c++)cs.add(`${r},${c}`);});
