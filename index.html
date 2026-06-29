@@ -712,7 +712,7 @@ input[type="text"]::placeholder{color:var(--dim);}
 </div>
 
 <!-- DEVAM ET / YENİ OYUN dialog -->
-<div id="modal-continue" class="modal" style="z-index:200">
+<div id="modal-continue" class="modal" style="z-index:200" onclick="if(event.target===this)hideModal('continue')">
   <div class="modal-card" style="max-width:340px;border-radius:24px">
     <div class="modal-head"><h3>⚡ <span data-t="continueOrNew">Devam mı, Yeni mi?</span></h3></div>
     <div class="modal-body" style="gap:10px;padding:16px">
@@ -806,7 +806,7 @@ input[type="text"]::placeholder{color:var(--dim);}
 </div>
 
 <!-- SETTINGS MODAL -->
-<div id="modal-settings" class="modal">
+<div id="modal-settings" class="modal" onclick="if(event.target===this)hideModal('settings')">
   <div class="modal-card">
     <div class="modal-head">
       <button class="btn-icon" onclick="hideModal('settings')">‹</button>
@@ -859,7 +859,7 @@ input[type="text"]::placeholder{color:var(--dim);}
 </div>
 
 <!-- ACCOUNT MODAL -->
-<div id="modal-account" class="modal">
+<div id="modal-account" class="modal" onclick="if(event.target===this)hideModal('account')">
   <div class="modal-card">
     <div class="modal-head">
       <button class="btn-icon" onclick="hideModal('account')">‹</button>
@@ -933,7 +933,7 @@ input[type="text"]::placeholder{color:var(--dim);}
 </div>
 
 <!-- ARKADAŞ EKLE MODAL -->
-<div class="modal" id="modal-add-friend">
+<div class="modal" id="modal-add-friend" onclick="if(event.target===this)hideModal('add-friend')">
   <div class="modal-card">
     <div class="modal-head">
       <button class="btn-icon" onclick="hideModal('add-friend')">‹</button>
@@ -1001,7 +1001,7 @@ input[type="text"]::placeholder{color:var(--dim);}
 </div>
 
 <!-- STORE MODAL -->
-<div id="modal-store-tm" class="modal">
+<div id="modal-store-tm" class="modal" onclick="if(event.target===this)hideTmStoreModal()">
   <div class="modal-card">
     <div class="modal-head">
       <button class="btn-icon" onclick="hideTmStoreModal()">‹</button>
