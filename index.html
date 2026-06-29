@@ -1439,15 +1439,29 @@ function showProfileSetup(){
   document.getElementById('modal-profile-setup').classList.add('active');
 }
 
+function _refreshAllNameDisplays(){
+  // Tüm isim gösteren elementleri tek seferinde günceller
+  updateMenuAvatar();
+  const ui=document.getElementById('auth-user-info');
+  if(ui) ui.textContent=displayName();
+  const inp=document.getElementById('username-input');
+  if(inp) inp.value=acct.nickname||'';
+  const avBig=document.getElementById('av-big');
+  if(avBig) avBig.textContent=displayName().charAt(0).toUpperCase()||'G';
+}
+
 function saveProfileSetup(){
   const ni=document.getElementById('setup-nickname');
   const name=(ni?ni.value:'').trim();
-  if(!name||name.length<2){if(ni){ni.style.borderColor='#FF6B6B';setTimeout(()=>ni.style.borderColor='',800);}return;}
-  if(!_selectedCountry){alert('Lütfen ülkeni seç');return;}
+  if(!name||name.length<2){
+    if(ni){ni.style.borderColor='#FF6B6B';setTimeout(()=>ni.style.borderColor='',800);}
+    return;
+  }
   acct.nickname=name;
-  acct.country=_selectedCountry;
+  if(_selectedCountry) acct.country=_selectedCountry;
+  acct._setupDone=true; // Bir daha gösterme
   localStorage.setItem('tm_acct',JSON.stringify(acct));
-  updateMenuAvatar();
+  _refreshAllNameDisplays();
   _firestorePushScore();
   document.getElementById('modal-profile-setup').classList.remove('active');
 }
@@ -1523,10 +1537,10 @@ function webGuestLogout(){
 
 function saveAccount(){
   const val=document.getElementById('username-input').value.trim();
-  if(val) acct.nickname=val;
+  if(val&&val.length>=2) acct.nickname=val;
   if(_selectedCountry) acct.country=_selectedCountry;
   localStorage.setItem('tm_acct',JSON.stringify(acct));
-  updateMenuAvatar();
+  _refreshAllNameDisplays();
   _firestorePushScore();
   hideModal('account');
 }
@@ -3565,28 +3579,25 @@ async function _initLeaderboardManager(){
 }
 
 function _onFirebaseUser(user){
-  const isFirstLogin=!acct._fbLogged;
   acct._googleName = user.displayName || user.email || '';
-  if(!acct.nickname) acct.nickname = acct._googleName;
+  // Sadece hiç nickname yoksa Google adını geçici olarak koy
+  if(!acct.nickname&&!acct._setupDone) acct.nickname = acct._googleName;
   acct.uid  = user.uid;
   acct._fbLogged = true;
   localStorage.setItem('tm_acct', JSON.stringify(acct));
-  updateMenuAvatar();
   const si=document.getElementById('auth-signout-area');
-  const ui=document.getElementById('auth-user-info');
   const na=document.getElementById('auth-native-area');
   const wa=document.getElementById('auth-web-area');
-  if(si){si.style.display='block';}
-  if(ui){ui.textContent=displayName();}
-  if(na){na.style.display='none';}
-  if(wa){wa.style.display='none';}
-  const inp=document.getElementById('username-input');
-  if(inp) inp.value=acct.nickname||'';
+  if(si) si.style.display='block';
+  if(na) na.style.display='none';
+  if(wa) wa.style.display='none';
   // Firestore'dan skor + kod senkronizasyonu
   _firestoreSync(user.uid);
-  // İlk girişte veya ülke yoksa setup modal aç
-  if(isFirstLogin||!acct.country){
+  // Setup hiç tamamlanmadıysa ilk ve son kez aç
+  if(!acct._setupDone){
     setTimeout(()=>showProfileSetup(),800);
+  } else {
+    _refreshAllNameDisplays();
   }
 }
 
