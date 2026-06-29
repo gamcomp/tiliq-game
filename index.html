@@ -1619,9 +1619,6 @@ function updateStreakDisplay(){
 
 // XP için seviye tablosu — her seviyede gereken toplam XP
 const LV_TABLE=[0,500,1200,2200,3500,5200,7200,9800,13000,17000,22000];
-const LV_UNLOCK_ICONS=['','','🎨','⚡','🎭','💣','🌟','🏆','💎','🔮','👑'];
-const LV_UNLOCK_KEYS=[null,null,'lv3Unlock','lv4Unlock','lv5Unlock','lv6Unlock','lv7Unlock','lv8Unlock','lv9Unlock','lv10Unlock','lv11Unlock'];
-function getLvUnlock(lv){const k=LV_UNLOCK_KEYS[lv];if(!k)return'';const v=t(k);return v?(LV_UNLOCK_ICONS[lv]||'')+' '+v:'';}
 
 function getXP(){return parseInt(localStorage.getItem('tm_xp')||'0');}
 function addXP(n){
@@ -1630,6 +1627,7 @@ function addXP(n){
   localStorage.setItem('tm_xp',String(now));
   const lvBefore=calcLevel(prev),lvNow=calcLevel(now);
   if(lvNow>lvBefore) onLevelUp(lvNow);
+  _pushXPToFirestore(now); // Firestore'a async yaz
   renderDailyCard();
   return now;
 }
@@ -1641,6 +1639,14 @@ function onLevelUp(lv){
   showCelebration(t('lvUp').replace('{n}',lv),'#C77DFF');
   vibrate([50,30,50,30,100]);
   floats.push({x:canvas.width/2,y:canvas.height/3,txt:`LV ${lv} ⬆️`,a:1,vy:-2.5,c:'#C77DFF',big:true,scale:1.5});
+}
+async function _pushXPToFirestore(xp){
+  if(!acct.uid||!_fbApp) return;
+  try{
+    const {getFirestore,doc,updateDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const db=getFirestore(_fbApp);
+    await updateDoc(doc(db,'users',acct.uid),{xp,level:calcLevel(xp)});
+  }catch(_){}
 }
 
 // Günlük bonus miktarları (gün serisine göre artar)
@@ -1739,8 +1745,8 @@ function renderDailyCard(){
   document.getElementById('lv-badge').textContent=`LV ${lv}`;
   document.getElementById('lv-xp-text').textContent=`${xp.toLocaleString()} / ${lvXpEnd.toLocaleString()} XP`;
   document.getElementById('lv-fill').style.width=pct+'%';
-  const hint=getLvUnlock(Math.min(lv,LV_UNLOCK_KEYS.length-1));
-  document.getElementById('lv-hint').textContent=hint?`🔓 LV ${lv+1} → ${hint}`:t('maxLevel');
+  const hintEl=document.getElementById('lv-hint');
+  if(hintEl) hintEl.style.display='none';
 
   // İstatistikler
   const totalGames=acct?.played??parseInt(localStorage.getItem('tm_games')||'0');
@@ -3911,9 +3917,13 @@ function backToMenu(){
 }
 
 // ── LEADERBOARD ───────────────────────────────────────────────────────────────
-function _lbRow(i,name,sc,isMe){
+function _lvBadge(lv){
+  if(!lv||lv<1) return '';
+  return `<span style="font-size:9px;background:rgba(196,113,74,.22);border:1px solid rgba(196,113,74,.35);border-radius:6px;padding:1px 5px;color:#D4A843;font-weight:800;margin-left:5px;vertical-align:middle">LV${lv}</span>`;
+}
+function _lbRow(i,name,sc,isMe,lv){
   const n=i+1,rc=n===1?'g':n===2?'s':n===3?'b':'',med=n===1?'🥇':n===2?'🥈':n===3?'🥉':n;
-  return`<div class="lb-row${isMe?' me':''}"><div class="lb-rn ${rc}">${med}</div><div class="lb-nm">${name}${isMe?' 👈':''}</div><div class="lb-sc">${Number(sc).toLocaleString()}</div></div>`;
+  return`<div class="lb-row${isMe?' me':''}"><div class="lb-rn ${rc}">${med}</div><div class="lb-nm">${name}${_lvBadge(lv)}${isMe?' 👈':''}</div><div class="lb-sc">${Number(sc).toLocaleString()}</div></div>`;
 }
 
 async function renderLB(ps){
@@ -3931,13 +3941,13 @@ async function renderLB(ps){
       const myUID = window._authManager?.getUID?.();
       const myName = playerLabel();
       // Kullanıcı listede yoksa ekle
-      let rows = top.map(p=>({n:(p.country||'🏳️')+' '+(p.name||t('guest')),s:p.best||0,uid:p.uid}));
+      let rows = top.map(p=>({n:(p.country||'🏳️')+' '+(p.name||t('guest')),s:p.best||0,uid:p.uid,lv:p.level||calcLevel(p.xp||0)}));
       const inList = rows.some(r=>r.uid===myUID);
-      if(!inList&&myUID) rows.push({n:myFlag()+' '+myName,s:ps,uid:myUID,me:true});
+      if(!inList&&myUID) rows.push({n:myFlag()+' '+myName,s:ps,uid:myUID,me:true,lv:calcLevel(getXP())});
       rows.sort((a,b)=>b.s-a.s);
       const myIdx=rows.findIndex(r=>r.uid===myUID||r.me);
       rankEl.textContent=myIdx>=0?'#'+(myIdx+1):'#--';
-      list.innerHTML=rows.map((r,i)=>_lbRow(i,r.n,r.s,i===myIdx)).join('');
+      list.innerHTML=rows.map((r,i)=>_lbRow(i,r.n,r.s,i===myIdx,r.lv)).join('');
       setTimeout(()=>{const el=list.querySelector('.me');if(el)el.scrollIntoView({block:'nearest',behavior:'smooth'});},120);
       return;
     }catch(e){console.warn('[LB render]',e);}
@@ -3986,11 +3996,15 @@ async function _firestoreSync(uid){
       if((d.best||0)>acct.best) acct.best=d.best;
       if((d.games||0)>acct.games) acct.games=d.games;
       if((d.total||0)>acct.total) acct.total=d.total;
+      // XP: cloud > local ise cloud'daki değeri al
+      const cloudXP=d.xp||0;
+      if(cloudXP>getXP()) localStorage.setItem('tm_xp',String(cloudXP));
       localStorage.setItem('tm_acct',JSON.stringify(acct));
-      // En güncel yerel değerleri geri yaz
-      await updateDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase()});
+      const xpNow=getXP();
+      await updateDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),xp:xpNow,level:calcLevel(xpNow)});
     }else{
-      await setDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||''});
+      const xpNow=getXP();
+      await setDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow)});
     }
     _refreshCodeDisplays();
   }catch(e){console.warn('Firestore sync:',e);}
@@ -4164,8 +4178,8 @@ function updateMyWeeklyScore(newScore){
 function buildFriendBoard(){
   const myWeekly=getMyWeeklyScore();
   const board=[
-    ...getFriends().map(f=>({n:f.name,s:f.weeklyScore||0,code:f.code,friend:true})),
-    {n:playerLabel(),s:myWeekly,code:myCode,me:true},
+    ...getFriends().map(f=>({n:f.name,s:f.weeklyScore||0,code:f.code,friend:true,lv:f.level||0})),
+    {n:playerLabel(),s:myWeekly,code:myCode,me:true,lv:calcLevel(getXP())},
   ];
   board.sort((a,b)=>b.s-a.s);
   return board;
@@ -4209,7 +4223,7 @@ function renderFriendsLB(){
       :'';
     return`<div class="lb-row${p.me?' me':''}">
       <div class="lb-rn ${rc}">${med}</div>
-      <div class="lb-nm">${p.n}${p.me?' 👈':''}</div>
+      <div class="lb-nm">${p.n}${_lvBadge(p.lv)}${p.me?' 👈':''}</div>
       <div class="lb-sc">${p.s.toLocaleString()}</div>
       ${del}
     </div>`;
@@ -4336,6 +4350,7 @@ async function fetchFriendScores(){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
             friends[idx].weeklyScore=(fd.weeklyReset===ws)?(fd.weeklyScore||0):0;
             friends[idx].name=fd.name||friends[idx].name;
+            friends[idx].level=fd.level||calcLevel(fd.xp||0);
           }
         });
       }
