@@ -1028,9 +1028,12 @@ input[type="text"]::placeholder{color:var(--dim);}
         </div>
         <button class="btn-copy-code" id="copy-code-lb-btn" data-t="lbShare" onclick="shareMyCode()">Paylaş</button>
       </div>
-      <div id="my-banner-friends" style="margin:8px 14px 0;background:linear-gradient(135deg,rgba(196,113,74,.18),rgba(212,168,67,.1));border:1px solid rgba(212,168,67,.3);border-radius:11px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="margin:6px 14px 0;text-align:center;font-size:11px;color:var(--dim);font-weight:700">
+        📅 HAFTALIK SIRALAMА &nbsp;·&nbsp; <span id="weekly-countdown" style="color:#D4A843">--:--:--</span>
+      </div>
+      <div id="my-banner-friends" style="margin:4px 14px 0;background:linear-gradient(135deg,rgba(196,113,74,.18),rgba(212,168,67,.1));border:1px solid rgba(212,168,67,.3);border-radius:11px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <div><div class="rank-lbl" data-t="lbAmongFriends">Among Friends</div><div class="rank-n" id="my-rank-friends">#--</div></div>
-        <div style="text-align:right"><div class="rank-lbl" data-t="yourScoreLb">Your Score</div><div class="rank-sc" id="my-score-friends">0</div></div>
+        <div style="text-align:right"><div class="rank-lbl">Bu Hafta</div><div class="rank-sc" id="my-score-friends">0</div></div>
       </div>
       <div id="lb-friends-list" style="overflow-y:auto;flex:1;padding:7px 14px 10px;"></div>
       <button class="btn-add-friend" onclick="showModal('add-friend')">+ <span data-t="addFriend">Add Friend</span></button>
@@ -2348,7 +2351,7 @@ function useBomb(row,col){
     const gain=affected.length*scorePerCell;
     if(gain>0){
       score+=gain;acct.total+=gain;
-      if(score>best){best=score;localStorage.setItem('tiliq_best',best);acct.best=Math.max(acct.best,best);pushMyScore();}
+      if(score>best){best=score;localStorage.setItem('tiliq_best',best);acct.best=Math.max(acct.best,best);updateMyWeeklyScore(score);pushMyScore();}
       document.getElementById('scoreDisplay').textContent=score.toLocaleString();
       document.getElementById('bestDisplay').textContent=best.toLocaleString();
       floats.push({x:cx,y:cy-CELL*1.5,txt:'+'+gain,a:1,vy:-2.2,c:'#FF9F43',big:true});
@@ -2622,7 +2625,7 @@ function place(pi,row,col){
     const base=tot*10+(tot>1?(tot-1)*5:0),gain=Math.round(base*Math.min(cm,5));
     score+=gain;acct.total+=gain;
     addBombXP(gain);
-    if(score>best){best=score;localStorage.setItem('tiliq_best',best);acct.best=Math.max(acct.best,best);localStorage.setItem('tm_acct',JSON.stringify(acct));pushMyScore();}
+    if(score>best){best=score;localStorage.setItem('tiliq_best',best);acct.best=Math.max(acct.best,best);updateMyWeeklyScore(score);localStorage.setItem('tm_acct',JSON.stringify(acct));pushMyScore();}
     document.getElementById('scoreDisplay').textContent=score.toLocaleString();
     document.getElementById('bestDisplay').textContent=best.toLocaleString();
     document.getElementById('comboDisplay').textContent='×'+cm;
@@ -3935,13 +3938,27 @@ async function _firestoreSync(uid){
 async function _firestorePushScore(){
   if(!acct.uid||!_fbApp)return;
   try{
-    const {getFirestore,doc,updateDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const {getFirestore,doc,updateDoc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     const db=getFirestore(_fbApp);
-    await updateDoc(doc(db,'users',acct.uid),{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||''});
-    // Dünya sıralaması açıksa anlık yenile
+    const ws=_getWeekStart();
+    // Haftalık skoru güncelle
+    const ref=doc(db,'users',acct.uid);
+    const snap=await getDoc(ref);
+    const prev=snap.exists()?snap.data():{};
+    const prevWeekly=(prev.weeklyReset===ws)?(prev.weeklyScore||0):0;
+    const newWeekly=Math.max(prevWeekly,acct.best);
+    // localStorage'a da kaydet
+    updateMyWeeklyScore(acct.best);
+    await updateDoc(ref,{
+      best:acct.best,games:acct.games,total:acct.total,
+      name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',
+      weeklyScore:newWeekly,weeklyReset:ws
+    });
+    // Sıralamalar açıksa anlık yenile
     const lbPanel=document.getElementById('lb-panel');
-    if(lbPanel&&lbPanel.classList.contains('open')&&currentLBTab==='global'){
-      renderLB(acct.best);
+    if(lbPanel&&lbPanel.classList.contains('open')){
+      if(currentLBTab==='global') renderLB(acct.best);
+      if(currentLBTab==='friends'){renderFriendsLB();fetchFriendScores();}
     }
   }catch(e){}
 }
@@ -4036,11 +4053,58 @@ function removeFriend(code){
   vibrate(8);
 }
 
+// ── HAFTALIK SİSTEM ──────────────────────────────────────────────────────────
+function _getWeekStart(){
+  // Pazartesi 00:00 UTC
+  const now=new Date();
+  const d=now.getUTCDay(); // 0=Pazar,1=Pazartesi...
+  const diff=d===0?6:d-1;
+  const mon=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()-diff));
+  return mon.getTime();
+}
+
+function _getNextWeekStart(){return _getWeekStart()+7*24*60*60*1000;}
+
+let _weeklyCountdownTimer=null;
+function startWeeklyCountdown(){
+  if(_weeklyCountdownTimer) clearInterval(_weeklyCountdownTimer);
+  function tick(){
+    const rem=_getNextWeekStart()-Date.now();
+    if(rem<=0){clearInterval(_weeklyCountdownTimer);return;}
+    const d=Math.floor(rem/86400000);
+    const h=Math.floor((rem%86400000)/3600000);
+    const m=Math.floor((rem%3600000)/60000);
+    const s=Math.floor((rem%60000)/1000);
+    const el=document.getElementById('weekly-countdown');
+    if(el) el.textContent=(d>0?d+'g ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+  tick();
+  _weeklyCountdownTimer=setInterval(tick,1000);
+}
+
+function getMyWeeklyScore(){
+  const ws=_getWeekStart();
+  const stored=JSON.parse(localStorage.getItem('tm_weekly')||'null');
+  if(stored&&stored.reset===ws) return stored.score||0;
+  return 0;
+}
+
+function updateMyWeeklyScore(newScore){
+  const ws=_getWeekStart();
+  const stored=JSON.parse(localStorage.getItem('tm_weekly')||'null');
+  const cur=(stored&&stored.reset===ws)?stored.score||0:0;
+  if(newScore>cur){
+    localStorage.setItem('tm_weekly',JSON.stringify({reset:ws,score:newScore}));
+    return true;
+  }
+  return false;
+}
+
 function buildFriendBoard(){
-  const myBest=parseInt(localStorage.getItem('tm_best'))||score;
+  const myWeekly=getMyWeeklyScore();
   const board=[
-    ...getFriends().map(f=>({n:f.name,s:f.score,code:f.code,friend:true})),
-    {n:playerLabel(),s:myBest,code:myCode,me:true},
+    ...getFriends().map(f=>({n:f.name,s:f.weeklyScore||0,code:f.code,friend:true})),
+    {n:playerLabel(),s:myWeekly,code:myCode,me:true},
   ];
   board.sort((a,b)=>b.s-a.s);
   return board;
@@ -4058,9 +4122,10 @@ function setLBTab(tab){
 }
 
 function renderFriendsLB(){
+  startWeeklyCountdown();
   const board=buildFriendBoard();
   const myR=board.findIndex(p=>p.me)+1;
-  const myS=(parseInt(localStorage.getItem('tm_best'))||score).toLocaleString();
+  const myS=getMyWeeklyScore().toLocaleString();
   document.getElementById('my-rank-friends').textContent='#'+myR;
   document.getElementById('my-score-friends').textContent=myS;
   const el=document.getElementById('my-code-lb');
@@ -4202,11 +4267,13 @@ async function fetchFriendScores(){
       for(let i=0;i<codes.length;i+=10) batches.push(codes.slice(i,i+10));
       for(const batch of batches){
         const snap=await getDocs(query(collection(db,'users'),where('code','in',batch)));
+        const ws=_getWeekStart();
         snap.forEach(d=>{
           const fd=d.data();
           const idx=friends.findIndex(f=>f.code===fd.code);
           if(idx>=0){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
+            friends[idx].weeklyScore=(fd.weeklyReset===ws)?(fd.weeklyScore||0):0;
             friends[idx].name=fd.name||friends[idx].name;
           }
         });
@@ -4215,12 +4282,12 @@ async function fetchFriendScores(){
 
     // 2) Beni ekleyenleri de getir (friendLinks where to==myCode)
     const linkSnap=await getDocs(query(collection(db,'friendLinks'),where('to','==',myCode)));
+    const ws3=_getWeekStart();
     linkSnap.forEach(d=>{
       const ld=d.data();
       if(!friends.some(f=>f.code===ld.from)){
-        friends.push({code:ld.from,name:ld.fromName||t('guest'),score:ld.fromScore||0,uid:ld.fromUid||null,added:ld.ts||0});
+        friends.push({code:ld.from,name:ld.fromName||t('guest'),score:ld.fromScore||0,weeklyScore:0,uid:ld.fromUid||null,added:ld.ts||0});
       } else {
-        // Mevcut arkadaşın skorunu güncelle
         const idx=friends.findIndex(f=>f.code===ld.from);
         if(idx>=0) friends[idx].score=Math.max(friends[idx].score||0,ld.fromScore||0);
       }
@@ -4233,10 +4300,15 @@ async function fetchFriendScores(){
       for(let i=0;i<remoteAdded.length;i+=10) batches2.push(remoteAdded.slice(i,i+10));
       for(const batch of batches2){
         const snap=await getDocs(query(collection(db,'users'),where('code','in',batch)));
+        const ws2=_getWeekStart();
         snap.forEach(d=>{
           const fd=d.data();
           const idx=friends.findIndex(f=>f.code===fd.code);
-          if(idx>=0){friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);friends[idx].name=fd.name||friends[idx].name;}
+          if(idx>=0){
+            friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
+            friends[idx].weeklyScore=(fd.weeklyReset===ws2)?(fd.weeklyScore||0):0;
+            friends[idx].name=fd.name||friends[idx].name;
+          }
         });
       }
     }
