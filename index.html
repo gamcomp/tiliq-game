@@ -2992,7 +2992,15 @@ function shakeBoard(big=false){
 function _canAnyFit(){
   const u=pieces.filter(p=>!p.placed);
   if(!u.length)return true;
-  return u.some(p=>{for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++)if(fits(p.shape,r,c))return true;return false;});
+  return u.some(p=>{
+    let cells=p.shape.cells;
+    for(let rot=0;rot<4;rot++){
+      const shape={...p.shape,cells};
+      for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++)if(fits(shape,r,c))return true;
+      cells=rotateCW(cells);
+    }
+    return false;
+  });
 }
 function checkDead(){
   if(_canAnyFit())return;
