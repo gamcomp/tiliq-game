@@ -3818,9 +3818,9 @@ async function _firestoreSync(uid){
       if((d.total||0)>acct.total) acct.total=d.total;
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       // En güncel yerel değerleri geri yaz
-      await updateDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:acct.name});
+      await updateDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase()});
     }else{
-      await setDoc(ref,{code:myCode,name:acct.name,best:acct.best,games:acct.games,total:acct.total,uid});
+      await setDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid});
     }
     _refreshCodeDisplays();
   }catch(e){console.warn('Firestore sync:',e);}
@@ -3831,7 +3831,12 @@ async function _firestorePushScore(){
   try{
     const {getFirestore,doc,updateDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     const db=getFirestore(_fbApp);
-    await updateDoc(doc(db,'users',acct.uid),{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode});
+    await updateDoc(doc(db,'users',acct.uid),{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase()});
+    // Dünya sıralaması açıksa anlık yenile
+    const lbPanel=document.getElementById('lb-panel');
+    if(lbPanel&&lbPanel.classList.contains('open')&&currentLBTab==='global'){
+      renderLB(acct.best);
+    }
   }catch(e){}
 }
 
@@ -3859,11 +3864,11 @@ async function searchFriendByCode(){
   if(LB&&LB._db){
     try{
       const {collection,getDocs,query,where}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-      const q=query(collection(LB._db,'users'),where('code','==',code));
+      const q=query(collection(LB._db,'users'),where('code','==',code.toUpperCase()));
       const snap=await getDocs(q);
       if(!snap.empty){
         const d=snap.docs[0].data();
-        _friendSearchData={code,name:d.name||'Misafir',score:d.score||0,uid:snap.docs[0].id};
+        _friendSearchData={code:code.toUpperCase(),name:d.name||t('guest'),score:d.best||0,uid:snap.docs[0].id};
       }
     }catch(_){}
   }
@@ -3890,7 +3895,7 @@ async function searchFriendByCode(){
   }
 }
 
-function confirmAddFriend(){
+async function confirmAddFriend(){
   if(!_friendSearchData)return;
   const friends=getFriends();
   if(friends.some(f=>f.code===_friendSearchData.code)){
@@ -3900,6 +3905,19 @@ function confirmAddFriend(){
   saveFriendsList(friends);
   document.getElementById('friend-code-input').value='';
   document.getElementById('friend-search-result').classList.remove('visible');
+  // Firestore'a çift yönlü bağlantı yaz (karşı taraf da bizi görsün)
+  const LB=window._leaderboardManager;
+  if(LB&&LB._db){
+    try{
+      const {collection,doc,setDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      const linkId=myCode+'_'+_friendSearchData.code;
+      await setDoc(doc(collection(LB._db,'friendLinks'),linkId),{
+        from:myCode,to:_friendSearchData.code,
+        fromName:displayName(),fromScore:acct.best,fromUid:acct.uid||null,
+        ts:Date.now()
+      });
+    }catch(_){}
+  }
   _friendSearchData=null;
   renderFriendCards();
   renderFriendsLB();
@@ -4048,24 +4066,62 @@ async function pushMyScore(){
 }
 
 async function fetchFriendScores(){
-  const friends=getFriends();
-  if(!friends.length)return;
-  const codes=friends.map(f=>f.code).join(',');
+  const LB=window._leaderboardManager;
+  if(!LB||!LB._db)return;
   try{
-    const res=await fetch(SERVER+'/api/players?codes='+codes,{
-      signal:AbortSignal.timeout(3000),
+    const {collection,getDocs,query,where}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const db=LB._db;
+    let friends=getFriends();
+
+    // 1) Benim eklediklerimin güncel skorlarını çek
+    if(friends.length){
+      const codes=friends.map(f=>f.code);
+      // Firestore'da 'in' max 10 — birden fazla batch gerekirse böl
+      const batches=[];
+      for(let i=0;i<codes.length;i+=10) batches.push(codes.slice(i,i+10));
+      for(const batch of batches){
+        const snap=await getDocs(query(collection(db,'users'),where('code','in',batch)));
+        snap.forEach(d=>{
+          const fd=d.data();
+          const idx=friends.findIndex(f=>f.code===fd.code);
+          if(idx>=0){
+            friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
+            friends[idx].name=fd.name||friends[idx].name;
+          }
+        });
+      }
+    }
+
+    // 2) Beni ekleyenleri de getir (friendLinks where to==myCode)
+    const linkSnap=await getDocs(query(collection(db,'friendLinks'),where('to','==',myCode)));
+    linkSnap.forEach(d=>{
+      const ld=d.data();
+      if(!friends.some(f=>f.code===ld.from)){
+        friends.push({code:ld.from,name:ld.fromName||t('guest'),score:ld.fromScore||0,uid:ld.fromUid||null,added:ld.ts||0});
+      } else {
+        // Mevcut arkadaşın skorunu güncelle
+        const idx=friends.findIndex(f=>f.code===ld.from);
+        if(idx>=0) friends[idx].score=Math.max(friends[idx].score||0,ld.fromScore||0);
+      }
     });
-    if(!res.ok)return;
-    const data=await res.json();
-    if(!Array.isArray(data))return;
-    // Gelen skoru mevcut kayıttan büyükse güncelle
-    const updated=friends.map(f=>{
-      const remote=data.find(d=>d.code===f.code);
-      if(remote&&remote.score>f.score)return{...f,score:remote.score,name:remote.name||f.name};
-      return f;
-    });
-    saveFriendsList(updated);
-  }catch(_){}
+
+    // 3) Beni ekleyenlerin güncel skorlarını da Firestore'dan çek
+    const remoteAdded=linkSnap.docs.map(d=>d.data().from).filter(c=>c&&c!==myCode);
+    if(remoteAdded.length){
+      const batches2=[];
+      for(let i=0;i<remoteAdded.length;i+=10) batches2.push(remoteAdded.slice(i,i+10));
+      for(const batch of batches2){
+        const snap=await getDocs(query(collection(db,'users'),where('code','in',batch)));
+        snap.forEach(d=>{
+          const fd=d.data();
+          const idx=friends.findIndex(f=>f.code===fd.code);
+          if(idx>=0){friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);friends[idx].name=fd.name||friends[idx].name;}
+        });
+      }
+    }
+
+    saveFriendsList(friends);
+  }catch(e){console.warn('fetchFriendScores:',e);}
   renderFriendsLB();
 }
 
