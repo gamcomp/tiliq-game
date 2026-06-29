@@ -105,7 +105,10 @@ body::after{
 .lang-confirm-btn:active{opacity:.8;}
 
 /* ── MENU ── */
-#screen-menu{justify-content:center;gap:14px;padding:24px 20px;}
+#screen-menu{justify-content:flex-start;gap:0;padding:0;overflow-y:auto;}
+#menu-scroll{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px 20px 16px;flex:1;width:100%;}
+#menu-nav{display:flex;flex-shrink:0;width:100%;padding:10px 20px max(16px,env(safe-area-inset-bottom,16px));background:var(--bg);border-top:1px solid var(--gb);}
+#menu-nav .menu-row{max-width:100%;}
 
 /* Dekoratif logo alanı */
 .menu-hero{display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 0 4px;}
@@ -628,81 +631,100 @@ input[type="text"]::placeholder{color:var(--dim);}
 
 <div id="screen-menu" class="screen">
 
-  <!-- Hero: logo -->
-  <div class="menu-hero">
-    <span class="menu-logo-emoji">🏺</span>
-    <div class="menu-logo" data-t="appName">Tiliq</div>
-    <div class="menu-sub-line">
-      <span class="menu-sub">Block Puzzle</span>
-    </div>
-  </div>
+  <!-- Scroll içeriği -->
+  <div id="menu-scroll">
 
-  <!-- Karo sanat şeridi (JS ile çizilir) -->
-  <div id="menu-art"><canvas id="menuArtCanvas" width="300" height="88"></canvas></div>
-
-  <!-- Avatar / oyuncu -->
-  <div class="menu-av" onclick="showModal('account')">
-    <div class="av-circle" id="av-menu" style="background:linear-gradient(135deg,#C4714A,#D4A843)">G</div>
-    <div class="av-info">
-      <div class="av-name" id="av-name-menu" data-t="guest">Misafir</div>
-      <div class="av-tap" data-t="editProfile">Edit Profile →</div>
-    </div>
-    <div class="streak-badge" id="streak-badge" style="display:none">🔥 <span class="streak-n" id="streak-n">0</span></div>
-  </div>
-
-  <!-- Günlük Hazine + Seviye -->
-  <div id="daily-card">
-    <!-- Hazine kutusu -->
-    <div class="treasure-box" id="treasure-box" onclick="claimTreasure()">
-      <div class="tb-icon" id="tb-icon">🎁</div>
-      <div class="tb-body">
-        <div class="tb-label" id="tb-label" data-t="dailyBonus">DAILY BONUS</div>
-        <div class="tb-amount" id="tb-amount">+50 🪙</div>
-        <div class="tb-streak" id="tb-streak"></div>
+    <!-- Hero: logo -->
+    <div class="menu-hero">
+      <span class="menu-logo-emoji">🏺</span>
+      <div class="menu-logo" data-t="appName">Tiliq</div>
+      <div class="menu-sub-line">
+        <span class="menu-sub">Block Puzzle</span>
       </div>
-      <button class="tb-cta" id="tb-cta">Topla!</button>
     </div>
-    <!-- Seviye çubuğu -->
-    <div class="level-card">
-      <div class="level-top">
-        <div class="level-badge" id="lv-badge">LV 1</div>
-        <div class="level-xp-text" id="lv-xp-text">0 / 500 XP</div>
+
+    <!-- Karo sanat şeridi (JS ile çizilir) -->
+    <div id="menu-art"><canvas id="menuArtCanvas" width="300" height="88"></canvas></div>
+
+    <!-- Avatar / oyuncu -->
+    <div class="menu-av" onclick="showModal('account')">
+      <div class="av-circle" id="av-menu" style="background:linear-gradient(135deg,#C4714A,#D4A843)">G</div>
+      <div class="av-info">
+        <div class="av-name" id="av-name-menu" data-t="guest">Misafir</div>
+        <div class="av-tap" data-t="editProfile">Edit Profile →</div>
       </div>
-      <div class="level-track"><div class="level-fill" id="lv-fill" style="width:0%"></div></div>
-      <div class="level-footer">
-        <div class="level-unlock-hint" id="lv-hint">🔓 LV 2 → Neon Tema</div>
-        <div class="level-stats">
-          <div class="lstat"><div class="lstat-n" id="lstat-games">0</div><div class="lstat-l" data-t="statGames">Games</div></div>
-          <div class="lstat"><div class="lstat-n" id="lstat-best">0</div><div class="lstat-l" data-t="statBest">Best</div></div>
-          <div class="lstat"><div class="lstat-n" id="lstat-streak">0🔥</div><div class="lstat-l" data-t="statStreak">Streak</div></div>
+      <div class="streak-badge" id="streak-badge" style="display:none">🔥 <span class="streak-n" id="streak-n">0</span></div>
+    </div>
+
+    <!-- Günlük Hazine + Seviye -->
+    <div id="daily-card">
+      <!-- Hazine kutusu -->
+      <div class="treasure-box" id="treasure-box" onclick="claimTreasure()">
+        <div class="tb-icon" id="tb-icon">🎁</div>
+        <div class="tb-body">
+          <div class="tb-label" id="tb-label" data-t="dailyBonus">DAILY BONUS</div>
+          <div class="tb-amount" id="tb-amount">+50 🪙</div>
+          <div class="tb-streak" id="tb-streak"></div>
+        </div>
+        <button class="tb-cta" id="tb-cta">Topla!</button>
+      </div>
+      <!-- Seviye çubuğu -->
+      <div class="level-card">
+        <div class="level-top">
+          <div class="level-badge" id="lv-badge">LV 1</div>
+          <div class="level-xp-text" id="lv-xp-text">0 / 500 XP</div>
+        </div>
+        <div class="level-track"><div class="level-fill" id="lv-fill" style="width:0%"></div></div>
+        <div class="level-footer">
+          <div class="level-unlock-hint" id="lv-hint">🔓 LV 2 → Neon Tema</div>
+          <div class="level-stats">
+            <div class="lstat"><div class="lstat-n" id="lstat-games">0</div><div class="lstat-l" data-t="statGames">Games</div></div>
+            <div class="lstat"><div class="lstat-n" id="lstat-best">0</div><div class="lstat-l" data-t="statBest">Best</div></div>
+            <div class="lstat"><div class="lstat-n" id="lstat-streak">0🔥</div><div class="lstat-l" data-t="statStreak">Streak</div></div>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Ana CTA -->
+    <button class="btn-play" onclick="onPlayPressed()"><span data-t="play">Oyna</span></button>
+
+  </div><!-- /menu-scroll -->
+
+  <!-- Yapışık alt navigasyon -->
+  <div id="menu-nav">
+    <div class="menu-row">
+      <button class="btn-menu" onclick="toggleLB()">
+        <span class="m-icon">🏆</span><span data-t="leaderboard">Sıralama</span>
+      </button>
+      <button class="btn-menu" onclick="showTmStoreModal()">
+        <span class="m-icon">🛍️</span><span data-t="store">Store</span>
+      </button>
+      <button class="btn-menu" onclick="showModal('account')">
+        <span class="m-icon">👤</span><span data-t="account">Hesap</span>
+      </button>
+      <button class="btn-menu" onclick="showModal('settings')">
+        <span class="m-icon">⚙️</span><span data-t="settings">Ayarlar</span>
+      </button>
+    </div>
   </div>
 
-  <!-- Ana CTA -->
-  <button class="btn-play" onclick="startScreen()"><span data-t="play">Oyna</span></button>
-  <!-- Devam Et butonu (kayıtlı oyun varsa görünür) -->
-  <button class="btn-continue" id="btn-continue" onclick="continueGame()" style="display:none">
-    ▶ <span data-t="continueGame">Continue</span> &nbsp;<span id="continue-score-lbl" style="opacity:.7;font-size:14px"></span>
-  </button>
+</div>
 
-  <!-- 4'lü navigasyon -->
-  <div class="menu-row">
-    <button class="btn-menu" onclick="toggleLB()">
-      <span class="m-icon">🏆</span><span data-t="leaderboard">Sıralama</span>
-    </button>
-    <button class="btn-menu" onclick="showTmStoreModal()">
-      <span class="m-icon">🛍️</span><span data-t="store">Store</span>
-    </button>
-    <button class="btn-menu" onclick="showModal('account')">
-      <span class="m-icon">👤</span><span data-t="account">Hesap</span>
-    </button>
-    <button class="btn-menu" onclick="showModal('settings')">
-      <span class="m-icon">⚙️</span><span data-t="settings">Ayarlar</span>
-    </button>
+<!-- DEVAM ET / YENİ OYUN dialog -->
+<div id="modal-continue" class="modal" style="z-index:200">
+  <div class="modal-card" style="max-width:340px;border-radius:24px">
+    <div class="modal-head"><h3>⚡ <span data-t="continueOrNew">Devam mı, Yeni mi?</span></h3></div>
+    <div class="modal-body" style="gap:10px;padding:16px">
+      <p style="font-size:13px;color:var(--dim);text-align:center;margin:0 0 4px" id="continue-dialog-score"></p>
+      <button class="btn-play" style="font-size:16px;padding:14px" onclick="continueGame();hideModal('continue')">
+        ▶ <span data-t="continueGame">Devam Et</span>
+      </button>
+      <button class="btn-continue" style="max-width:100%;border-color:rgba(255,100,100,.4);color:#ff8080" onclick="startNewGame();hideModal('continue')">
+        🆕 <span data-t="newGame">Yeni Oyun</span>
+      </button>
+    </div>
   </div>
-
 </div>
 
 <!-- GAME SCREEN -->
@@ -1069,7 +1091,7 @@ tut4T:'Satırı Doldur = Temizle! ✨',tut4D:'Yatay veya dikey bir satır tamame
 tut5T:'Kombo = Çarpan! 🔥',tut5D:'Aynı hamlede birden fazla satır temizlersen kombo çarpanı devreye girer! ×2 · ×3 · ×5',tut5row1:'1 satır',tut5row2:'2 satır',tut5row3:'3+ satır',tut5strat:'Strateji: birden fazla satırı tek hamlede temizle',
 tut6T:'Güçlendiriciler 💣',tut6D:'Sıkıştığında yardım al!<br><strong>💣 Bomba</strong> — bir alanı temizler<br><strong>↩️ Geri Al</strong> — son hamleyi geri al',tut6bomb:'Bomba',tut6bombD:'3×3 alanı temizler',tut6undo:'Geri Al',tut6undoD:'Son hamleyi geri al',tut6rescue:'Kurtarma',tut6rescueD:'Oyuna devam et',
 ad:'REKLAM',adLoading:'Reklam yükleniyor…',adWatching:'Reklam izleniyor…',adReward:'Ödülünüz hazırlanıyor',
-setupTitle:'🎮 Profili Tamamla',setupDesc:'Dünya sıralamasında görünmek için bilgilerini gir',setupNickLbl:'Takma Ad',setupNickPh:'Adın…',setupCountryLbl:'🌍 Ülken',setupStart:'Başla 🚀',weeklyRanking:'HAFTALIK SIRALAMA',weeklyScore:'Bu Hafta'},
+setupTitle:'🎮 Profili Tamamla',setupDesc:'Dünya sıralamasında görünmek için bilgilerini gir',setupNickLbl:'Takma Ad',setupNickPh:'Adın…',setupCountryLbl:'🌍 Ülken',setupStart:'Başla 🚀',weeklyRanking:'HAFTALIK SIRALAMA',weeklyScore:'Bu Hafta',continueOrNew:'Devam mı, Yeni mi?',newGame:'Yeni Oyun'},
 EN:{appName:'Tiliq',play:'Play',settings:'Settings',account:'Account',leaderboard:'Rankings',score:'Score',best:'Best',combo:'Combo',sound:'Sound',volume:'Volume',haptic:'Haptic',theme:'Theme',dark:'Dark',light:'Light',language:'Language',save:'Save',close:'Close',back:'Back',gameOver:'Game Over!',playAgain:'Play Again',mainMenu:'Main Menu',yourScore:'Your Score',worldRank:'World Ranking',newRecord:'🎉 New Record!',profile:'Profile',username:'Username',highScore:'Best',gamesPlayed:'Games',totalPoints:'Total',worldBoard:'🌍 World Rankings',yourRank:'Your Rank',yourScoreLb:'Your Score',guest:'Guest',days:'Days',undo:'Undo',bomb:'Bomb',rescue:'Rescue',
 m_combos:'Get 5 Combos',m_rows:'Clear 5 Rows',m_score:'Score 500 pts',dailyMissions:'Daily Missions',
 store:'Store',continueGame:'Continue',editProfile:'Edit Profile →',comboExpired:'Combo Ended',dailyClaimed:'CLAIMED TODAY',dailyRefresh:'Refreshes tomorrow',dailyCollect:'Collect!',iapSoon:'Purchase coming soon!',restored:'Purchases restored.',copyCode:'Copy',codeCopied:'Copied!',yourCode:'Your Code',codeShare:'Share this code with friends',friendsTitle:'Friends',addFriend:'Add Friend',enterName:"What's your name?",namePh:'Your nickname...',rescue2ad:'Watch 2 short ads to continue',superBomb:'Super Bomb',tileTheme:'Tile Theme',loginForRank:'Sign in for rankings',friendCodePh:'ABC123',friendCodeLbl:'Your Code',friendCodeSub:'Share this code with friends 👇',rankTitle:'🏆 Rankings',
@@ -1094,7 +1116,7 @@ tut4T:'Fill a Row = Clear! ✨',tut4D:'When a row is fully filled it clears auto
 tut5T:'Combo = Multiplier! 🔥',tut5D:'Clear multiple rows in one move to activate the combo multiplier! ×2 · ×3 · ×5',tut5row1:'1 row',tut5row2:'2 rows',tut5row3:'3+ rows',tut5strat:'Strategy: clear multiple rows in one move',
 tut6T:'Power-Ups 💣',tut6D:'Get help when stuck!<br><strong>💣 Bomb</strong> — clears an area<br><strong>↩️ Undo</strong> — reverses last move',tut6bomb:'Bomb',tut6bombD:'Clears 3×3 area',tut6undo:'Undo',tut6undoD:'Undo last move',tut6rescue:'Rescue',tut6rescueD:'Continue playing',
 ad:'AD',adLoading:'Loading ad…',adWatching:'Watching ad…',adReward:'Preparing your reward',
-setupTitle:'🎮 Complete Profile',setupDesc:'Enter your info to appear in world rankings',setupNickLbl:'Nickname',setupNickPh:'Your name…',setupCountryLbl:'🌍 Your Country',setupStart:'Let\'s Go 🚀',weeklyRanking:'WEEKLY RANKING',weeklyScore:'This Week'},
+setupTitle:'🎮 Complete Profile',setupDesc:'Enter your info to appear in world rankings',setupNickLbl:'Nickname',setupNickPh:'Your name…',setupCountryLbl:'🌍 Your Country',setupStart:'Let\'s Go 🚀',weeklyRanking:'WEEKLY RANKING',weeklyScore:'This Week',continueOrNew:'Continue or New?',newGame:'New Game'},
 JA:{appName:'Tiliq',play:'プレイ',settings:'設定',account:'アカウント',leaderboard:'ランキング',score:'スコア',best:'ベスト',combo:'コンボ',sound:'サウンド',volume:'音量',haptic:'振動',theme:'テーマ',dark:'ダーク',light:'ライト',language:'言語',save:'保存',close:'閉じる',back:'戻る',gameOver:'ゲームオーバー！',playAgain:'もう一度',mainMenu:'メニュー',yourScore:'スコア',worldRank:'世界ランキング',newRecord:'🎉 新記録！',profile:'プロフィール',username:'ユーザー名',highScore:'ベスト',gamesPlayed:'ゲーム数',totalPoints:'合計',worldBoard:'🌍 世界ランキング',yourRank:'順位',yourScoreLb:'スコア',guest:'ゲスト',days:'日',undo:'元に戻す',bomb:'ボム',rescue:'救出',
 m_combos:'コンボ5回',m_rows:'5列消す',m_score:'500点獲得',dailyMissions:'デイリーミッション',
 store:'ストア',continueGame:'続ける',editProfile:'プロフィール編集 →',comboExpired:'コンボ終了',dailyClaimed:'本日獲得済み',dailyRefresh:'明日リセット',dailyCollect:'受け取る！',iapSoon:'近日公開予定！',restored:'購入を復元しました。',copyCode:'コピー',codeCopied:'コピー済み！',yourCode:'あなたのコード',codeShare:'このコードを友達に送ろう',friendsTitle:'フレンド',addFriend:'フレンド追加',enterName:'あなたの名前は？',namePh:'ニックネーム...',rescue2ad:'広告2本見て続ける',superBomb:'スーパーボム',tileTheme:'タイルテーマ',loginForRank:'ランキングにはログインが必要',friendCodePh:'ABC123',friendCodeLbl:'あなたのコード',friendCodeSub:'このコードを友達に送ろう 👇',rankTitle:'🏆 ランキング',
@@ -1105,7 +1127,7 @@ badgeActive:'使用中',badgeOwned:'所持',badgeFree:'無料',btnActive:'✓ �
 vipTitle:'VIPメンバーシップ',vipMonthly:'$8 / 月',vipPerk1:'🚫 完全広告なし',vipPerk2:'🪙 毎週200コイン無料',vipPerk3:'⚡ 毎回2倍XP',vipPerk4:'🏆 ゴールドフレーム+バッジ',vipPerk5:'💣 毎日爆弾1個無料',vipPerk6:'🎨 全テーマ解放',vipStart:'今すぐ始める',noAdsTitle:'🚫 広告なし',noAdsDesc:'一回購入で永久に広告なし',noAdsBuy:'$20 — 広告を削除',restoreBtn:'↺ 購入を復元',
 thClassic:'クラシック',thClassicD:'暖かい地中海',thWooden:'ウッド',thWoodenD:'自然な質感',thMarble:'マーブル',thMarbleD:'エレガントで涼しい',thOcean:'オーシャン',thOceanD:'深い青のトーン',thSunset:'サンセット',thSunsetD:'暖かい炎の色',thForest:'フォレスト',thForestD:'深い緑の安らぎ',thCandy:'キャンディ',thCandyD:'甘いパステルカラー',thGalaxy:'ギャラクシー',thGalaxyD:'宇宙の色',thNeon:'ネオン',thRetro:'レトロ',
 pwBomb3:'爆弾3個',pwBomb3D:'詰まったときに便利',pwBomb10:'爆弾10個',pwBomb10D:'大量在庫 — 25%割引',pwUndo5:'元に戻す5回',pwUndo5D:'間違えた手を消す',pwXp2:'2倍XP (1ゲーム)',pwXp2D:'次のゲームで2倍XP',pwCoins100D:'即時コイン補充',pwCoins300D:'人気パック — 22%ボーナス',pwCoins750D:'大きいパック — 43%ボーナス',
-setupTitle:'🎮 プロフィール設定',setupDesc:'世界ランキングに表示されるために情報を入力してください',setupNickLbl:'ニックネーム',setupNickPh:'あなたの名前…',setupCountryLbl:'🌍 あなたの国',setupStart:'はじめる 🚀',weeklyRanking:'週間ランキング',weeklyScore:'今週'},
+setupTitle:'🎮 プロフィール設定',setupDesc:'世界ランキングに表示されるために情報を入力してください',setupNickLbl:'ニックネーム',setupNickPh:'あなたの名前…',setupCountryLbl:'🌍 あなたの国',setupStart:'はじめる 🚀',weeklyRanking:'週間ランキング',weeklyScore:'今週',continueOrNew:'続ける？新しい？',newGame:'新しいゲーム'},
 KO:{appName:'Tiliq',play:'플레이',settings:'설정',account:'계정',leaderboard:'순위',score:'점수',best:'최고',combo:'콤보',sound:'소리',volume:'볼륨',haptic:'진동',theme:'테마',dark:'어둡게',light:'밝게',language:'언어',save:'저장',close:'닫기',back:'뒤로',gameOver:'게임 종료!',playAgain:'다시 하기',mainMenu:'메인 메뉴',yourScore:'내 점수',worldRank:'세계 순위',newRecord:'🎉 신기록!',profile:'프로필',username:'사용자 이름',highScore:'최고',gamesPlayed:'게임',totalPoints:'총점',worldBoard:'🌍 세계 순위',yourRank:'내 순위',yourScoreLb:'점수',guest:'게스트',days:'일',undo:'실행 취소',bomb:'폭탄',rescue:'구출',
 m_combos:'콤보 5회',m_rows:'줄 5개 지우기',m_score:'500점 획득',dailyMissions:'일일 미션',
 store:'스토어',continueGame:'계속하기',editProfile:'프로필 편집 →',comboExpired:'콤보 종료',dailyClaimed:'오늘 수령 완료',dailyRefresh:'내일 갱신',dailyCollect:'받기!',iapSoon:'곧 출시 예정!',restored:'구매가 복원되었습니다.',copyCode:'복사',codeCopied:'복사됨!',yourCode:'내 코드',codeShare:'이 코드를 친구에게 공유하세요',friendsTitle:'친구',addFriend:'친구 추가',enterName:'당신의 이름은?',namePh:'닉네임...',rescue2ad:'광고 2개 보고 계속하기',superBomb:'슈퍼 폭탄',tileTheme:'타일 테마',loginForRank:'순위를 보려면 로그인하세요',friendCodePh:'ABC123',friendCodeLbl:'내 코드',friendCodeSub:'이 코드를 친구에게 공유하세요 👇',rankTitle:'🏆 순위',
@@ -1116,7 +1138,7 @@ badgeActive:'활성',badgeOwned:'보유',badgeFree:'무료',btnActive:'✓ 활�
 vipTitle:'VIP 멤버십',vipMonthly:'$8 / 월',vipPerk1:'🚫 완전 광고 없음',vipPerk2:'🪙 매주 200 무료 코인',vipPerk3:'⚡ 매 게임 2배 XP',vipPerk4:'🏆 골드 프레임 + 특별 배지',vipPerk5:'💣 매일 무료 폭탄 1개',vipPerk6:'🎨 모든 테마 잠금 해제',vipStart:'지금 시작',noAdsTitle:'🚫 광고 없음',noAdsDesc:'일회성 구매, 영원히 광고 없음',noAdsBuy:'$20 — 광고 제거',restoreBtn:'↺ 구매 복원',
 thClassic:'클래식',thClassicD:'따뜻한 지중해',thWooden:'우드',thWoodenD:'자연 질감',thMarble:'마블',thMarbleD:'우아하고 시원한',thOcean:'오션',thOceanD:'깊은 파란 톤',thSunset:'선셋',thSunsetD:'따뜻한 불꽃 색',thForest:'포레스트',thForestD:'깊은 초록 평온',thCandy:'캔디',thCandyD:'달콤한 파스텔',thGalaxy:'갤럭시',thGalaxyD:'우주 색깔',thNeon:'네온',thRetro:'레트로',
 pwBomb3:'폭탄 3개',pwBomb3D:'막힐 때 유용',pwBomb10:'폭탄 10개',pwBomb10D:'대량 재고 — 25% 할인',pwUndo5:'5번 실행 취소',pwUndo5D:'잘못된 수 지우기',pwXp2:'2배 XP (1게임)',pwXp2D:'다음 게임 XP 두 배',pwCoins100D:'즉시 코인 충전',pwCoins300D:'인기 패키지 — 22% 보너스',pwCoins750D:'대형 패키지 — 43% 보너스',
-setupTitle:'🎮 프로필 설정',setupDesc:'세계 순위에 표시되려면 정보를 입력하세요',setupNickLbl:'닉네임',setupNickPh:'이름을 입력하세요…',setupCountryLbl:'🌍 국가',setupStart:'시작 🚀',weeklyRanking:'주간 순위',weeklyScore:'이번 주'},
+setupTitle:'🎮 프로필 설정',setupDesc:'세계 순위에 표시되려면 정보를 입력하세요',setupNickLbl:'닉네임',setupNickPh:'이름을 입력하세요…',setupCountryLbl:'🌍 국가',setupStart:'시작 🚀',weeklyRanking:'주간 순위',weeklyScore:'이번 주',continueOrNew:'계속 또는 새 게임?',newGame:'새 게임'},
 DE:{appName:'Tiliq',play:'Spielen',settings:'Einstellungen',account:'Konto',leaderboard:'Rangliste',score:'Punkte',best:'Bestw.',combo:'Kombo',sound:'Ton',volume:'Lautstärke',haptic:'Vibration',theme:'Design',dark:'Dunkel',light:'Hell',language:'Sprache',save:'Speichern',close:'Schließen',back:'Zurück',gameOver:'Spiel Vorbei!',playAgain:'Nochmal',mainMenu:'Hauptmenü',yourScore:'Dein Score',worldRank:'Weltrangliste',newRecord:'🎉 Neuer Rekord!',profile:'Profil',username:'Benutzername',highScore:'Best',gamesPlayed:'Spiele',totalPoints:'Gesamt',worldBoard:'🌍 Weltrangliste',yourRank:'Dein Rang',yourScoreLb:'Punkte',guest:'Gast',days:'Tage',undo:'Rückgängig',bomb:'Bombe',rescue:'Rettung',
 m_combos:'5 Kombos',m_rows:'5 Reihen',m_score:'500 Punkte',dailyMissions:'Tagesaufgaben',
 store:'Shop',continueGame:'Weiterspielen',editProfile:'Profil bearbeiten →',comboExpired:'Kombo vorbei',dailyClaimed:'HEUTE ERHALTEN',dailyRefresh:'Morgen neu',dailyCollect:'Sammeln!',iapSoon:'Kauf bald verfügbar!',restored:'Käufe wiederhergestellt.',copyCode:'Kopieren',codeCopied:'Kopiert!',yourCode:'Dein Code',codeShare:'Teile diesen Code mit Freunden',friendsTitle:'Freunde',addFriend:'Freund hinzufügen',enterName:'Wie heißt du?',namePh:'Dein Spitzname...',rescue2ad:'2 kurze Werbungen ansehen',superBomb:'Superbombe',tileTheme:'Kachel-Design',loginForRank:'Anmelden für Rangliste',friendCodePh:'ABC123',friendCodeLbl:'Dein Code',friendCodeSub:'Teile diesen Code mit Freunden 👇',rankTitle:'🏆 Rangliste',
@@ -1127,7 +1149,7 @@ badgeActive:'AKTIV',badgeOwned:'BESESSEN',badgeFree:'KOSTENLOS',btnActive:'✓ A
 vipTitle:'VIP-Mitgliedschaft',vipMonthly:'8 $ / Monat',vipPerk1:'🚫 Komplett werbefrei',vipPerk2:'🪙 200 Münzen jede Woche',vipPerk3:'⚡ 2× XP pro Spiel',vipPerk4:'🏆 Goldrahmen + Abzeichen',vipPerk5:'💣 1 Bombe täglich',vipPerk6:'🎨 Alle Designs freigeschaltet',vipStart:'Jetzt starten',noAdsTitle:'🚫 Werbefrei',noAdsDesc:'Einmaliger Kauf, keine Werbung mehr',noAdsBuy:'20 $ — Werbung entfernen',restoreBtn:'↺ Käufe wiederherstellen',
 thClassic:'Klassisch',thClassicD:'Warmes Mittelmeer',thWooden:'Holz',thWoodenD:'Natürliche Textur',thMarble:'Marmor',thMarbleD:'Elegant und kühl',thOcean:'Ozean',thOceanD:'Tiefblaue Töne',thSunset:'Sonnenuntergang',thSunsetD:'Warme Feuerfarben',thForest:'Wald',thForestD:'Tiefe grüne Ruhe',thCandy:'Süßigkeit',thCandyD:'Süße Pastellfarben',thGalaxy:'Galaxie',thGalaxyD:'Kosmische Farben',thNeon:'Neon',thRetro:'Retro',
 pwBomb3:'3 Bomben',pwBomb3D:'Nützlich bei Blockaden',pwBomb10:'10 Bomben',pwBomb10D:'Großvorrat — 25% Rabatt',pwUndo5:'5 Rückgängig',pwUndo5D:'Falsche Züge löschen',pwXp2:'2× XP (1 Spiel)',pwXp2D:'Doppelte XP nächstes Spiel',pwCoins100D:'Sofortige Münzen',pwCoins300D:'Beliebtes Paket — 22% Bonus',pwCoins750D:'Großes Paket — 43% Bonus',
-setupTitle:'🎮 Profil einrichten',setupDesc:'Gib deine Infos ein, um in der Weltrangliste zu erscheinen',setupNickLbl:'Spitzname',setupNickPh:'Dein Name…',setupCountryLbl:'🌍 Dein Land',setupStart:'Los geht\'s 🚀',weeklyRanking:'WOCHENRANGLISTE',weeklyScore:'Diese Woche'},
+setupTitle:'🎮 Profil einrichten',setupDesc:'Gib deine Infos ein, um in der Weltrangliste zu erscheinen',setupNickLbl:'Spitzname',setupNickPh:'Dein Name…',setupCountryLbl:'🌍 Dein Land',setupStart:'Los geht\'s 🚀',weeklyRanking:'WOCHENRANGLISTE',weeklyScore:'Diese Woche',continueOrNew:'Weitermachen oder neu?',newGame:'Neues Spiel'},
 FR:{appName:'Tiliq',play:'Jouer',settings:'Paramètres',account:'Compte',leaderboard:'Classement',score:'Score',best:'Meilleur',combo:'Combo',sound:'Son',volume:'Volume',haptic:'Vibration',theme:'Thème',dark:'Sombre',light:'Clair',language:'Langue',save:'Sauvegarder',close:'Fermer',back:'Retour',gameOver:'Partie Terminée !',playAgain:'Rejouer',mainMenu:'Menu Principal',yourScore:'Ton Score',worldRank:'Classement Mondial',newRecord:'🎉 Nouveau Record !',profile:'Profil',username:"Nom d'utilisateur",highScore:'Meilleur',gamesPlayed:'Parties',totalPoints:'Total',worldBoard:'🌍 Classement Mondial',yourRank:'Ton Rang',yourScoreLb:'Score',guest:'Invité',days:'Jours',undo:'Annuler',bomb:'Bombe',rescue:'Sauvetage',
 m_combos:'5 Combos',m_rows:'5 Lignes',m_score:'500 Points',dailyMissions:'Missions du Jour',
 store:'Boutique',continueGame:'Continuer',editProfile:'Modifier le profil →',comboExpired:'Combo terminé',dailyClaimed:"RÉCLAMÉ AUJOURD'HUI",dailyRefresh:'Renouvellement demain',dailyCollect:'Récupérer !',iapSoon:'Achat bientôt disponible !',restored:'Achats restaurés.',copyCode:'Copier',codeCopied:'Copié !',yourCode:'Ton Code',codeShare:'Partage ce code avec tes amis',friendsTitle:'Amis',addFriend:'Ajouter un ami',enterName:'Quel est ton nom ?',namePh:'Ton pseudo...',rescue2ad:'Regarder 2 pubs pour continuer',superBomb:'Super Bombe',tileTheme:'Thème de tuiles',loginForRank:'Connecte-toi pour le classement',friendCodePh:'ABC123',friendCodeLbl:'Ton Code',friendCodeSub:'Partage ce code avec tes amis 👇',rankTitle:'🏆 Classement',
@@ -1138,7 +1160,7 @@ badgeActive:'ACTIF',badgeOwned:'ACQUIS',badgeFree:'GRATUIT',btnActive:'✓ Actif
 vipTitle:'Abonnement VIP',vipMonthly:'8 $ / mois',vipPerk1:'🚫 Sans pub à 100 %',vipPerk2:'🪙 200 coins gratuits par semaine',vipPerk3:'⚡ 2× XP par partie',vipPerk4:'🏆 Cadre doré + badge spécial',vipPerk5:'💣 1 bombe gratuite par jour',vipPerk6:'🎨 Tous les thèmes débloqués',vipStart:'Commencer',noAdsTitle:'🚫 Sans publicité',noAdsDesc:'Achat unique, plus jamais de pub',noAdsBuy:'20 $ — Supprimer les pubs',restoreBtn:'↺ Restaurer les achats',
 thClassic:'Classique',thClassicD:'Méditerranée chaleureuse',thWooden:'Bois',thWoodenD:'Texture naturelle',thMarble:'Marbre',thMarbleD:'Élégant et frais',thOcean:'Océan',thOceanD:'Tons bleus profonds',thSunset:'Coucher de soleil',thSunsetD:'Couleurs de feu',thForest:'Forêt',thForestD:'Sérénité verte',thCandy:'Bonbon',thCandyD:'Couleurs pastel douces',thGalaxy:'Galaxie',thGalaxyD:'Couleurs cosmiques',thNeon:'Néon',thRetro:'Rétro',
 pwBomb3:'3 Bombes',pwBomb3D:'Utile en cas de blocage',pwBomb10:'10 Bombes',pwBomb10D:'Grand stock — 25% remise',pwUndo5:'5 Annulations',pwUndo5D:'Effacer les mauvais coups',pwXp2:'2× XP (1 Partie)',pwXp2D:'Double XP prochain jeu',pwCoins100D:'Recharge instantanée',pwCoins300D:'Pack populaire — 22% bonus',pwCoins750D:'Grand pack — 43% bonus',
-setupTitle:'🎮 Configurer le profil',setupDesc:'Entre tes infos pour apparaître dans le classement mondial',setupNickLbl:'Pseudo',setupNickPh:'Ton nom…',setupCountryLbl:'🌍 Ton Pays',setupStart:'C\'est parti 🚀',weeklyRanking:'CLASSEMENT HEBDO',weeklyScore:'Cette Semaine'},
+setupTitle:'🎮 Configurer le profil',setupDesc:'Entre tes infos pour apparaître dans le classement mondial',setupNickLbl:'Pseudo',setupNickPh:'Ton nom…',setupCountryLbl:'🌍 Ton Pays',setupStart:'C\'est parti 🚀',weeklyRanking:'CLASSEMENT HEBDO',weeklyScore:'Cette Semaine',continueOrNew:'Continuer ou nouveau?',newGame:'Nouvelle partie'},
 ES:{appName:'Tiliq',play:'Jugar',settings:'Ajustes',account:'Cuenta',leaderboard:'Clasificación',score:'Puntos',best:'Mejor',combo:'Combo',sound:'Sonido',volume:'Volumen',haptic:'Vibración',theme:'Tema',dark:'Oscuro',light:'Claro',language:'Idioma',save:'Guardar',close:'Cerrar',back:'Volver',gameOver:'¡Juego Terminado!',playAgain:'Otra Vez',mainMenu:'Menú Principal',yourScore:'Tu Puntuación',worldRank:'Clasificación Mundial',newRecord:'🎉 ¡Nuevo Récord!',profile:'Perfil',username:'Nombre de usuario',highScore:'Mejor',gamesPlayed:'Partidas',totalPoints:'Total',worldBoard:'🌍 Clasificación Mundial',yourRank:'Tu Posición',yourScoreLb:'Puntos',guest:'Invitado',days:'Días',undo:'Deshacer',bomb:'Bomba',rescue:'Rescate',
 m_combos:'5 Combos',m_rows:'5 Filas',m_score:'500 Puntos',dailyMissions:'Misiones Diarias',
 store:'Tienda',continueGame:'Continuar',editProfile:'Editar perfil →',comboExpired:'Combo terminado',dailyClaimed:'RECLAMADO HOY',dailyRefresh:'Se renueva mañana',dailyCollect:'¡Recoger!',iapSoon:'¡Compra próximamente!',restored:'Compras restauradas.',copyCode:'Copiar',codeCopied:'¡Copiado!',yourCode:'Tu Código',codeShare:'Comparte este código con tus amigos',friendsTitle:'Amigos',addFriend:'Añadir amigo',enterName:'¿Cuál es tu nombre?',namePh:'Tu apodo...',rescue2ad:'Ver 2 anuncios para continuar',superBomb:'Super Bomba',tileTheme:'Tema de mosaico',loginForRank:'Inicia sesión para el ranking',friendCodePh:'ABC123',friendCodeLbl:'Tu Código',friendCodeSub:'Comparte este código con tus amigos 👇',rankTitle:'🏆 Clasificación',
@@ -1149,7 +1171,7 @@ badgeActive:'ACTIVO',badgeOwned:'TUYO',badgeFree:'GRATIS',btnActive:'✓ Activo'
 vipTitle:'Membresía VIP',vipMonthly:'$8 / mes',vipPerk1:'🚫 Sin anuncios',vipPerk2:'🪙 200 monedas gratis cada semana',vipPerk3:'⚡ 2× XP por partida',vipPerk4:'🏆 Marco dorado + insignia',vipPerk5:'💣 1 bomba gratis al día',vipPerk6:'🎨 Todos los temas disponibles',vipStart:'Empezar ahora',noAdsTitle:'🚫 Sin anuncios',noAdsDesc:'Compra única, sin anuncios para siempre',noAdsBuy:'$20 — Quitar anuncios',restoreBtn:'↺ Restaurar compras',
 thClassic:'Clásico',thClassicD:'Mediterráneo cálido',thWooden:'Madera',thWoodenD:'Textura natural',thMarble:'Mármol',thMarbleD:'Elegante y fresco',thOcean:'Océano',thOceanD:'Tonos azul profundo',thSunset:'Atardecer',thSunsetD:'Colores de fuego',thForest:'Bosque',thForestD:'Serenidad verde',thCandy:'Caramelo',thCandyD:'Colores pastel dulces',thGalaxy:'Galaxia',thGalaxyD:'Colores cósmicos',thNeon:'Neón',thRetro:'Retro',
 pwBomb3:'3 Bombas',pwBomb3D:'Útil cuando te atascas',pwBomb10:'10 Bombas',pwBomb10D:'Gran stock — 25% descuento',pwUndo5:'5 Deshacer',pwUndo5D:'Borra movimientos erróneos',pwXp2:'2× XP (1 Partida)',pwXp2D:'Doble XP próximo juego',pwCoins100D:'Recarga instantánea',pwCoins300D:'Paquete popular — 22% bonus',pwCoins750D:'Gran paquete — 43% bonus',
-setupTitle:'🎮 Configurar perfil',setupDesc:'Ingresa tu información para aparecer en el ranking mundial',setupNickLbl:'Apodo',setupNickPh:'Tu nombre…',setupCountryLbl:'🌍 Tu País',setupStart:'¡Empezar 🚀',weeklyRanking:'RANKING SEMANAL',weeklyScore:'Esta Semana'},
+setupTitle:'🎮 Configurar perfil',setupDesc:'Ingresa tu información para aparecer en el ranking mundial',setupNickLbl:'Apodo',setupNickPh:'Tu nombre…',setupCountryLbl:'🌍 Tu País',setupStart:'¡Empezar 🚀',weeklyRanking:'RANKING SEMANAL',weeklyScore:'Esta Semana',continueOrNew:'¿Continuar o nuevo?',newGame:'Nueva partida'},
 IT:{appName:'Tiliq',play:'Gioca',settings:'Impostazioni',account:'Account',leaderboard:'Classifica',score:'Punteggio',best:'Migliore',combo:'Combo',sound:'Suono',volume:'Volume',haptic:'Vibrazione',theme:'Tema',dark:'Scuro',light:'Chiaro',language:'Lingua',save:'Salva',close:'Chiudi',back:'Indietro',gameOver:'Fine Partita!',playAgain:'Rigioca',mainMenu:'Menu Principale',yourScore:'Il tuo Punteggio',worldRank:'Classifica Mondiale',newRecord:'🎉 Nuovo Record!',profile:'Profilo',username:'Nome utente',highScore:'Migliore',gamesPlayed:'Partite',totalPoints:'Totale',worldBoard:'🌍 Classifica Mondiale',yourRank:'Tua Posizione',yourScoreLb:'Punteggio',guest:'Ospite',days:'Giorni',undo:'Annulla',bomb:'Bomba',rescue:'Salvataggio',
 m_combos:'5 Combo',m_rows:'5 Righe',m_score:'500 Punti',dailyMissions:'Missioni Giornaliere',
 store:'Negozio',continueGame:'Continua',editProfile:'Modifica profilo →',comboExpired:'Combo terminata',dailyClaimed:'RISCOSSO OGGI',dailyRefresh:'Si rinnova domani',dailyCollect:'Raccogli!',iapSoon:'Acquisto prossimamente!',restored:'Acquisti ripristinati.',copyCode:'Copia',codeCopied:'Copiato!',yourCode:'Il tuo Codice',codeShare:'Condividi questo codice con gli amici',friendsTitle:'Amici',addFriend:'Aggiungi amico',enterName:'Qual è il tuo nome?',namePh:'Il tuo soprannome...',rescue2ad:'Guarda 2 annunci per continuare',superBomb:'Super Bomba',tileTheme:'Tema tessere',loginForRank:'Accedi per la classifica',friendCodePh:'ABC123',friendCodeLbl:'Il tuo Codice',friendCodeSub:'Condividi questo codice con gli amici 👇',rankTitle:'🏆 Classifica',
@@ -1160,7 +1182,7 @@ badgeActive:'ATTIVO',badgeOwned:'POSSEDUTO',badgeFree:'GRATUITO',btnActive:'✓ 
 vipTitle:'Abbonamento VIP',vipMonthly:'$8 / mese',vipPerk1:'🚫 Senza pubblicità',vipPerk2:'🪙 200 monete gratuite a settimana',vipPerk3:'⚡ 2× XP per partita',vipPerk4:'🏆 Cornice dorata + badge',vipPerk5:'💣 1 bomba gratuita al giorno',vipPerk6:'🎨 Tutti i temi sbloccati',vipStart:'Inizia ora',noAdsTitle:'🚫 Senza pubblicità',noAdsDesc:'Acquisto unico, niente più pubblicità',noAdsBuy:'$20 — Rimuovi pubblicità',restoreBtn:'↺ Ripristina acquisti',
 thClassic:'Classico',thClassicD:'Mediterraneo caldo',thWooden:'Legno',thWoodenD:'Texture naturale',thMarble:'Marmo',thMarbleD:'Elegante e fresco',thOcean:'Oceano',thOceanD:'Toni blu profondi',thSunset:'Tramonto',thSunsetD:'Colori di fuoco',thForest:'Foresta',thForestD:'Serenità verde',thCandy:'Caramella',thCandyD:'Colori pastello dolci',thGalaxy:'Galassia',thGalaxyD:'Colori cosmici',thNeon:'Neon',thRetro:'Retro',
 pwBomb3:'3 Bombe',pwBomb3D:'Utile quando sei bloccato',pwBomb10:'10 Bombe',pwBomb10D:'Grande scorta — 25% sconto',pwUndo5:'5 Annulla',pwUndo5D:'Cancella mosse sbagliate',pwXp2:'2× XP (1 Partita)',pwXp2D:'Doppio XP prossimo gioco',pwCoins100D:'Ricarica istantanea',pwCoins300D:'Pacchetto popolare — 22% bonus',pwCoins750D:'Grande pacchetto — 43% bonus',
-setupTitle:'🎮 Completa il profilo',setupDesc:'Inserisci le tue info per apparire nella classifica mondiale',setupNickLbl:'Soprannome',setupNickPh:'Il tuo nome…',setupCountryLbl:'🌍 Il tuo Paese',setupStart:'Iniziamo 🚀',weeklyRanking:'CLASSIFICA SETTIMANALE',weeklyScore:'Questa Settimana'},
+setupTitle:'🎮 Completa il profilo',setupDesc:'Inserisci le tue info per apparire nella classifica mondiale',setupNickLbl:'Soprannome',setupNickPh:'Il tuo nome…',setupCountryLbl:'🌍 Il tuo Paese',setupStart:'Iniziamo 🚀',weeklyRanking:'CLASSIFICA SETTIMANALE',weeklyScore:'Questa Settimana',continueOrNew:'Continuare o nuovo?',newGame:'Nuova partita'},
 PT:{appName:'Tiliq',play:'Jogar',settings:'Configurações',account:'Conta',leaderboard:'Classificação',score:'Pontos',best:'Melhor',combo:'Combo',sound:'Som',volume:'Volume',haptic:'Vibração',theme:'Tema',dark:'Escuro',light:'Claro',language:'Idioma',save:'Salvar',close:'Fechar',back:'Voltar',gameOver:'Fim de Jogo!',playAgain:'Jogar Novamente',mainMenu:'Menu Principal',yourScore:'Sua Pontuação',worldRank:'Classificação Mundial',newRecord:'🎉 Novo Recorde!',profile:'Perfil',username:'Nome de usuário',highScore:'Melhor',gamesPlayed:'Jogos',totalPoints:'Total',worldBoard:'🌍 Classificação Mundial',yourRank:'Sua Posição',yourScoreLb:'Pontuação',guest:'Convidado',days:'Dias',undo:'Desfazer',bomb:'Bomba',rescue:'Resgate',
 m_combos:'5 Combos',m_rows:'5 Linhas',m_score:'500 Pontos',dailyMissions:'Missões Diárias',
 store:'Loja',continueGame:'Continuar',editProfile:'Editar perfil →',comboExpired:'Combo encerrado',dailyClaimed:'COLETADO HOJE',dailyRefresh:'Renova amanhã',dailyCollect:'Coletar!',iapSoon:'Compra em breve!',restored:'Compras restauradas.',copyCode:'Copiar',codeCopied:'Copiado!',yourCode:'Seu Código',codeShare:'Compartilhe este código com seus amigos',friendsTitle:'Amigos',addFriend:'Adicionar amigo',enterName:'Qual é o seu nome?',namePh:'Seu apelido...',rescue2ad:'Assistir 2 anúncios para continuar',superBomb:'Super Bomba',tileTheme:'Tema de azulejo',loginForRank:'Entre para ver o ranking',friendCodePh:'ABC123',friendCodeLbl:'Seu Código',friendCodeSub:'Compartilhe este código com seus amigos 👇',rankTitle:'🏆 Classificação',
@@ -1171,7 +1193,7 @@ badgeActive:'ATIVO',badgeOwned:'POSSUI',badgeFree:'GRÁTIS',btnActive:'✓ Ativo
 vipTitle:'Assinatura VIP',vipMonthly:'$8 / mês',vipPerk1:'🚫 100% sem anúncios',vipPerk2:'🪙 200 moedas grátis por semana',vipPerk3:'⚡ 2× XP por jogo',vipPerk4:'🏆 Moldura dourada + insígnia',vipPerk5:'💣 1 bomba grátis por dia',vipPerk6:'🎨 Todos os temas desbloqueados',vipStart:'Começar agora',noAdsTitle:'🚫 Sem anúncios',noAdsDesc:'Compra única, sem anúncios para sempre',noAdsBuy:'$20 — Remover anúncios',restoreBtn:'↺ Restaurar compras',
 thClassic:'Clássico',thClassicD:'Mediterrâneo quente',thWooden:'Madeira',thWoodenD:'Textura natural',thMarble:'Mármore',thMarbleD:'Elegante e fresco',thOcean:'Oceano',thOceanD:'Tons de azul profundo',thSunset:'Pôr do sol',thSunsetD:'Cores de fogo',thForest:'Floresta',thForestD:'Serenidade verde',thCandy:'Doce',thCandyD:'Cores pastel doces',thGalaxy:'Galáxia',thGalaxyD:'Cores cósmicas',thNeon:'Neon',thRetro:'Retrô',
 pwBomb3:'3 Bombas',pwBomb3D:'Útil quando travado',pwBomb10:'10 Bombas',pwBomb10D:'Grande estoque — 25% desconto',pwUndo5:'5 Desfazer',pwUndo5D:'Apagar movimentos errados',pwXp2:'2× XP (1 Jogo)',pwXp2D:'XP duplo próximo jogo',pwCoins100D:'Recarga instantânea',pwCoins300D:'Pacote popular — 22% bônus',pwCoins750D:'Pacote grande — 43% bônus',
-setupTitle:'🎮 Configurar perfil',setupDesc:'Insira suas informações para aparecer no ranking mundial',setupNickLbl:'Apelido',setupNickPh:'Seu nome…',setupCountryLbl:'🌍 Seu País',setupStart:'Vamos lá 🚀',weeklyRanking:'RANKING SEMANAL',weeklyScore:'Esta Semana'},
+setupTitle:'🎮 Configurar perfil',setupDesc:'Insira suas informações para aparecer no ranking mundial',setupNickLbl:'Apelido',setupNickPh:'Seu nome…',setupCountryLbl:'🌍 Seu País',setupStart:'Vamos lá 🚀',weeklyRanking:'RANKING SEMANAL',weeklyScore:'Esta Semana',continueOrNew:'Continuar ou novo?',newGame:'Novo jogo'},
 RU:{appName:'Tiliq',play:'Играть',settings:'Настройки',account:'Аккаунт',leaderboard:'Рейтинг',score:'Очки',best:'Лучший',combo:'Комбо',sound:'Звук',volume:'Громкость',haptic:'Вибрация',theme:'Тема',dark:'Тёмный',light:'Светлый',language:'Язык',save:'Сохранить',close:'Закрыть',back:'Назад',gameOver:'Игра Окончена!',playAgain:'Снова',mainMenu:'Главное меню',yourScore:'Твой счёт',worldRank:'Мировой рейтинг',newRecord:'🎉 Новый рекорд!',profile:'Профиль',username:'Имя пользователя',highScore:'Лучший',gamesPlayed:'Игры',totalPoints:'Итого',worldBoard:'🌍 Мировой рейтинг',yourRank:'Твой ранг',yourScoreLb:'Очки',guest:'Гость',days:'Дней',undo:'Отмена',bomb:'Бомба',rescue:'Спасение',
 m_combos:'5 комбо',m_rows:'5 рядов',m_score:'500 очков',dailyMissions:'Ежедневные задания',
 store:'Магазин',continueGame:'Продолжить',editProfile:'Изменить профиль →',comboExpired:'Комбо закончилось',dailyClaimed:'УЖЕ ПОЛУЧЕНО',dailyRefresh:'Обновится завтра',dailyCollect:'Получить!',iapSoon:'Покупки скоро будут доступны!',restored:'Покупки восстановлены.',copyCode:'Копировать',codeCopied:'Скопировано!',yourCode:'Ваш код',codeShare:'Поделитесь кодом с друзьями',friendsTitle:'Друзья',addFriend:'Добавить друга',enterName:'Как тебя зовут?',namePh:'Твой никнейм...',rescue2ad:'Смотреть 2 рекламы для продолжения',superBomb:'Супер бомба',tileTheme:'Тема плиток',loginForRank:'Войдите для рейтинга',friendCodePh:'ABC123',friendCodeLbl:'Ваш код',friendCodeSub:'Поделитесь кодом с друзьями 👇',rankTitle:'🏆 Рейтинг',
@@ -1182,7 +1204,7 @@ badgeActive:'АКТИВНЫЙ',badgeOwned:'КУПЛЕНО',badgeFree:'БЕСПЛ
 vipTitle:'VIP-подписка',vipMonthly:'$8 / месяц',vipPerk1:'🚫 Полностью без рекламы',vipPerk2:'🪙 200 монет каждую неделю',vipPerk3:'⚡ 2× XP за каждую игру',vipPerk4:'🏆 Золотая рамка + значок',vipPerk5:'💣 1 бесплатная бомба в день',vipPerk6:'🎨 Все темы открыты',vipStart:'Начать',noAdsTitle:'🚫 Без рекламы',noAdsDesc:'Разовая покупка, больше никакой рекламы',noAdsBuy:'$20 — Убрать рекламу',restoreBtn:'↺ Восстановить покупки',
 thClassic:'Классика',thClassicD:'Тёплое Средиземноморье',thWooden:'Дерево',thWoodenD:'Природная текстура',thMarble:'Мрамор',thMarbleD:'Элегантный и свежий',thOcean:'Океан',thOceanD:'Глубокие синие тона',thSunset:'Закат',thSunsetD:'Тёплые огненные цвета',thForest:'Лес',thForestD:'Зелёное спокойствие',thCandy:'Конфета',thCandyD:'Нежные пастельные цвета',thGalaxy:'Галактика',thGalaxyD:'Космические цвета',thNeon:'Неон',thRetro:'Ретро',
 pwBomb3:'3 Бомбы',pwBomb3D:'Пригодится при блокировке',pwBomb10:'10 Бомб',pwBomb10D:'Большой запас — скидка 25%',pwUndo5:'5 Отмен',pwUndo5D:'Отменить неверные ходы',pwXp2:'2× XP (1 Игра)',pwXp2D:'Двойной XP в следующей игре',pwCoins100D:'Мгновенное пополнение',pwCoins300D:'Популярный пакет — бонус 22%',pwCoins750D:'Большой пакет — бонус 43%',
-setupTitle:'🎮 Настройка профиля',setupDesc:'Введи данные для отображения в мировом рейтинге',setupNickLbl:'Никнейм',setupNickPh:'Твоё имя…',setupCountryLbl:'🌍 Твоя страна',setupStart:'Начать 🚀',weeklyRanking:'НЕДЕЛЬНЫЙ РЕЙТИНГ',weeklyScore:'Эта неделя'},
+setupTitle:'🎮 Настройка профиля',setupDesc:'Введи данные для отображения в мировом рейтинге',setupNickLbl:'Никнейм',setupNickPh:'Твоё имя…',setupCountryLbl:'🌍 Твоя страна',setupStart:'Начать 🚀',weeklyRanking:'НЕДЕЛЬНЫЙ РЕЙТИНГ',weeklyScore:'Эта неделя',continueOrNew:'Продолжить или новая?',newGame:'Новая игра'},
 HI:{appName:'Tiliq',play:'खेलें',settings:'सेटिंग्स',account:'खाता',leaderboard:'रैंकिंग',score:'स्कोर',best:'सर्वश्रेष्ठ',combo:'कॉम्बो',sound:'आवाज़',volume:'वॉल्यूम',haptic:'कंपन',theme:'थीम',dark:'डार्क',light:'लाइट',language:'भाषा',save:'सेव',close:'बंद',back:'वापस',gameOver:'गेम ओवर!',playAgain:'फिर खेलें',mainMenu:'मुख्य मेनू',yourScore:'आपका स्कोर',worldRank:'विश्व रैंकिंग',newRecord:'🎉 नया रिकॉर्ड!',profile:'प्रोफाइल',username:'उपयोगकर्ता नाम',highScore:'सर्वश्रेष्ठ',gamesPlayed:'खेल',totalPoints:'कुल',worldBoard:'🌍 विश्व रैंकिंग',yourRank:'आपकी रैंक',yourScoreLb:'स्कोर',guest:'अतिथि',days:'दिन',undo:'पूर्ववत',bomb:'बम',rescue:'बचाव',
 m_combos:'5 कॉम्बो',m_rows:'5 पंक्तियाँ',m_score:'500 अंक',dailyMissions:'दैनिक मिशन',
 store:'स्टोर',continueGame:'जारी रखें',editProfile:'प्रोफाइल संपादित करें →',comboExpired:'कॉम्बो समाप्त',dailyClaimed:'आज प्राप्त किया',dailyRefresh:'कल रीसेट होगा',dailyCollect:'एकत्र करें!',iapSoon:'खरीदारी जल्द आ रही है!',restored:'खरीदारी पुनर्स्थापित।',copyCode:'कॉपी',codeCopied:'कॉपी हो गया!',yourCode:'आपका कोड',codeShare:'यह कोड मित्रों के साथ साझा करें',friendsTitle:'मित्र',addFriend:'मित्र जोड़ें',enterName:'आपका नाम क्या है?',namePh:'आपका उपनाम...',rescue2ad:'जारी रखने के लिए 2 विज्ञापन देखें',superBomb:'सुपर बम',tileTheme:'टाइल थीम',loginForRank:'रैंकिंग के लिए लॉगिन करें',friendCodePh:'ABC123',friendCodeLbl:'आपका कोड',friendCodeSub:'यह कोड मित्रों के साथ साझा करें 👇',rankTitle:'🏆 रैंकिंग',
@@ -1193,7 +1215,7 @@ badgeActive:'सक्रिय',badgeOwned:'आपका',badgeFree:'मुफ�
 vipTitle:'VIP सदस्यता',vipMonthly:'$8 / माह',vipPerk1:'🚫 बिल्कुल विज्ञापन-मुक्त',vipPerk2:'🪙 हर हफ्ते 200 मुफ्त कॉइन',vipPerk3:'⚡ हर गेम 2× XP',vipPerk4:'🏆 गोल्ड फ्रेम + विशेष बैज',vipPerk5:'💣 हर दिन 1 मुफ्त बम',vipPerk6:'🎨 सभी थीम अनलॉक',vipStart:'अभी शुरू करें',noAdsTitle:'🚫 विज्ञापन-मुक्त',noAdsDesc:'एक बार खरीदें, हमेशा विज्ञापन-मुक्त',noAdsBuy:'$20 — विज्ञापन हटाएं',restoreBtn:'↺ खरीदारी पुनर्स्थापित करें',
 thClassic:'क्लासिक',thClassicD:'गर्म भूमध्यसागरीय',thWooden:'लकड़ी',thWoodenD:'प्राकृतिक बनावट',thMarble:'संगमरमर',thMarbleD:'शानदार और शांत',thOcean:'सागर',thOceanD:'गहरे नीले स्वर',thSunset:'सूर्यास्त',thSunsetD:'गर्म अग्नि रंग',thForest:'वन',thForestD:'गहरी हरी शांति',thCandy:'कैंडी',thCandyD:'मीठे पेस्टल रंग',thGalaxy:'आकाशगंगा',thGalaxyD:'ब्रह्मांडीय रंग',thNeon:'नियॉन',thRetro:'रेट्रो',
 pwBomb3:'3 बम',pwBomb3D:'अटकने पर काम आता है',pwBomb10:'10 बम',pwBomb10D:'बड़ा स्टॉक — 25% छूट',pwUndo5:'5 पूर्ववत',pwUndo5D:'गलत चालें हटाएं',pwXp2:'2× XP (1 खेल)',pwXp2D:'अगले गेम में दोगुना XP',pwCoins100D:'तुरंत कॉइन टॉप-अप',pwCoins300D:'लोकप्रिय पैक — 22% बोनस',pwCoins750D:'बड़ा पैक — 43% बोनस',
-setupTitle:'🎮 प्रोफ़ाइल सेटअप',setupDesc:'विश्व रैंकिंग में दिखने के लिए अपनी जानकारी दर्ज करें',setupNickLbl:'उपनाम',setupNickPh:'आपका नाम…',setupCountryLbl:'🌍 आपका देश',setupStart:'शुरू करें 🚀',weeklyRanking:'साप्ताहिक रैंकिंग',weeklyScore:'इस सप्ताह'},
+setupTitle:'🎮 प्रोफ़ाइल सेटअप',setupDesc:'विश्व रैंकिंग में दिखने के लिए अपनी जानकारी दर्ज करें',setupNickLbl:'उपनाम',setupNickPh:'आपका नाम…',setupCountryLbl:'🌍 आपका देश',setupStart:'शुरू करें 🚀',weeklyRanking:'साप्ताहिक रैंकिंग',weeklyScore:'इस सप्ताह',continueOrNew:'जारी रखें या नया?',newGame:'नया खेल'},
 NL:{appName:'Tiliq',play:'Spelen',settings:'Instellingen',account:'Account',leaderboard:'Ranglijst',score:'Score',best:'Beste',combo:'Combo',sound:'Geluid',volume:'Volume',haptic:'Trillen',theme:'Thema',dark:'Donker',light:'Licht',language:'Taal',save:'Opslaan',close:'Sluiten',back:'Terug',gameOver:'Game Over!',playAgain:'Opnieuw',mainMenu:'Hoofdmenu',yourScore:'Jouw Score',worldRank:'Wereldranglijst',newRecord:'🎉 Nieuw Record!',profile:'Profiel',username:'Gebruikersnaam',highScore:'Beste',gamesPlayed:'Spellen',totalPoints:'Totaal',worldBoard:'🌍 Wereldranglijst',yourRank:'Jouw Rang',yourScoreLb:'Score',guest:'Gast',days:'Dagen',undo:'Ongedaan',bomb:'Bom',rescue:'Redding',
 m_combos:'5 Combo\'s',m_rows:'5 Rijen',m_score:'500 Punten',dailyMissions:'Dagelijkse Missies',
 store:'Winkel',continueGame:'Doorgaan',editProfile:'Profiel bewerken →',comboExpired:'Combo voorbij',dailyClaimed:'VANDAAG VERDIEND',dailyRefresh:'Morgen vernieuwd',dailyCollect:'Verzamelen!',iapSoon:'Aankoop binnenkort beschikbaar!',restored:'Aankopen hersteld.',copyCode:'Kopiëren',codeCopied:'Gekopieerd!',yourCode:'Jouw Code',codeShare:'Deel deze code met vrienden',friendsTitle:'Vrienden',addFriend:'Vriend toevoegen',enterName:'Wat is jouw naam?',namePh:'Jouw bijnaam...',rescue2ad:'2 advertenties bekijken om door te gaan',superBomb:'Super Bom',tileTheme:'Tegel Thema',loginForRank:'Log in voor ranglijst',friendCodePh:'ABC123',friendCodeLbl:'Jouw Code',friendCodeSub:'Deel deze code met vrienden 👇',rankTitle:'🏆 Ranglijst',
@@ -1204,7 +1226,7 @@ badgeActive:'ACTIEF',badgeOwned:'BEZIT',badgeFree:'GRATIS',btnActive:'✓ Actief
 vipTitle:'VIP-lidmaatschap',vipMonthly:'$8 / maand',vipPerk1:'🚫 100% advertentievrij',vipPerk2:'🪙 200 gratis munten per week',vipPerk3:'⚡ 2× XP per spel',vipPerk4:'🏆 Gouden rand + badge',vipPerk5:'💣 1 gratis bom per dag',vipPerk6:'🎨 Alle thema\'s ontgrendeld',vipStart:'Nu beginnen',noAdsTitle:'🚫 Advertentievrij',noAdsDesc:'Eenmalige aankoop, nooit meer advertenties',noAdsBuy:'$20 — Advertenties verwijderen',restoreBtn:'↺ Aankopen herstellen',
 thClassic:'Klassiek',thClassicD:'Warm Middellandse Zee',thWooden:'Hout',thWoodenD:'Natuurlijke textuur',thMarble:'Marmer',thMarbleD:'Elegant en koel',thOcean:'Oceaan',thOceanD:'Diepe blauwe tinten',thSunset:'Zonsondergang',thSunsetD:'Warme vuurkleuren',thForest:'Bos',thForestD:'Diepe groene rust',thCandy:'Snoep',thCandyD:'Zoete pastelkleuren',thGalaxy:'Melkweg',thGalaxyD:'Kosmische kleuren',thNeon:'Neon',thRetro:'Retro',
 pwBomb3:'3 Bommen',pwBomb3D:'Handig als je vastzit',pwBomb10:'10 Bommen',pwBomb10D:'Grote voorraad — 25% korting',pwUndo5:'5 Ongedaan',pwUndo5D:'Verwijder foute zetten',pwXp2:'2× XP (1 Spel)',pwXp2D:'Dubbel XP volgend spel',pwCoins100D:'Direct aanvullen',pwCoins300D:'Populair pakket — 22% bonus',pwCoins750D:'Groot pakket — 43% bonus',
-setupTitle:'🎮 Profiel instellen',setupDesc:'Voer je gegevens in om in de wereldranglijst te verschijnen',setupNickLbl:'Bijnaam',setupNickPh:'Jouw naam…',setupCountryLbl:'🌍 Jouw Land',setupStart:'Aan de slag 🚀',weeklyRanking:'WEEKRANGLIJST',weeklyScore:'Deze Week'},
+setupTitle:'🎮 Profiel instellen',setupDesc:'Voer je gegevens in om in de wereldranglijst te verschijnen',setupNickLbl:'Bijnaam',setupNickPh:'Jouw naam…',setupCountryLbl:'🌍 Jouw Land',setupStart:'Aan de slag 🚀',weeklyRanking:'WEEKRANGLIJST',weeklyScore:'Deze Week',continueOrNew:'Doorgaan of nieuw?',newGame:'Nieuw spel'},
 AR:{appName:'Tiliq',play:'العب',settings:'الإعدادات',account:'الحساب',leaderboard:'الترتيب',score:'النقاط',best:'الأفضل',combo:'تتالي',sound:'الصوت',volume:'مستوى الصوت',haptic:'اهتزاز',theme:'المظهر',dark:'داكن',light:'فاتح',language:'اللغة',save:'حفظ',close:'إغلاق',back:'رجوع',gameOver:'انتهت اللعبة!',playAgain:'العب مرة أخرى',mainMenu:'القائمة الرئيسية',yourScore:'نقاطك',worldRank:'الترتيب العالمي',newRecord:'🎉 رقم قياسي!',profile:'الملف',username:'اسم المستخدم',highScore:'أعلى نقاط',gamesPlayed:'الألعاب',totalPoints:'المجموع',worldBoard:'🌍 الترتيب العالمي',yourRank:'ترتيبك',yourScoreLb:'نقاطك',guest:'ضيف',days:'يوم',undo:'تراجع',bomb:'قنبلة',rescue:'إنقاذ',
 m_combos:'5 تتاليات',m_rows:'5 صفوف',m_score:'500 نقطة',dailyMissions:'مهام اليوم',
 store:'المتجر',continueGame:'متابعة',editProfile:'تعديل الملف →',comboExpired:'انتهى التتالي',dailyClaimed:'تم الاستلام اليوم',dailyRefresh:'يتجدد غداً',dailyCollect:'اجمع!',iapSoon:'الشراء قريباً!',restored:'تمت استعادة المشتريات.',copyCode:'نسخ',codeCopied:'تم النسخ!',yourCode:'كودك',codeShare:'شارك هذا الكود مع أصدقائك',friendsTitle:'الأصدقاء',addFriend:'إضافة صديق',enterName:'ما اسمك؟',namePh:'لقبك...',rescue2ad:'شاهد إعلانين للمتابعة',superBomb:'قنبلة خارقة',tileTheme:'مظهر البلاط',loginForRank:'سجّل الدخول للترتيب',friendCodePh:'ABC123',friendCodeLbl:'كودك',friendCodeSub:'شارك هذا الكود مع أصدقائك 👇',rankTitle:'🏆 الترتيب',
@@ -1215,7 +1237,7 @@ badgeActive:'نشط',badgeOwned:'مملوك',badgeFree:'مجاني',btnActive:'�
 vipTitle:'عضوية VIP',vipMonthly:'$8 / شهر',vipPerk1:'🚫 بدون إعلانات تماماً',vipPerk2:'🪙 200 عملة مجانية أسبوعياً',vipPerk3:'⚡ 2× XP لكل لعبة',vipPerk4:'🏆 إطار ذهبي + شارة خاصة',vipPerk5:'💣 قنبلة مجانية يومياً',vipPerk6:'🎨 جميع المظاهر متاحة',vipStart:'ابدأ الآن',noAdsTitle:'🚫 بدون إعلانات',noAdsDesc:'شراء مرة واحدة، لا إعلانات للأبد',noAdsBuy:'$20 — إزالة الإعلانات',restoreBtn:'↺ استعادة المشتريات',
 thClassic:'كلاسيكي',thClassicD:'البحر الأبيض الدافئ',thWooden:'خشبي',thWoodenD:'نسيج طبيعي',thMarble:'رخامي',thMarbleD:'أنيق وبارد',thOcean:'المحيط',thOceanD:'ألوان زرقاء عميقة',thSunset:'غروب الشمس',thSunsetD:'ألوان النار الدافئة',thForest:'الغابة',thForestD:'هدوء أخضر',thCandy:'حلوى',thCandyD:'ألوان باستيل حلوة',thGalaxy:'المجرة',thGalaxyD:'ألوان كونية',thNeon:'نيون',thRetro:'ريترو',
 pwBomb3:'3 قنابل',pwBomb3D:'مفيدة عند الانسداد',pwBomb10:'10 قنابل',pwBomb10D:'مخزون كبير — خصم 25%',pwUndo5:'5 تراجع',pwUndo5D:'حذف الحركات الخاطئة',pwXp2:'2× XP (لعبة واحدة)',pwXp2D:'ضعف XP في اللعبة التالية',pwCoins100D:'شحن فوري',pwCoins300D:'حزمة شائعة — مكافأة 22%',pwCoins750D:'حزمة كبيرة — مكافأة 43%',
-setupTitle:'🎮 إعداد الملف الشخصي',setupDesc:'أدخل معلوماتك للظهور في الترتيب العالمي',setupNickLbl:'اللقب',setupNickPh:'اسمك…',setupCountryLbl:'🌍 بلدك',setupStart:'ابدأ 🚀',weeklyRanking:'الترتيب الأسبوعي',weeklyScore:'هذا الأسبوع'},
+setupTitle:'🎮 إعداد الملف الشخصي',setupDesc:'أدخل معلوماتك للظهور في الترتيب العالمي',setupNickLbl:'اللقب',setupNickPh:'اسمك…',setupCountryLbl:'🌍 بلدك',setupStart:'ابدأ 🚀',weeklyRanking:'الترتيب الأسبوعي',weeklyScore:'هذا الأسبوع',continueOrNew:'متابعة أم جديد؟',newGame:'لعبة جديدة'},
 ZH:{appName:'Tiliq',play:'开始',settings:'设置',account:'账户',leaderboard:'排行榜',score:'分数',best:'最高',combo:'连击',sound:'声音',volume:'音量',haptic:'震动',theme:'主题',dark:'深色',light:'浅色',language:'语言',save:'保存',close:'关闭',back:'返回',gameOver:'游戏结束！',playAgain:'再来一局',mainMenu:'主菜单',yourScore:'你的分数',worldRank:'世界排名',newRecord:'🎉 新纪录！',profile:'个人资料',username:'用户名',highScore:'最高分',gamesPlayed:'游戏次数',totalPoints:'总分',worldBoard:'🌍 世界排名',yourRank:'你的排名',yourScoreLb:'分数',guest:'访客',days:'天',undo:'撤销',bomb:'炸弹',rescue:'救援',
 m_combos:'获得5连击',m_rows:'消除5行',m_score:'获得500分',dailyMissions:'每日任务',
 store:'商店',continueGame:'继续',editProfile:'编辑资料 →',comboExpired:'连击结束',dailyClaimed:'今日已领取',dailyRefresh:'明日刷新',dailyCollect:'领取！',iapSoon:'购买功能即将上线！',restored:'购买已恢复。',copyCode:'复制',codeCopied:'已复制！',yourCode:'你的代码',codeShare:'把这个代码分享给朋友',friendsTitle:'好友',addFriend:'添加好友',enterName:'你叫什么名字？',namePh:'你的昵称...',rescue2ad:'看2个广告继续游戏',superBomb:'超级炸弹',tileTheme:'方块主题',loginForRank:'登录查看排名',friendCodePh:'ABC123',friendCodeLbl:'你的代码',friendCodeSub:'把这个代码分享给朋友 👇',rankTitle:'🏆 排行榜',
@@ -1226,7 +1248,7 @@ badgeActive:'已激活',badgeOwned:'已拥有',badgeFree:'免费',btnActive:'✓
 vipTitle:'VIP会员',vipMonthly:'$8 / 月',vipPerk1:'🚫 完全无广告',vipPerk2:'🪙 每周200免费金币',vipPerk3:'⚡ 每局2倍XP',vipPerk4:'🏆 金色边框+特殊徽章',vipPerk5:'💣 每天1个免费炸弹',vipPerk6:'🎨 所有主题已解锁',vipStart:'立即开始',noAdsTitle:'🚫 无广告',noAdsDesc:'一次性购买，永久无广告',noAdsBuy:'$20 — 移除广告',restoreBtn:'↺ 恢复购买',
 thClassic:'经典',thClassicD:'温暖地中海',thWooden:'木质',thWoodenD:'天然纹理',thMarble:'大理石',thMarbleD:'优雅清爽',thOcean:'海洋',thOceanD:'深蓝色调',thSunset:'日落',thSunsetD:'温暖火焰色',thForest:'森林',thForestD:'深绿宁静',thCandy:'糖果',thCandyD:'甜美粉彩',thGalaxy:'银河',thGalaxyD:'宇宙色彩',thNeon:'霓虹',thRetro:'复古',
 pwBomb3:'3个炸弹',pwBomb3D:'卡关时很有用',pwBomb10:'10个炸弹',pwBomb10D:'大量储备 — 75折',pwUndo5:'5次撤销',pwUndo5D:'撤销错误操作',pwXp2:'2倍XP (1场)',pwXp2D:'下一局双倍XP',pwCoins100D:'即时充值',pwCoins300D:'热门包 — 22%奖励',pwCoins750D:'大包 — 43%奖励',
-setupTitle:'🎮 完善个人资料',setupDesc:'输入信息以出现在世界排行榜上',setupNickLbl:'昵称',setupNickPh:'你的名字…',setupCountryLbl:'🌍 你的国家',setupStart:'开始 🚀',weeklyRanking:'每周排行',weeklyScore:'本周'},
+setupTitle:'🎮 完善个人资料',setupDesc:'输入信息以出现在世界排行榜上',setupNickLbl:'昵称',setupNickPh:'你的名字…',setupCountryLbl:'🌍 你的国家',setupStart:'开始 🚀',weeklyRanking:'每周排行',weeklyScore:'本周',continueOrNew:'继续还是新游戏？',newGame:'新游戏'},
 };
 
 // ── SETTINGS STATE ────────────────────────────────────────────────────────────
@@ -2522,14 +2544,7 @@ function clearGameState(){
 }
 
 function updateContinueBtn(){
-  const st=loadGameState();
-  const btn=document.getElementById('btn-continue');
-  const lbl=document.getElementById('continue-score-lbl');
-  if(btn){
-    const show=!!(st&&st.score>0);
-    btn.style.display=show?'flex':'none';
-    if(show&&lbl) lbl.textContent='('+st.score.toLocaleString()+' '+t('pts')+')';
-  }
+  // Artık menüde ayrı buton yok — sadece state kontrolü
 }
 
 function continueGame(){
@@ -3859,12 +3874,29 @@ function showTmStoreModal(){
 }
 function hideTmStoreModal(){document.getElementById('modal-store-tm').classList.remove('active');}
 
-function startScreen(){
+function onPlayPressed(){
+  const st=loadGameState();
+  if(st&&st.score>0){
+    // Yarım oyun var — sor
+    const el=document.getElementById('continue-dialog-score');
+    if(el) el.textContent='('+(st.score.toLocaleString())+' '+t('pts')+')';
+    showModal('continue');
+  } else {
+    startNewGame();
+  }
+}
+
+function startNewGame(){
+  clearGameState();
   showScreen('game');
   resizeCanvas();
   startGame();
   updateStreakDisplay();
   showTutorial();
+}
+
+function startScreen(){
+  startNewGame();
 }
 function backToMenu(){
   // Oyun devam ediyorsa kaydet
