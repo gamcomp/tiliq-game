@@ -3058,6 +3058,9 @@ function showOver(){
   }
   _rescueShownThisGame=true;
   onGameOver(score);
+  // Her oyun sonunda haftalık skoru güncelle ve Firestore'a yaz
+  updateMyWeeklyScore(score);
+  _firestorePushScore();
   document.getElementById('overlay').classList.add('active');
 }
 
@@ -4048,7 +4051,7 @@ async function _firestorePushScore(){
     const snap=await getDoc(ref);
     const prev=snap.exists()?snap.data():{};
     const prevWeekly=(prev.weeklyReset===ws)?(prev.weeklyScore||0):0;
-    const newWeekly=Math.max(prevWeekly,acct.best);
+    const newWeekly=Math.max(prevWeekly,getMyWeeklyScore()||0,acct.best||0);
     // localStorage'a da kaydet
     updateMyWeeklyScore(acct.best);
     await updateDoc(ref,{
