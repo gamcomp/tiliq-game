@@ -154,16 +154,36 @@ body::after{
 .tb-icon{font-size:40px;line-height:1;flex-shrink:0;transition:transform .3s;}
 .treasure-box:not(.claimed) .tb-icon{animation:tbBounce 2s ease-in-out infinite;}
 .treasure-box.claimed .tb-icon{filter:grayscale(.5);animation:none;}
-.tb-body{flex:1;}
-.tb-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--acc2);margin-bottom:3px;}
+.tb-body{flex:1;min-width:0;}
+.tb-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--acc2);margin-bottom:4px;}
 .tb-label.claimed{color:#6BCB77;}
-.tb-amount{font-size:22px;font-weight:900;color:var(--text);line-height:1;margin-bottom:4px;}
+.tb-amount{display:flex;align-items:center;flex-wrap:wrap;gap:5px;line-height:1;margin-bottom:5px;}
+.tb-next-lbl{font-size:11px;font-weight:700;color:var(--dim);}
 .tb-sub{font-size:11px;color:var(--dim);}
+/* Ödül chip'leri — dilden bağımsız ikon+sayı */
+.rw-chip{display:inline-flex;align-items:center;gap:3px;font-size:14px;font-weight:800;padding:4px 9px;border-radius:10px;line-height:1;white-space:nowrap;}
+.rw-chip.rw-coin{background:rgba(212,168,67,.18);color:#E0B84D;}
+.rw-chip.rw-bomb{background:rgba(255,107,53,.18);color:#FF8A5B;}
+.rw-chip.rw-undo{background:rgba(86,207,225,.18);color:#56CFE1;}
 .tb-streak{display:flex;align-items:center;gap:4px;margin-top:5px;}
 .tb-streak-dot{width:8px;height:8px;border-radius:50%;background:var(--dim2);}
 .tb-streak-dot.active{background:#FF9F43;}
+.tb-streak-dot.tb-dot-b{box-shadow:0 0 0 2px rgba(255,107,53,.35);}
+.tb-streak-dot.tb-dot-b.active{background:#FF6B35;}
+.tb-streak-dot.tb-dot-u{box-shadow:0 0 0 2px rgba(86,207,225,.35);}
+.tb-streak-dot.tb-dot-u.active{background:#56CFE1;}
 .tb-cta{background:linear-gradient(135deg,var(--accent),var(--acc2));border:none;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:800;color:#fff;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;box-shadow:0 4px 14px rgba(196,113,74,.4);}
 .tb-cta.claimed{background:rgba(107,203,119,.15);color:#6BCB77;border:1px solid rgba(107,203,119,.3);box-shadow:none;cursor:default;}
+
+/* Envanter (profil) */
+.inv-section{margin-top:2px;}
+.inv-title{font-size:11px;font-weight:800;color:var(--dim);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.inv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.inv-cell{background:var(--glass);border:1px solid var(--gb);border-radius:14px;padding:11px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;overflow:hidden;}
+.inv-cell.inv-on{border-color:rgba(255,217,61,.4);background:linear-gradient(135deg,rgba(255,217,61,.1),rgba(255,217,61,.03));}
+.inv-ico{font-size:22px;line-height:1;}
+.inv-val{font-size:15px;font-weight:800;color:var(--text);line-height:1;}
+.inv-lbl{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.2px;text-align:center;line-height:1.1;}
 
 @keyframes tbBounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.05)}}
 @keyframes tbClaim{0%{transform:scale(1)}30%{transform:scale(1.15) rotate(-5deg)}60%{transform:scale(.95) rotate(3deg)}100%{transform:scale(1) rotate(0)}}
@@ -326,6 +346,7 @@ body::after{
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px;border-bottom:1px solid var(--divider);flex-shrink:0;}
 .modal-head h3{font-size:16px;font-weight:800;}
 .modal-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;display:flex;flex-direction:column;gap:11px;flex:1;min-height:0;}
+.modal-body>*{flex-shrink:0;}
 .modal-body::-webkit-scrollbar{width:3px;}
 .modal-body::-webkit-scrollbar-thumb{background:var(--dim2);border-radius:2px;}
 
@@ -650,7 +671,7 @@ input[type="text"]::placeholder{color:var(--dim);}
     <div class="menu-av" onclick="showModal('account')">
       <div class="av-circle" id="av-menu" style="background:linear-gradient(135deg,#C4714A,#D4A843)">G</div>
       <div class="av-info">
-        <div class="av-name" id="av-name-menu" data-t="guest">Misafir</div>
+        <div class="av-name" id="av-name-menu">Misafir</div>
         <div class="av-tap" data-t="editProfile">Edit Profile →</div>
       </div>
       <div class="streak-badge" id="streak-badge" style="display:none">🔥 <span class="streak-n" id="streak-n">0</span></div>
@@ -743,7 +764,7 @@ input[type="text"]::placeholder{color:var(--dim);}
     <button class="btn-icon" onclick="toggleLB()">🏆</button>
   </div>
   <div id="booster-row">
-    <button class="bst-btn" id="undo-btn" onclick="doUndo()" disabled>↩ <span data-t="undo">Geri Al</span> <span style="font-size:10px;opacity:.7;">📺</span></button>
+    <button class="bst-btn" id="undo-btn" onclick="doUndo()" disabled>↩ <span data-t="undo">Geri Al</span> <span id="undo-badge" style="font-size:10px;font-weight:800;color:#56CFE1;display:none;"></span><span id="undo-ad-icon" style="font-size:10px;opacity:.7;">📺</span></button>
     <button class="bst-btn" id="bomb-btn"
       onclick="activateBomb('normal')"
       oncontextmenu="activateBomb('super');return false"
@@ -884,6 +905,11 @@ input[type="text"]::placeholder{color:var(--dim);}
         <div class="stat-item"><div class="stat-n" id="st-games">0</div><div class="stat-l" data-t="gamesPlayed">Oyun</div></div>
         <div class="stat-item"><div class="stat-n" id="st-total">0</div><div class="stat-l" data-t="totalPoints">Toplam</div></div>
       </div>
+      <!-- Envanter — kazanılan/alınan her şey -->
+      <div class="inv-section">
+        <div class="inv-title">🎒 <span data-t="inventory">Envanter</span></div>
+        <div class="inv-grid" id="inv-grid"></div>
+      </div>
       <!-- Oyuncu kodu -->
       <div class="code-section">
         <div class="code-section-head">
@@ -915,12 +941,6 @@ input[type="text"]::placeholder{color:var(--dim);}
             <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
             <span data-t="googleSignIn">Sign in with Google</span>
           </button>
-          <p style="font-size:11px;color:var(--dim);text-align:center;margin:4px 0">— veya takma adla devam et —</p>
-          <div style="display:flex;gap:8px;">
-            <input id="auth-web-name" type="text" data-t="namePh" placeholder="Your nickname..." maxlength="20"
-              style="flex:1;background:var(--glass);border:1px solid var(--gb);border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;font-family:inherit;outline:none;">
-            <button class="btn-play" onclick="webGuestLogin()" style="padding:10px 16px;font-size:14px;min-width:0;" data-t="ok">OK</button>
-          </div>
         </div>
         <!-- Giriş yapılmışsa (her iki platform) -->
         <div id="auth-signout-area" style="display:none;text-align:center;">
@@ -1059,7 +1079,7 @@ input[type="text"]::placeholder{color:var(--dim);}
         <div style="text-align:right"><div class="rank-lbl" data-t="weeklyScore">Bu Hafta</div><div class="rank-sc" id="my-score-friends">0</div></div>
       </div>
       <div id="lb-friends-list" style="overflow-y:auto;flex:1;padding:7px 14px 10px;"></div>
-      <button class="btn-add-friend" onclick="showModal('add-friend')">+ <span data-t="addFriend">Add Friend</span></button>
+      <button class="btn-add-friend" onclick="if(requireAccount('loginForFriends'))showModal('add-friend')">+ <span data-t="addFriend">Add Friend</span></button>
     </div>
 
   </div>
@@ -1070,10 +1090,10 @@ input[type="text"]::placeholder{color:var(--dim);}
 const T={
 TR:{appName:'Tiliq',play:'Oyna',settings:'Ayarlar',account:'Hesap',leaderboard:'Sıralama',score:'Skor',best:'En İyi',combo:'Kombo',sound:'Ses',volume:'Ses Seviyesi',haptic:'Titreşim',theme:'Tema',dark:'Koyu',light:'Açık',language:'Dil',save:'Kaydet',close:'Kapat',back:'Geri',gameOver:'Oyun Bitti!',playAgain:'Tekrar Oyna',mainMenu:'Ana Menü',yourScore:'Skorun',worldRank:'Dünya Sıralaması',newRecord:'🎉 Yeni Rekor!',profile:'Profil',username:'Kullanıcı Adı',highScore:'En Yüksek',gamesPlayed:'Oyun',totalPoints:'Toplam',worldBoard:'🌍 Dünya Sıralaması',yourRank:'Sıran',yourScoreLb:'Skorun',guest:'Misafir',days:'Gün',undo:'Geri Al',bomb:'Bomba',rescue:'Kurtarma',
 m_combos:'5 Kombo Al',m_rows:'5 Satır Temizle',m_score:'500 Puan Kazan',dailyMissions:'Günlük Görevler',
-store:'Mağaza',continueGame:'Devam Et',editProfile:'Profili Düzenle →',comboExpired:'Kombo Bitti',dailyClaimed:'BUGÜN TOPLANDΙ',dailyRefresh:'Yarın yenilenir',dailyCollect:'Topla!',iapSoon:'Satın alma yakında aktif olacak!',restored:'Satın almalar geri yüklendi.',copyCode:'Kopyala',codeCopied:'Kopyalandı!',yourCode:'Oyuncu Kodun',codeShare:'Bu kodu arkadaşlarına ver',friendsTitle:'Arkadaşlarım',addFriend:'Arkadaş Ekle',enterName:'Sıralamada görünmek için adın ne?',namePh:'Takma adın...',rescue2ad:'2 kısa reklam izle, devam et',superBomb:'Süper Bomba',tileTheme:'Karo Teması',loginForRank:'Sıralama için giriş yap',friendCodePh:'ABC123',friendCodeLbl:'Oyuncu Kodun',friendCodeSub:'Bu kodu arkadaşlarına ver 👇',rankTitle:'🏆 Sıralama',
+store:'Mağaza',continueGame:'Devam Et',editProfile:'Profili Düzenle →',comboExpired:'Kombo Bitti',dailyClaimed:'BUGÜN TOPLANDΙ',dailyRefresh:'Yarın yenilenir',dailyCollect:'Topla!',iapSoon:'Satın alma yakında aktif olacak!',restored:'Satın almalar geri yüklendi.',copyCode:'Kopyala',codeCopied:'Kopyalandı!',yourCode:'Oyuncu Kodun',codeShare:'Bu kodu arkadaşlarına ver',friendsTitle:'Arkadaşlarım',addFriend:'Arkadaş Ekle',enterName:'Sıralamada görünmek için adın ne?',namePh:'Takma adın...',rescue2ad:'2 kısa reklam izle, devam et',superBomb:'Süper Bomba',tileTheme:'Karo Teması',loginForRank:'Sıralama için giriş yap',loginForFriends:'Arkadaşların için Google ile giriş yap',friendCodePh:'ABC123',friendCodeLbl:'Oyuncu Kodun',friendCodeSub:'Bu kodu arkadaşlarına ver 👇',rankTitle:'🏆 Sıralama',
 tabThemes:'🎨 Temalar',tabPower:'⚡ Güçler',tabVip:'👑 VIP',
 tabGlobal:'🌍 Dünya',tabFriends:'👥 Arkadaşlar',lbShare:'Paylaş',lbMyCode:'Kodun',lbAmongFriends:'Arkadaşlar Arasında',
-statLast:'Son Skor',statGames:'Oyun',statBest:'En İyi',statStreak:'Seri',dailyBonus:'GÜNLÜK BONUS',
+statLast:'Son Skor',statGames:'Oyun',statBest:'En İyi',statStreak:'Seri',dailyBonus:'GÜNLÜK BONUS',tomorrow:'Yarın',mergeTitle:'İlerlemeni Aktar?',mergeDesc:'Bu cihazdaki ilerlemeyi hesabına aktaralım mı? Hayır dersen hesabındaki mevcut veriler kullanılır.',mergeYes:'Evet, Aktar',mergeNo:'Hayır, Hesabı Kullan',inventory:'Envanter',invCoins:'Coin',invBombs:'Bomba',invUndos:'Geri Al',invThemes:'Tema',invBoost:'XP',
 storeTitle:'🛍️ Mağaza',syncDesc:'Skorunu buluta kaydet, her cihazdan eriş',accountConn:'✅ Hesabına bağlısın',maxLevel:'👑 Maksimum seviye!',
 freeSection:'Ücretsiz',premiumSection:'Premium Temalar',powerSection:'Güçlendiriciler',coinSection:'Coin Paketleri',
 badgeActive:'AKTİF',badgeOwned:'SAHİPSİN',badgeFree:'ÜCRETSİZ',btnActive:'✓ Aktif',btnApply:'Uygula',btnUnlock:'Aç',
@@ -1095,10 +1115,10 @@ ad:'REKLAM',adLoading:'Reklam yükleniyor…',adWatching:'Reklam izleniyor…',a
 setupTitle:'🎮 Profili Tamamla',setupDesc:'Dünya sıralamasında görünmek için bilgilerini gir',setupNickLbl:'Takma Ad',setupNickPh:'Adın…',setupCountryLbl:'🌍 Ülken',setupStart:'Başla 🚀',weeklyRanking:'HAFTALIK SIRALAMA',weeklyScore:'Bu Hafta',continueOrNew:'Devam mı, Yeni mi?',newGame:'Yeni Oyun',tutRT:'Parçayı Döndür 🔄',tutRD:'Seçili parçaya tekrar dokun — saat yönünde döner! 4 farklı yönü dene.',tutRsub:'TEKRAR DOKUN → DÖNER'},
 EN:{appName:'Tiliq',play:'Play',settings:'Settings',account:'Account',leaderboard:'Rankings',score:'Score',best:'Best',combo:'Combo',sound:'Sound',volume:'Volume',haptic:'Haptic',theme:'Theme',dark:'Dark',light:'Light',language:'Language',save:'Save',close:'Close',back:'Back',gameOver:'Game Over!',playAgain:'Play Again',mainMenu:'Main Menu',yourScore:'Your Score',worldRank:'World Ranking',newRecord:'🎉 New Record!',profile:'Profile',username:'Username',highScore:'Best',gamesPlayed:'Games',totalPoints:'Total',worldBoard:'🌍 World Rankings',yourRank:'Your Rank',yourScoreLb:'Your Score',guest:'Guest',days:'Days',undo:'Undo',bomb:'Bomb',rescue:'Rescue',
 m_combos:'Get 5 Combos',m_rows:'Clear 5 Rows',m_score:'Score 500 pts',dailyMissions:'Daily Missions',
-store:'Store',continueGame:'Continue',editProfile:'Edit Profile →',comboExpired:'Combo Ended',dailyClaimed:'CLAIMED TODAY',dailyRefresh:'Refreshes tomorrow',dailyCollect:'Collect!',iapSoon:'Purchase coming soon!',restored:'Purchases restored.',copyCode:'Copy',codeCopied:'Copied!',yourCode:'Your Code',codeShare:'Share this code with friends',friendsTitle:'Friends',addFriend:'Add Friend',enterName:"What's your name?",namePh:'Your nickname...',rescue2ad:'Watch 2 short ads to continue',superBomb:'Super Bomb',tileTheme:'Tile Theme',loginForRank:'Sign in for rankings',friendCodePh:'ABC123',friendCodeLbl:'Your Code',friendCodeSub:'Share this code with friends 👇',rankTitle:'🏆 Rankings',
+store:'Store',continueGame:'Continue',editProfile:'Edit Profile →',comboExpired:'Combo Ended',dailyClaimed:'CLAIMED TODAY',dailyRefresh:'Refreshes tomorrow',dailyCollect:'Collect!',iapSoon:'Purchase coming soon!',restored:'Purchases restored.',copyCode:'Copy',codeCopied:'Copied!',yourCode:'Your Code',codeShare:'Share this code with friends',friendsTitle:'Friends',addFriend:'Add Friend',enterName:"What's your name?",namePh:'Your nickname...',rescue2ad:'Watch 2 short ads to continue',superBomb:'Super Bomb',tileTheme:'Tile Theme',loginForRank:'Sign in for rankings',loginForFriends:'Sign in with Google to add friends',friendCodePh:'ABC123',friendCodeLbl:'Your Code',friendCodeSub:'Share this code with friends 👇',rankTitle:'🏆 Rankings',
 tabThemes:'🎨 Themes',tabPower:'⚡ Power',tabVip:'👑 VIP',
 tabGlobal:'🌍 World',tabFriends:'👥 Friends',lbShare:'Share',lbMyCode:'Your Code',lbAmongFriends:'Among Friends',
-statLast:'Last',statGames:'Games',statBest:'Best',statStreak:'Streak',dailyBonus:'DAILY BONUS',
+statLast:'Last',statGames:'Games',statBest:'Best',statStreak:'Streak',dailyBonus:'DAILY BONUS',tomorrow:'Tomorrow',mergeTitle:'Transfer Progress?',mergeDesc:'Move your progress on this device to your account? If no, your account\'s existing data is used.',mergeYes:'Yes, Transfer',mergeNo:'No, Use Account',inventory:'Inventory',invCoins:'Coins',invBombs:'Bombs',invUndos:'Undos',invThemes:'Themes',invBoost:'XP',
 storeTitle:'🛍️ Store',syncDesc:'Save your score to the cloud, access from any device',accountConn:'✅ Connected to your account',maxLevel:'👑 Maximum level!',
 freeSection:'Free',premiumSection:'Premium Themes',powerSection:'Power-Ups',coinSection:'Coin Packs',
 badgeActive:'ACTIVE',badgeOwned:'OWNED',badgeFree:'FREE',btnActive:'✓ Active',btnApply:'Apply',btnUnlock:'Unlock',
@@ -1120,9 +1140,9 @@ ad:'AD',adLoading:'Loading ad…',adWatching:'Watching ad…',adReward:'Preparin
 setupTitle:'🎮 Complete Profile',setupDesc:'Enter your info to appear in world rankings',setupNickLbl:'Nickname',setupNickPh:'Your name…',setupCountryLbl:'🌍 Your Country',setupStart:'Let\'s Go 🚀',weeklyRanking:'WEEKLY RANKING',weeklyScore:'This Week',continueOrNew:'Continue or New?',newGame:'New Game',tutRT:'Rotate Pieces 🔄',tutRD:'Tap a selected piece again — it rotates clockwise! Try all 4 directions.',tutRsub:'TAP AGAIN → ROTATES'},
 JA:{appName:'Tiliq',play:'プレイ',settings:'設定',account:'アカウント',leaderboard:'ランキング',score:'スコア',best:'ベスト',combo:'コンボ',sound:'サウンド',volume:'音量',haptic:'振動',theme:'テーマ',dark:'ダーク',light:'ライト',language:'言語',save:'保存',close:'閉じる',back:'戻る',gameOver:'ゲームオーバー！',playAgain:'もう一度',mainMenu:'メニュー',yourScore:'スコア',worldRank:'世界ランキング',newRecord:'🎉 新記録！',profile:'プロフィール',username:'ユーザー名',highScore:'ベスト',gamesPlayed:'ゲーム数',totalPoints:'合計',worldBoard:'🌍 世界ランキング',yourRank:'順位',yourScoreLb:'スコア',guest:'ゲスト',days:'日',undo:'元に戻す',bomb:'ボム',rescue:'救出',
 m_combos:'コンボ5回',m_rows:'5列消す',m_score:'500点獲得',dailyMissions:'デイリーミッション',
-store:'ストア',continueGame:'続ける',editProfile:'プロフィール編集 →',comboExpired:'コンボ終了',dailyClaimed:'本日獲得済み',dailyRefresh:'明日リセット',dailyCollect:'受け取る！',iapSoon:'近日公開予定！',restored:'購入を復元しました。',copyCode:'コピー',codeCopied:'コピー済み！',yourCode:'あなたのコード',codeShare:'このコードを友達に送ろう',friendsTitle:'フレンド',addFriend:'フレンド追加',enterName:'あなたの名前は？',namePh:'ニックネーム...',rescue2ad:'広告2本見て続ける',superBomb:'スーパーボム',tileTheme:'タイルテーマ',loginForRank:'ランキングにはログインが必要',friendCodePh:'ABC123',friendCodeLbl:'あなたのコード',friendCodeSub:'このコードを友達に送ろう 👇',rankTitle:'🏆 ランキング',
+store:'ストア',continueGame:'続ける',editProfile:'プロフィール編集 →',comboExpired:'コンボ終了',dailyClaimed:'本日獲得済み',dailyRefresh:'明日リセット',dailyCollect:'受け取る！',iapSoon:'近日公開予定！',restored:'購入を復元しました。',copyCode:'コピー',codeCopied:'コピー済み！',yourCode:'あなたのコード',codeShare:'このコードを友達に送ろう',friendsTitle:'フレンド',addFriend:'フレンド追加',enterName:'あなたの名前は？',namePh:'ニックネーム...',rescue2ad:'広告2本見て続ける',superBomb:'スーパーボム',tileTheme:'タイルテーマ',loginForRank:'ランキングにはログインが必要',loginForFriends:'フレンド機能にはGoogleログインが必要',friendCodePh:'ABC123',friendCodeLbl:'あなたのコード',friendCodeSub:'このコードを友達に送ろう 👇',rankTitle:'🏆 ランキング',
 tabThemes:'🎨 テーマ',tabPower:'⚡ パワー',tabVip:'👑 VIP',tabGlobal:'🌍 世界',tabFriends:'👥 フレンド',lbShare:'シェア',lbMyCode:'あなたのコード',lbAmongFriends:'フレンドの中で',
-statLast:'直前',statGames:'ゲーム',statBest:'ベスト',statStreak:'連続',dailyBonus:'デイリーボーナス',storeTitle:'🛍️ ストア',syncDesc:'スコアをクラウドに保存する',accountConn:'✅ アカウントに接続済み',maxLevel:'👑 最大レベル！',
+statLast:'直前',statGames:'ゲーム',statBest:'ベスト',statStreak:'連続',dailyBonus:'デイリーボーナス',tomorrow:'明日',mergeTitle:'進行状況を移行？',mergeDesc:'この端末の進行状況をアカウントに移行しますか？いいえの場合はアカウントの既存データを使用します。',mergeYes:'はい、移行',mergeNo:'いいえ',inventory:'インベントリ',invCoins:'コイン',invBombs:'爆弾',invUndos:'戻す',invThemes:'テーマ',invBoost:'XP',storeTitle:'🛍️ ストア',syncDesc:'スコアをクラウドに保存する',accountConn:'✅ アカウントに接続済み',maxLevel:'👑 最大レベル！',
 freeSection:'無料',premiumSection:'プレミアムテーマ',powerSection:'パワーアップ',coinSection:'コインパック',
 badgeActive:'使用中',badgeOwned:'所持',badgeFree:'無料',btnActive:'✓ 使用中',btnApply:'適用',btnUnlock:'開放',
 vipTitle:'VIPメンバーシップ',vipMonthly:'$8 / 月',vipPerk1:'🚫 完全広告なし',vipPerk2:'🪙 毎週200コイン無料',vipPerk3:'⚡ 毎回2倍XP',vipPerk4:'🏆 ゴールドフレーム+バッジ',vipPerk5:'💣 毎日爆弾1個無料',vipPerk6:'🎨 全テーマ解放',vipStart:'今すぐ始める',noAdsTitle:'🚫 広告なし',noAdsDesc:'一回購入で永久に広告なし',noAdsBuy:'$20 — 広告を削除',restoreBtn:'↺ 購入を復元',
@@ -1131,9 +1151,9 @@ pwBomb3:'爆弾3個',pwBomb3D:'詰まったときに便利',pwBomb10:'爆弾10�
 setupTitle:'🎮 プロフィール設定',setupDesc:'世界ランキングに表示されるために情報を入力してください',setupNickLbl:'ニックネーム',setupNickPh:'あなたの名前…',setupCountryLbl:'🌍 あなたの国',setupStart:'はじめる 🚀',weeklyRanking:'週間ランキング',weeklyScore:'今週',continueOrNew:'続ける？新しい？',newGame:'新しいゲーム',tutRT:'ピースを回転 🔄',tutRD:'選んだピースをもう一度タップ — 時計回りに回転！4方向を試そう。',tutRsub:'もう一度タップ → 回転'},
 KO:{appName:'Tiliq',play:'플레이',settings:'설정',account:'계정',leaderboard:'순위',score:'점수',best:'최고',combo:'콤보',sound:'소리',volume:'볼륨',haptic:'진동',theme:'테마',dark:'어둡게',light:'밝게',language:'언어',save:'저장',close:'닫기',back:'뒤로',gameOver:'게임 종료!',playAgain:'다시 하기',mainMenu:'메인 메뉴',yourScore:'내 점수',worldRank:'세계 순위',newRecord:'🎉 신기록!',profile:'프로필',username:'사용자 이름',highScore:'최고',gamesPlayed:'게임',totalPoints:'총점',worldBoard:'🌍 세계 순위',yourRank:'내 순위',yourScoreLb:'점수',guest:'게스트',days:'일',undo:'실행 취소',bomb:'폭탄',rescue:'구출',
 m_combos:'콤보 5회',m_rows:'줄 5개 지우기',m_score:'500점 획득',dailyMissions:'일일 미션',
-store:'스토어',continueGame:'계속하기',editProfile:'프로필 편집 →',comboExpired:'콤보 종료',dailyClaimed:'오늘 수령 완료',dailyRefresh:'내일 갱신',dailyCollect:'받기!',iapSoon:'곧 출시 예정!',restored:'구매가 복원되었습니다.',copyCode:'복사',codeCopied:'복사됨!',yourCode:'내 코드',codeShare:'이 코드를 친구에게 공유하세요',friendsTitle:'친구',addFriend:'친구 추가',enterName:'당신의 이름은?',namePh:'닉네임...',rescue2ad:'광고 2개 보고 계속하기',superBomb:'슈퍼 폭탄',tileTheme:'타일 테마',loginForRank:'순위를 보려면 로그인하세요',friendCodePh:'ABC123',friendCodeLbl:'내 코드',friendCodeSub:'이 코드를 친구에게 공유하세요 👇',rankTitle:'🏆 순위',
+store:'스토어',continueGame:'계속하기',editProfile:'프로필 편집 →',comboExpired:'콤보 종료',dailyClaimed:'오늘 수령 완료',dailyRefresh:'내일 갱신',dailyCollect:'받기!',iapSoon:'곧 출시 예정!',restored:'구매가 복원되었습니다.',copyCode:'복사',codeCopied:'복사됨!',yourCode:'내 코드',codeShare:'이 코드를 친구에게 공유하세요',friendsTitle:'친구',addFriend:'친구 추가',enterName:'당신의 이름은?',namePh:'닉네임...',rescue2ad:'광고 2개 보고 계속하기',superBomb:'슈퍼 폭탄',tileTheme:'타일 테마',loginForRank:'순위를 보려면 로그인하세요',loginForFriends:'친구 기능은 Google 로그인이 필요해요',friendCodePh:'ABC123',friendCodeLbl:'내 코드',friendCodeSub:'이 코드를 친구에게 공유하세요 👇',rankTitle:'🏆 순위',
 tabThemes:'🎨 테마',tabPower:'⚡ 파워',tabVip:'👑 VIP',tabGlobal:'🌍 세계',tabFriends:'👥 친구',lbShare:'공유',lbMyCode:'내 코드',lbAmongFriends:'친구들 사이에서',
-statLast:'최근',statGames:'게임',statBest:'최고',statStreak:'연속',dailyBonus:'일일 보너스',storeTitle:'🛍️ 스토어',syncDesc:'점수를 클라우드에 저장하세요',accountConn:'✅ 계정에 연결됨',maxLevel:'👑 최대 레벨!',
+statLast:'최근',statGames:'게임',statBest:'최고',statStreak:'연속',dailyBonus:'일일 보너스',tomorrow:'내일',mergeTitle:'진행 상황 이전?',mergeDesc:'이 기기의 진행 상황을 계정으로 옮길까요? 아니오를 선택하면 계정의 기존 데이터가 사용됩니다.',mergeYes:'예, 이전',mergeNo:'아니오',inventory:'인벤토리',invCoins:'코인',invBombs:'폭탄',invUndos:'되돌리기',invThemes:'테마',invBoost:'XP',storeTitle:'🛍️ 스토어',syncDesc:'점수를 클라우드에 저장하세요',accountConn:'✅ 계정에 연결됨',maxLevel:'👑 최대 레벨!',
 freeSection:'무료',premiumSection:'프리미엄 테마',powerSection:'파워업',coinSection:'코인 패키지',
 badgeActive:'활성',badgeOwned:'보유',badgeFree:'무료',btnActive:'✓ 활성',btnApply:'적용',btnUnlock:'열기',
 vipTitle:'VIP 멤버십',vipMonthly:'$8 / 월',vipPerk1:'🚫 완전 광고 없음',vipPerk2:'🪙 매주 200 무료 코인',vipPerk3:'⚡ 매 게임 2배 XP',vipPerk4:'🏆 골드 프레임 + 특별 배지',vipPerk5:'💣 매일 무료 폭탄 1개',vipPerk6:'🎨 모든 테마 잠금 해제',vipStart:'지금 시작',noAdsTitle:'🚫 광고 없음',noAdsDesc:'일회성 구매, 영원히 광고 없음',noAdsBuy:'$20 — 광고 제거',restoreBtn:'↺ 구매 복원',
@@ -1142,9 +1162,9 @@ pwBomb3:'폭탄 3개',pwBomb3D:'막힐 때 유용',pwBomb10:'폭탄 10개',pwBom
 setupTitle:'🎮 프로필 설정',setupDesc:'세계 순위에 표시되려면 정보를 입력하세요',setupNickLbl:'닉네임',setupNickPh:'이름을 입력하세요…',setupCountryLbl:'🌍 국가',setupStart:'시작 🚀',weeklyRanking:'주간 순위',weeklyScore:'이번 주',continueOrNew:'계속 또는 새 게임?',newGame:'새 게임',tutRT:'조각 회전 🔄',tutRD:'선택한 조각을 다시 탭하면 시계 방향으로 회전합니다! 4방향을 모두 시도하세요.',tutRsub:'다시 탭 → 회전'},
 DE:{appName:'Tiliq',play:'Spielen',settings:'Einstellungen',account:'Konto',leaderboard:'Rangliste',score:'Punkte',best:'Bestw.',combo:'Kombo',sound:'Ton',volume:'Lautstärke',haptic:'Vibration',theme:'Design',dark:'Dunkel',light:'Hell',language:'Sprache',save:'Speichern',close:'Schließen',back:'Zurück',gameOver:'Spiel Vorbei!',playAgain:'Nochmal',mainMenu:'Hauptmenü',yourScore:'Dein Score',worldRank:'Weltrangliste',newRecord:'🎉 Neuer Rekord!',profile:'Profil',username:'Benutzername',highScore:'Best',gamesPlayed:'Spiele',totalPoints:'Gesamt',worldBoard:'🌍 Weltrangliste',yourRank:'Dein Rang',yourScoreLb:'Punkte',guest:'Gast',days:'Tage',undo:'Rückgängig',bomb:'Bombe',rescue:'Rettung',
 m_combos:'5 Kombos',m_rows:'5 Reihen',m_score:'500 Punkte',dailyMissions:'Tagesaufgaben',
-store:'Shop',continueGame:'Weiterspielen',editProfile:'Profil bearbeiten →',comboExpired:'Kombo vorbei',dailyClaimed:'HEUTE ERHALTEN',dailyRefresh:'Morgen neu',dailyCollect:'Sammeln!',iapSoon:'Kauf bald verfügbar!',restored:'Käufe wiederhergestellt.',copyCode:'Kopieren',codeCopied:'Kopiert!',yourCode:'Dein Code',codeShare:'Teile diesen Code mit Freunden',friendsTitle:'Freunde',addFriend:'Freund hinzufügen',enterName:'Wie heißt du?',namePh:'Dein Spitzname...',rescue2ad:'2 kurze Werbungen ansehen',superBomb:'Superbombe',tileTheme:'Kachel-Design',loginForRank:'Anmelden für Rangliste',friendCodePh:'ABC123',friendCodeLbl:'Dein Code',friendCodeSub:'Teile diesen Code mit Freunden 👇',rankTitle:'🏆 Rangliste',
+store:'Shop',continueGame:'Weiterspielen',editProfile:'Profil bearbeiten →',comboExpired:'Kombo vorbei',dailyClaimed:'HEUTE ERHALTEN',dailyRefresh:'Morgen neu',dailyCollect:'Sammeln!',iapSoon:'Kauf bald verfügbar!',restored:'Käufe wiederhergestellt.',copyCode:'Kopieren',codeCopied:'Kopiert!',yourCode:'Dein Code',codeShare:'Teile diesen Code mit Freunden',friendsTitle:'Freunde',addFriend:'Freund hinzufügen',enterName:'Wie heißt du?',namePh:'Dein Spitzname...',rescue2ad:'2 kurze Werbungen ansehen',superBomb:'Superbombe',tileTheme:'Kachel-Design',loginForRank:'Anmelden für Rangliste',loginForFriends:'Mit Google anmelden für Freunde',friendCodePh:'ABC123',friendCodeLbl:'Dein Code',friendCodeSub:'Teile diesen Code mit Freunden 👇',rankTitle:'🏆 Rangliste',
 tabThemes:'🎨 Designs',tabPower:'⚡ Kräfte',tabVip:'👑 VIP',tabGlobal:'🌍 Welt',tabFriends:'👥 Freunde',lbShare:'Teilen',lbMyCode:'Dein Code',lbAmongFriends:'Unter Freunden',
-statLast:'Letzte',statGames:'Spiele',statBest:'Bestes',statStreak:'Serie',dailyBonus:'TAGESBONUS',storeTitle:'🛍️ Shop',syncDesc:'Speichere deinen Score in der Cloud',accountConn:'✅ Mit deinem Konto verbunden',maxLevel:'👑 Maximales Level!',
+statLast:'Letzte',statGames:'Spiele',statBest:'Bestes',statStreak:'Serie',dailyBonus:'TAGESBONUS',tomorrow:'Morgen',mergeTitle:'Fortschritt übertragen?',mergeDesc:'Deinen Fortschritt auf diesem Gerät auf dein Konto übertragen? Bei Nein werden die vorhandenen Kontodaten verwendet.',mergeYes:'Ja, übertragen',mergeNo:'Nein, Konto nutzen',inventory:'Inventar',invCoins:'Münzen',invBombs:'Bomben',invUndos:'Zurück',invThemes:'Themen',invBoost:'XP',storeTitle:'🛍️ Shop',syncDesc:'Speichere deinen Score in der Cloud',accountConn:'✅ Mit deinem Konto verbunden',maxLevel:'👑 Maximales Level!',
 freeSection:'Kostenlos',premiumSection:'Premium-Designs',powerSection:'Verstärker',coinSection:'Coin-Pakete',
 badgeActive:'AKTIV',badgeOwned:'BESESSEN',badgeFree:'KOSTENLOS',btnActive:'✓ Aktiv',btnApply:'Anwenden',btnUnlock:'Freischalten',
 vipTitle:'VIP-Mitgliedschaft',vipMonthly:'8 $ / Monat',vipPerk1:'🚫 Komplett werbefrei',vipPerk2:'🪙 200 Münzen jede Woche',vipPerk3:'⚡ 2× XP pro Spiel',vipPerk4:'🏆 Goldrahmen + Abzeichen',vipPerk5:'💣 1 Bombe täglich',vipPerk6:'🎨 Alle Designs freigeschaltet',vipStart:'Jetzt starten',noAdsTitle:'🚫 Werbefrei',noAdsDesc:'Einmaliger Kauf, keine Werbung mehr',noAdsBuy:'20 $ — Werbung entfernen',restoreBtn:'↺ Käufe wiederherstellen',
@@ -1153,9 +1173,9 @@ pwBomb3:'3 Bomben',pwBomb3D:'Nützlich bei Blockaden',pwBomb10:'10 Bomben',pwBom
 setupTitle:'🎮 Profil einrichten',setupDesc:'Gib deine Infos ein, um in der Weltrangliste zu erscheinen',setupNickLbl:'Spitzname',setupNickPh:'Dein Name…',setupCountryLbl:'🌍 Dein Land',setupStart:'Los geht\'s 🚀',weeklyRanking:'WOCHENRANGLISTE',weeklyScore:'Diese Woche',continueOrNew:'Weitermachen oder neu?',newGame:'Neues Spiel',tutRT:'Teile drehen 🔄',tutRD:'Tippe nochmal auf ein gewähltes Teil — es dreht sich im Uhrzeigersinn! Alle 4 Richtungen probieren.',tutRsub:'NOCHMAL TIPPEN → DREHT'},
 FR:{appName:'Tiliq',play:'Jouer',settings:'Paramètres',account:'Compte',leaderboard:'Classement',score:'Score',best:'Meilleur',combo:'Combo',sound:'Son',volume:'Volume',haptic:'Vibration',theme:'Thème',dark:'Sombre',light:'Clair',language:'Langue',save:'Sauvegarder',close:'Fermer',back:'Retour',gameOver:'Partie Terminée !',playAgain:'Rejouer',mainMenu:'Menu Principal',yourScore:'Ton Score',worldRank:'Classement Mondial',newRecord:'🎉 Nouveau Record !',profile:'Profil',username:"Nom d'utilisateur",highScore:'Meilleur',gamesPlayed:'Parties',totalPoints:'Total',worldBoard:'🌍 Classement Mondial',yourRank:'Ton Rang',yourScoreLb:'Score',guest:'Invité',days:'Jours',undo:'Annuler',bomb:'Bombe',rescue:'Sauvetage',
 m_combos:'5 Combos',m_rows:'5 Lignes',m_score:'500 Points',dailyMissions:'Missions du Jour',
-store:'Boutique',continueGame:'Continuer',editProfile:'Modifier le profil →',comboExpired:'Combo terminé',dailyClaimed:"RÉCLAMÉ AUJOURD'HUI",dailyRefresh:'Renouvellement demain',dailyCollect:'Récupérer !',iapSoon:'Achat bientôt disponible !',restored:'Achats restaurés.',copyCode:'Copier',codeCopied:'Copié !',yourCode:'Ton Code',codeShare:'Partage ce code avec tes amis',friendsTitle:'Amis',addFriend:'Ajouter un ami',enterName:'Quel est ton nom ?',namePh:'Ton pseudo...',rescue2ad:'Regarder 2 pubs pour continuer',superBomb:'Super Bombe',tileTheme:'Thème de tuiles',loginForRank:'Connecte-toi pour le classement',friendCodePh:'ABC123',friendCodeLbl:'Ton Code',friendCodeSub:'Partage ce code avec tes amis 👇',rankTitle:'🏆 Classement',
+store:'Boutique',continueGame:'Continuer',editProfile:'Modifier le profil →',comboExpired:'Combo terminé',dailyClaimed:"RÉCLAMÉ AUJOURD'HUI",dailyRefresh:'Renouvellement demain',dailyCollect:'Récupérer !',iapSoon:'Achat bientôt disponible !',restored:'Achats restaurés.',copyCode:'Copier',codeCopied:'Copié !',yourCode:'Ton Code',codeShare:'Partage ce code avec tes amis',friendsTitle:'Amis',addFriend:'Ajouter un ami',enterName:'Quel est ton nom ?',namePh:'Ton pseudo...',rescue2ad:'Regarder 2 pubs pour continuer',superBomb:'Super Bombe',tileTheme:'Thème de tuiles',loginForRank:'Connecte-toi pour le classement',loginForFriends:'Connecte-toi avec Google pour les amis',friendCodePh:'ABC123',friendCodeLbl:'Ton Code',friendCodeSub:'Partage ce code avec tes amis 👇',rankTitle:'🏆 Classement',
 tabThemes:'🎨 Thèmes',tabPower:'⚡ Pouvoirs',tabVip:'👑 VIP',tabGlobal:'🌍 Monde',tabFriends:'👥 Amis',lbShare:'Partager',lbMyCode:'Ton Code',lbAmongFriends:'Parmi les amis',
-statLast:'Dernier',statGames:'Parties',statBest:'Meilleur',statStreak:'Série',dailyBonus:'BONUS QUOTIDIEN',storeTitle:'🛍️ Boutique',syncDesc:'Sauvegarde ton score dans le cloud',accountConn:'✅ Connecté à ton compte',maxLevel:'👑 Niveau maximum !',
+statLast:'Dernier',statGames:'Parties',statBest:'Meilleur',statStreak:'Série',dailyBonus:'BONUS QUOTIDIEN',tomorrow:'Demain',mergeTitle:'Transférer la progression ?',mergeDesc:'Transférer ta progression de cet appareil vers ton compte ? Si non, les données existantes du compte sont utilisées.',mergeYes:'Oui, transférer',mergeNo:'Non, utiliser le compte',inventory:'Inventaire',invCoins:'Pièces',invBombs:'Bombes',invUndos:'Annuler',invThemes:'Thèmes',invBoost:'XP',storeTitle:'🛍️ Boutique',syncDesc:'Sauvegarde ton score dans le cloud',accountConn:'✅ Connecté à ton compte',maxLevel:'👑 Niveau maximum !',
 freeSection:'Gratuit',premiumSection:'Thèmes Premium',powerSection:'Améliorations',coinSection:'Packs de coins',
 badgeActive:'ACTIF',badgeOwned:'ACQUIS',badgeFree:'GRATUIT',btnActive:'✓ Actif',btnApply:'Appliquer',btnUnlock:'Débloquer',
 vipTitle:'Abonnement VIP',vipMonthly:'8 $ / mois',vipPerk1:'🚫 Sans pub à 100 %',vipPerk2:'🪙 200 coins gratuits par semaine',vipPerk3:'⚡ 2× XP par partie',vipPerk4:'🏆 Cadre doré + badge spécial',vipPerk5:'💣 1 bombe gratuite par jour',vipPerk6:'🎨 Tous les thèmes débloqués',vipStart:'Commencer',noAdsTitle:'🚫 Sans publicité',noAdsDesc:'Achat unique, plus jamais de pub',noAdsBuy:'20 $ — Supprimer les pubs',restoreBtn:'↺ Restaurer les achats',
@@ -1164,9 +1184,9 @@ pwBomb3:'3 Bombes',pwBomb3D:'Utile en cas de blocage',pwBomb10:'10 Bombes',pwBom
 setupTitle:'🎮 Configurer le profil',setupDesc:'Entre tes infos pour apparaître dans le classement mondial',setupNickLbl:'Pseudo',setupNickPh:'Ton nom…',setupCountryLbl:'🌍 Ton Pays',setupStart:'C\'est parti 🚀',weeklyRanking:'CLASSEMENT HEBDO',weeklyScore:'Cette Semaine',continueOrNew:'Continuer ou nouveau?',newGame:'Nouvelle partie',tutRT:'Faire pivoter 🔄',tutRD:'Appuie à nouveau sur la pièce choisie — elle pivote dans le sens horaire ! Essaie les 4 directions.',tutRsub:'RE-APPUYER → PIVOTE'},
 ES:{appName:'Tiliq',play:'Jugar',settings:'Ajustes',account:'Cuenta',leaderboard:'Clasificación',score:'Puntos',best:'Mejor',combo:'Combo',sound:'Sonido',volume:'Volumen',haptic:'Vibración',theme:'Tema',dark:'Oscuro',light:'Claro',language:'Idioma',save:'Guardar',close:'Cerrar',back:'Volver',gameOver:'¡Juego Terminado!',playAgain:'Otra Vez',mainMenu:'Menú Principal',yourScore:'Tu Puntuación',worldRank:'Clasificación Mundial',newRecord:'🎉 ¡Nuevo Récord!',profile:'Perfil',username:'Nombre de usuario',highScore:'Mejor',gamesPlayed:'Partidas',totalPoints:'Total',worldBoard:'🌍 Clasificación Mundial',yourRank:'Tu Posición',yourScoreLb:'Puntos',guest:'Invitado',days:'Días',undo:'Deshacer',bomb:'Bomba',rescue:'Rescate',
 m_combos:'5 Combos',m_rows:'5 Filas',m_score:'500 Puntos',dailyMissions:'Misiones Diarias',
-store:'Tienda',continueGame:'Continuar',editProfile:'Editar perfil →',comboExpired:'Combo terminado',dailyClaimed:'RECLAMADO HOY',dailyRefresh:'Se renueva mañana',dailyCollect:'¡Recoger!',iapSoon:'¡Compra próximamente!',restored:'Compras restauradas.',copyCode:'Copiar',codeCopied:'¡Copiado!',yourCode:'Tu Código',codeShare:'Comparte este código con tus amigos',friendsTitle:'Amigos',addFriend:'Añadir amigo',enterName:'¿Cuál es tu nombre?',namePh:'Tu apodo...',rescue2ad:'Ver 2 anuncios para continuar',superBomb:'Super Bomba',tileTheme:'Tema de mosaico',loginForRank:'Inicia sesión para el ranking',friendCodePh:'ABC123',friendCodeLbl:'Tu Código',friendCodeSub:'Comparte este código con tus amigos 👇',rankTitle:'🏆 Clasificación',
+store:'Tienda',continueGame:'Continuar',editProfile:'Editar perfil →',comboExpired:'Combo terminado',dailyClaimed:'RECLAMADO HOY',dailyRefresh:'Se renueva mañana',dailyCollect:'¡Recoger!',iapSoon:'¡Compra próximamente!',restored:'Compras restauradas.',copyCode:'Copiar',codeCopied:'¡Copiado!',yourCode:'Tu Código',codeShare:'Comparte este código con tus amigos',friendsTitle:'Amigos',addFriend:'Añadir amigo',enterName:'¿Cuál es tu nombre?',namePh:'Tu apodo...',rescue2ad:'Ver 2 anuncios para continuar',superBomb:'Super Bomba',tileTheme:'Tema de mosaico',loginForRank:'Inicia sesión para el ranking',loginForFriends:'Inicia sesión con Google para amigos',friendCodePh:'ABC123',friendCodeLbl:'Tu Código',friendCodeSub:'Comparte este código con tus amigos 👇',rankTitle:'🏆 Clasificación',
 tabThemes:'🎨 Temas',tabPower:'⚡ Poderes',tabVip:'👑 VIP',tabGlobal:'🌍 Mundo',tabFriends:'👥 Amigos',lbShare:'Compartir',lbMyCode:'Tu Código',lbAmongFriends:'Entre amigos',
-statLast:'Última',statGames:'Partidas',statBest:'Mejor',statStreak:'Racha',dailyBonus:'BONO DIARIO',storeTitle:'🛍️ Tienda',syncDesc:'Guarda tu puntuación en la nube',accountConn:'✅ Conectado a tu cuenta',maxLevel:'👑 ¡Nivel máximo!',
+statLast:'Última',statGames:'Partidas',statBest:'Mejor',statStreak:'Racha',dailyBonus:'BONO DIARIO',tomorrow:'Mañana',mergeTitle:'¿Transferir progreso?',mergeDesc:'¿Mover tu progreso de este dispositivo a tu cuenta? Si no, se usan los datos existentes de la cuenta.',mergeYes:'Sí, transferir',mergeNo:'No, usar la cuenta',inventory:'Inventario',invCoins:'Monedas',invBombs:'Bombas',invUndos:'Deshacer',invThemes:'Temas',invBoost:'XP',storeTitle:'🛍️ Tienda',syncDesc:'Guarda tu puntuación en la nube',accountConn:'✅ Conectado a tu cuenta',maxLevel:'👑 ¡Nivel máximo!',
 freeSection:'Gratis',premiumSection:'Temas Premium',powerSection:'Mejoras',coinSection:'Paquetes de monedas',
 badgeActive:'ACTIVO',badgeOwned:'TUYO',badgeFree:'GRATIS',btnActive:'✓ Activo',btnApply:'Aplicar',btnUnlock:'Abrir',
 vipTitle:'Membresía VIP',vipMonthly:'$8 / mes',vipPerk1:'🚫 Sin anuncios',vipPerk2:'🪙 200 monedas gratis cada semana',vipPerk3:'⚡ 2× XP por partida',vipPerk4:'🏆 Marco dorado + insignia',vipPerk5:'💣 1 bomba gratis al día',vipPerk6:'🎨 Todos los temas disponibles',vipStart:'Empezar ahora',noAdsTitle:'🚫 Sin anuncios',noAdsDesc:'Compra única, sin anuncios para siempre',noAdsBuy:'$20 — Quitar anuncios',restoreBtn:'↺ Restaurar compras',
@@ -1175,9 +1195,9 @@ pwBomb3:'3 Bombas',pwBomb3D:'Útil cuando te atascas',pwBomb10:'10 Bombas',pwBom
 setupTitle:'🎮 Configurar perfil',setupDesc:'Ingresa tu información para aparecer en el ranking mundial',setupNickLbl:'Apodo',setupNickPh:'Tu nombre…',setupCountryLbl:'🌍 Tu País',setupStart:'¡Empezar 🚀',weeklyRanking:'RANKING SEMANAL',weeklyScore:'Esta Semana',continueOrNew:'¿Continuar o nuevo?',newGame:'Nueva partida',tutRT:'Rotar Piezas 🔄',tutRD:'Toca de nuevo la pieza seleccionada — ¡gira en sentido horario! Prueba las 4 direcciones.',tutRsub:'TOCAR DE NUEVO → GIRA'},
 IT:{appName:'Tiliq',play:'Gioca',settings:'Impostazioni',account:'Account',leaderboard:'Classifica',score:'Punteggio',best:'Migliore',combo:'Combo',sound:'Suono',volume:'Volume',haptic:'Vibrazione',theme:'Tema',dark:'Scuro',light:'Chiaro',language:'Lingua',save:'Salva',close:'Chiudi',back:'Indietro',gameOver:'Fine Partita!',playAgain:'Rigioca',mainMenu:'Menu Principale',yourScore:'Il tuo Punteggio',worldRank:'Classifica Mondiale',newRecord:'🎉 Nuovo Record!',profile:'Profilo',username:'Nome utente',highScore:'Migliore',gamesPlayed:'Partite',totalPoints:'Totale',worldBoard:'🌍 Classifica Mondiale',yourRank:'Tua Posizione',yourScoreLb:'Punteggio',guest:'Ospite',days:'Giorni',undo:'Annulla',bomb:'Bomba',rescue:'Salvataggio',
 m_combos:'5 Combo',m_rows:'5 Righe',m_score:'500 Punti',dailyMissions:'Missioni Giornaliere',
-store:'Negozio',continueGame:'Continua',editProfile:'Modifica profilo →',comboExpired:'Combo terminata',dailyClaimed:'RISCOSSO OGGI',dailyRefresh:'Si rinnova domani',dailyCollect:'Raccogli!',iapSoon:'Acquisto prossimamente!',restored:'Acquisti ripristinati.',copyCode:'Copia',codeCopied:'Copiato!',yourCode:'Il tuo Codice',codeShare:'Condividi questo codice con gli amici',friendsTitle:'Amici',addFriend:'Aggiungi amico',enterName:'Qual è il tuo nome?',namePh:'Il tuo soprannome...',rescue2ad:'Guarda 2 annunci per continuare',superBomb:'Super Bomba',tileTheme:'Tema tessere',loginForRank:'Accedi per la classifica',friendCodePh:'ABC123',friendCodeLbl:'Il tuo Codice',friendCodeSub:'Condividi questo codice con gli amici 👇',rankTitle:'🏆 Classifica',
+store:'Negozio',continueGame:'Continua',editProfile:'Modifica profilo →',comboExpired:'Combo terminata',dailyClaimed:'RISCOSSO OGGI',dailyRefresh:'Si rinnova domani',dailyCollect:'Raccogli!',iapSoon:'Acquisto prossimamente!',restored:'Acquisti ripristinati.',copyCode:'Copia',codeCopied:'Copiato!',yourCode:'Il tuo Codice',codeShare:'Condividi questo codice con gli amici',friendsTitle:'Amici',addFriend:'Aggiungi amico',enterName:'Qual è il tuo nome?',namePh:'Il tuo soprannome...',rescue2ad:'Guarda 2 annunci per continuare',superBomb:'Super Bomba',tileTheme:'Tema tessere',loginForRank:'Accedi per la classifica',loginForFriends:'Accedi con Google per gli amici',friendCodePh:'ABC123',friendCodeLbl:'Il tuo Codice',friendCodeSub:'Condividi questo codice con gli amici 👇',rankTitle:'🏆 Classifica',
 tabThemes:'🎨 Temi',tabPower:'⚡ Poteri',tabVip:'👑 VIP',tabGlobal:'🌍 Mondo',tabFriends:'👥 Amici',lbShare:'Condividi',lbMyCode:'Il tuo Codice',lbAmongFriends:'Tra amici',
-statLast:'Ultimo',statGames:'Partite',statBest:'Migliore',statStreak:'Serie',dailyBonus:'BONUS GIORNALIERO',storeTitle:'🛍️ Negozio',syncDesc:'Salva il punteggio nel cloud',accountConn:'✅ Connesso al tuo account',maxLevel:'👑 Livello massimo!',
+statLast:'Ultimo',statGames:'Partite',statBest:'Migliore',statStreak:'Serie',dailyBonus:'BONUS GIORNALIERO',tomorrow:'Domani',mergeTitle:'Trasferire i progressi?',mergeDesc:'Spostare i progressi di questo dispositivo sul tuo account? Se no, vengono usati i dati esistenti dell\'account.',mergeYes:'Sì, trasferisci',mergeNo:'No, usa l\'account',inventory:'Inventario',invCoins:'Monete',invBombs:'Bombe',invUndos:'Annulla',invThemes:'Temi',invBoost:'XP',storeTitle:'🛍️ Negozio',syncDesc:'Salva il punteggio nel cloud',accountConn:'✅ Connesso al tuo account',maxLevel:'👑 Livello massimo!',
 freeSection:'Gratuito',premiumSection:'Temi Premium',powerSection:'Potenziamenti',coinSection:'Pacchetti monete',
 badgeActive:'ATTIVO',badgeOwned:'POSSEDUTO',badgeFree:'GRATUITO',btnActive:'✓ Attivo',btnApply:'Applica',btnUnlock:'Sblocca',
 vipTitle:'Abbonamento VIP',vipMonthly:'$8 / mese',vipPerk1:'🚫 Senza pubblicità',vipPerk2:'🪙 200 monete gratuite a settimana',vipPerk3:'⚡ 2× XP per partita',vipPerk4:'🏆 Cornice dorata + badge',vipPerk5:'💣 1 bomba gratuita al giorno',vipPerk6:'🎨 Tutti i temi sbloccati',vipStart:'Inizia ora',noAdsTitle:'🚫 Senza pubblicità',noAdsDesc:'Acquisto unico, niente più pubblicità',noAdsBuy:'$20 — Rimuovi pubblicità',restoreBtn:'↺ Ripristina acquisti',
@@ -1186,9 +1206,9 @@ pwBomb3:'3 Bombe',pwBomb3D:'Utile quando sei bloccato',pwBomb10:'10 Bombe',pwBom
 setupTitle:'🎮 Completa il profilo',setupDesc:'Inserisci le tue info per apparire nella classifica mondiale',setupNickLbl:'Soprannome',setupNickPh:'Il tuo nome…',setupCountryLbl:'🌍 Il tuo Paese',setupStart:'Iniziamo 🚀',weeklyRanking:'CLASSIFICA SETTIMANALE',weeklyScore:'Questa Settimana',continueOrNew:'Continuare o nuovo?',newGame:'Nuova partita',tutRT:'Ruota i Pezzi 🔄',tutRD:'Tocca di nuovo il pezzo selezionato — ruota in senso orario! Prova tutte le 4 direzioni.',tutRsub:'TOCCA DI NUOVO → RUOTA'},
 PT:{appName:'Tiliq',play:'Jogar',settings:'Configurações',account:'Conta',leaderboard:'Classificação',score:'Pontos',best:'Melhor',combo:'Combo',sound:'Som',volume:'Volume',haptic:'Vibração',theme:'Tema',dark:'Escuro',light:'Claro',language:'Idioma',save:'Salvar',close:'Fechar',back:'Voltar',gameOver:'Fim de Jogo!',playAgain:'Jogar Novamente',mainMenu:'Menu Principal',yourScore:'Sua Pontuação',worldRank:'Classificação Mundial',newRecord:'🎉 Novo Recorde!',profile:'Perfil',username:'Nome de usuário',highScore:'Melhor',gamesPlayed:'Jogos',totalPoints:'Total',worldBoard:'🌍 Classificação Mundial',yourRank:'Sua Posição',yourScoreLb:'Pontuação',guest:'Convidado',days:'Dias',undo:'Desfazer',bomb:'Bomba',rescue:'Resgate',
 m_combos:'5 Combos',m_rows:'5 Linhas',m_score:'500 Pontos',dailyMissions:'Missões Diárias',
-store:'Loja',continueGame:'Continuar',editProfile:'Editar perfil →',comboExpired:'Combo encerrado',dailyClaimed:'COLETADO HOJE',dailyRefresh:'Renova amanhã',dailyCollect:'Coletar!',iapSoon:'Compra em breve!',restored:'Compras restauradas.',copyCode:'Copiar',codeCopied:'Copiado!',yourCode:'Seu Código',codeShare:'Compartilhe este código com seus amigos',friendsTitle:'Amigos',addFriend:'Adicionar amigo',enterName:'Qual é o seu nome?',namePh:'Seu apelido...',rescue2ad:'Assistir 2 anúncios para continuar',superBomb:'Super Bomba',tileTheme:'Tema de azulejo',loginForRank:'Entre para ver o ranking',friendCodePh:'ABC123',friendCodeLbl:'Seu Código',friendCodeSub:'Compartilhe este código com seus amigos 👇',rankTitle:'🏆 Classificação',
+store:'Loja',continueGame:'Continuar',editProfile:'Editar perfil →',comboExpired:'Combo encerrado',dailyClaimed:'COLETADO HOJE',dailyRefresh:'Renova amanhã',dailyCollect:'Coletar!',iapSoon:'Compra em breve!',restored:'Compras restauradas.',copyCode:'Copiar',codeCopied:'Copiado!',yourCode:'Seu Código',codeShare:'Compartilhe este código com seus amigos',friendsTitle:'Amigos',addFriend:'Adicionar amigo',enterName:'Qual é o seu nome?',namePh:'Seu apelido...',rescue2ad:'Assistir 2 anúncios para continuar',superBomb:'Super Bomba',tileTheme:'Tema de azulejo',loginForRank:'Entre para ver o ranking',loginForFriends:'Entre com Google para ter amigos',friendCodePh:'ABC123',friendCodeLbl:'Seu Código',friendCodeSub:'Compartilhe este código com seus amigos 👇',rankTitle:'🏆 Classificação',
 tabThemes:'🎨 Temas',tabPower:'⚡ Poderes',tabVip:'👑 VIP',tabGlobal:'🌍 Mundo',tabFriends:'👥 Amigos',lbShare:'Compartilhar',lbMyCode:'Seu Código',lbAmongFriends:'Entre amigos',
-statLast:'Última',statGames:'Jogos',statBest:'Melhor',statStreak:'Série',dailyBonus:'BÔNUS DIÁRIO',storeTitle:'🛍️ Loja',syncDesc:'Salve sua pontuação na nuvem',accountConn:'✅ Conectado à sua conta',maxLevel:'👑 Nível máximo!',
+statLast:'Última',statGames:'Jogos',statBest:'Melhor',statStreak:'Série',dailyBonus:'BÔNUS DIÁRIO',tomorrow:'Amanhã',mergeTitle:'Transferir progresso?',mergeDesc:'Mover seu progresso deste dispositivo para sua conta? Se não, os dados existentes da conta serão usados.',mergeYes:'Sim, transferir',mergeNo:'Não, usar conta',inventory:'Inventário',invCoins:'Moedas',invBombs:'Bombas',invUndos:'Desfazer',invThemes:'Temas',invBoost:'XP',storeTitle:'🛍️ Loja',syncDesc:'Salve sua pontuação na nuvem',accountConn:'✅ Conectado à sua conta',maxLevel:'👑 Nível máximo!',
 freeSection:'Grátis',premiumSection:'Temas Premium',powerSection:'Melhorias',coinSection:'Pacotes de moedas',
 badgeActive:'ATIVO',badgeOwned:'POSSUI',badgeFree:'GRÁTIS',btnActive:'✓ Ativo',btnApply:'Aplicar',btnUnlock:'Desbloquear',
 vipTitle:'Assinatura VIP',vipMonthly:'$8 / mês',vipPerk1:'🚫 100% sem anúncios',vipPerk2:'🪙 200 moedas grátis por semana',vipPerk3:'⚡ 2× XP por jogo',vipPerk4:'🏆 Moldura dourada + insígnia',vipPerk5:'💣 1 bomba grátis por dia',vipPerk6:'🎨 Todos os temas desbloqueados',vipStart:'Começar agora',noAdsTitle:'🚫 Sem anúncios',noAdsDesc:'Compra única, sem anúncios para sempre',noAdsBuy:'$20 — Remover anúncios',restoreBtn:'↺ Restaurar compras',
@@ -1197,9 +1217,9 @@ pwBomb3:'3 Bombas',pwBomb3D:'Útil quando travado',pwBomb10:'10 Bombas',pwBomb10
 setupTitle:'🎮 Configurar perfil',setupDesc:'Insira suas informações para aparecer no ranking mundial',setupNickLbl:'Apelido',setupNickPh:'Seu nome…',setupCountryLbl:'🌍 Seu País',setupStart:'Vamos lá 🚀',weeklyRanking:'RANKING SEMANAL',weeklyScore:'Esta Semana',continueOrNew:'Continuar ou novo?',newGame:'Novo jogo',tutRT:'Girar Peças 🔄',tutRD:'Toque novamente na peça selecionada — ela gira no sentido horário! Experimente as 4 direções.',tutRsub:'TOQUE DE NOVO → GIRA'},
 RU:{appName:'Tiliq',play:'Играть',settings:'Настройки',account:'Аккаунт',leaderboard:'Рейтинг',score:'Очки',best:'Лучший',combo:'Комбо',sound:'Звук',volume:'Громкость',haptic:'Вибрация',theme:'Тема',dark:'Тёмный',light:'Светлый',language:'Язык',save:'Сохранить',close:'Закрыть',back:'Назад',gameOver:'Игра Окончена!',playAgain:'Снова',mainMenu:'Главное меню',yourScore:'Твой счёт',worldRank:'Мировой рейтинг',newRecord:'🎉 Новый рекорд!',profile:'Профиль',username:'Имя пользователя',highScore:'Лучший',gamesPlayed:'Игры',totalPoints:'Итого',worldBoard:'🌍 Мировой рейтинг',yourRank:'Твой ранг',yourScoreLb:'Очки',guest:'Гость',days:'Дней',undo:'Отмена',bomb:'Бомба',rescue:'Спасение',
 m_combos:'5 комбо',m_rows:'5 рядов',m_score:'500 очков',dailyMissions:'Ежедневные задания',
-store:'Магазин',continueGame:'Продолжить',editProfile:'Изменить профиль →',comboExpired:'Комбо закончилось',dailyClaimed:'УЖЕ ПОЛУЧЕНО',dailyRefresh:'Обновится завтра',dailyCollect:'Получить!',iapSoon:'Покупки скоро будут доступны!',restored:'Покупки восстановлены.',copyCode:'Копировать',codeCopied:'Скопировано!',yourCode:'Ваш код',codeShare:'Поделитесь кодом с друзьями',friendsTitle:'Друзья',addFriend:'Добавить друга',enterName:'Как тебя зовут?',namePh:'Твой никнейм...',rescue2ad:'Смотреть 2 рекламы для продолжения',superBomb:'Супер бомба',tileTheme:'Тема плиток',loginForRank:'Войдите для рейтинга',friendCodePh:'ABC123',friendCodeLbl:'Ваш код',friendCodeSub:'Поделитесь кодом с друзьями 👇',rankTitle:'🏆 Рейтинг',
+store:'Магазин',continueGame:'Продолжить',editProfile:'Изменить профиль →',comboExpired:'Комбо закончилось',dailyClaimed:'УЖЕ ПОЛУЧЕНО',dailyRefresh:'Обновится завтра',dailyCollect:'Получить!',iapSoon:'Покупки скоро будут доступны!',restored:'Покупки восстановлены.',copyCode:'Копировать',codeCopied:'Скопировано!',yourCode:'Ваш код',codeShare:'Поделитесь кодом с друзьями',friendsTitle:'Друзья',addFriend:'Добавить друга',enterName:'Как тебя зовут?',namePh:'Твой никнейм...',rescue2ad:'Смотреть 2 рекламы для продолжения',superBomb:'Супер бомба',tileTheme:'Тема плиток',loginForRank:'Войдите для рейтинга',loginForFriends:'Войдите через Google для друзей',friendCodePh:'ABC123',friendCodeLbl:'Ваш код',friendCodeSub:'Поделитесь кодом с друзьями 👇',rankTitle:'🏆 Рейтинг',
 tabThemes:'🎨 Темы',tabPower:'⚡ Силы',tabVip:'👑 VIP',tabGlobal:'🌍 Мир',tabFriends:'👥 Друзья',lbShare:'Поделиться',lbMyCode:'Ваш код',lbAmongFriends:'Среди друзей',
-statLast:'Посл.',statGames:'Игры',statBest:'Лучший',statStreak:'Серия',dailyBonus:'ЕЖЕДНЕВНЫЙ БОНУС',storeTitle:'🛍️ Магазин',syncDesc:'Сохрани счёт в облаке',accountConn:'✅ Подключено к аккаунту',maxLevel:'👑 Максимальный уровень!',
+statLast:'Посл.',statGames:'Игры',statBest:'Лучший',statStreak:'Серия',dailyBonus:'ЕЖЕДНЕВНЫЙ БОНУС',tomorrow:'Завтра',mergeTitle:'Перенести прогресс?',mergeDesc:'Перенести прогресс с этого устройства в аккаунт? Если нет, будут использованы данные аккаунта.',mergeYes:'Да, перенести',mergeNo:'Нет, аккаунт',inventory:'Инвентарь',invCoins:'Монеты',invBombs:'Бомбы',invUndos:'Отмена',invThemes:'Темы',invBoost:'XP',storeTitle:'🛍️ Магазин',syncDesc:'Сохрани счёт в облаке',accountConn:'✅ Подключено к аккаунту',maxLevel:'👑 Максимальный уровень!',
 freeSection:'Бесплатно',premiumSection:'Премиум темы',powerSection:'Усилители',coinSection:'Пакеты монет',
 badgeActive:'АКТИВНЫЙ',badgeOwned:'КУПЛЕНО',badgeFree:'БЕСПЛАТНО',btnActive:'✓ Активно',btnApply:'Применить',btnUnlock:'Открыть',
 vipTitle:'VIP-подписка',vipMonthly:'$8 / месяц',vipPerk1:'🚫 Полностью без рекламы',vipPerk2:'🪙 200 монет каждую неделю',vipPerk3:'⚡ 2× XP за каждую игру',vipPerk4:'🏆 Золотая рамка + значок',vipPerk5:'💣 1 бесплатная бомба в день',vipPerk6:'🎨 Все темы открыты',vipStart:'Начать',noAdsTitle:'🚫 Без рекламы',noAdsDesc:'Разовая покупка, больше никакой рекламы',noAdsBuy:'$20 — Убрать рекламу',restoreBtn:'↺ Восстановить покупки',
@@ -1208,9 +1228,9 @@ pwBomb3:'3 Бомбы',pwBomb3D:'Пригодится при блокировк�
 setupTitle:'🎮 Настройка профиля',setupDesc:'Введи данные для отображения в мировом рейтинге',setupNickLbl:'Никнейм',setupNickPh:'Твоё имя…',setupCountryLbl:'🌍 Твоя страна',setupStart:'Начать 🚀',weeklyRanking:'НЕДЕЛЬНЫЙ РЕЙТИНГ',weeklyScore:'Эта неделя',continueOrNew:'Продолжить или новая?',newGame:'Новая игра',tutRT:'Повернуть фигуры 🔄',tutRD:'Нажми на выбранную фигуру ещё раз — она повернётся по часовой стрелке! Попробуй все 4 стороны.',tutRsub:'ЕЩЁ РАЗ → ПОВОРОТ'},
 HI:{appName:'Tiliq',play:'खेलें',settings:'सेटिंग्स',account:'खाता',leaderboard:'रैंकिंग',score:'स्कोर',best:'सर्वश्रेष्ठ',combo:'कॉम्बो',sound:'आवाज़',volume:'वॉल्यूम',haptic:'कंपन',theme:'थीम',dark:'डार्क',light:'लाइट',language:'भाषा',save:'सेव',close:'बंद',back:'वापस',gameOver:'गेम ओवर!',playAgain:'फिर खेलें',mainMenu:'मुख्य मेनू',yourScore:'आपका स्कोर',worldRank:'विश्व रैंकिंग',newRecord:'🎉 नया रिकॉर्ड!',profile:'प्रोफाइल',username:'उपयोगकर्ता नाम',highScore:'सर्वश्रेष्ठ',gamesPlayed:'खेल',totalPoints:'कुल',worldBoard:'🌍 विश्व रैंकिंग',yourRank:'आपकी रैंक',yourScoreLb:'स्कोर',guest:'अतिथि',days:'दिन',undo:'पूर्ववत',bomb:'बम',rescue:'बचाव',
 m_combos:'5 कॉम्बो',m_rows:'5 पंक्तियाँ',m_score:'500 अंक',dailyMissions:'दैनिक मिशन',
-store:'स्टोर',continueGame:'जारी रखें',editProfile:'प्रोफाइल संपादित करें →',comboExpired:'कॉम्बो समाप्त',dailyClaimed:'आज प्राप्त किया',dailyRefresh:'कल रीसेट होगा',dailyCollect:'एकत्र करें!',iapSoon:'खरीदारी जल्द आ रही है!',restored:'खरीदारी पुनर्स्थापित।',copyCode:'कॉपी',codeCopied:'कॉपी हो गया!',yourCode:'आपका कोड',codeShare:'यह कोड मित्रों के साथ साझा करें',friendsTitle:'मित्र',addFriend:'मित्र जोड़ें',enterName:'आपका नाम क्या है?',namePh:'आपका उपनाम...',rescue2ad:'जारी रखने के लिए 2 विज्ञापन देखें',superBomb:'सुपर बम',tileTheme:'टाइल थीम',loginForRank:'रैंकिंग के लिए लॉगिन करें',friendCodePh:'ABC123',friendCodeLbl:'आपका कोड',friendCodeSub:'यह कोड मित्रों के साथ साझा करें 👇',rankTitle:'🏆 रैंकिंग',
+store:'स्टोर',continueGame:'जारी रखें',editProfile:'प्रोफाइल संपादित करें →',comboExpired:'कॉम्बो समाप्त',dailyClaimed:'आज प्राप्त किया',dailyRefresh:'कल रीसेट होगा',dailyCollect:'एकत्र करें!',iapSoon:'खरीदारी जल्द आ रही है!',restored:'खरीदारी पुनर्स्थापित।',copyCode:'कॉपी',codeCopied:'कॉपी हो गया!',yourCode:'आपका कोड',codeShare:'यह कोड मित्रों के साथ साझा करें',friendsTitle:'मित्र',addFriend:'मित्र जोड़ें',enterName:'आपका नाम क्या है?',namePh:'आपका उपनाम...',rescue2ad:'जारी रखने के लिए 2 विज्ञापन देखें',superBomb:'सुपर बम',tileTheme:'टाइल थीम',loginForRank:'रैंकिंग के लिए लॉगिन करें',loginForFriends:'दोस्तों के लिए Google से लॉगिन करें',friendCodePh:'ABC123',friendCodeLbl:'आपका कोड',friendCodeSub:'यह कोड मित्रों के साथ साझा करें 👇',rankTitle:'🏆 रैंकिंग',
 tabThemes:'🎨 थीम',tabPower:'⚡ शक्तियाँ',tabVip:'👑 VIP',tabGlobal:'🌍 दुनिया',tabFriends:'👥 मित्र',lbShare:'साझा करें',lbMyCode:'आपका कोड',lbAmongFriends:'मित्रों में',
-statLast:'पिछला',statGames:'खेल',statBest:'सर्वश्रेष्ठ',statStreak:'सिलसिला',dailyBonus:'दैनिक बोनस',storeTitle:'🛍️ स्टोर',syncDesc:'अपना स्कोर क्लाउड में सेव करें',accountConn:'✅ खाते से जुड़ा हुआ',maxLevel:'👑 अधिकतम स्तर!',
+statLast:'पिछला',statGames:'खेल',statBest:'सर्वश्रेष्ठ',statStreak:'सिलसिला',dailyBonus:'दैनिक बोनस',tomorrow:'कल',mergeTitle:'प्रगति स्थानांतरित करें?',mergeDesc:'इस डिवाइस की प्रगति को अपने खाते में ले जाएं? नहीं तो खाते का मौजूदा डेटा उपयोग होगा।',mergeYes:'हां, स्थानांतरित करें',mergeNo:'नहीं, खाता उपयोग करें',inventory:'इन्वेंटरी',invCoins:'सिक्के',invBombs:'बम',invUndos:'पूर्ववत',invThemes:'थीम',invBoost:'XP',storeTitle:'🛍️ स्टोर',syncDesc:'अपना स्कोर क्लाउड में सेव करें',accountConn:'✅ खाते से जुड़ा हुआ',maxLevel:'👑 अधिकतम स्तर!',
 freeSection:'निःशुल्क',premiumSection:'प्रीमियम थीम',powerSection:'पॉवर-अप',coinSection:'कॉइन पैक',
 badgeActive:'सक्रिय',badgeOwned:'आपका',badgeFree:'मुफ्त',btnActive:'✓ सक्रिय',btnApply:'लागू करें',btnUnlock:'खोलें',
 vipTitle:'VIP सदस्यता',vipMonthly:'$8 / माह',vipPerk1:'🚫 बिल्कुल विज्ञापन-मुक्त',vipPerk2:'🪙 हर हफ्ते 200 मुफ्त कॉइन',vipPerk3:'⚡ हर गेम 2× XP',vipPerk4:'🏆 गोल्ड फ्रेम + विशेष बैज',vipPerk5:'💣 हर दिन 1 मुफ्त बम',vipPerk6:'🎨 सभी थीम अनलॉक',vipStart:'अभी शुरू करें',noAdsTitle:'🚫 विज्ञापन-मुक्त',noAdsDesc:'एक बार खरीदें, हमेशा विज्ञापन-मुक्त',noAdsBuy:'$20 — विज्ञापन हटाएं',restoreBtn:'↺ खरीदारी पुनर्स्थापित करें',
@@ -1219,9 +1239,9 @@ pwBomb3:'3 बम',pwBomb3D:'अटकने पर काम आता है',
 setupTitle:'🎮 प्रोफ़ाइल सेटअप',setupDesc:'विश्व रैंकिंग में दिखने के लिए अपनी जानकारी दर्ज करें',setupNickLbl:'उपनाम',setupNickPh:'आपका नाम…',setupCountryLbl:'🌍 आपका देश',setupStart:'शुरू करें 🚀',weeklyRanking:'साप्ताहिक रैंकिंग',weeklyScore:'इस सप्ताह',continueOrNew:'जारी रखें या नया?',newGame:'नया खेल',tutRT:'टुकड़े घुमाएं 🔄',tutRD:'चुने हुए टुकड़े पर फिर से टैप करें — यह दक्षिणावर्त घूमता है! सभी 4 दिशाएं आज़माएं।',tutRsub:'फिर टैप → घूमे'},
 NL:{appName:'Tiliq',play:'Spelen',settings:'Instellingen',account:'Account',leaderboard:'Ranglijst',score:'Score',best:'Beste',combo:'Combo',sound:'Geluid',volume:'Volume',haptic:'Trillen',theme:'Thema',dark:'Donker',light:'Licht',language:'Taal',save:'Opslaan',close:'Sluiten',back:'Terug',gameOver:'Game Over!',playAgain:'Opnieuw',mainMenu:'Hoofdmenu',yourScore:'Jouw Score',worldRank:'Wereldranglijst',newRecord:'🎉 Nieuw Record!',profile:'Profiel',username:'Gebruikersnaam',highScore:'Beste',gamesPlayed:'Spellen',totalPoints:'Totaal',worldBoard:'🌍 Wereldranglijst',yourRank:'Jouw Rang',yourScoreLb:'Score',guest:'Gast',days:'Dagen',undo:'Ongedaan',bomb:'Bom',rescue:'Redding',
 m_combos:'5 Combo\'s',m_rows:'5 Rijen',m_score:'500 Punten',dailyMissions:'Dagelijkse Missies',
-store:'Winkel',continueGame:'Doorgaan',editProfile:'Profiel bewerken →',comboExpired:'Combo voorbij',dailyClaimed:'VANDAAG VERDIEND',dailyRefresh:'Morgen vernieuwd',dailyCollect:'Verzamelen!',iapSoon:'Aankoop binnenkort beschikbaar!',restored:'Aankopen hersteld.',copyCode:'Kopiëren',codeCopied:'Gekopieerd!',yourCode:'Jouw Code',codeShare:'Deel deze code met vrienden',friendsTitle:'Vrienden',addFriend:'Vriend toevoegen',enterName:'Wat is jouw naam?',namePh:'Jouw bijnaam...',rescue2ad:'2 advertenties bekijken om door te gaan',superBomb:'Super Bom',tileTheme:'Tegel Thema',loginForRank:'Log in voor ranglijst',friendCodePh:'ABC123',friendCodeLbl:'Jouw Code',friendCodeSub:'Deel deze code met vrienden 👇',rankTitle:'🏆 Ranglijst',
+store:'Winkel',continueGame:'Doorgaan',editProfile:'Profiel bewerken →',comboExpired:'Combo voorbij',dailyClaimed:'VANDAAG VERDIEND',dailyRefresh:'Morgen vernieuwd',dailyCollect:'Verzamelen!',iapSoon:'Aankoop binnenkort beschikbaar!',restored:'Aankopen hersteld.',copyCode:'Kopiëren',codeCopied:'Gekopieerd!',yourCode:'Jouw Code',codeShare:'Deel deze code met vrienden',friendsTitle:'Vrienden',addFriend:'Vriend toevoegen',enterName:'Wat is jouw naam?',namePh:'Jouw bijnaam...',rescue2ad:'2 advertenties bekijken om door te gaan',superBomb:'Super Bom',tileTheme:'Tegel Thema',loginForRank:'Log in voor ranglijst',loginForFriends:'Log in met Google voor vrienden',friendCodePh:'ABC123',friendCodeLbl:'Jouw Code',friendCodeSub:'Deel deze code met vrienden 👇',rankTitle:'🏆 Ranglijst',
 tabThemes:'🎨 Thema\'s',tabPower:'⚡ Krachten',tabVip:'👑 VIP',tabGlobal:'🌍 Wereld',tabFriends:'👥 Vrienden',lbShare:'Delen',lbMyCode:'Jouw Code',lbAmongFriends:'Onder vrienden',
-statLast:'Laatste',statGames:'Spellen',statBest:'Beste',statStreak:'Reeks',dailyBonus:'DAGELIJKS BONUS',storeTitle:'🛍️ Winkel',syncDesc:'Sla je score op in de cloud',accountConn:'✅ Verbonden met je account',maxLevel:'👑 Maximaal niveau!',
+statLast:'Laatste',statGames:'Spellen',statBest:'Beste',statStreak:'Reeks',dailyBonus:'DAGELIJKS BONUS',tomorrow:'Morgen',mergeTitle:'Voortgang overzetten?',mergeDesc:'Je voortgang op dit apparaat naar je account overzetten? Zo niet, dan worden de bestaande accountgegevens gebruikt.',mergeYes:'Ja, overzetten',mergeNo:'Nee, account gebruiken',inventory:'Inventaris',invCoins:'Munten',invBombs:'Bommen',invUndos:'Ongedaan',invThemes:'Thema\'s',invBoost:'XP',storeTitle:'🛍️ Winkel',syncDesc:'Sla je score op in de cloud',accountConn:'✅ Verbonden met je account',maxLevel:'👑 Maximaal niveau!',
 freeSection:'Gratis',premiumSection:'Premium thema\'s',powerSection:'Boosts',coinSection:'Coin-pakketten',
 badgeActive:'ACTIEF',badgeOwned:'BEZIT',badgeFree:'GRATIS',btnActive:'✓ Actief',btnApply:'Toepassen',btnUnlock:'Ontgrendelen',
 vipTitle:'VIP-lidmaatschap',vipMonthly:'$8 / maand',vipPerk1:'🚫 100% advertentievrij',vipPerk2:'🪙 200 gratis munten per week',vipPerk3:'⚡ 2× XP per spel',vipPerk4:'🏆 Gouden rand + badge',vipPerk5:'💣 1 gratis bom per dag',vipPerk6:'🎨 Alle thema\'s ontgrendeld',vipStart:'Nu beginnen',noAdsTitle:'🚫 Advertentievrij',noAdsDesc:'Eenmalige aankoop, nooit meer advertenties',noAdsBuy:'$20 — Advertenties verwijderen',restoreBtn:'↺ Aankopen herstellen',
@@ -1230,9 +1250,9 @@ pwBomb3:'3 Bommen',pwBomb3D:'Handig als je vastzit',pwBomb10:'10 Bommen',pwBomb1
 setupTitle:'🎮 Profiel instellen',setupDesc:'Voer je gegevens in om in de wereldranglijst te verschijnen',setupNickLbl:'Bijnaam',setupNickPh:'Jouw naam…',setupCountryLbl:'🌍 Jouw Land',setupStart:'Aan de slag 🚀',weeklyRanking:'WEEKRANGLIJST',weeklyScore:'Deze Week',continueOrNew:'Doorgaan of nieuw?',newGame:'Nieuw spel',tutRT:'Stukken draaien 🔄',tutRD:'Tik opnieuw op een gekozen stuk — het draait met de klok mee! Probeer alle 4 richtingen.',tutRsub:'OPNIEUW TIKKEN → DRAAIT'},
 AR:{appName:'Tiliq',play:'العب',settings:'الإعدادات',account:'الحساب',leaderboard:'الترتيب',score:'النقاط',best:'الأفضل',combo:'تتالي',sound:'الصوت',volume:'مستوى الصوت',haptic:'اهتزاز',theme:'المظهر',dark:'داكن',light:'فاتح',language:'اللغة',save:'حفظ',close:'إغلاق',back:'رجوع',gameOver:'انتهت اللعبة!',playAgain:'العب مرة أخرى',mainMenu:'القائمة الرئيسية',yourScore:'نقاطك',worldRank:'الترتيب العالمي',newRecord:'🎉 رقم قياسي!',profile:'الملف',username:'اسم المستخدم',highScore:'أعلى نقاط',gamesPlayed:'الألعاب',totalPoints:'المجموع',worldBoard:'🌍 الترتيب العالمي',yourRank:'ترتيبك',yourScoreLb:'نقاطك',guest:'ضيف',days:'يوم',undo:'تراجع',bomb:'قنبلة',rescue:'إنقاذ',
 m_combos:'5 تتاليات',m_rows:'5 صفوف',m_score:'500 نقطة',dailyMissions:'مهام اليوم',
-store:'المتجر',continueGame:'متابعة',editProfile:'تعديل الملف →',comboExpired:'انتهى التتالي',dailyClaimed:'تم الاستلام اليوم',dailyRefresh:'يتجدد غداً',dailyCollect:'اجمع!',iapSoon:'الشراء قريباً!',restored:'تمت استعادة المشتريات.',copyCode:'نسخ',codeCopied:'تم النسخ!',yourCode:'كودك',codeShare:'شارك هذا الكود مع أصدقائك',friendsTitle:'الأصدقاء',addFriend:'إضافة صديق',enterName:'ما اسمك؟',namePh:'لقبك...',rescue2ad:'شاهد إعلانين للمتابعة',superBomb:'قنبلة خارقة',tileTheme:'مظهر البلاط',loginForRank:'سجّل الدخول للترتيب',friendCodePh:'ABC123',friendCodeLbl:'كودك',friendCodeSub:'شارك هذا الكود مع أصدقائك 👇',rankTitle:'🏆 الترتيب',
+store:'المتجر',continueGame:'متابعة',editProfile:'تعديل الملف →',comboExpired:'انتهى التتالي',dailyClaimed:'تم الاستلام اليوم',dailyRefresh:'يتجدد غداً',dailyCollect:'اجمع!',iapSoon:'الشراء قريباً!',restored:'تمت استعادة المشتريات.',copyCode:'نسخ',codeCopied:'تم النسخ!',yourCode:'كودك',codeShare:'شارك هذا الكود مع أصدقائك',friendsTitle:'الأصدقاء',addFriend:'إضافة صديق',enterName:'ما اسمك؟',namePh:'لقبك...',rescue2ad:'شاهد إعلانين للمتابعة',superBomb:'قنبلة خارقة',tileTheme:'مظهر البلاط',loginForRank:'سجّل الدخول للترتيب',loginForFriends:'سجّل الدخول بحساب Google للأصدقاء',friendCodePh:'ABC123',friendCodeLbl:'كودك',friendCodeSub:'شارك هذا الكود مع أصدقائك 👇',rankTitle:'🏆 الترتيب',
 tabThemes:'🎨 المظاهر',tabPower:'⚡ القوى',tabVip:'👑 VIP',tabGlobal:'🌍 العالم',tabFriends:'👥 الأصدقاء',lbShare:'مشاركة',lbMyCode:'كودك',lbAmongFriends:'بين الأصدقاء',
-statLast:'الأخير',statGames:'الألعاب',statBest:'الأفضل',statStreak:'سلسلة',dailyBonus:'مكافأة يومية',storeTitle:'🛍️ المتجر',syncDesc:'احفظ نقاطك في السحابة',accountConn:'✅ متصل بحسابك',maxLevel:'👑 أعلى مستوى!',
+statLast:'الأخير',statGames:'الألعاب',statBest:'الأفضل',statStreak:'سلسلة',dailyBonus:'مكافأة يومية',tomorrow:'غداً',mergeTitle:'نقل التقدم؟',mergeDesc:'هل تريد نقل تقدمك على هذا الجهاز إلى حسابك؟ إذا لا، سيتم استخدام بيانات الحساب الحالية.',mergeYes:'نعم، انقل',mergeNo:'لا، استخدم الحساب',inventory:'المخزون',invCoins:'عملات',invBombs:'قنابل',invUndos:'تراجع',invThemes:'سمات',invBoost:'XP',storeTitle:'🛍️ المتجر',syncDesc:'احفظ نقاطك في السحابة',accountConn:'✅ متصل بحسابك',maxLevel:'👑 أعلى مستوى!',
 freeSection:'مجاني',premiumSection:'مظاهر مميزة',powerSection:'تحسينات',coinSection:'حزم العملات',
 badgeActive:'نشط',badgeOwned:'مملوك',badgeFree:'مجاني',btnActive:'✓ نشط',btnApply:'تطبيق',btnUnlock:'فتح',
 vipTitle:'عضوية VIP',vipMonthly:'$8 / شهر',vipPerk1:'🚫 بدون إعلانات تماماً',vipPerk2:'🪙 200 عملة مجانية أسبوعياً',vipPerk3:'⚡ 2× XP لكل لعبة',vipPerk4:'🏆 إطار ذهبي + شارة خاصة',vipPerk5:'💣 قنبلة مجانية يومياً',vipPerk6:'🎨 جميع المظاهر متاحة',vipStart:'ابدأ الآن',noAdsTitle:'🚫 بدون إعلانات',noAdsDesc:'شراء مرة واحدة، لا إعلانات للأبد',noAdsBuy:'$20 — إزالة الإعلانات',restoreBtn:'↺ استعادة المشتريات',
@@ -1241,9 +1261,9 @@ pwBomb3:'3 قنابل',pwBomb3D:'مفيدة عند الانسداد',pwBomb10:'1
 setupTitle:'🎮 إعداد الملف الشخصي',setupDesc:'أدخل معلوماتك للظهور في الترتيب العالمي',setupNickLbl:'اللقب',setupNickPh:'اسمك…',setupCountryLbl:'🌍 بلدك',setupStart:'ابدأ 🚀',weeklyRanking:'الترتيب الأسبوعي',weeklyScore:'هذا الأسبوع',continueOrNew:'متابعة أم جديد؟',newGame:'لعبة جديدة',tutRT:'تدوير القطع 🔄',tutRD:'اضغط مرة أخرى على القطعة المحددة — تدور في اتجاه عقارب الساعة! جرّب الاتجاهات الأربعة.',tutRsub:'اضغط مجدداً ← يدور'},
 ZH:{appName:'Tiliq',play:'开始',settings:'设置',account:'账户',leaderboard:'排行榜',score:'分数',best:'最高',combo:'连击',sound:'声音',volume:'音量',haptic:'震动',theme:'主题',dark:'深色',light:'浅色',language:'语言',save:'保存',close:'关闭',back:'返回',gameOver:'游戏结束！',playAgain:'再来一局',mainMenu:'主菜单',yourScore:'你的分数',worldRank:'世界排名',newRecord:'🎉 新纪录！',profile:'个人资料',username:'用户名',highScore:'最高分',gamesPlayed:'游戏次数',totalPoints:'总分',worldBoard:'🌍 世界排名',yourRank:'你的排名',yourScoreLb:'分数',guest:'访客',days:'天',undo:'撤销',bomb:'炸弹',rescue:'救援',
 m_combos:'获得5连击',m_rows:'消除5行',m_score:'获得500分',dailyMissions:'每日任务',
-store:'商店',continueGame:'继续',editProfile:'编辑资料 →',comboExpired:'连击结束',dailyClaimed:'今日已领取',dailyRefresh:'明日刷新',dailyCollect:'领取！',iapSoon:'购买功能即将上线！',restored:'购买已恢复。',copyCode:'复制',codeCopied:'已复制！',yourCode:'你的代码',codeShare:'把这个代码分享给朋友',friendsTitle:'好友',addFriend:'添加好友',enterName:'你叫什么名字？',namePh:'你的昵称...',rescue2ad:'看2个广告继续游戏',superBomb:'超级炸弹',tileTheme:'方块主题',loginForRank:'登录查看排名',friendCodePh:'ABC123',friendCodeLbl:'你的代码',friendCodeSub:'把这个代码分享给朋友 👇',rankTitle:'🏆 排行榜',
+store:'商店',continueGame:'继续',editProfile:'编辑资料 →',comboExpired:'连击结束',dailyClaimed:'今日已领取',dailyRefresh:'明日刷新',dailyCollect:'领取！',iapSoon:'购买功能即将上线！',restored:'购买已恢复。',copyCode:'复制',codeCopied:'已复制！',yourCode:'你的代码',codeShare:'把这个代码分享给朋友',friendsTitle:'好友',addFriend:'添加好友',enterName:'你叫什么名字？',namePh:'你的昵称...',rescue2ad:'看2个广告继续游戏',superBomb:'超级炸弹',tileTheme:'方块主题',loginForRank:'登录查看排名',loginForFriends:'使用 Google 登录以添加好友',friendCodePh:'ABC123',friendCodeLbl:'你的代码',friendCodeSub:'把这个代码分享给朋友 👇',rankTitle:'🏆 排行榜',
 tabThemes:'🎨 主题',tabPower:'⚡ 能力',tabVip:'👑 VIP',tabGlobal:'🌍 全球',tabFriends:'👥 好友',lbShare:'分享',lbMyCode:'你的代码',lbAmongFriends:'好友排名',
-statLast:'上次',statGames:'游戏',statBest:'最高',statStreak:'连胜',dailyBonus:'每日奖励',storeTitle:'🛍️ 商店',syncDesc:'将分数保存到云端',accountConn:'✅ 已连接到您的账户',maxLevel:'👑 最高等级！',
+statLast:'上次',statGames:'游戏',statBest:'最高',statStreak:'连胜',dailyBonus:'每日奖励',tomorrow:'明天',mergeTitle:'转移进度？',mergeDesc:'将此设备上的进度转移到您的账户？如果否，将使用账户中的现有数据。',mergeYes:'是，转移',mergeNo:'否，使用账户',inventory:'物品栏',invCoins:'金币',invBombs:'炸弹',invUndos:'撤销',invThemes:'主题',invBoost:'XP',storeTitle:'🛍️ 商店',syncDesc:'将分数保存到云端',accountConn:'✅ 已连接到您的账户',maxLevel:'👑 最高等级！',
 freeSection:'免费',premiumSection:'高级主题',powerSection:'强化道具',coinSection:'金币包',
 badgeActive:'已激活',badgeOwned:'已拥有',badgeFree:'免费',btnActive:'✓ 已激活',btnApply:'应用',btnUnlock:'解锁',
 vipTitle:'VIP会员',vipMonthly:'$8 / 月',vipPerk1:'🚫 完全无广告',vipPerk2:'🪙 每周200免费金币',vipPerk3:'⚡ 每局2倍XP',vipPerk4:'🏆 金色边框+特殊徽章',vipPerk5:'💣 每天1个免费炸弹',vipPerk6:'🎨 所有主题已解锁',vipStart:'立即开始',noAdsTitle:'🚫 无广告',noAdsDesc:'一次性购买，永久无广告',noAdsBuy:'$20 — 移除广告',restoreBtn:'↺ 恢复购买',
@@ -1313,6 +1333,8 @@ function applyLang(){
   renderDailyCard();
   if(document.getElementById('store-body')) renderStoreBody();
   updateContinueBtn();
+  // İsim çeviriyle ezilmesin — gerçek profil adını geri yaz
+  if(typeof updateMenuAvatar==='function') updateMenuAvatar();
 }
 function setLang(l){lang=l;applyLang();}
 
@@ -1448,8 +1470,20 @@ function _selectCountryInGrid(gridId, flag, name){
 }
 
 function myFlag(){return acct.country||LB_FLAGS[lang]||'🏳️';}
-function displayName(){return acct.nickname||acct.name||t('guest');}
+function displayName(){return acct.nickname||acct.name||acct._googleName||'Player';}
 function playerLabel(){return myFlag()+' '+displayName();}
+
+// Arkadaş sistemi gerçek (Google) hesap gerektirir — Firestore auth zorunlu
+function isLoggedIn(){return !!(acct._fbLogged&&acct.uid);}
+function requireAccount(msgKey){
+  if(isLoggedIn()) return true;
+  // Sıralama paneli açıksa kapat (account modal'ı onun üstünde göstermek için)
+  const lb=document.getElementById('lb-panel');
+  if(lb) lb.classList.remove('open');
+  showCelebration(t(msgKey||'loginForFriends'),'#56CFE1');
+  setTimeout(()=>{showModal('account');},260);
+  return false;
+}
 
 // ── ÜLKE + NİCKNAME SETUP MODAL ──
 function showProfileSetup(){
@@ -1586,12 +1620,35 @@ function openAccountModal(){
   document.getElementById('st-total').textContent=acct.total.toLocaleString();
   const cr=document.getElementById('color-row');
   cr.innerHTML=AV_COLORS.map(c=>`<div class="color-dot${c===acct.color?' active':''}" style="background:${c}" data-c="${c}" onclick="selectAvatarColor('${c}')"></div>`).join('');
+  renderInventory();
+}
+// Profil envanteri — kazanılan/alınan her şey
+function renderInventory(){
+  const grid=document.getElementById('inv-grid');
+  if(!grid)return;
+  const coins=parseInt(localStorage.getItem('tm_coins')||'0');
+  const bombs=getInvBombs();
+  const undos=getInvUndos();
+  const themes=(JSON.parse(localStorage.getItem('tm_owned')||'[]')).length;
+  const xpBoost=localStorage.getItem('tm_xp_boost')==='1';
+  const cells=[
+    {ico:'🪙',val:coins.toLocaleString(),lbl:t('invCoins'),on:false},
+    {ico:'💣',val:bombs,lbl:t('invBombs'),on:bombs>0},
+    {ico:'↩️',val:undos,lbl:t('invUndos'),on:undos>0},
+    {ico:'🎨',val:themes,lbl:t('invThemes'),on:false},
+  ];
+  if(xpBoost) cells.push({ico:'⚡',val:'2×',lbl:t('invBoost'),on:true});
+  grid.innerHTML=cells.map(c=>
+    `<div class="inv-cell${c.on?' inv-on':''}"><div class="inv-ico">${c.ico}</div><div class="inv-val">${c.val}</div><div class="inv-lbl">${c.lbl}</div></div>`
+  ).join('');
 }
 function updateMenuAvatar(){
-  const init=displayName().charAt(0).toUpperCase()||'G';
+  // Profil adı varsa onu göster; yoksa dile uygun "Misafir"
+  const name=acct.nickname||acct.name||acct._googleName||t('guest');
+  const init=(name||'G').charAt(0).toUpperCase();
   document.getElementById('av-menu').textContent=init;
   document.getElementById('av-menu').style.background=acct.color;
-  document.getElementById('av-name-menu').textContent=displayName();
+  document.getElementById('av-name-menu').textContent=name;
 }
 
 // ── STREAK ───────────────────────────────────────────────────────────────────
@@ -1656,13 +1713,42 @@ async function _pushXPToFirestore(xp){
   }catch(_){}
 }
 
-// Günlük bonus miktarları (gün serisine göre artar)
-function dailyBonusAmount(streakDays){
-  if(streakDays>=7) return 150;
-  if(streakDays>=5) return 100;
-  if(streakDays>=3) return 75;
-  return 50;
+// ── GÜNLÜK BONUS ÖDÜL SİSTEMİ ────────────────────────────────────────────────
+// 7 günlük döngü — coin, bomba ve geri alma hakkı serisine göre verilir
+const DAILY_REWARDS=[
+  {coins:50},                    // 1. gün
+  {coins:75},                    // 2. gün
+  {coins:30,bombs:1},            // 3. gün — bomba
+  {coins:100},                   // 4. gün
+  {coins:30,undos:1},            // 5. gün — geri alma
+  {coins:150},                   // 6. gün
+  {coins:250,bombs:1,undos:1},   // 7. gün — büyük ödül
+];
+function dailyReward(streak){
+  const idx=(((streak||1)-1)%7+7)%7;
+  return DAILY_REWARDS[idx];
 }
+function rewardStr(r){
+  const parts=[];
+  if(r.coins) parts.push(`+${r.coins} 🪙`);
+  if(r.bombs) parts.push(`+${r.bombs} 💣`);
+  if(r.undos) parts.push(`+${r.undos} ↩️`);
+  return parts.join('  ');
+}
+// Dilden bağımsız ödül chip'leri (ikon + sayı)
+function rewardChips(r){
+  const chips=[];
+  if(r.coins) chips.push(`<span class="rw-chip rw-coin">🪙 ${r.coins}</span>`);
+  if(r.bombs) chips.push(`<span class="rw-chip rw-bomb">💣 ${r.bombs}</span>`);
+  if(r.undos) chips.push(`<span class="rw-chip rw-undo">↩️ ${r.undos}</span>`);
+  return chips.join('');
+}
+
+// ── KALICI ENVANTER (bonus bomba & geri alma) ────────────────────────────────
+function getInvBombs(){return parseInt(localStorage.getItem('tm_inv_bombs')||'0');}
+function getInvUndos(){return parseInt(localStorage.getItem('tm_inv_undos')||'0');}
+function setInvBombs(n){localStorage.setItem('tm_inv_bombs',String(Math.max(0,n)));}
+function setInvUndos(n){localStorage.setItem('tm_inv_undos',String(Math.max(0,n)));}
 
 function isTreasureClaimed(){
   return localStorage.getItem('tm_treasure_date')===todayStr();
@@ -1671,13 +1757,20 @@ function isTreasureClaimed(){
 function claimTreasure(){
   if(isTreasureClaimed()) return;
   const streak=loadStreak();
-  const coins=dailyBonusAmount(streak);
-  const xp=coins*2;
+  const reward=dailyReward(streak);
+  const coins=reward.coins||0;
+  const xp=Math.max(50,coins*2);
 
   // Kaydet
   localStorage.setItem('tm_treasure_date',todayStr());
-  let totalCoins=parseInt(localStorage.getItem('tm_coins')||'0')+coins;
-  localStorage.setItem('tm_coins',String(totalCoins));
+  if(coins){
+    let totalCoins=parseInt(localStorage.getItem('tm_coins')||'0')+coins;
+    localStorage.setItem('tm_coins',String(totalCoins));
+  }
+  // Bonus bomba / geri alma → kalıcı envantere ekle
+  if(reward.bombs) setInvBombs(getInvBombs()+reward.bombs);
+  if(reward.undos) setInvUndos(getInvUndos()+reward.undos);
+  if(typeof updateStoreCoinBal==='function') updateStoreCoinBal();
 
   // XP ekle
   addXP(xp);
@@ -1705,7 +1798,7 @@ function claimTreasure(){
     setTimeout(()=>el.remove(),800+i*60);
   }
 
-  showCelebration(`+${coins} 🪙  +${xp} XP`,'#D4A843');
+  showCelebration(`${rewardStr(reward)}  +${xp} XP`,'#D4A843');
   vibrate([30,20,60]);
   renderDailyCard();
 }
@@ -1713,7 +1806,7 @@ function claimTreasure(){
 function renderDailyCard(){
   const claimed=isTreasureClaimed();
   const streak=loadStreak();
-  const coins=dailyBonusAmount(streak);
+  const reward=dailyReward(streak);
   const xp=getXP();
   const lv=calcLevel(xp);
   const lvXpStart=LV_TABLE[Math.min(lv-1,LV_TABLE.length-1)];
@@ -1733,20 +1826,27 @@ function renderDailyCard(){
     box.classList.add('claimed');
     tbLabel.textContent=t('dailyClaimed');tbLabel.classList.add('claimed');
     tbIcon.textContent='✅';
-    tbAmount.textContent=`+${coins} 🪙 ${t('coinGiven')}`;
-    tbCta.textContent=t('dailyRefresh');tbCta.classList.add('claimed');
+    // Yarınki ödülü chip'lerle göster
+    const next=dailyReward(streak+1);
+    tbAmount.innerHTML=`<span class="tb-next-lbl">${t('tomorrow')}:</span>${rewardChips(next)}`;
+    tbCta.style.display='none';   // claimed durumda CTA gizli (yeşil ✓ ikon yeterli)
   } else {
     box.classList.remove('claimed');
     tbLabel.textContent=t('dailyBonus');tbLabel.classList.remove('claimed');
-    tbIcon.textContent='🎁';
-    tbAmount.textContent=`+${coins} 🪙${streak>=3?' 🔥':''}`;
+    tbIcon.textContent=reward.bombs?'💣':reward.undos?'↩️':'🎁';
+    tbAmount.innerHTML=rewardChips(reward);
+    tbCta.style.display='';
     tbCta.textContent=t('dailyCollect');tbCta.classList.remove('claimed');
   }
 
-  // Seri noktaları (7 gün)
-  tbStreak.innerHTML=[...Array(7)].map((_,i)=>
-    `<div class="tb-streak-dot${i<streak?' active':''}"></div>`
-  ).join('');
+  // Seri noktaları (7 gün) — bomba/undo günleri özel renkli
+  const cycleDay=(((streak||1)-1)%7+7)%7;        // 0..6 bugünün döngü indeksi
+  const filled=claimed?cycleDay+1:cycleDay;       // dolu nokta sayısı
+  tbStreak.innerHTML=[...Array(7)].map((_,i)=>{
+    const r=DAILY_REWARDS[i];
+    const special=r.bombs?' tb-dot-b':r.undos?' tb-dot-u':'';
+    return `<div class="tb-streak-dot${i<filled?' active':''}${special}"></div>`;
+  }).join('');
 
   // Seviye çubuğu
   document.getElementById('lv-badge').textContent=`LV ${lv}`;
@@ -1756,7 +1856,7 @@ function renderDailyCard(){
   if(hintEl) hintEl.style.display='none';
 
   // İstatistikler
-  const totalGames=acct?.played??parseInt(localStorage.getItem('tm_games')||'0');
+  const totalGames=acct?.games??parseInt(localStorage.getItem('tm_games')||'0');
   document.getElementById('lstat-games').textContent=totalGames;
   document.getElementById('lstat-best').textContent=(acct?.best??parseInt(localStorage.getItem('tiliq_best')||'0')).toLocaleString();
   document.getElementById('lstat-streak').textContent=streak+'🔥';
@@ -2268,6 +2368,7 @@ function closeAd(rewarded){
 
 // ── UNDO ─────────────────────────────────────────────────────────────────────
 let undoState=null;
+let freeUndos=0;   // envanterden gelen bedava geri alma hakkı (reklamsız)
 function saveUndo(){
   undoState={
     grid:grid.map(r=>[...r]),
@@ -2276,27 +2377,47 @@ function saveUndo(){
   };
   updateUndoBtn();
 }
+function _applyUndo(){
+  playUndo();vibrate(30);
+  grid=undoState.grid;score=undoState.score;combo=undoState.combo;
+  comboTimeLeft=undoState.comboTimeLeft||0;
+  pieces=undoState.pieces;undoState=null;selPiece=null;
+  document.getElementById('scoreDisplay').textContent=score.toLocaleString();
+  document.getElementById('comboDisplay').textContent='×'+Math.max(1,Math.min(combo,8));
+  if(comboTimeLeft<=0){combo=0;document.getElementById('comboDisplay').textContent='×1';}
+  document.getElementById('bestDisplay').textContent=best.toLocaleString();
+  updateUndoBtn();
+}
 function doUndo(){
   if(!undoState)return;
-  showRewardedAd(()=>{
-    playUndo();vibrate(30);
-    grid=undoState.grid;score=undoState.score;combo=undoState.combo;
-    comboTimeLeft=undoState.comboTimeLeft||0;
-    pieces=undoState.pieces;undoState=null;selPiece=null;
-    document.getElementById('scoreDisplay').textContent=score.toLocaleString();
-    document.getElementById('comboDisplay').textContent='×'+Math.max(1,Math.min(combo,8));
-    if(comboTimeLeft<=0){combo=0;document.getElementById('comboDisplay').textContent='×1';}
-    document.getElementById('bestDisplay').textContent=best.toLocaleString();
-    updateUndoBtn();
-  });
+  // Bonus geri alma hakkı varsa bedava (reklamsız) kullan, envanterden düş
+  if(freeUndos>0){
+    freeUndos--;
+    setInvUndos(getInvUndos()-1);
+    _applyUndo();
+    return;
+  }
+  showRewardedAd(()=>{ _applyUndo(); });
 }
 function updateUndoBtn(){
   const btn=document.getElementById('undo-btn');
+  if(!btn)return;
   btn.disabled=!undoState;
+  // Bedava undo hakkı varsa rozet göster, reklam ikonunu gizle
+  const badge=document.getElementById('undo-badge');
+  const adIcon=document.getElementById('undo-ad-icon');
+  if(freeUndos>0){
+    if(badge){badge.textContent='×'+freeUndos;badge.style.display='';}
+    if(adIcon) adIcon.style.display='none';
+  } else {
+    if(badge) badge.style.display='none';
+    if(adIcon) adIcon.style.display='';
+  }
 }
 
 // ── BOMB ─────────────────────────────────────────────────────────────────────
 let bombCount=0,bombMode=false,bombType='normal',bombXP=0;
+let _invBombsInPlay=0;   // mevcut bombCount içinde envanterden gelen (bonus) bomba sayısı
 const BOMB_THRESHOLD=150,BOMB_MAX=3;
 let _bombHoldTimer=null,_bombHoldInterval=null;
 
@@ -2395,10 +2516,20 @@ function _bombCells(row,col,type){
   return cells;
 }
 
+// Bomba kullanıldığında: kazanılan bombalar önce tükenir, envanter (bonus) bombalar korunur.
+// bombCount, envanterden gelen bomba sayısının altına düşerse, fark kadar kalıcı envanteri azalt.
+function _syncBombInventory(){
+  if(bombCount<_invBombsInPlay){
+    const used=_invBombsInPlay-bombCount;
+    _invBombsInPlay=bombCount;
+    setInvBombs(getInvBombs()-used);
+  }
+}
 function useBomb(row,col){
   const cost=bombType==='super'?2:1;
   if(bombCount<cost)return;
   bombCount-=cost;
+  _syncBombInventory();
   updateBombBar();
   const btn=document.getElementById('bomb-btn');
   btn.classList.remove('lit-normal','lit-super');
@@ -2485,8 +2616,8 @@ function doRescue(){
     _rescueClearRows();
     document.getElementById('overlay').classList.remove('active');
     document.getElementById('rescue-btn').style.display='none';
-    // Kalan parçaları sığan parçalarla değiştir
-    for(let i=0;i<3;i++) pieces[i]=rndPiece(true);
+    // Kalan parçaları sığan ve farklı parçalarla değiştir
+    {const pool=buildPool(),used=new Set();for(let i=0;i<3;i++){let s,tt=0;do{s=pool[Math.floor(Math.random()*pool.length)];tt++;}while(tt<80&&(used.has(_shapeKey(s))||!anyFits(s)));used.add(_shapeKey(s));pieces[i]={shape:s,ci:Math.floor(Math.random()*CLR.length),placed:false,rotFlash:0,rotT:0};}}
     selPiece=null;undoState=null;updateUndoBtn();
     vibrate([30,20,60,20,80]);
     flashScreen('combo',600);
@@ -2528,9 +2659,33 @@ function playRotate(){
   tone(520,.1,.055,'sine');
   setTimeout(()=>tone(780,.08,.04,'sine'),60);
 }
+// Şekli dönüşten bağımsız (rotation-invariant) anahtarla — aynı şeklin
+// farklı yönleri de "aynı" sayılır, böylece tekrar gelmez.
+function _normCells(cells){
+  const minR=Math.min(...cells.map(c=>c[0]));
+  const minC=Math.min(...cells.map(c=>c[1]));
+  return cells.map(c=>[c[0]-minR,c[1]-minC]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+}
+function _shapeKey(s){
+  let best=null,cur=s.cells;
+  for(let i=0;i<4;i++){
+    const key=JSON.stringify(_normCells(cur));
+    if(best===null||key<best) best=key;
+    cur=rotateCW(cur);
+  }
+  return best;
+}
 function genPieces(){
-  const a=rndPiece(true);
-  pieces=[a,rndPiece(),rndPiece()];
+  const pool=buildPool();
+  const used=new Set();
+  function pick(must=false){
+    let s,tt=0;
+    do{s=pool[Math.floor(Math.random()*pool.length)];tt++;}
+    while(tt<80&&(used.has(_shapeKey(s))||(must&&!anyFits(s))));
+    used.add(_shapeKey(s));
+    return{shape:s,ci:Math.floor(Math.random()*CLR.length),placed:false,rotFlash:0,rotT:0};
+  }
+  pieces=[pick(true),pick(),pick()];
   if(!pieces.some(p=>anyFits(p.shape)))pieces[0]=rndPiece(true);
   selPiece=null;undoState=null;updateUndoBtn();
 }
@@ -2578,6 +2733,9 @@ function continueGame(){
   grid=st.grid.map(r=>[...r]);
   score=st.score; combo=0; // devam edince combo sıfırdan başlar
   bombCount=st.bombCount||0; bombXP=st.bombXP||0;
+  // Envanter takibi: kayıtlı bombaların envanterden gelenleri ve bedava undo hakları
+  _invBombsInPlay=Math.min(bombCount,getInvBombs());
+  freeUndos=getInvUndos();
   pieces=st.pieces.map(p=>({
     shape:{cells:p.cells},ci:p.ci,placed:p.placed,rotFlash:0,rotT:0
   }));
@@ -2619,8 +2777,8 @@ function resume2Ad(){
   document.getElementById('overlay').classList.remove('active');
   document.getElementById('rescue-2ad').style.display='none';
   document.getElementById('rescue-btn').style.display='none';
-  // Tüm parçaları sığanlarla yenile
-  for(let i=0;i<3;i++) pieces[i]=rndPiece(true);
+  // Tüm parçaları sığan ve farklı parçalarla yenile
+  {const pool=buildPool(),used=new Set();for(let i=0;i<3;i++){let s,tt=0;do{s=pool[Math.floor(Math.random()*pool.length)];tt++;}while(tt<80&&(used.has(_shapeKey(s))||!anyFits(s)));used.add(_shapeKey(s));pieces[i]={shape:s,ci:Math.floor(Math.random()*CLR.length),placed:false,rotFlash:0,rotT:0};}}
   selPiece=null;undoState=null;updateUndoBtn();
   flashScreen('combo',600);
   showCelebration(t('continueAct'),'#6BCB77');
@@ -2643,7 +2801,12 @@ function startGame(){
   if(bar)bar.style.display='none';
   const ch2=document.getElementById('combo-chip');
   if(ch2)ch2.classList.remove('c-warm','c-hot','c-fire','c-inferno','timer-critical');
-  bombCount=0;bombMode=false;bombXP=0;
+  // Envanterden bonus bombaları yükle (kalıcı — kullanılmadıkça düşmez)
+  bombCount=Math.min(BOMB_MAX,getInvBombs());
+  _invBombsInPlay=bombCount;
+  bombMode=false;bombXP=0;
+  // Bonus geri alma haklarını yükle (bedava undo)
+  freeUndos=getInvUndos();
   document.getElementById('bomb-btn').classList.remove('lit-normal','lit-super');
   updateBombBar();
   updateUndoBtn();
@@ -3049,6 +3212,9 @@ function showOver(){
   }
   _rescueShownThisGame=true;
   onGameOver(score);
+  // Her oyun sonunda haftalık skoru güncelle ve Firestore'a yaz
+  updateMyWeeklyScore(score);
+  _firestorePushScore();
   document.getElementById('overlay').classList.add('active');
 }
 
@@ -3582,7 +3748,7 @@ let _fbApp=null, _fbAuth=null;
 async function initFirebaseAuth(){
   try{
     const {initializeApp,getApps}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const {getAuth,onAuthStateChanged,getRedirectResult}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    const {getAuth,onAuthStateChanged,getRedirectResult,signInAnonymously}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
     if(!getApps().length) _fbApp=initializeApp(FB_CONFIG);
     else _fbApp=getApps()[0];
     _fbAuth=getAuth(_fbApp);
@@ -3596,6 +3762,12 @@ async function initFirebaseAuth(){
     }catch(e){ console.warn('Redirect result:',e); }
     // Leaderboard manager başlat
     _initLeaderboardManager();
+    // Giriş yoksa anonim oturum aç — dünya sıralamasını okuyabilmek için
+    // (Firestore kuralı: allow read if request.auth != null). Anonim oturum
+    // gerçek giriş sayılmaz; arkadaş sistemi yine Google hesabı ister.
+    if(!_fbAuth.currentUser){
+      try{ await signInAnonymously(_fbAuth); }catch(e){ console.warn('Anon auth:',e); }
+    }
   }catch(e){console.warn('Firebase init:',e);}
 }
 
@@ -3617,10 +3789,104 @@ async function _initLeaderboardManager(){
   }catch(e){console.warn('LB init:',e);}
 }
 
+// ── HESAP AKTARIMI (yerel ilerleme → hesap) ──────────────────────────────────
+function _postLoginSetup(){
+  if(!acct._setupDone){ setTimeout(()=>showProfileSetup(),600); }
+  else { _refreshAllNameDisplays(); }
+}
+async function _fetchCloudData(uid){
+  try{
+    const {getFirestore,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const db=getFirestore(_fbApp);
+    const snap=await getDoc(doc(db,'users',uid));
+    return snap.exists()?snap.data():null;
+  }catch(e){return null;}
+}
+// "Hayır" seçilince: hesabın (cloud) verisini al, yereli onunla değiştir.
+// Hesap boşsa temiz başla ve boş bir hesap dökümanı oluştur.
+async function _pullCloudOverwrite(uid){
+  try{
+    const {getFirestore,doc,getDoc,setDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const db=getFirestore(_fbApp);
+    const ref=doc(db,'users',uid);
+    const snap=await getDoc(ref);
+    if(snap.exists()){
+      const d=snap.data();
+      acct.best=d.best||0; acct.games=d.games||0; acct.total=d.total||0;
+      if(d.code){myCode=d.code;localStorage.setItem('tm_my_code',d.code);}
+      localStorage.setItem('tm_xp',String(d.xp||0));
+      localStorage.setItem('tiliq_best',String(d.best||0));
+    } else {
+      // Hesap boş — temiz başla
+      acct.best=0; acct.games=0; acct.total=0;
+      localStorage.setItem('tm_xp','0');
+      localStorage.setItem('tiliq_best','0');
+      await setDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:0,games:0,total:0,uid,country:acct.country||'',xp:0,level:1});
+    }
+    localStorage.setItem('tm_acct',JSON.stringify(acct));
+    _refreshCodeDisplays();
+  }catch(e){console.warn('Pull cloud:',e);}
+}
+async function _doMerge(uid, transfer){
+  if(transfer){
+    await _firestoreSync(uid);   // yerel + hesap birleştir (en yükseği al)
+  } else {
+    await _pullCloudOverwrite(uid);  // sadece hesap verisini kullan
+  }
+  acct._mergedUid=uid;
+  localStorage.setItem('tm_acct',JSON.stringify(acct));
+  if(typeof updateMenuAvatar==='function') updateMenuAvatar();
+  if(typeof renderDailyCard==='function') renderDailyCard();
+  _postLoginSetup();
+}
+function _showMergeDialog(uid, cloud){
+  // Zaten açıksa tekrar açma
+  if(document.getElementById('merge-overlay')) return;
+  const localBest=(acct.best||0).toLocaleString();
+  const localLv=calcLevel(getXP());
+  const cloudBest=(cloud.best||0).toLocaleString();
+  const cloudLv=cloud.level||calcLevel(cloud.xp||0);
+  const ov=document.createElement('div');
+  ov.id='merge-overlay';
+  ov.style.cssText='position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.62);backdrop-filter:blur(7px);padding:22px;';
+  ov.innerHTML=`
+    <div style="background:var(--panel);border:1px solid var(--gb);border-radius:22px;max-width:360px;width:100%;padding:24px;text-align:center;box-shadow:0 22px 64px rgba(0,0,0,.55)">
+      <div style="font-size:40px;margin-bottom:6px">🔄</div>
+      <div style="font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px">${t('mergeTitle')}</div>
+      <div style="font-size:13px;color:var(--dim);line-height:1.5;margin-bottom:16px">${t('mergeDesc')}</div>
+      <div style="display:flex;gap:10px;margin-bottom:18px">
+        <div style="flex:1;background:rgba(86,207,225,.1);border:1px solid rgba(86,207,225,.3);border-radius:12px;padding:11px 8px">
+          <div style="font-size:18px;margin-bottom:2px">📱</div>
+          <div style="font-size:18px;font-weight:800;color:#56CFE1">${localBest}</div>
+          <div style="font-size:10px;color:var(--dim)">LV ${localLv}</div>
+        </div>
+        <div style="flex:1;background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.3);border-radius:12px;padding:11px 8px">
+          <div style="font-size:18px;margin-bottom:2px">☁️</div>
+          <div style="font-size:18px;font-weight:800;color:#D4A843">${cloudBest}</div>
+          <div style="font-size:10px;color:var(--dim)">LV ${cloudLv}</div>
+        </div>
+      </div>
+      <button id="merge-yes" style="width:100%;background:linear-gradient(135deg,var(--accent),var(--acc2));border:none;border-radius:13px;padding:13px;font-size:14px;font-weight:800;color:#fff;cursor:pointer;font-family:inherit;margin-bottom:8px">${t('mergeYes')}</button>
+      <button id="merge-no" style="width:100%;background:transparent;border:1px solid var(--gb);border-radius:13px;padding:11px;font-size:13px;font-weight:600;color:var(--dim);cursor:pointer;font-family:inherit">${t('mergeNo')}</button>
+    </div>`;
+  document.body.appendChild(ov);
+  document.getElementById('merge-yes').onclick=()=>{ov.remove();_doMerge(uid,true);vibrate(15);};
+  document.getElementById('merge-no').onclick=()=>{ov.remove();_doMerge(uid,false);vibrate(8);};
+}
+
 function _onFirebaseUser(user){
+  // Anonim oturum: sadece dünya sıralamasını okumak için. Gerçek giriş değil,
+  // skor yazılmaz, arkadaş sistemi açılmaz. Sadece panel açıksa sıralamayı yenile.
+  if(user.isAnonymous){
+    const lb=document.getElementById('lb-panel');
+    if(lb&&lb.classList.contains('open')&&currentLBTab==='global'){
+      renderLB(Math.max(typeof score!=='undefined'?score:0, acct.best||0));
+    }
+    return;
+  }
   acct._googleName = user.displayName || user.email || '';
-  // Sadece hiç nickname yoksa Google adını geçici olarak koy
-  if(!acct.nickname&&!acct._setupDone) acct.nickname = acct._googleName;
+  // Kullanıcı kendi nickname'ini girmemişse Google adını kullan
+  if(!acct.nickname) acct.nickname = acct._googleName;
   acct.uid  = user.uid;
   acct._fbLogged = true;
   localStorage.setItem('tm_acct', JSON.stringify(acct));
@@ -3630,13 +3896,16 @@ function _onFirebaseUser(user){
   if(si) si.style.display='block';
   if(na) na.style.display='none';
   if(wa) wa.style.display='none';
-  // Firestore'dan skor + kod senkronizasyonu
-  _firestoreSync(user.uid);
-  // Setup hiç tamamlanmadıysa ilk ve son kez aç
-  if(!acct._setupDone){
-    setTimeout(()=>showProfileSetup(),800);
+  // İlk gerçek giriş VE bu cihazda yerel ilerleme varsa: aktarımı kullanıcıya sor.
+  const localBest=acct.best||0;
+  if(acct._mergedUid!==user.uid && localBest>0){
+    _fetchCloudData(user.uid).then(cloud=>_showMergeDialog(user.uid, cloud||{}));
   } else {
-    _refreshAllNameDisplays();
+    // Yerel ilerleme yok veya daha önce aktarıldı — normal senkronizasyon
+    _firestoreSync(user.uid);
+    acct._mergedUid=user.uid;
+    localStorage.setItem('tm_acct',JSON.stringify(acct));
+    _postLoginSetup();
   }
 }
 
@@ -3680,6 +3949,11 @@ window._authSignOut = async function(){
   }catch(e){}
   acct._fbLogged=false; acct.uid=null;
   localStorage.setItem('tm_acct',JSON.stringify(acct));
+  // Çıkıştan sonra anonim oturuma dön — dünya sıralaması okunabilir kalsın
+  try{
+    const {signInAnonymously}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    if(_fbAuth&&!_fbAuth.currentUser) await signInAnonymously(_fbAuth);
+  }catch(e){}
 };
 
 // ── REVENUECAT IAP ───────────────────────────────────────────────────────────
@@ -3979,8 +4253,13 @@ async function renderLB(ps){
 function toggleLB(){
   const p=document.getElementById('lb-panel');
   if(!p.classList.contains('open')){
-    renderLB(score);
-    setLBTab(currentLBTab);
+    // Giriş yoksa arkadaşlar sekmesinde takılı kalmasın — dünyaya düş
+    const startTab=(currentLBTab==='friends'&&!isLoggedIn())?'global':currentLBTab;
+    currentLBTab=startTab;
+    document.querySelectorAll('.lb-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===startTab));
+    document.querySelectorAll('.lb-tab-body').forEach(b=>b.classList.toggle('active',b.dataset.tab===startTab));
+    renderLB(Math.max(score, acct.best||0));
+    if(startTab==='friends'){renderFriendsLB();fetchFriendScores();}
   }
   p.classList.toggle('open');
 }
@@ -4017,6 +4296,7 @@ async function _firestoreSync(uid){
       // XP: cloud > local ise cloud'daki değeri al
       const cloudXP=d.xp||0;
       if(cloudXP>getXP()) localStorage.setItem('tm_xp',String(cloudXP));
+      localStorage.setItem('tiliq_best',String(acct.best||0)); // yerel best ile hizala
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       const xpNow=getXP();
       await updateDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),xp:xpNow,level:calcLevel(xpNow)});
@@ -4039,7 +4319,7 @@ async function _firestorePushScore(){
     const snap=await getDoc(ref);
     const prev=snap.exists()?snap.data():{};
     const prevWeekly=(prev.weeklyReset===ws)?(prev.weeklyScore||0):0;
-    const newWeekly=Math.max(prevWeekly,acct.best);
+    const newWeekly=Math.max(prevWeekly,getMyWeeklyScore()||0,acct.best||0);
     // localStorage'a da kaydet
     updateMyWeeklyScore(acct.best);
     await updateDoc(ref,{
@@ -4194,9 +4474,9 @@ function updateMyWeeklyScore(newScore){
 }
 
 function buildFriendBoard(){
-  const myWeekly=getMyWeeklyScore();
+  const myWeekly=getMyWeeklyScore()||acct.best||0;
   const board=[
-    ...getFriends().map(f=>({n:f.name,s:f.weeklyScore||0,code:f.code,friend:true,lv:f.level||0})),
+    ...getFriends().map(f=>({n:f.name,s:f.weeklyScore||f.score||0,code:f.code,friend:true,lv:f.level||0})),
     {n:playerLabel(),s:myWeekly,code:myCode,me:true,lv:calcLevel(getXP())},
   ];
   board.sort((a,b)=>b.s-a.s);
@@ -4205,6 +4485,8 @@ function buildFriendBoard(){
 
 let currentLBTab='global';
 function setLBTab(tab){
+  // Arkadaşlar sekmesi giriş gerektirir
+  if(tab==='friends'&&!requireAccount('loginForFriends')) return;
   currentLBTab=tab;
   document.querySelectorAll('.lb-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
   document.querySelectorAll('.lb-tab-body').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
@@ -4354,7 +4636,7 @@ async function fetchFriendScores(){
 
     // 1) Benim eklediklerimin güncel skorlarını çek
     if(friends.length){
-      const codes=friends.map(f=>f.code);
+      const codes=friends.map(f=>(f.code||'').toUpperCase()).filter(Boolean);
       // Firestore'da 'in' max 10 — birden fazla batch gerekirse böl
       const batches=[];
       for(let i=0;i<codes.length;i+=10) batches.push(codes.slice(i,i+10));
@@ -4363,7 +4645,8 @@ async function fetchFriendScores(){
         const ws=_getWeekStart();
         snap.forEach(d=>{
           const fd=d.data();
-          const idx=friends.findIndex(f=>f.code===fd.code);
+          const fdCode=(fd.code||'').toUpperCase();
+          const idx=friends.findIndex(f=>(f.code||'').toUpperCase()===fdCode);
           if(idx>=0){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
             friends[idx].weeklyScore=(fd.weeklyReset===ws)?(fd.weeklyScore||0):0;
@@ -4375,20 +4658,22 @@ async function fetchFriendScores(){
     }
 
     // 2) Beni ekleyenleri de getir (friendLinks where to==myCode)
-    const linkSnap=await getDocs(query(collection(db,'friendLinks'),where('to','==',myCode)));
-    const ws3=_getWeekStart();
+    const myCodeUC=myCode.toUpperCase();
+    const linkSnap=await getDocs(query(collection(db,'friendLinks'),where('to','==',myCodeUC)));
     linkSnap.forEach(d=>{
       const ld=d.data();
-      if(!friends.some(f=>f.code===ld.from)){
-        friends.push({code:ld.from,name:ld.fromName||t('guest'),score:ld.fromScore||0,weeklyScore:0,uid:ld.fromUid||null,added:ld.ts||0});
+      const fromUC=(ld.from||'').toUpperCase();
+      if(!fromUC) return;
+      if(!friends.some(f=>(f.code||'').toUpperCase()===fromUC)){
+        friends.push({code:fromUC,name:ld.fromName||t('guest'),score:ld.fromScore||0,weeklyScore:0,uid:ld.fromUid||null,added:ld.ts||0});
       } else {
-        const idx=friends.findIndex(f=>f.code===ld.from);
+        const idx=friends.findIndex(f=>(f.code||'').toUpperCase()===fromUC);
         if(idx>=0) friends[idx].score=Math.max(friends[idx].score||0,ld.fromScore||0);
       }
     });
 
     // 3) Beni ekleyenlerin güncel skorlarını da Firestore'dan çek
-    const remoteAdded=linkSnap.docs.map(d=>d.data().from).filter(c=>c&&c!==myCode);
+    const remoteAdded=linkSnap.docs.map(d=>(d.data().from||'').toUpperCase()).filter(c=>c&&c!==myCodeUC);
     if(remoteAdded.length){
       const batches2=[];
       for(let i=0;i<remoteAdded.length;i+=10) batches2.push(remoteAdded.slice(i,i+10));
@@ -4397,11 +4682,13 @@ async function fetchFriendScores(){
         const ws2=_getWeekStart();
         snap.forEach(d=>{
           const fd=d.data();
-          const idx=friends.findIndex(f=>f.code===fd.code);
+          const fdCode=(fd.code||'').toUpperCase();
+          const idx=friends.findIndex(f=>(f.code||'').toUpperCase()===fdCode);
           if(idx>=0){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
-            friends[idx].weeklyScore=(fd.weeklyReset===ws2)?(fd.weeklyScore||0):0;
+            friends[idx].weeklyScore=(fd.weeklyReset===ws2)?(fd.weeklyScore||0):friends[idx].weeklyScore||0;
             friends[idx].name=fd.name||friends[idx].name;
+            friends[idx].level=fd.level||calcLevel(fd.xp||0);
           }
         });
       }
