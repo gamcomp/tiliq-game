@@ -4636,17 +4636,17 @@ async function fetchFriendScores(){
 
     // 1) Benim eklediklerimin güncel skorlarını çek
     if(friends.length){
-      const codes=friends.map(f=>f.code);
+      const codes=friends.map(f=>(f.code||'').toUpperCase()).filter(Boolean);
       // Firestore'da 'in' max 10 — birden fazla batch gerekirse böl
       const batches=[];
-      for(let i=0;i<codes.length;i+=10) batches.push(codes.map(c=>c.toUpperCase()).slice(i,i+10));
+      for(let i=0;i<codes.length;i+=10) batches.push(codes.slice(i,i+10));
       for(const batch of batches){
         const snap=await getDocs(query(collection(db,'users'),where('code','in',batch)));
         const ws=_getWeekStart();
         snap.forEach(d=>{
           const fd=d.data();
           const fdCode=(fd.code||'').toUpperCase();
-          const idx=friends.findIndex(f=>f.code.toUpperCase()===fdCode);
+          const idx=friends.findIndex(f=>(f.code||'').toUpperCase()===fdCode);
           if(idx>=0){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
             friends[idx].weeklyScore=(fd.weeklyReset===ws)?(fd.weeklyScore||0):0;
@@ -4663,10 +4663,11 @@ async function fetchFriendScores(){
     linkSnap.forEach(d=>{
       const ld=d.data();
       const fromUC=(ld.from||'').toUpperCase();
-      if(!friends.some(f=>f.code.toUpperCase()===fromUC)){
+      if(!fromUC) return;
+      if(!friends.some(f=>(f.code||'').toUpperCase()===fromUC)){
         friends.push({code:fromUC,name:ld.fromName||t('guest'),score:ld.fromScore||0,weeklyScore:0,uid:ld.fromUid||null,added:ld.ts||0});
       } else {
-        const idx=friends.findIndex(f=>f.code.toUpperCase()===fromUC);
+        const idx=friends.findIndex(f=>(f.code||'').toUpperCase()===fromUC);
         if(idx>=0) friends[idx].score=Math.max(friends[idx].score||0,ld.fromScore||0);
       }
     });
@@ -4682,7 +4683,7 @@ async function fetchFriendScores(){
         snap.forEach(d=>{
           const fd=d.data();
           const fdCode=(fd.code||'').toUpperCase();
-          const idx=friends.findIndex(f=>f.code.toUpperCase()===fdCode);
+          const idx=friends.findIndex(f=>(f.code||'').toUpperCase()===fdCode);
           if(idx>=0){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
             friends[idx].weeklyScore=(fd.weeklyReset===ws2)?(fd.weeklyScore||0):friends[idx].weeklyScore||0;
