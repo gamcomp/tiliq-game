@@ -3698,7 +3698,7 @@ let _fbApp=null, _fbAuth=null;
 async function initFirebaseAuth(){
   try{
     const {initializeApp,getApps}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const {getAuth,onAuthStateChanged,getRedirectResult}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    const {getAuth,onAuthStateChanged,getRedirectResult,signInAnonymously}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
     if(!getApps().length) _fbApp=initializeApp(FB_CONFIG);
     else _fbApp=getApps()[0];
     _fbAuth=getAuth(_fbApp);
@@ -3712,6 +3712,12 @@ async function initFirebaseAuth(){
     }catch(e){ console.warn('Redirect result:',e); }
     // Leaderboard manager başlat
     _initLeaderboardManager();
+    // Giriş yoksa anonim oturum aç — dünya sıralamasını okuyabilmek için
+    // (Firestore kuralı: allow read if request.auth != null). Anonim oturum
+    // gerçek giriş sayılmaz; arkadaş sistemi yine Google hesabı ister.
+    if(!_fbAuth.currentUser){
+      try{ await signInAnonymously(_fbAuth); }catch(e){ console.warn('Anon auth:',e); }
+    }
   }catch(e){console.warn('Firebase init:',e);}
 }
 
@@ -3734,6 +3740,15 @@ async function _initLeaderboardManager(){
 }
 
 function _onFirebaseUser(user){
+  // Anonim oturum: sadece dünya sıralamasını okumak için. Gerçek giriş değil,
+  // skor yazılmaz, arkadaş sistemi açılmaz. Sadece panel açıksa sıralamayı yenile.
+  if(user.isAnonymous){
+    const lb=document.getElementById('lb-panel');
+    if(lb&&lb.classList.contains('open')&&currentLBTab==='global'){
+      renderLB(Math.max(typeof score!=='undefined'?score:0, acct.best||0));
+    }
+    return;
+  }
   acct._googleName = user.displayName || user.email || '';
   // Kullanıcı kendi nickname'ini girmemişse Google adını kullan
   if(!acct.nickname) acct.nickname = acct._googleName;
@@ -3796,6 +3811,11 @@ window._authSignOut = async function(){
   }catch(e){}
   acct._fbLogged=false; acct.uid=null;
   localStorage.setItem('tm_acct',JSON.stringify(acct));
+  // Çıkıştan sonra anonim oturuma dön — dünya sıralaması okunabilir kalsın
+  try{
+    const {signInAnonymously}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    if(_fbAuth&&!_fbAuth.currentUser) await signInAnonymously(_fbAuth);
+  }catch(e){}
 };
 
 // ── REVENUECAT IAP ───────────────────────────────────────────────────────────
