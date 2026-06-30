@@ -2485,8 +2485,8 @@ function doRescue(){
     _rescueClearRows();
     document.getElementById('overlay').classList.remove('active');
     document.getElementById('rescue-btn').style.display='none';
-    // Kalan parçaları sığan parçalarla değiştir
-    for(let i=0;i<3;i++) pieces[i]=rndPiece(true);
+    // Kalan parçaları sığan ve farklı parçalarla değiştir
+    {const pool=buildPool(),used=new Set();for(let i=0;i<3;i++){let s,tt=0;do{s=pool[Math.floor(Math.random()*pool.length)];tt++;}while(tt<80&&(used.has(_shapeKey(s))||!anyFits(s)));used.add(_shapeKey(s));pieces[i]={shape:s,ci:Math.floor(Math.random()*CLR.length),placed:false,rotFlash:0,rotT:0};}}
     selPiece=null;undoState=null;updateUndoBtn();
     vibrate([30,20,60,20,80]);
     flashScreen('combo',600);
@@ -2528,9 +2528,18 @@ function playRotate(){
   tone(520,.1,.055,'sine');
   setTimeout(()=>tone(780,.08,.04,'sine'),60);
 }
+function _shapeKey(s){return JSON.stringify(s.cells);}
 function genPieces(){
-  const a=rndPiece(true);
-  pieces=[a,rndPiece(),rndPiece()];
+  const pool=buildPool();
+  const used=new Set();
+  function pick(must=false){
+    let s,tt=0;
+    do{s=pool[Math.floor(Math.random()*pool.length)];tt++;}
+    while(tt<80&&(used.has(_shapeKey(s))||(must&&!anyFits(s))));
+    used.add(_shapeKey(s));
+    return{shape:s,ci:Math.floor(Math.random()*CLR.length),placed:false,rotFlash:0,rotT:0};
+  }
+  pieces=[pick(true),pick(),pick()];
   if(!pieces.some(p=>anyFits(p.shape)))pieces[0]=rndPiece(true);
   selPiece=null;undoState=null;updateUndoBtn();
 }
@@ -2619,8 +2628,8 @@ function resume2Ad(){
   document.getElementById('overlay').classList.remove('active');
   document.getElementById('rescue-2ad').style.display='none';
   document.getElementById('rescue-btn').style.display='none';
-  // Tüm parçaları sığanlarla yenile
-  for(let i=0;i<3;i++) pieces[i]=rndPiece(true);
+  // Tüm parçaları sığan ve farklı parçalarla yenile
+  {const pool=buildPool(),used=new Set();for(let i=0;i<3;i++){let s,tt=0;do{s=pool[Math.floor(Math.random()*pool.length)];tt++;}while(tt<80&&(used.has(_shapeKey(s))||!anyFits(s)));used.add(_shapeKey(s));pieces[i]={shape:s,ci:Math.floor(Math.random()*CLR.length),placed:false,rotFlash:0,rotT:0};}}
   selPiece=null;undoState=null;updateUndoBtn();
   flashScreen('combo',600);
   showCelebration(t('continueAct'),'#6BCB77');
