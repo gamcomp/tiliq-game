@@ -1771,6 +1771,7 @@ function claimTreasure(){
   if(reward.bombs) setInvBombs(getInvBombs()+reward.bombs);
   if(reward.undos) setInvUndos(getInvUndos()+reward.undos);
   if(typeof updateStoreCoinBal==='function') updateStoreCoinBal();
+  if(typeof syncWallet==='function') syncWallet();   // günlük ödülü hesaba işle
 
   // XP ekle
   addXP(xp);
@@ -3722,12 +3723,14 @@ function tmSpendCoins(n){
   if(c<n)return false;
   localStorage.setItem('tm_coins',String(c-n));
   updateStoreCoinBal();
+  if(typeof syncWallet==='function') syncWallet();
   return true;
 }
 function addInventory(type,n){
   const k='tm_inv_'+type;
   const cur=parseInt(localStorage.getItem(k)||'0');
   localStorage.setItem(k,String(cur+n));
+  if(typeof syncWallet==='function') syncWallet();
   showCelebration(`+${n} ${type==='bombs'?'💣':'↩️'} ${t('pwAdded')}`,'#6BCB77');
 }
 let xpBoostNext=false;
@@ -3890,6 +3893,7 @@ function _onFirebaseUser(user){
   acct.uid  = user.uid;
   acct._fbLogged = true;
   localStorage.setItem('tm_acct', JSON.stringify(acct));
+  _rcLogIn(user.uid);   // RevenueCat'i bu hesaba bağla (entitlement taşınsın)
   const si=document.getElementById('auth-signout-area');
   const na=document.getElementById('auth-native-area');
   const wa=document.getElementById('auth-web-area');
@@ -3964,6 +3968,7 @@ window._authSignOut = async function(){
   try{
     if(_fbAuth) await _fbAuth.signOut();
   }catch(e){}
+  try{ const RC=_getRC(); if(RC&&_rcReady) await RC.logOut(); }catch(e){}
   acct._fbLogged=false; acct.uid=null;
   localStorage.setItem('tm_acct',JSON.stringify(acct));
   // Çıkıştan sonra anonim oturuma dön — dünya sıralaması okunabilir kalsın
@@ -4015,6 +4020,17 @@ async function initRevenueCat(){
   }catch(e){console.warn('RC init:',e);}
 }
 
+// RevenueCat kullanıcısını Firebase UID'sine bağla — entitlement hesaba bağlansın
+async function _rcLogIn(uid){
+  const RC=_getRC();
+  if(!RC||!uid)return;
+  try{
+    if(!_rcReady){ await RC.configure({apiKey:RC_API_KEY}); _rcReady=true; }
+    await RC.logIn({appUserID:uid});
+    await _syncEntitlements();
+  }catch(e){console.warn('RC login:',e);}
+}
+
 async function _syncEntitlements(){
   const RC=_getRC();
   if(!RC||!_rcReady)return;
@@ -4029,9 +4045,11 @@ async function _syncEntitlements(){
 function _applyVip(){
   localStorage.setItem('tiliq_vip','1');
   localStorage.setItem('tiliq_no_ads','1');
+  if(typeof syncWallet==='function') syncWallet();
 }
 function _applyNoAds(){
   localStorage.setItem('tiliq_no_ads','1');
+  if(typeof syncWallet==='function') syncWallet();
 }
 function isVip(){return localStorage.getItem('tiliq_vip')==='1';}
 function isNoAds(){return localStorage.getItem('tiliq_no_ads')==='1';}
@@ -4063,6 +4081,7 @@ async function iapBuy(id){
       showCelebration('✅ '+t('iapSuccess'),'#6BCB77');
       vibrate([20,10,40,10,60]);
     }
+    syncWallet();   // satın almayı hesaba işle
     renderStoreBody();
   }catch(e){
     if(e.userCancelled||e.code==='PURCHASE_CANCELLED')return;
@@ -4080,6 +4099,7 @@ async function iapRestore(){
     if(Object.keys(active).length>0){
       if(active[RC_ENTITLEMENT_VIP])_applyVip();
       if(active[RC_ENTITLEMENT_NO_ADS])_applyNoAds();
+      syncWallet();
       showCelebration('✅ Satın Almalar Geri Yüklendi!','#6BCB77');
       renderStoreBody();
     }else{
@@ -4185,6 +4205,7 @@ function storeThemeClick(id){
   if(tmOwns(id)){applyThemePalette(id);renderStoreBody();return;}
   if(t.coins===0){
     tmOwned.push(id);localStorage.setItem('tm_owned',JSON.stringify(tmOwned));
+    if(typeof syncWallet==='function') syncWallet();
     applyThemePalette(id);renderStoreBody();
     const _name=ts('th'+t.id.charAt(0).toUpperCase()+t.id.slice(1),t.name);
     showCelebration(_name+' '+t('btnUnlock')+'!','#6BCB77');
@@ -4196,6 +4217,7 @@ function storeThemeClick(id){
     return;
   }
   tmOwned.push(id);localStorage.setItem('tm_owned',JSON.stringify(tmOwned));
+  if(typeof syncWallet==='function') syncWallet();
   applyThemePalette(id);renderStoreBody();
   const _name2=ts('th'+t.id.charAt(0).toUpperCase()+t.id.slice(1),t.name);
   showCelebration(_name2+' ✓','#D4A843');
@@ -4346,14 +4368,31 @@ async function _firestoreSync(uid){
       const cloudXP=d.xp||0;
       if(cloudXP>getXP()) localStorage.setItem('tm_xp',String(cloudXP));
       localStorage.setItem('tiliq_best',String(acct.best||0)); // yerel best ile hizala
+      // ── SATIN ALMALAR / CÜZDAN: hesaptan çek ────────────────────────────────
+      if(d.vip) _applyVip();
+      if(d.noAds) _applyNoAds();
+      // Coin: en yüksek (asla kaybetme)
+      const localCoins=parseInt(localStorage.getItem('tm_coins')||'0');
+      localStorage.setItem('tm_coins',String(Math.max(localCoins,d.coins||0)));
+      // Sahip olunan temalar: birleştir
+      if(Array.isArray(d.owned)){
+        tmOwned=Array.from(new Set([...tmOwned,...d.owned]));
+        localStorage.setItem('tm_owned',JSON.stringify(tmOwned));
+      }
+      // Envanter (bonus bomba/undo): en yüksek
+      setInvBombs(Math.max(getInvBombs(),d.invBombs||0));
+      setInvUndos(Math.max(getInvUndos(),d.invUndos||0));
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       const xpNow=getXP();
-      await updateDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),xp:xpNow,level:calcLevel(xpNow)});
+      await setDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),xp:xpNow,level:calcLevel(xpNow),
+        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos()},{merge:true});
     }else{
       const xpNow=getXP();
-      await setDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow)});
+      await setDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
+        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos()},{merge:true});
     }
     _refreshCodeDisplays();
+    updateStoreCoinBal();
   }catch(e){console.warn('Firestore sync:',e);}
 }
 
@@ -4384,6 +4423,27 @@ async function _firestorePushScore(){
       if(currentLBTab==='friends'){renderFriendsLB();fetchFriendScores();}
     }
   }catch(e){console.warn('pushScore:',e);}
+}
+
+// Satın almaları/cüzdanı hesaba (Firestore) yaz — başka cihazda da geçerli olsun
+let _walletSyncTimer=null;
+function syncWallet(){
+  // Çok sık çağrılmasın diye küçük debounce
+  if(_walletSyncTimer) clearTimeout(_walletSyncTimer);
+  _walletSyncTimer=setTimeout(_syncWalletToFirestore,800);
+}
+async function _syncWalletToFirestore(){
+  if(!acct.uid||!_fbApp) return;
+  try{
+    const {getFirestore,doc,setDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const db=getFirestore(_fbApp);
+    await setDoc(doc(db,'users',acct.uid),{
+      best:acct.best||0,   // kural best:int ister — her zaman ekle
+      vip:isVip(),noAds:isNoAds(),
+      coins:parseInt(localStorage.getItem('tm_coins')||'0'),
+      owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos()
+    },{merge:true});
+  }catch(e){console.warn('wallet sync:',e);}
 }
 
 function getFriends(){
