@@ -1448,7 +1448,7 @@ function _selectCountryInGrid(gridId, flag, name){
 }
 
 function myFlag(){return acct.country||LB_FLAGS[lang]||'🏳️';}
-function displayName(){return acct.nickname||acct.name||t('guest');}
+function displayName(){return acct.nickname||acct.name||acct._googleName||'Player';}
 function playerLabel(){return myFlag()+' '+displayName();}
 
 // ── ÜLKE + NİCKNAME SETUP MODAL ──
@@ -3631,8 +3631,8 @@ async function _initLeaderboardManager(){
 
 function _onFirebaseUser(user){
   acct._googleName = user.displayName || user.email || '';
-  // Sadece hiç nickname yoksa Google adını geçici olarak koy
-  if(!acct.nickname&&!acct._setupDone) acct.nickname = acct._googleName;
+  // Kullanıcı kendi nickname'ini girmemişse Google adını kullan
+  if(!acct.nickname) acct.nickname = acct._googleName;
   acct.uid  = user.uid;
   acct._fbLogged = true;
   localStorage.setItem('tm_acct', JSON.stringify(acct));
