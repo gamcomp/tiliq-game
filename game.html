@@ -4194,9 +4194,9 @@ function updateMyWeeklyScore(newScore){
 }
 
 function buildFriendBoard(){
-  const myWeekly=getMyWeeklyScore();
+  const myWeekly=getMyWeeklyScore()||acct.best||0;
   const board=[
-    ...getFriends().map(f=>({n:f.name,s:f.weeklyScore||0,code:f.code,friend:true,lv:f.level||0})),
+    ...getFriends().map(f=>({n:f.name,s:f.weeklyScore||f.score||0,code:f.code,friend:true,lv:f.level||0})),
     {n:playerLabel(),s:myWeekly,code:myCode,me:true,lv:calcLevel(getXP())},
   ];
   board.sort((a,b)=>b.s-a.s);
@@ -4357,13 +4357,14 @@ async function fetchFriendScores(){
       const codes=friends.map(f=>f.code);
       // Firestore'da 'in' max 10 — birden fazla batch gerekirse böl
       const batches=[];
-      for(let i=0;i<codes.length;i+=10) batches.push(codes.slice(i,i+10));
+      for(let i=0;i<codes.length;i+=10) batches.push(codes.map(c=>c.toUpperCase()).slice(i,i+10));
       for(const batch of batches){
         const snap=await getDocs(query(collection(db,'users'),where('code','in',batch)));
         const ws=_getWeekStart();
         snap.forEach(d=>{
           const fd=d.data();
-          const idx=friends.findIndex(f=>f.code===fd.code);
+          const fdCode=(fd.code||'').toUpperCase();
+          const idx=friends.findIndex(f=>f.code.toUpperCase()===fdCode);
           if(idx>=0){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
             friends[idx].weeklyScore=(fd.weeklyReset===ws)?(fd.weeklyScore||0):0;
@@ -4375,20 +4376,21 @@ async function fetchFriendScores(){
     }
 
     // 2) Beni ekleyenleri de getir (friendLinks where to==myCode)
-    const linkSnap=await getDocs(query(collection(db,'friendLinks'),where('to','==',myCode)));
-    const ws3=_getWeekStart();
+    const myCodeUC=myCode.toUpperCase();
+    const linkSnap=await getDocs(query(collection(db,'friendLinks'),where('to','==',myCodeUC)));
     linkSnap.forEach(d=>{
       const ld=d.data();
-      if(!friends.some(f=>f.code===ld.from)){
-        friends.push({code:ld.from,name:ld.fromName||t('guest'),score:ld.fromScore||0,weeklyScore:0,uid:ld.fromUid||null,added:ld.ts||0});
+      const fromUC=(ld.from||'').toUpperCase();
+      if(!friends.some(f=>f.code.toUpperCase()===fromUC)){
+        friends.push({code:fromUC,name:ld.fromName||t('guest'),score:ld.fromScore||0,weeklyScore:0,uid:ld.fromUid||null,added:ld.ts||0});
       } else {
-        const idx=friends.findIndex(f=>f.code===ld.from);
+        const idx=friends.findIndex(f=>f.code.toUpperCase()===fromUC);
         if(idx>=0) friends[idx].score=Math.max(friends[idx].score||0,ld.fromScore||0);
       }
     });
 
     // 3) Beni ekleyenlerin güncel skorlarını da Firestore'dan çek
-    const remoteAdded=linkSnap.docs.map(d=>d.data().from).filter(c=>c&&c!==myCode);
+    const remoteAdded=linkSnap.docs.map(d=>(d.data().from||'').toUpperCase()).filter(c=>c&&c!==myCodeUC);
     if(remoteAdded.length){
       const batches2=[];
       for(let i=0;i<remoteAdded.length;i+=10) batches2.push(remoteAdded.slice(i,i+10));
@@ -4397,11 +4399,13 @@ async function fetchFriendScores(){
         const ws2=_getWeekStart();
         snap.forEach(d=>{
           const fd=d.data();
-          const idx=friends.findIndex(f=>f.code===fd.code);
+          const fdCode=(fd.code||'').toUpperCase();
+          const idx=friends.findIndex(f=>f.code.toUpperCase()===fdCode);
           if(idx>=0){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
-            friends[idx].weeklyScore=(fd.weeklyReset===ws2)?(fd.weeklyScore||0):0;
+            friends[idx].weeklyScore=(fd.weeklyReset===ws2)?(fd.weeklyScore||0):friends[idx].weeklyScore||0;
             friends[idx].name=fd.name||friends[idx].name;
+            friends[idx].level=fd.level||calcLevel(fd.xp||0);
           }
         });
       }
