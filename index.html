@@ -3896,10 +3896,27 @@ function _onFirebaseUser(user){
   if(si) si.style.display='block';
   if(na) na.style.display='none';
   if(wa) wa.style.display='none';
-  // İlk gerçek giriş VE bu cihazda yerel ilerleme varsa: aktarımı kullanıcıya sor.
+  // İlk gerçek giriş VE yerel ilerleme VARSA: önce cloud'a bak.
   const localBest=acct.best||0;
   if(acct._mergedUid!==user.uid && localBest>0){
-    _fetchCloudData(user.uid).then(cloud=>_showMergeDialog(user.uid, cloud||{}));
+    _fetchCloudData(user.uid).then(cloud=>{
+      acct._mergedUid=user.uid;
+      localStorage.setItem('tm_acct',JSON.stringify(acct));
+      if(cloud && (cloud.best||0)>0){
+        // Hesapta zaten veri var → çakışma, kullanıcıya sor
+        _showMergeDialog(user.uid, cloud);
+      } else {
+        // Hesap boş → yereli otomatik aktar (dünya sıralamasına yazılsın)
+        _firestoreSync(user.uid);
+        _postLoginSetup();
+      }
+    }).catch(()=>{
+      // Cloud okunamadıysa yine de senkronize et — skor kaybolmasın
+      _firestoreSync(user.uid);
+      acct._mergedUid=user.uid;
+      localStorage.setItem('tm_acct',JSON.stringify(acct));
+      _postLoginSetup();
+    });
   } else {
     // Yerel ilerleme yok veya daha önce aktarıldı — normal senkronizasyon
     _firestoreSync(user.uid);
@@ -4311,29 +4328,30 @@ async function _firestoreSync(uid){
 async function _firestorePushScore(){
   if(!acct.uid||!_fbApp)return;
   try{
-    const {getFirestore,doc,updateDoc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const {getFirestore,doc,setDoc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     const db=getFirestore(_fbApp);
     const ws=_getWeekStart();
-    // Haftalık skoru güncelle
     const ref=doc(db,'users',acct.uid);
     const snap=await getDoc(ref);
     const prev=snap.exists()?snap.data():{};
     const prevWeekly=(prev.weeklyReset===ws)?(prev.weeklyScore||0):0;
-    const newWeekly=Math.max(prevWeekly,getMyWeeklyScore()||0,acct.best||0);
-    // localStorage'a da kaydet
-    updateMyWeeklyScore(acct.best);
-    await updateDoc(ref,{
-      best:acct.best,games:acct.games,total:acct.total,
+    // Haftalık skor = bu haftaki en iyi oyun (all-time'a sabitlenmez)
+    const newWeekly=Math.max(prevWeekly,getMyWeeklyScore()||0);
+    const xpNow=getXP();
+    // setDoc merge: döküman yoksa oluşturur, varsa günceller (updateDoc gibi başarısız olmaz)
+    await setDoc(ref,{
+      uid:acct.uid,best:acct.best||0,games:acct.games||0,total:acct.total||0,
       name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',
+      xp:xpNow,level:calcLevel(xpNow),
       weeklyScore:newWeekly,weeklyReset:ws
-    });
+    },{merge:true});
     // Sıralamalar açıksa anlık yenile
     const lbPanel=document.getElementById('lb-panel');
     if(lbPanel&&lbPanel.classList.contains('open')){
       if(currentLBTab==='global') renderLB(acct.best);
       if(currentLBTab==='friends'){renderFriendsLB();fetchFriendScores();}
     }
-  }catch(e){}
+  }catch(e){console.warn('pushScore:',e);}
 }
 
 function getFriends(){
