@@ -4492,7 +4492,8 @@ function updateMyWeeklyScore(newScore){
 }
 
 function buildFriendBoard(){
-  const myWeekly=getMyWeeklyScore()||acct.best||0;
+  // Kendi skorun: yerel kaynakların EN YÜKSEĞİ (stale görünmesin)
+  const myWeekly=Math.max(getMyWeeklyScore()||0, acct.best||0, (typeof score!=='undefined'?score:0));
   const board=[
     ...getFriends().map(f=>({n:f.name,s:f.weeklyScore||f.score||0,code:f.code,friend:true,lv:f.level||0})),
     {n:playerLabel(),s:myWeekly,code:myCode,me:true,lv:calcLevel(getXP())},
@@ -4648,9 +4649,28 @@ async function fetchFriendScores(){
   const LB=window._leaderboardManager;
   if(!LB||!LB._db)return;
   try{
-    const {collection,getDocs,query,where}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const {collection,getDocs,query,where,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     const db=LB._db;
     let friends=getFriends();
+
+    // 0) Kendi skorumu da Firestore'dan tazele — yerel veri eskiyse düzelt
+    if(acct.uid){
+      try{
+        const meSnap=await getDoc(doc(db,'users',acct.uid));
+        if(meSnap.exists()){
+          const md=meSnap.data();
+          if((md.best||0)>(acct.best||0)){
+            acct.best=md.best;
+            localStorage.setItem('tiliq_best',String(md.best));
+            localStorage.setItem('tm_acct',JSON.stringify(acct));
+          }
+          const ws0=_getWeekStart();
+          if(md.weeklyReset===ws0 && (md.weeklyScore||0)>(getMyWeeklyScore()||0)){
+            updateMyWeeklyScore(md.weeklyScore);
+          }
+        }
+      }catch(_){}
+    }
 
     // 1) Benim eklediklerimin güncel skorlarını çek
     if(friends.length){
