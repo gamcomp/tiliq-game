@@ -2609,7 +2609,22 @@ function playRotate(){
   tone(520,.1,.055,'sine');
   setTimeout(()=>tone(780,.08,.04,'sine'),60);
 }
-function _shapeKey(s){return JSON.stringify(s.cells);}
+// Şekli dönüşten bağımsız (rotation-invariant) anahtarla — aynı şeklin
+// farklı yönleri de "aynı" sayılır, böylece tekrar gelmez.
+function _normCells(cells){
+  const minR=Math.min(...cells.map(c=>c[0]));
+  const minC=Math.min(...cells.map(c=>c[1]));
+  return cells.map(c=>[c[0]-minR,c[1]-minC]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+}
+function _shapeKey(s){
+  let best=null,cur=s.cells;
+  for(let i=0;i<4;i++){
+    const key=JSON.stringify(_normCells(cur));
+    if(best===null||key<best) best=key;
+    cur=rotateCW(cur);
+  }
+  return best;
+}
 function genPieces(){
   const pool=buildPool();
   const used=new Set();
