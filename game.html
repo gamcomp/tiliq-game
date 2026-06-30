@@ -671,7 +671,7 @@ input[type="text"]::placeholder{color:var(--dim);}
     <div class="menu-av" onclick="showModal('account')">
       <div class="av-circle" id="av-menu" style="background:linear-gradient(135deg,#C4714A,#D4A843)">G</div>
       <div class="av-info">
-        <div class="av-name" id="av-name-menu" data-t="guest">Misafir</div>
+        <div class="av-name" id="av-name-menu">Misafir</div>
         <div class="av-tap" data-t="editProfile">Edit Profile →</div>
       </div>
       <div class="streak-badge" id="streak-badge" style="display:none">🔥 <span class="streak-n" id="streak-n">0</span></div>
@@ -1333,6 +1333,8 @@ function applyLang(){
   renderDailyCard();
   if(document.getElementById('store-body')) renderStoreBody();
   updateContinueBtn();
+  // İsim çeviriyle ezilmesin — gerçek profil adını geri yaz
+  if(typeof updateMenuAvatar==='function') updateMenuAvatar();
 }
 function setLang(l){lang=l;applyLang();}
 
@@ -1641,10 +1643,12 @@ function renderInventory(){
   ).join('');
 }
 function updateMenuAvatar(){
-  const init=displayName().charAt(0).toUpperCase()||'G';
+  // Profil adı varsa onu göster; yoksa dile uygun "Misafir"
+  const name=acct.nickname||acct.name||acct._googleName||t('guest');
+  const init=(name||'G').charAt(0).toUpperCase();
   document.getElementById('av-menu').textContent=init;
   document.getElementById('av-menu').style.background=acct.color;
-  document.getElementById('av-name-menu').textContent=displayName();
+  document.getElementById('av-name-menu').textContent=name;
 }
 
 // ── STREAK ───────────────────────────────────────────────────────────────────
