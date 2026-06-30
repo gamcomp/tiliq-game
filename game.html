@@ -1856,7 +1856,7 @@ function renderDailyCard(){
   if(hintEl) hintEl.style.display='none';
 
   // İstatistikler
-  const totalGames=acct?.played??parseInt(localStorage.getItem('tm_games')||'0');
+  const totalGames=acct?.games??parseInt(localStorage.getItem('tm_games')||'0');
   document.getElementById('lstat-games').textContent=totalGames;
   document.getElementById('lstat-best').textContent=(acct?.best??parseInt(localStorage.getItem('tiliq_best')||'0')).toLocaleString();
   document.getElementById('lstat-streak').textContent=streak+'🔥';
