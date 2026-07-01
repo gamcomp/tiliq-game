@@ -774,7 +774,7 @@ input[type="text"]::placeholder{color:var(--dim);}
       disabled>
       <span id="bomb-icon">💣</span>
       <div class="bomb-info">
-        <span><span id="bomb-type-lbl">Bomba</span><span id="bomb-cnt" style="margin-left:3px">×0</span></span>
+        <span><span id="bomb-type-lbl">Bomba</span><span id="bomb-cnt" style="margin-left:3px">×0</span><span id="bomb-ad-icon" style="margin-left:3px;font-size:10px;opacity:.75;display:none">📺</span></span>
         <div id="bomb-bar"><div id="bomb-bar-fill"></div></div>
       <div id="bomb-hold-ring"><div id="bomb-hold-fill"></div></div>
       </div>
@@ -2299,17 +2299,43 @@ let _tmLastAd=0;
 let _tmRated=localStorage.getItem('tiliq_rated')==='1';
 function logEvent(name,params){console.log('[Analytics]',name,params?JSON.stringify(params):'');/* TODO: FirebaseAnalytics.logEvent(name,params) */}
 function onGameStart(){logEvent('game_start',{game:'tiliq'});}
+let _pendingInterstitial=false;
 function onGameOver(s){
   logEvent('game_over',{game:'tiliq',score:s});
   _tmGc++;localStorage.setItem('tiliq_gc',_tmGc);
   const now=Date.now();
-  if(_tmGc%3===0&&now-_tmLastAd>30000){_tmLastAd=now;console.log('[Monetization] Interstitial (TODO: AdSDK.showInterstitial())');}
-  if(!_tmRated&&_tmGc>=3){_tmRated=true;localStorage.setItem('tiliq_rated','1');console.log('[Rating] In-app review (TODO: StoreReview.requestReview())');}
+  // Her 3 oyunda bir, en az 30sn arayla interstitial (ana menüye dönüşte gösterilir)
+  if(_tmGc%3===0&&now-_tmLastAd>30000){_tmLastAd=now;_pendingInterstitial=true;}
+  if(!_tmRated&&_tmGc>=3){_tmRated=true;localStorage.setItem('tiliq_rated','1');/* TODO: StoreReview */}
 }
 
-// ── REWARDED AD ──────────────────────────────────────────────────────────────
+// ── REKLAM (AdMob) ────────────────────────────────────────────────────────────
 const ADMOB_REWARDED_ID='ca-app-pub-1366817286080705/9010803939';
+// TODO: AdMob panelinden GERÇEK interstitial ad unit ID'sini buraya yapıştır.
+// Şimdilik Google resmî TEST interstitial ID'si (test reklamı gösterir, para kazandırmaz).
+const ADMOB_INTERSTITIAL_ID='ca-app-pub-3940256099942544/1033173712';
 let _adCb=null,_adTick=null,_admobListeners=[];
+let _interReady=false;
+
+// ── INTERSTITIAL (tam ekran, oyun bitişinde) ─────────────────────────────────
+async function _prepareInterstitial(){
+  const AdMob=_getAdMob();
+  if(!AdMob||isNoAds())return;
+  try{ await AdMob.prepareInterstitial({adId:ADMOB_INTERSTITIAL_ID}); _interReady=true; }
+  catch(e){ console.warn('Interstitial prepare:',e); }
+}
+async function showInterstitial(){
+  if(isNoAds())return;              // Reklamsız/VIP kullanıcıya gösterme
+  const AdMob=_getAdMob();
+  if(!AdMob)return;                 // Web/test: interstitial yok
+  try{
+    if(!_interReady) await _prepareInterstitial();
+    if(!_interReady)return;
+    await AdMob.showInterstitial();
+    _interReady=false;
+    _prepareInterstitial();         // sonraki için önden hazırla
+  }catch(e){ console.warn('Interstitial show:',e); }
+}
 
 function _getAdMob(){
   return window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.AdMob||null;
@@ -2320,6 +2346,7 @@ async function initAdMob(){
   if(!AdMob)return;
   try{
     await AdMob.initialize({initializeForTesting:false});
+    _prepareInterstitial();   // ilk interstitial'ı önden hazırla
   }catch(e){console.warn('AdMob init:',e);}
 }
 
@@ -2425,9 +2452,18 @@ let _bombHoldTimer=null,_bombHoldInterval=null;
 function updateBombBar(){
   const pct=Math.min(bombXP/BOMB_THRESHOLD,1)*100;
   document.getElementById('bomb-bar-fill').style.width=pct+'%';
-  document.getElementById('bomb-cnt').textContent='×'+bombCount;
+  const cntEl=document.getElementById('bomb-cnt');
+  const adIcon=document.getElementById('bomb-ad-icon');
   const btn=document.getElementById('bomb-btn');
-  btn.disabled=(bombCount===0);
+  // Bomba yoksa: buton aktif kalır, reklam ikonu gösterilir (reklamla bomba kazan)
+  btn.disabled=false;
+  if(bombCount===0){
+    if(cntEl) cntEl.style.display='none';
+    if(adIcon) adIcon.style.display='';
+  } else {
+    if(cntEl){cntEl.style.display='';cntEl.textContent='×'+bombCount;}
+    if(adIcon) adIcon.style.display='none';
+  }
   // İkon ve label
   const icon=document.getElementById('bomb-icon');
   const lbl=document.getElementById('bomb-type-lbl');
@@ -2483,7 +2519,17 @@ function clearBombHold(){
 }
 
 function activateBomb(type='normal'){
-  if(bombCount<=0||dead)return;
+  if(dead)return;
+  // Bombası yoksa: reklam izleyerek 1 bomba kazan
+  if(bombCount<=0){
+    showRewardedAd(()=>{
+      bombCount++;
+      updateBombBar();
+      showCelebration('💣 +1 '+t('tut6bomb'),'#FF9F43');
+      vibrate([10,5,20]);
+    });
+    return;
+  }
   if(type==='super'&&bombCount<2)type='normal';
 
   const btn=document.getElementById('bomb-btn');
@@ -4277,6 +4323,8 @@ function backToMenu(){
   updateStreakDisplay();
   renderDailyCard();
   updateContinueBtn();
+  // Oyun bitişinde ana menüye dönüşte interstitial (sıklık onGameOver'da belirlendi)
+  if(_pendingInterstitial){ _pendingInterstitial=false; showInterstitial(); }
 }
 
 // ── LEADERBOARD ───────────────────────────────────────────────────────────────
