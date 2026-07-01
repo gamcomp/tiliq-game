@@ -3990,7 +3990,7 @@ function _showMergeDialog(uid, cloud){
   const localBest=(acct.best||0).toLocaleString();
   const localLv=calcLevel(getXP());
   const cloudBest=(cloud.best||0).toLocaleString();
-  const cloudLv=cloud.level||calcLevel(cloud.xp||0);
+  const cloudLv=calcLevel(cloud.xp||0);
   const ov=document.createElement('div');
   ov.id='merge-overlay';
   ov.style.cssText='position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.62);backdrop-filter:blur(7px);padding:22px;';
@@ -4454,7 +4454,7 @@ async function renderLB(ps){
       const myUID = acct.uid||null;
       const myName = playerLabel();
       // Kullanıcı listede yoksa ekle
-      let rows = top.map(p=>({n:(p.country||'🏳️')+' '+(p.name||t('guest')),s:p.best||0,uid:p.uid,lv:p.level||calcLevel(p.xp||0)}));
+      let rows = top.map(p=>({n:(p.country||'🏳️')+' '+(p.name||t('guest')),s:p.best||0,uid:p.uid,lv:calcLevel(p.xp||0)}));
       const inList = myUID?rows.some(r=>r.uid===myUID):false;
       if(!inList) rows.push({n:myFlag()+' '+myName,s:ps,uid:myUID||'__me__',me:true,lv:calcLevel(getXP())});
       rows.sort((a,b)=>b.s-a.s);
@@ -4931,7 +4931,7 @@ async function fetchFriendScores(){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
             friends[idx].weeklyScore=(fd.weeklyReset===ws)?(fd.weeklyScore||0):0;
             friends[idx].name=fd.name||friends[idx].name;
-            friends[idx].level=fd.level||calcLevel(fd.xp||0);
+            friends[idx].level=calcLevel(fd.xp||0);
           }
         });
       }
@@ -4968,7 +4968,7 @@ async function fetchFriendScores(){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
             friends[idx].weeklyScore=(fd.weeklyReset===ws2)?(fd.weeklyScore||0):friends[idx].weeklyScore||0;
             friends[idx].name=fd.name||friends[idx].name;
-            friends[idx].level=fd.level||calcLevel(fd.xp||0);
+            friends[idx].level=calcLevel(fd.xp||0);
           }
         });
       }
