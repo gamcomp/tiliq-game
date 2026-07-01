@@ -795,12 +795,12 @@ input[type="text"]::placeholder{color:var(--dim);}
         <div class="r2-icon">📺</div>
         <div class="r2-body">
           <div class="r2-title" data-t="continueGame">Continue</div>
-          <div class="r2-sub" id="r2-sub-text" data-t="rescue2ad">Watch 2 short ads to continue</div>
+          <div class="r2-sub" id="r2-sub-text"></div>
         </div>
         <div class="r2-badge" id="r2-badge">1 📺</div>
       </button>
       <div class="over-btns">
-        <button class="btn-secondary" onclick="backToMenu()" data-t="mainMenu">Ana Menü</button>
+        <button class="btn-secondary" onclick="menuWithAd()" data-t="mainMenu">Ana Menü</button>
         <button class="btn-play-sm" onclick="restartGame()" data-t="playAgain">Tekrar Oyna</button>
       </div>
       <button id="wa-share-btn" onclick="shareToWhatsApp()" style="margin-top:10px;background:linear-gradient(135deg,#25D366,#128C7E);border:none;color:#fff;border-radius:22px;padding:10px 22px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;">
@@ -2299,13 +2299,9 @@ let _tmLastAd=0;
 let _tmRated=localStorage.getItem('tiliq_rated')==='1';
 function logEvent(name,params){console.log('[Analytics]',name,params?JSON.stringify(params):'');/* TODO: FirebaseAnalytics.logEvent(name,params) */}
 function onGameStart(){logEvent('game_start',{game:'tiliq'});}
-let _pendingInterstitial=false;
 function onGameOver(s){
   logEvent('game_over',{game:'tiliq',score:s});
   _tmGc++;localStorage.setItem('tiliq_gc',_tmGc);
-  const now=Date.now();
-  // Her 3 oyunda bir, en az 30sn arayla interstitial (ana menüye dönüşte gösterilir)
-  if(_tmGc%3===0&&now-_tmLastAd>30000){_tmLastAd=now;_pendingInterstitial=true;}
   if(!_tmRated&&_tmGc>=3){_tmRated=true;localStorage.setItem('tiliq_rated','1');/* TODO: StoreReview */}
 }
 
@@ -3278,16 +3274,16 @@ function showOver(){
   const lbData=JSON.parse(localStorage.getItem('tiliq_lb')||'[]');
   const rank=lbData.filter(e=>e.score>score).length+1;
   document.getElementById('rank-badge').textContent=`🌍 #${rank}`;
-  // Kurtarma butonları — sadece ilk ölümde göster
+  // Tek devam butonu (rescue-2ad) — eski "Kurtarma" butonunu gizle
   const rb=document.getElementById('rescue-btn');
-  if(rb) rb.style.display=(_rescueShownThisGame||rescueUsed)?'none':'block';
+  if(rb) rb.style.display='none';
   const r2=document.getElementById('rescue-2ad');
   if(r2){
     r2.style.display=(_rescueShownThisGame||_r2adUsedThisGame)?'none':'flex';
     const sub=document.getElementById('r2-sub-text');
-    if(sub) sub.textContent=t('rescue2adSub');
+    if(sub) sub.textContent='';   // "2 reklam" yazısı kaldırıldı — tek reklam
     const badge=document.getElementById('r2-badge');
-    if(badge) badge.textContent='1 📺';
+    if(badge) badge.textContent='📺';
     _r2adWatched=0;
   }
   _rescueShownThisGame=true;
@@ -4361,8 +4357,11 @@ function backToMenu(){
   updateStreakDisplay();
   renderDailyCard();
   updateContinueBtn();
-  // Oyun bitişinde ana menüye dönüşte interstitial (sıklık onGameOver'da belirlendi)
-  if(_pendingInterstitial){ _pendingInterstitial=false; showInterstitial(); }
+}
+// Oyun bitince "Ana Menü"ye dönerken 1 reklam göster (VIP/reklamsız hariç)
+function menuWithAd(){
+  showInterstitial();
+  backToMenu();
 }
 
 // ── LEADERBOARD ───────────────────────────────────────────────────────────────
