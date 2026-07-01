@@ -3177,6 +3177,8 @@ function _drawCellFire(gx,gy,now){
 
 function spawnExplosion(x,y,c,big=false){
   const count=big?22:14;
+  // Merkez darbe flash'ı (additive ile anlık parlama)
+  sparks.push({x,y,vx:0,vy:0,a:1,c:'#FFF7E0',sz:big?CELL*1.0:CELL*.6,type:'glow',fade:big?.10:.13});
   // İç → orta → dış 3 shockwave halkası
   shockwaves.push({x,y,r:3,maxR:big?CELL*1.2:CELL*.8,a:1,c:'#FFE5B4',lw:3});
   if(big){
@@ -3656,49 +3658,59 @@ function drawFloats(){
 }
 
 function drawShockwaves(){
+  if(!shockwaves.length)return;
+  // Additive → enerji halkası gibi parlar (shadowBlur yok, mobilde ucuz)
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
   shockwaves=shockwaves.filter(s=>s.a>0);
   for(const s of shockwaves){
-    ctx.save();
-    ctx.globalAlpha=s.a*.8;
     ctx.strokeStyle=s.c;
-    ctx.lineWidth=(s.lw||2.5)*s.a;
-    ctx.shadowColor=s.c;ctx.shadowBlur=10*s.a;
+    // yumuşak geniş halka
+    ctx.globalAlpha=s.a*.3;
+    ctx.lineWidth=(s.lw||2.5)*3.2*s.a;
     ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.stroke();
-    ctx.restore();
+    // parlak ince çekirdek halka
+    ctx.globalAlpha=s.a*.9;
+    ctx.lineWidth=Math.max(1,(s.lw||2.5)*s.a);
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.stroke();
     s.r+=(s.maxR-s.r)*.16;
     s.a-=.048;
   }
+  ctx.restore();ctx.globalAlpha=1;
 }
 
 function drawSparks(){
+  if(!sparks.length)return;
+  // Additive blend + çekirdek/hale → shadowBlur'süz parlak glow (daha ucuz)
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
   sparks=sparks.filter(p=>p.a>0);
   for(const p of sparks){
-    ctx.save();ctx.globalAlpha=p.a;ctx.fillStyle=p.c;ctx.shadowColor=p.c;
-    if(p.type==='glow'){
-      ctx.shadowBlur=14;
-      ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);ctx.fill();
-    } else if(p.type==='shard'){
-      ctx.shadowBlur=5;
-      ctx.translate(p.x,p.y);ctx.rotate(p.rot||0);
-      ctx.fillRect(-p.sz/2,-p.sz*.15,p.sz,p.sz*.3);
+    ctx.fillStyle=p.c;
+    if(p.type==='shard'){
+      ctx.globalAlpha=p.a;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot||0);
+      ctx.fillRect(-p.sz/2,-p.sz*.15,p.sz,p.sz*.3);ctx.restore();
     } else if(p.type==='ember'){
-      ctx.shadowBlur=8;
-      ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);ctx.fill();
       // kor kuyruğu
-      ctx.globalAlpha=p.a*.4;ctx.beginPath();
-      ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx*2,p.y-p.vy*2);
-      ctx.strokeStyle=p.c;ctx.lineWidth=p.sz*.7;ctx.stroke();
-    } else {
-      ctx.shadowBlur=6;
+      ctx.globalAlpha=p.a*.45;ctx.strokeStyle=p.c;ctx.lineWidth=p.sz*.85;
+      ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx*2.6,p.y-p.vy*2.6);ctx.stroke();
+      ctx.globalAlpha=p.a;
       ctx.beginPath();ctx.arc(p.x,p.y,p.sz,0,Math.PI*2);ctx.fill();
+    } else {
+      // dot/glow: yumuşak hale + parlak çekirdek
+      ctx.globalAlpha=p.a*(p.type==='glow'?.4:.32);
+      ctx.beginPath();ctx.arc(p.x,p.y,p.sz*2.3,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=p.a;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.sz*.8,0,Math.PI*2);ctx.fill();
     }
-    ctx.restore();
     p.x+=p.vx;p.y+=p.vy;
     p.vy+=p.type==='ember'?.08:.14;
     p.a-=p.fade||(p.type==='glow'?.018:.026);
     p.sz*=.95;p.vx*=.97;p.vy*=.98;
     if(p.rot!==undefined)p.rot+=p.rotV||0;
   }
+  ctx.restore();ctx.globalAlpha=1;
 }
 
 function drawDrag(){
