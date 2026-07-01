@@ -3051,16 +3051,14 @@ function spawnFlame(cx,cy,comboLevel){
     const size=(6+Math.random()*8)*(1+intensity*.1);
     // Renk: sarı→turuncu→kırmızı (combo'ya göre)
     const t=Math.random();
-    let color;
-    if(intensity>=6)      color=`hsl(${Math.round(t*20)},100%,${55+t*15}%)`;      // kırmızı alevler
-    else if(intensity>=3) color=`hsl(${Math.round(20+t*25)},100%,${60+t*15}%)`;   // turuncu
-    else                  color=`hsl(${Math.round(40+t*20)},100%,${65+t*15}%)`;   // sarı
+    // Combo yoğunluğuna göre temel ton: yüksek combo → kırmızı, düşük → sarı
+    let hue = intensity>=6 ? Math.round(t*16) : intensity>=3 ? Math.round(16+t*20) : Math.round(38+t*16);
     flames.push({
       x:cx+(Math.random()-.5)*CELL*.8,
       y:cy+(Math.random()-.5)*CELL*.3,
       vx:Math.cos(angle)*speed*(Math.random()*.6+.7),
       vy:Math.sin(angle)*speed,
-      size,color,
+      size,hue,
       a:1,life:1,decay:.022+Math.random()*.018,
       wobble:Math.random()*Math.PI*2,wobbleSpeed:0.12+Math.random()*.08
     });
@@ -3072,28 +3070,45 @@ function spawnFlame(cx,cy,comboLevel){
     for(let i=0;i<edgeCount;i++){
       const ex=gx+Math.random()*gs, ey=gy+gs;
       flames.push({x:ex,y:ey,vx:(Math.random()-.5)*2,vy:-(2+Math.random()*3),
-        size:10+Math.random()*10,color:'#FF6B35',a:.9,life:1,decay:.04,wobble:0,wobbleSpeed:.1});
+        size:10+Math.random()*10,hue:12,a:.9,life:1,decay:.04,wobble:0,wobbleSpeed:.1});
     }
   }
 }
 
 function drawFlames(now){
-  // Gradient YOK — düz renk + globalAlpha ile çiz (mobilde 5-10x hızlı)
+  if(!flames.length)return;
+  // Additive blend (ışık toplama) → üst üste binen alevler gerçek ateş gibi parlar
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
   flames=flames.filter(f=>{
     f.life-=f.decay;
     if(f.life<=0)return false;
-    f.a=f.life;
     f.x+=f.vx;f.y+=f.vy;
-    f.vy-=.04;
-    f.vx+=Math.sin(f.wobble)*0.08;f.wobble+=f.wobbleSpeed;
-    f.size*=.97;
+    f.vy-=.05;                                   // yukarı ivme (sıcak hava)
+    f.vx+=Math.sin(f.wobble)*0.09;f.wobble+=f.wobbleSpeed; // türbülans
+    f.size*=.965;
     const s=f.size*f.life;
     if(s<1)return false;
-    ctx.globalAlpha=f.a*.75;
-    ctx.fillStyle=f.color;
-    ctx.beginPath();ctx.arc(f.x,f.y,s,0,Math.PI*2);ctx.fill();
+    const lf=f.life;
+    const hue=f.hue!==undefined?f.hue:24;
+    // Ömre göre renk: taze=beyaz-sarı sıcak çekirdek, yaşlandıkça kızarıp söner
+    const coreHue=Math.round(hue + (1-lf)*8);    // yaşlanınca biraz kızarır
+    const coreLight=Math.round(62 + lf*30);      // taze parlak, sönerken koyu
+    // 1) Geniş yumuşak hale → glow (additive ile üst üste binince parlama)
+    ctx.globalAlpha=lf*0.28;
+    ctx.fillStyle=`hsl(${hue+6},100%,${Math.max(32,coreLight-24)}%)`;
+    ctx.beginPath();ctx.arc(f.x,f.y,s*1.75,0,Math.PI*2);ctx.fill();
+    // 2) Orta gövde
+    ctx.globalAlpha=lf*0.5;
+    ctx.fillStyle=`hsl(${coreHue},100%,${Math.max(40,coreLight-8)}%)`;
+    ctx.beginPath();ctx.arc(f.x,f.y,s*1.05,0,Math.PI*2);ctx.fill();
+    // 3) Parlak sıcak çekirdek
+    ctx.globalAlpha=lf*0.9;
+    ctx.fillStyle=`hsl(${Math.min(60,coreHue+14)},100%,${Math.min(94,coreLight+22)}%)`;
+    ctx.beginPath();ctx.arc(f.x,f.y,s*0.55,0,Math.PI*2);ctx.fill();
     return true;
   });
+  ctx.restore();
   ctx.globalAlpha=1;
 }
 
@@ -3113,13 +3128,11 @@ function _drawCellFire(gx,gy,now){
 
     const _flame=(ex,ey,vx,vy)=>{
       const t=Math.random();
-      const color=intensity>=6?`hsl(${Math.round(t*22)},100%,${55+t*14}%)`:
-                  intensity>=4?`hsl(${Math.round(14+t*22)},100%,${60+t*14}%)`:
-                               `hsl(${Math.round(35+t*18)},100%,${65+t*12}%)`;
+      const hue=intensity>=6?Math.round(t*18):intensity>=4?Math.round(14+t*20):Math.round(34+t*16);
       flames.push({
         x:ex,y:ey,vx,vy,
         size:(5+Math.random()*7)*(0.75+intensity*.07),
-        color,a:1,life:1,
+        hue,a:1,life:1,
         decay:.028+Math.random()*.022,
         wobble:Math.random()*Math.PI*2,wobbleSpeed:.13+Math.random()*.07
       });
@@ -3137,22 +3150,29 @@ function _drawCellFire(gx,gy,now){
       // Sağ kenar → sola
       _flame(gx+gs, gy+Math.random()*gs, -(speed*.55+Math.random()*.6), (Math.random()-.5)*1.2);
     }
+    // Yükselen korlar (ember) — yüksek combo'da alevden kıvılcım yükselir
+    if(intensity>=4 && sparks.length<80){
+      const en=Math.min(2,intensity-3);
+      for(let i=0;i<en;i++){
+        const ex=gx+Math.random()*gs;
+        sparks.push({x:ex,y:gy+gs-2,vx:(Math.random()-.5)*.9,vy:-(1.4+Math.random()*2.2),
+          a:1,c:i%2?'#FFD27A':'#FF8A3D',sz:1.4+Math.random()*1.6,type:'ember',fade:.018});
+      }
+    }
   }
 
-  // Grid çerçevesine kor/glow çiz
+  // Grid çerçevesine kor/glow — organik titreme (flicker) + additive katmanlı
+  const flick=0.80+Math.sin(now*0.013)*0.11+Math.sin(now*0.033)*0.06; // titrek kor
+  const glowA=(0.5+intensity*.055)*timerPct*flick;
+  const gh=intensity>=6?6:intensity>=3?26:44; // ateş tonu (kırmızı→sarı)
   ctx.save();
-  const glowA=(0.55+intensity*.06)*timerPct;
-  const glowColor=intensity>=6?'rgba(255,20,0,1)':
-                  intensity>=3?'rgba(255,110,0,1)':
-                               'rgba(255,200,0,1)';
-  // shadowBlur kaldırıldı (mobilde çok pahalı) — kalın stroke ile simüle
-  ctx.strokeStyle=glowColor.replace(',1)' , `,${glowA})`);
-  ctx.lineWidth=3+intensity*.5;
-  ctx.globalAlpha=glowA;
-  ctx.beginPath();
-  ctx.roundRect?ctx.roundRect(gx-4,gy-4,gs+8,gs+8,18):ctx.rect(gx-4,gy-4,gs+8,gs+8);
-  ctx.stroke();
-  ctx.restore();
+  ctx.globalCompositeOperation='lighter';
+  const rr=(pad)=>{ctx.beginPath();ctx.roundRect?ctx.roundRect(gx-pad,gy-pad,gs+pad*2,gs+pad*2,18):ctx.rect(gx-pad,gy-pad,gs+pad*2,gs+pad*2);ctx.stroke();};
+  // dış yumuşak hale
+  ctx.globalAlpha=glowA*0.5;ctx.strokeStyle=`hsl(${gh},100%,45%)`;ctx.lineWidth=8+intensity*.8;rr(6);
+  // iç parlak kor
+  ctx.globalAlpha=glowA;ctx.strokeStyle=`hsl(${gh+14},100%,66%)`;ctx.lineWidth=3+intensity*.4;rr(3);
+  ctx.restore();ctx.globalAlpha=1;
 }
 
 function spawnExplosion(x,y,c,big=false){
