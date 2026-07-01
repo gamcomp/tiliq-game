@@ -2040,22 +2040,49 @@ const TILE_MOTIFS=[
 ];
 
 function _tileSVG(hexColor,mi){
+  const id=mi;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><defs>`+
-    `<linearGradient id="tg${mi}" x1="0" y1="0" x2="1" y2="1">`+
-    `<stop offset="0%" stop-color="white" stop-opacity="0.18"/>`+
-    `<stop offset="45%" stop-color="white" stop-opacity="0.03"/>`+
-    `<stop offset="100%" stop-color="black" stop-opacity="0.12"/>`+
+    // Hacim gradyanı: üst aydınlık → alt koyu (3D kabartma)
+    `<linearGradient id="vol${id}" x1="0" y1="0" x2="0" y2="1">`+
+      `<stop offset="0%" stop-color="white" stop-opacity="0.45"/>`+
+      `<stop offset="40%" stop-color="white" stop-opacity="0.06"/>`+
+      `<stop offset="70%" stop-color="black" stop-opacity="0.06"/>`+
+      `<stop offset="100%" stop-color="black" stop-opacity="0.34"/>`+
     `</linearGradient>`+
-    `<radialGradient id="tgl${mi}" cx="32%" cy="24%" r="40%">`+
-    `<stop offset="0%" stop-color="white" stop-opacity="0.28"/>`+
-    `<stop offset="100%" stop-color="white" stop-opacity="0"/>`+
-    `</radialGradient></defs>`+
-    `<rect x="2" y="2" width="124" height="124" rx="14" fill="${hexColor}"/>`+
-    `<rect x="2" y="2" width="124" height="124" rx="14" fill="url(#tg${mi})"/>`+
-    `<rect x="7" y="7" width="114" height="114" rx="10" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>`+
-    `<rect x="2" y="2" width="124" height="124" rx="14" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="2.5"/>`+
-    `<g transform="translate(64,64)" opacity="0.45">${TILE_MOTIFS[mi]}</g>`+
-    `<ellipse cx="38" cy="30" rx="26" ry="12" transform="rotate(-15,38,30)" fill="url(#tgl${mi})"/>`+
+    // Üst cam parlaklığı (glossy sheen)
+    `<linearGradient id="glo${id}" x1="0" y1="0" x2="0" y2="1">`+
+      `<stop offset="0%" stop-color="white" stop-opacity="0.7"/>`+
+      `<stop offset="100%" stop-color="white" stop-opacity="0"/>`+
+    `</linearGradient>`+
+    // Specular ışık noktası
+    `<radialGradient id="spc${id}" cx="50%" cy="50%" r="50%">`+
+      `<stop offset="0%" stop-color="white" stop-opacity="0.95"/>`+
+      `<stop offset="100%" stop-color="white" stop-opacity="0"/>`+
+    `</radialGradient>`+
+    // Alt iç ışıma (renk yansıması, mücevher derinliği)
+    `<radialGradient id="rim${id}" cx="50%" cy="100%" r="70%">`+
+      `<stop offset="0%" stop-color="white" stop-opacity="0.18"/>`+
+      `<stop offset="100%" stop-color="white" stop-opacity="0"/>`+
+    `</radialGradient>`+
+    `</defs>`+
+    // Taban renk
+    `<rect x="3" y="3" width="122" height="122" rx="22" fill="${hexColor}"/>`+
+    // Hacim gradyanı
+    `<rect x="3" y="3" width="122" height="122" rx="22" fill="url(#vol${id})"/>`+
+    // Alt iç ışıma
+    `<rect x="3" y="3" width="122" height="122" rx="22" fill="url(#rim${id})"/>`+
+    // Folk motif (hafif, kimlik için)
+    `<g transform="translate(64,66)" opacity="0.26">${TILE_MOTIFS[mi]}</g>`+
+    // Üst parlak cam sheen (üst yarıyı kaplayan yuvarlak)
+    `<rect x="13" y="10" width="102" height="50" rx="20" fill="url(#glo${id})"/>`+
+    // Specular hotspot (parlak yansıma)
+    `<ellipse cx="42" cy="34" rx="24" ry="13" transform="rotate(-20,42,34)" fill="url(#spc${id})"/>`+
+    // İç pah: üst-sol aydınlık kenar
+    `<path d="M11,60 Q11,11 60,11" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2.5" stroke-linecap="round"/>`+
+    // İç pah: alt-sağ gölge kenar
+    `<path d="M117,68 Q117,117 68,117" fill="none" stroke="rgba(0,0,0,0.25)" stroke-width="2.5" stroke-linecap="round"/>`+
+    // Dış çerçeve (tanım)
+    `<rect x="3" y="3" width="122" height="122" rx="22" fill="none" stroke="rgba(0,0,0,0.28)" stroke-width="2"/>`+
     `</svg>`;
 }
 
@@ -3473,9 +3500,11 @@ function drawCell(x,y,ci,alpha){
     rrect(x+1.5,y+1.5,s,s,6,tc.cellE,tc.cellEB);
   } else {
     const tex=TILE_OFFSCREENS[ci-1];
-    ctx.shadowColor=GLOW[ci-1];ctx.shadowBlur=3;
+    // Yumuşak alt gölge → kabartılmış mücevher hissi (derinlik)
+    ctx.shadowColor='rgba(0,0,0,0.30)';ctx.shadowBlur=4;ctx.shadowOffsetY=2.5;
     if(tex&&_tilesReady){
       ctx.drawImage(tex,x+1.5,y+1.5,s,s);
+      ctx.shadowBlur=0;ctx.shadowOffsetY=0;
     } else {
       // texture yüklenene kadar düz renk fallback
       rrect(x+1.5,y+1.5,s,s,6,CLR[ci-1],null);
