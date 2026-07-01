@@ -409,6 +409,7 @@ input[type="text"]::placeholder{color:var(--dim);}
 .lb-rn.g{color:#FFD93D;}.lb-rn.s{color:#B8C4D4;}.lb-rn.b{color:#C8844A;}
 .lb-nm{flex:1;font-size:13px;font-weight:600;}
 .lb-sc{font-size:13px;font-weight:800;color:#D4A843;}
+.lb-more{text-align:center;color:var(--dim);font-size:16px;letter-spacing:3px;padding:4px 0 6px;opacity:.5;}
 .lb-del-btn{background:none;border:none;color:var(--dim);font-size:16px;cursor:pointer;padding:0 2px;line-height:1;opacity:.6;transition:opacity .15s;flex-shrink:0;}
 .lb-del-btn:hover{opacity:1;color:#C4714A;}
 
@@ -2630,7 +2631,7 @@ function useBomb(row,col){
     const gain=affected.length*scorePerCell;
     if(gain>0){
       score+=gain;acct.total+=gain;
-      if(score>best){best=score;localStorage.setItem('tiliq_best',best);acct.best=Math.max(acct.best,best);updateMyWeeklyScore(score);pushMyScore();}
+      if(score>best){best=score;localStorage.setItem('tiliq_best',best);localStorage.setItem('tm_bestAt',String(Date.now()));acct.best=Math.max(acct.best,best);updateMyWeeklyScore(score);pushMyScore();}
       document.getElementById('scoreDisplay').textContent=score.toLocaleString();
       document.getElementById('bestDisplay').textContent=best.toLocaleString();
       floats.push({x:cx,y:cy-CELL*1.5,txt:'+'+gain,a:1,vy:-2.2,c:'#FF9F43',big:true});
@@ -2935,7 +2936,7 @@ function place(pi,row,col){
     const base=tot*10+(tot>1?(tot-1)*5:0),gain=Math.round(base*Math.min(cm,5));
     score+=gain;acct.total+=gain;
     addBombXP(gain);
-    if(score>best){best=score;localStorage.setItem('tiliq_best',best);acct.best=Math.max(acct.best,best);updateMyWeeklyScore(score);localStorage.setItem('tm_acct',JSON.stringify(acct));pushMyScore();}
+    if(score>best){best=score;localStorage.setItem('tiliq_best',best);localStorage.setItem('tm_bestAt',String(Date.now()));acct.best=Math.max(acct.best,best);updateMyWeeklyScore(score);localStorage.setItem('tm_acct',JSON.stringify(acct));pushMyScore();}
     document.getElementById('scoreDisplay').textContent=score.toLocaleString();
     document.getElementById('bestDisplay').textContent=best.toLocaleString();
     document.getElementById('comboDisplay').textContent='×'+cm;
@@ -3946,11 +3947,14 @@ async function _initLeaderboardManager(){
     const db=getFirestore(_fbApp);
     window._leaderboardManager={
       _db:db,
-      async getTopScores(n=50){
+      async getTopScores(n=500){
         // orderBy yerine client-side sort (index gerekmez)
-        const snap=await getDocs(query(collection(db,'users'),limit(200)));
+        const snap=await getDocs(query(collection(db,'users'),limit(500)));
         const all=snap.docs.map(d=>({uid:d.id,...d.data()}));
-        return all.filter(u=>(u.best||0)>0).sort((a,b)=>(b.best||0)-(a.best||0)).slice(0,n);
+        // Sıralama: skor DESC, eşitse skoru ÖNCE yapan (bestAt küçük) üstte
+        return all.filter(u=>(u.best||0)>0).sort((a,b)=>
+          (b.best||0)-(a.best||0) || ((a.bestAt||Infinity)-(b.bestAt||Infinity))
+        ).slice(0,n);
       },
       async getMyRank(){return null;}
     };
@@ -4494,17 +4498,27 @@ async function renderLB(ps){
   const LB = window._leaderboardManager;
   if(LB && LB._db){
     try{
-      const [top, myData] = await Promise.all([LB.getTopScores(50), LB.getMyRank()]);
+      const full = await LB.getTopScores(500);   // tam sıralı liste (tiebreaker'lı)
       const myUID = acct.uid||null;
       const myName = playerLabel();
-      // Kullanıcı listede yoksa ekle
-      let rows = top.map(p=>({n:(p.country||'🏳️')+' '+(p.name||t('guest')),s:p.best||0,uid:p.uid,lv:calcLevel(p.xp||0)}));
+      let rows = full.map(p=>({n:(p.country||'🏳️')+' '+(p.name||t('guest')),s:p.best||0,uid:p.uid,lv:calcLevel(p.xp||0),bestAt:p.bestAt||Infinity}));
+      // Kullanıcı listede yoksa kendi satırını ekle (sırasını hesaplamak için)
       const inList = myUID?rows.some(r=>r.uid===myUID):false;
-      if(!inList) rows.push({n:myFlag()+' '+myName,s:ps,uid:myUID||'__me__',me:true,lv:calcLevel(getXP())});
-      rows.sort((a,b)=>b.s-a.s);
+      if(!inList) rows.push({n:myFlag()+' '+myName,s:ps,uid:myUID||'__me__',me:true,lv:calcLevel(getXP()),bestAt:parseInt(localStorage.getItem('tm_bestAt')||'0')||Infinity});
+      // Skor DESC, eşitse tarihe (bestAt) göre ASC
+      rows.sort((a,b)=>b.s-a.s || (a.bestAt-b.bestAt));
       const myIdx=rows.findIndex(r=>r.uid===myUID||r.me);
       rankEl.textContent=myIdx>=0?'#'+(myIdx+1):'#--';
-      list.innerHTML=rows.map((r,i)=>_lbRow(i,r.n,r.s,i===myIdx,r.lv)).join('');
+      // Sadece top 20 göster
+      const top20=rows.slice(0,20);
+      let html=top20.map((r,i)=>_lbRow(i,r.n,r.s,r.uid===myUID||r.me,r.lv)).join('');
+      // Kullanıcı top 20 dışındaysa kendi satırını ayraçla en alta ekle
+      if(myIdx>=20){
+        const me=rows[myIdx];
+        html+=`<div class="lb-more">•••</div>`;
+        html+=_lbRow(myIdx,me.n,me.s,true,me.lv);
+      }
+      list.innerHTML=html;
       setTimeout(()=>{const el=list.querySelector('.me');if(el)el.scrollIntoView({block:'nearest',behavior:'smooth'});},120);
       return;
     }catch(e){console.warn('[LB render]',e);}
@@ -4559,6 +4573,7 @@ async function _firestoreSync(uid){
       if(d.name && !acct.nickname) acct.nickname=d.name;
       if(d.country) acct.country=d.country;
       if(d.country) acct._setupDone=true;  // ülke set edilmişse profil kurulmuş → sorma
+      if(d.bestAt) localStorage.setItem('tm_bestAt',String(d.bestAt)); // tiebreaker zamanı
       if((d.best||0)>acct.best) acct.best=d.best;
       if((d.games||0)>acct.games) acct.games=d.games;
       if((d.total||0)>acct.total) acct.total=d.total;
@@ -4614,6 +4629,10 @@ async function _firestorePushScore(){
       xp:xpNow,level:calcLevel(xpNow),
       weeklyScore:newWeekly,weeklyReset:ws
     },{merge:true});
+    // bestAt (tiebreaker) ayrı yazılır — kural güncellenmeden önce sessizce
+    // başarısız olur, ana skor yazması etkilenmez. Kural eklendikçe kalıcı olur.
+    const bestAt=parseInt(localStorage.getItem('tm_bestAt')||'0')||0;
+    if(bestAt>0){ try{ await setDoc(ref,{bestAt},{merge:true}); }catch(_){} }
     // Sıralamalar açıksa anlık yenile
     const lbPanel=document.getElementById('lb-panel');
     if(lbPanel&&lbPanel.classList.contains('open')){
