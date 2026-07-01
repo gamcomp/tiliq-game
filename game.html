@@ -2313,8 +2313,33 @@ function onGameOver(s){
 const ADMOB_REWARDED_ID='ca-app-pub-1366817286080705/9010803939';
 // Gerçek interstitial ad unit ID (com.tiliq.game)
 const ADMOB_INTERSTITIAL_ID='ca-app-pub-1366817286080705/5666042603';
+// TODO: AdMob'dan GERÇEK banner ad unit ID'sini yapıştır. Şimdilik Google TEST banner ID'si.
+const ADMOB_BANNER_ID='ca-app-pub-3940256099942544/6300978111';
 let _adCb=null,_adTick=null,_admobListeners=[];
 let _interReady=false;
+let _bannerShown=false;
+
+// ── BANNER (alt şerit — sadece menüde, HUD'u kapatmaz) ───────────────────────
+async function showBanner(){
+  if(isNoAds())return;              // Reklamsız/VIP kullanıcıya gösterme
+  const AdMob=_getAdMob();
+  if(!AdMob||_bannerShown)return;   // Web/test: banner yok
+  try{
+    await AdMob.showBanner({
+      adId:ADMOB_BANNER_ID,
+      adSize:'ADAPTIVE_BANNER',
+      position:'BOTTOM_CENTER',
+      margin:0,
+    });
+    _bannerShown=true;
+  }catch(e){ console.warn('Banner show:',e); }
+}
+async function hideBanner(){
+  const AdMob=_getAdMob();
+  if(!AdMob||!_bannerShown)return;
+  try{ await AdMob.hideBanner(); _bannerShown=false; }
+  catch(e){ console.warn('Banner hide:',e); }
+}
 
 // ── INTERSTITIAL (tam ekran, oyun bitişinde) ─────────────────────────────────
 async function _prepareInterstitial(){
@@ -2346,6 +2371,8 @@ async function initAdMob(){
   try{
     await AdMob.initialize({initializeForTesting:false});
     _prepareInterstitial();   // ilk interstitial'ı önden hazırla
+    // Menüdeysek banner'ı göster (AdMob hazır olduktan sonra)
+    if(!document.getElementById('screen-game')?.classList.contains('active')) showBanner();
   }catch(e){console.warn('AdMob init:',e);}
 }
 
@@ -3720,6 +3747,8 @@ window.addEventListener('resize',()=>{if(document.getElementById('screen-game').
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
+  // Banner: menüde göster, oyunda gizle (HUD'u kapatmasın)
+  if(id==='game') hideBanner(); else showBanner();
 }
 function showModal(id){
   if(id==='account'){openAccountModal();syncMyCodeUI();}
