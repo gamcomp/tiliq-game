@@ -764,7 +764,6 @@ input[type="text"]::placeholder{color:var(--dim);}
     <button class="btn-icon" onclick="toggleLB()">🏆</button>
   </div>
   <div id="booster-row">
-    <button class="bst-btn" id="undo-btn" onclick="doUndo()" disabled>↩ <span data-t="undo">Geri Al</span> <span id="undo-badge" style="font-size:10px;font-weight:800;color:#56CFE1;display:none;"></span><span id="undo-ad-icon" style="font-size:10px;opacity:.7;">📺</span></button>
     <button class="bst-btn" id="bomb-btn"
       onclick="activateBomb('normal')"
       oncontextmenu="activateBomb('super');return false"
@@ -1110,7 +1109,7 @@ tut2T:'Parçayı Seç 👆',tut2D:'Alttaki 3 parçadan birine dokunup basılı t
 tut3T:'Izgaraya Sürükle 🎯',tut3D:'Parçayı ızgaranın üstüne sürükle. Yeşil = sığar · Kırmızı = sığmaz',
 tut4T:'Satırı Doldur = Temizle! ✨',tut4D:'Yatay veya dikey bir satır tamamen dolunca otomatik temizlenir ve puan kazanırsın!',tut4sub:'↓ Son hücreyi doldur → PATLAT! ↓',
 tut5T:'Kombo = Çarpan! 🔥',tut5D:'Aynı hamlede birden fazla satır temizlersen kombo çarpanı devreye girer! ×2 · ×3 · ×5',tut5row1:'1 satır',tut5row2:'2 satır',tut5row3:'3+ satır',tut5strat:'Strateji: birden fazla satırı tek hamlede temizle',
-tut6T:'Güçlendiriciler 💣',tut6D:'Sıkıştığında yardım al!<br><strong>💣 Bomba</strong> — bir alanı temizler<br><strong>↩️ Geri Al</strong> — son hamleyi geri al',tut6bomb:'Bomba',tut6bombD:'3×3 alanı temizler',tut6undo:'Geri Al',tut6undoD:'Son hamleyi geri al',tut6rescue:'Kurtarma',tut6rescueD:'Oyuna devam et',
+tut6T:'Güçlendiriciler 💣',tut6D:'Sıkıştığında yardım al!<br><strong>💣 Bomba</strong> — bir alanı temizler<br><strong>🛟 Kurtarma</strong> — oyuna devam et',tut6bomb:'Bomba',tut6bombD:'3×3 alanı temizler',tut6undo:'Geri Al',tut6undoD:'Son hamleyi geri al',tut6rescue:'Kurtarma',tut6rescueD:'Oyuna devam et',
 ad:'REKLAM',adLoading:'Reklam yükleniyor…',adWatching:'Reklam izleniyor…',adReward:'Ödülünüz hazırlanıyor',
 setupTitle:'🎮 Profili Tamamla',setupDesc:'Dünya sıralamasında görünmek için bilgilerini gir',setupNickLbl:'Takma Ad',setupNickPh:'Adın…',setupCountryLbl:'🌍 Ülken',setupStart:'Başla 🚀',weeklyRanking:'HAFTALIK SIRALAMA',weeklyScore:'Bu Hafta',continueOrNew:'Devam mı, Yeni mi?',newGame:'Yeni Oyun',tutRT:'Parçayı Döndür 🔄',tutRD:'Seçili parçaya tekrar dokun — saat yönünde döner! 4 farklı yönü dene.',tutRsub:'TEKRAR DOKUN → DÖNER'},
 EN:{appName:'Tiliq',play:'Play',settings:'Settings',account:'Account',leaderboard:'Rankings',score:'Score',best:'Best',combo:'Combo',sound:'Sound',volume:'Volume',haptic:'Haptic',theme:'Theme',dark:'Dark',light:'Light',language:'Language',save:'Save',close:'Close',back:'Back',gameOver:'Game Over!',playAgain:'Play Again',mainMenu:'Main Menu',yourScore:'Your Score',worldRank:'World Ranking',newRecord:'🎉 New Record!',profile:'Profile',username:'Username',highScore:'Best',gamesPlayed:'Games',totalPoints:'Total',worldBoard:'🌍 World Rankings',yourRank:'Your Rank',yourScoreLb:'Your Score',guest:'Guest',days:'Days',undo:'Undo',bomb:'Bomb',rescue:'Rescue',
@@ -1135,7 +1134,7 @@ tut2T:'Select a Piece 👆',tut2D:'Tap and hold one of the 3 pieces below. The p
 tut3T:'Drag to Grid 🎯',tut3D:'Drag the piece over the grid. Green = fits · Red = does not fit',
 tut4T:'Fill a Row = Clear! ✨',tut4D:'When a row is fully filled it clears automatically and you score points!',tut4sub:'↓ Fill last cell → BLAST! ↓',
 tut5T:'Combo = Multiplier! 🔥',tut5D:'Clear multiple rows in one move to activate the combo multiplier! ×2 · ×3 · ×5',tut5row1:'1 row',tut5row2:'2 rows',tut5row3:'3+ rows',tut5strat:'Strategy: clear multiple rows in one move',
-tut6T:'Power-Ups 💣',tut6D:'Get help when stuck!<br><strong>💣 Bomb</strong> — clears an area<br><strong>↩️ Undo</strong> — reverses last move',tut6bomb:'Bomb',tut6bombD:'Clears 3×3 area',tut6undo:'Undo',tut6undoD:'Undo last move',tut6rescue:'Rescue',tut6rescueD:'Continue playing',
+tut6T:'Power-Ups 💣',tut6D:'Get help when stuck!<br><strong>💣 Bomb</strong> — clears an area<br><strong>🛟 Rescue</strong> — continue playing',tut6bomb:'Bomb',tut6bombD:'Clears 3×3 area',tut6undo:'Undo',tut6undoD:'Undo last move',tut6rescue:'Rescue',tut6rescueD:'Continue playing',
 ad:'AD',adLoading:'Loading ad…',adWatching:'Watching ad…',adReward:'Preparing your reward',
 setupTitle:'🎮 Complete Profile',setupDesc:'Enter your info to appear in world rankings',setupNickLbl:'Nickname',setupNickPh:'Your name…',setupCountryLbl:'🌍 Your Country',setupStart:'Let\'s Go 🚀',weeklyRanking:'WEEKLY RANKING',weeklyScore:'This Week',continueOrNew:'Continue or New?',newGame:'New Game',tutRT:'Rotate Pieces 🔄',tutRD:'Tap a selected piece again — it rotates clockwise! Try all 4 directions.',tutRsub:'TAP AGAIN → ROTATES'},
 JA:{appName:'Tiliq',play:'プレイ',settings:'設定',account:'アカウント',leaderboard:'ランキング',score:'スコア',best:'ベスト',combo:'コンボ',sound:'サウンド',volume:'音量',haptic:'振動',theme:'テーマ',dark:'ダーク',light:'ライト',language:'言語',save:'保存',close:'閉じる',back:'戻る',gameOver:'ゲームオーバー！',playAgain:'もう一度',mainMenu:'メニュー',yourScore:'スコア',worldRank:'世界ランキング',newRecord:'🎉 新記録！',profile:'プロフィール',username:'ユーザー名',highScore:'ベスト',gamesPlayed:'ゲーム数',totalPoints:'合計',worldBoard:'🌍 世界ランキング',yourRank:'順位',yourScoreLb:'スコア',guest:'ゲスト',days:'日',undo:'元に戻す',bomb:'ボム',rescue:'救出',
@@ -1634,7 +1633,6 @@ function renderInventory(){
   const cells=[
     {ico:'🪙',val:coins.toLocaleString(),lbl:t('invCoins'),on:false},
     {ico:'💣',val:bombs,lbl:t('invBombs'),on:bombs>0},
-    {ico:'↩️',val:undos,lbl:t('invUndos'),on:undos>0},
     {ico:'🎨',val:themes,lbl:t('invThemes'),on:false},
   ];
   if(xpBoost) cells.push({ico:'⚡',val:'2×',lbl:t('invBoost'),on:true});
@@ -1720,9 +1718,9 @@ const DAILY_REWARDS=[
   {coins:75},                    // 2. gün
   {coins:30,bombs:1},            // 3. gün — bomba
   {coins:100},                   // 4. gün
-  {coins:30,undos:1},            // 5. gün — geri alma
+  {coins:120},                   // 5. gün
   {coins:150},                   // 6. gün
-  {coins:250,bombs:1,undos:1},   // 7. gün — büyük ödül
+  {coins:250,bombs:1},           // 7. gün — büyük ödül
 ];
 function dailyReward(streak){
   const idx=(((streak||1)-1)%7+7)%7;
@@ -3782,7 +3780,6 @@ const STORE_THEMES=[
 const STORE_POWERUPS=[
   {id:'bomb3',    name:'3 Bomba',         emoji:'💣', coins:60,  desc:'Sıkışınca işe yarar',  action:()=>addInventory('bombs',3)},
   {id:'bomb10',   name:'10 Bomba',        emoji:'💣💣',coins:180, desc:'Büyük stok — %25 indirim', action:()=>addInventory('bombs',10)},
-  {id:'undo5',    name:'5 Geri Al',       emoji:'↩️', coins:50,  desc:'Yanlış hamleleri sil', action:()=>addInventory('undos',5)},
   {id:'xp2',     name:'2× XP (1 Oyun)', emoji:'⚡', coins:40,  desc:'Sonraki oyunda çift XP',action:()=>activateXPBoost()},
   {id:'coins100', name:'100 Coin',        emoji:'🪙', coins:null,price:'$2.99', desc:'Anlık coin yükle', action:()=>iapBuy('coins100')},
   {id:'coins300', name:'300 Coin',        emoji:'🪙🪙',coins:null,price:'$6.99', desc:'Popüler paket — %22 bonus', action:()=>iapBuy('coins300')},
@@ -5045,11 +5042,6 @@ function getTutSteps(){return[
           <div style="width:64px;height:64px;background:linear-gradient(135deg,rgba(196,113,74,.25),rgba(212,168,67,.15));border:2px solid rgba(212,168,67,.4);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;animation:tutPop .5s ease both">💣</div>
           <div style="font-size:13px;font-weight:800">${t('tut6bomb')}</div>
           <div style="font-size:11px;color:var(--dim);max-width:90px;line-height:1.4">${t('tut6bombD')}</div>
-        </div>
-        <div style="text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center">
-          <div style="width:64px;height:64px;background:linear-gradient(135deg,rgba(107,158,184,.25),rgba(107,203,119,.15));border:2px solid rgba(107,203,119,.4);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;animation:tutPop .5s .1s ease both">↩️</div>
-          <div style="font-size:13px;font-weight:800">${t('tut6undo')}</div>
-          <div style="font-size:11px;color:var(--dim);max-width:90px;line-height:1.4">${t('tut6undoD')}</div>
         </div>
         <div style="text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center">
           <div style="width:64px;height:64px;background:linear-gradient(135deg,rgba(199,125,255,.25),rgba(107,203,119,.15));border:2px solid rgba(199,125,255,.4);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;animation:tutPop .5s .2s ease both">🛟</div>
