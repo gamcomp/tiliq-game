@@ -3084,9 +3084,9 @@ function spawnFlame(cx,cy,comboLevel){
 let _flameSprites=null;
 function _buildFlameSprites(){
   const specs=[
-    ['rgba(255,238,190,0.95)','rgba(255,196,90,0.55)','rgba(255,150,50,0)'],  // sıcak sarı
-    ['rgba(255,205,120,0.95)','rgba(255,140,50,0.55)','rgba(230,90,30,0)'],   // turuncu
-    ['rgba(255,150,80,0.92)','rgba(230,80,40,0.5)','rgba(170,40,25,0)'],      // kızıl
+    ['rgba(255,244,170,1)','rgba(255,205,75,0.62)','rgba(255,150,45,0)'],  // sıcak sarı (canlı)
+    ['rgba(255,214,110,1)','rgba(255,145,42,0.62)','rgba(235,88,26,0)'],   // turuncu (canlı)
+    ['rgba(255,158,74,0.98)','rgba(238,78,36,0.56)','rgba(175,40,24,0)'],  // kızıl (canlı)
   ];
   _flameSprites=specs.map(([c0,c1,c2])=>{
     const S=64,cv=document.createElement('canvas');cv.width=S;cv.height=S;
@@ -3116,10 +3116,10 @@ function drawFlames(now){
     // Ömre + tona göre sprite: taze/sarı → yaşlı/kızıl
     const spi=(lf>0.6? (hue<20?1:0) : (hue<24?2:1));
     const sp=_flameSprites[spi];
-    // Alev dili: dikey uzatılmış, yukarı kayık, yumuşak (mat)
-    const w=s*1.7, h=s*2.9;
-    ctx.globalAlpha=lf*0.5;                       // mat: gözü almayan yumuşaklık
-    ctx.drawImage(sp, f.x-w/2, f.y-h*0.62, w, h);
+    // Alev dili: uzun, dikey, yukarı kayık — daha canlı
+    const w=s*1.65, h=s*3.8;                      // daha uzun alev
+    ctx.globalAlpha=lf*0.62;                      // canlı ama gözü almayan
+    ctx.drawImage(sp, f.x-w/2, f.y-h*0.66, w, h);
     return true;
   });
   ctx.restore();
