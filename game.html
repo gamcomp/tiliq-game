@@ -2548,12 +2548,17 @@ function clearBombHold(){
 
 function activateBomb(type='normal'){
   if(dead)return;
-  // Bombası yoksa: reklam izleyerek 1 bomba kazan
+  // Bombası yoksa: reklam izleyerek TEK bir bomba KULLAN (kalıcı bomba eklemez).
+  // Bomba zaten puan toplayarak kazanılıyor; reklam sadece anında kullanım içindir.
   if(bombCount<=0){
     showRewardedAd(()=>{
-      bombCount++;
+      bombCount=1;            // sadece bu kullanım için
+      _invBombsInPlay=0;      // envanterden değil, tek seferlik
+      bombMode=true;bombType='normal';
+      const btn=document.getElementById('bomb-btn');
+      if(btn){btn.classList.remove('lit-super');btn.classList.add('lit-normal');}
       updateBombBar();
-      showCelebration('💣 +1 '+t('tut6bomb'),'#FF9F43');
+      showCelebration('💣 '+t('bombModeAct'),'#FF9F43',800);
       vibrate([10,5,20]);
     });
     return;
