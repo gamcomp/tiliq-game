@@ -2489,15 +2489,10 @@ function updateBombBar(){
   const cntEl=document.getElementById('bomb-cnt');
   const adIcon=document.getElementById('bomb-ad-icon');
   const btn=document.getElementById('bomb-btn');
-  // Bomba yoksa: buton aktif kalır, reklam ikonu gösterilir (reklamla bomba kazan)
-  btn.disabled=false;
-  if(bombCount===0){
-    if(cntEl) cntEl.style.display='none';
-    if(adIcon) adIcon.style.display='';
-  } else {
-    if(cntEl){cntEl.style.display='';cntEl.textContent='×'+bombCount;}
-    if(adIcon) adIcon.style.display='none';
-  }
+  // Sadece bomba hakkın varsa buton aktif (bomba puanla kazanılır)
+  btn.disabled=(bombCount===0);
+  if(adIcon) adIcon.style.display='none';   // reklamla bomba kazanma kaldırıldı
+  if(cntEl){cntEl.style.display='';cntEl.textContent='×'+bombCount;}
   // İkon ve label
   const icon=document.getElementById('bomb-icon');
   const lbl=document.getElementById('bomb-type-lbl');
@@ -2554,6 +2549,7 @@ function clearBombHold(){
 
 function activateBomb(type='normal'){
   if(dead)return;
+  if(bombCount<=0)return;   // sadece bomba hakkın varsa kullanılır
   const btn=document.getElementById('bomb-btn');
   // Zaten bomba modundaysa tekrar basınca iptal (reklam yok)
   if(bombMode&&bombType===type){
@@ -2564,7 +2560,6 @@ function activateBomb(type='normal'){
   }
   // Bomba modunu aç (reklam sonrası çağrılır)
   const _enter=()=>{
-    if(bombCount<1){bombCount=1;_invBombsInPlay=0;} // reklam en az 1 kullanım verir
     let tp=type;
     if(tp==='super'&&bombCount<2)tp='normal';
     bombMode=true;bombType=tp;
