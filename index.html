@@ -4104,9 +4104,26 @@ window._authSignIn = async function(provider){
     if(!FA){alert('Auth plugin yüklü değil');return;}
     try{
       const result=await FA.signInWithGoogle();
-      const user=result.user;
-      if(user) _onFirebaseUser(user);
-    }catch(e){console.warn('Native Google auth:',e);}
+      // Native plugin native Firebase SDK'ya giriş yapar; oyun Firestore için JS SDK
+      // kullanıyor → credential ile JS SDK'ya da giriş yap (yoksa Firestore yetkisiz kalır).
+      const idToken=result?.credential?.idToken;
+      const accessToken=result?.credential?.accessToken;
+      if(idToken && _fbAuth){
+        const {GoogleAuthProvider,signInWithCredential}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+        const cred=GoogleAuthProvider.credential(idToken, accessToken);
+        const uc=await signInWithCredential(_fbAuth, cred);
+        if(uc?.user) _onFirebaseUser(uc.user);
+      } else if(result?.user){
+        _onFirebaseUser(result.user);
+      } else {
+        alert('Giriş tamamlanamadı (token yok).');
+      }
+    }catch(e){
+      console.warn('Native Google auth:',e);
+      // Kullanıcı iptal ettiyse sessiz geç, değilse hatayı göster (teşhis için)
+      const code=e?.code||''; const msg=e?.message||JSON.stringify(e);
+      if(!/cancel|1000|closed/i.test(code+msg)) alert('Giriş hatası: '+(code?code+' — ':'')+msg);
+    }
   } else {
     // Web: popup önce dene, başarısız olursa redirect
     try{
