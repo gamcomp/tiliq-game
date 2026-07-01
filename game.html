@@ -1679,8 +1679,15 @@ function updateStreakDisplay(){
 
 // ── GÜNLÜK HAZİNE + OYUNCU SEVİYESİ ─────────────────────────────────────────
 
-// XP için seviye tablosu — her seviyede gereken toplam XP
-const LV_TABLE=[0,500,1200,2200,3500,5200,7200,9800,13000,17000,22000];
+// ── SEVİYE / XP SİSTEMİ (maksimum seviye 999) ────────────────────────────────
+const MAX_LEVEL=999;
+// n. seviyeye ulaşmak için gereken TOPLAM XP — kademeli artan eğri
+// (her seviye bir öncekinden biraz daha pahalı: L1→L2 ~63, L100 ~35bin, L999 ~3M)
+function xpForLevel(n){
+  if(n<=1) return 0;
+  n=Math.min(n,MAX_LEVEL);
+  return Math.round(3*(n-1)*(n-1) + 60*(n-1));
+}
 
 function getXP(){return parseInt(localStorage.getItem('tm_xp')||'0');}
 function addXP(n){
@@ -1694,8 +1701,10 @@ function addXP(n){
   return now;
 }
 function calcLevel(xp){
-  for(let i=LV_TABLE.length-1;i>=0;i--) if(xp>=LV_TABLE[i]) return i+1;
-  return 1;
+  xp=Math.max(0,xp||0);
+  // 3(n-1)^2 + 60(n-1) <= xp  →  x=n-1 için ikinci derece çöz
+  const x=Math.floor((-60+Math.sqrt(3600+12*xp))/6);
+  return Math.min(MAX_LEVEL, Math.max(1, x+1));
 }
 function onLevelUp(lv){
   showCelebration(t('lvUp').replace('{n}',lv),'#C77DFF');
@@ -1814,9 +1823,10 @@ function renderDailyCard(){
   const reward=dailyReward(streak);
   const xp=getXP();
   const lv=calcLevel(xp);
-  const lvXpStart=LV_TABLE[Math.min(lv-1,LV_TABLE.length-1)];
-  const lvXpEnd=LV_TABLE[Math.min(lv,LV_TABLE.length-1)]||lvXpStart+1000;
-  const pct=Math.min(100,Math.round((xp-lvXpStart)/(lvXpEnd-lvXpStart)*100));
+  const isMaxLv=lv>=MAX_LEVEL;
+  const lvXpStart=xpForLevel(lv);
+  const lvXpEnd=xpForLevel(lv+1);
+  const pct=isMaxLv?100:Math.min(100,Math.round((xp-lvXpStart)/Math.max(1,lvXpEnd-lvXpStart)*100));
 
   // Hazine kutusu
   const box=document.getElementById('treasure-box');
@@ -1855,7 +1865,7 @@ function renderDailyCard(){
 
   // Seviye çubuğu
   document.getElementById('lv-badge').textContent=`LV ${lv}`;
-  document.getElementById('lv-xp-text').textContent=`${xp.toLocaleString()} / ${lvXpEnd.toLocaleString()} XP`;
+  document.getElementById('lv-xp-text').textContent=isMaxLv?t('maxLevel'):`${xp.toLocaleString()} / ${lvXpEnd.toLocaleString()} XP`;
   document.getElementById('lv-fill').style.width=pct+'%';
   const hintEl=document.getElementById('lv-hint');
   if(hintEl) hintEl.style.display='none';
