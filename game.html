@@ -2558,37 +2558,29 @@ function clearBombHold(){
 
 function activateBomb(type='normal'){
   if(dead)return;
-  // Bombası yoksa: reklam izleyerek TEK bir bomba KULLAN (kalıcı bomba eklemez).
-  // Bomba zaten puan toplayarak kazanılıyor; reklam sadece anında kullanım içindir.
-  if(bombCount<=0){
-    showRewardedAd(()=>{
-      bombCount=1;            // sadece bu kullanım için
-      _invBombsInPlay=0;      // envanterden değil, tek seferlik
-      bombMode=true;bombType='normal';
-      const btn=document.getElementById('bomb-btn');
-      if(btn){btn.classList.remove('lit-super');btn.classList.add('lit-normal');}
-      updateBombBar();
-      showCelebration('💣 '+t('bombModeAct'),'#FF9F43',800);
-      vibrate([10,5,20]);
-    });
-    return;
-  }
-  if(type==='super'&&bombCount<2)type='normal';
-
   const btn=document.getElementById('bomb-btn');
-  // Aynı moda tekrar basınca kapat
+  // Zaten bomba modundaysa tekrar basınca iptal (reklam yok)
   if(bombMode&&bombType===type){
     bombMode=false;
     btn.classList.remove('lit-normal','lit-super');
     vibrate(10);
     return;
   }
-  bombMode=true;
-  bombType=type;
-  btn.classList.remove('lit-normal','lit-super');
-  btn.classList.add(type==='super'?'lit-super':'lit-normal');
-  vibrate(type==='super'?[20,10,30]:20);
-  showCelebration(type==='super'?t('superBombAct'):t('bombModeAct'),'#FF9F43',800);
+  // Bomba modunu aç (reklam sonrası çağrılır)
+  const _enter=()=>{
+    if(bombCount<1){bombCount=1;_invBombsInPlay=0;} // reklam en az 1 kullanım verir
+    let tp=type;
+    if(tp==='super'&&bombCount<2)tp='normal';
+    bombMode=true;bombType=tp;
+    btn.classList.remove('lit-normal','lit-super');
+    btn.classList.add(tp==='super'?'lit-super':'lit-normal');
+    updateBombBar();
+    vibrate(tp==='super'?[20,10,30]:20);
+    showCelebration(tp==='super'?t('superBombAct'):t('bombModeAct'),'#FF9F43',800);
+  };
+  // Her bomba kullanımında reklam izlet (VIP/reklamsız kullanıcılar hariç)
+  if(isNoAds()) _enter();
+  else showRewardedAd(_enter);
 }
 
 function _bombCells(row,col,type){
