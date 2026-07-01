@@ -4068,15 +4068,18 @@ const RC_PRODUCTS={
 const RC_COIN_AMOUNTS={coins100:100,coins300:300,coins750:750};
 let _rcReady=false;
 
-// Bir ürün ID'sine karşılık gelen RevenueCat paketini tüm offering'lerde ara
+// Bir ürün ID'sine karşılık gelen RevenueCat paketini tüm offering'lerde ara.
+// Tire/alt çizgi farkını yok sayar (Play: ürün=alt çizgi, satın alma seçeneği=tire).
+function _rcNormId(s){return String(s||'').replace(/[-_]/g,'').toLowerCase();}
 function _rcFindPackage(offerings,productId){
+  const want=_rcNormId(productId);
   const lists=[];
   if(offerings.current?.availablePackages) lists.push(offerings.current.availablePackages);
   for(const off of Object.values(offerings.all||{})) if(off.availablePackages) lists.push(off.availablePackages);
   for(const pkgs of lists){
     for(const p of pkgs){
-      const pid=p.storeProduct?.identifier||p.product?.identifier||'';
-      if(pid===productId||pid.startsWith(productId)) return p;
+      const pid=_rcNormId(p.storeProduct?.identifier||p.product?.identifier);
+      if(pid===want||pid.startsWith(want)) return p;
     }
   }
   return null;
