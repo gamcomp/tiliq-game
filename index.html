@@ -3079,39 +3079,47 @@ function spawnFlame(cx,cy,comboLevel){
   }
 }
 
+// Yumuşak alev sprite'ları — bir kez üretilir, additive çizilince gerçek ateş olur.
+// Beyaz yerine sıcak turuncu tonlar (mat, doğal ateş; göz almayan)
+let _flameSprites=null;
+function _buildFlameSprites(){
+  const specs=[
+    ['rgba(255,238,190,0.95)','rgba(255,196,90,0.55)','rgba(255,150,50,0)'],  // sıcak sarı
+    ['rgba(255,205,120,0.95)','rgba(255,140,50,0.55)','rgba(230,90,30,0)'],   // turuncu
+    ['rgba(255,150,80,0.92)','rgba(230,80,40,0.5)','rgba(170,40,25,0)'],      // kızıl
+  ];
+  _flameSprites=specs.map(([c0,c1,c2])=>{
+    const S=64,cv=document.createElement('canvas');cv.width=S;cv.height=S;
+    const g=cv.getContext('2d');
+    const grd=g.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);
+    grd.addColorStop(0,c0);grd.addColorStop(0.38,c1);grd.addColorStop(1,c2);
+    g.fillStyle=grd;g.beginPath();g.arc(S/2,S/2,S/2,0,Math.PI*2);g.fill();
+    return cv;
+  });
+}
 function drawFlames(now){
   if(!flames.length)return;
-  // Additive blend (ışık toplama) → üst üste binen alevler gerçek ateş gibi parlar
+  if(!_flameSprites)_buildFlameSprites();
   ctx.save();
-  ctx.globalCompositeOperation='lighter';
+  ctx.globalCompositeOperation='lighter';   // additive → üst üste binince ateş
   flames=flames.filter(f=>{
     f.life-=f.decay;
     if(f.life<=0)return false;
     f.x+=f.vx;f.y+=f.vy;
-    f.vy-=.05;                                   // yukarı ivme (sıcak hava)
+    f.vy-=.05;                                    // yukarı ivme
     f.vx+=Math.sin(f.wobble)*0.09;f.wobble+=f.wobbleSpeed; // türbülans
     f.size*=.965;
     const s=f.size*f.life;
     if(s<1)return false;
     const lf=f.life;
     const hue=f.hue!==undefined?f.hue:24;
-    // Ömre göre renk: taze=beyaz-sarı sıcak çekirdek, yaşlandıkça kızarıp söner
-    const coreHue=Math.round(hue + (1-lf)*8);    // yaşlanınca biraz kızarır
-    const coreLight=Math.round(62 + lf*30);      // taze parlak, sönerken koyu
-    const TWO=Math.PI*2;
-    // Alev dili: taban geniş+yumuşak, çekirdek yukarı kayık+dar (sivri uç)
-    // 1) Geniş yumuşak taban hale
-    ctx.globalAlpha=lf*0.24;
-    ctx.fillStyle=`hsl(${hue+6},100%,${Math.max(30,coreLight-26)}%)`;
-    ctx.beginPath();ctx.ellipse(f.x,f.y,s*1.2,s*1.85,0,0,TWO);ctx.fill();
-    // 2) Gövde (dar, yukarı kayık, uzun)
-    ctx.globalAlpha=lf*0.5;
-    ctx.fillStyle=`hsl(${coreHue},100%,${Math.max(40,coreLight-8)}%)`;
-    ctx.beginPath();ctx.ellipse(f.x,f.y-s*0.55,s*0.66,s*1.5,0,0,TWO);ctx.fill();
-    // 3) Parlak sıcak çekirdek (en dar, en yukarı → alevin sivri ucu)
-    ctx.globalAlpha=lf*0.9;
-    ctx.fillStyle=`hsl(${Math.min(60,coreHue+16)},100%,${Math.min(95,coreLight+24)}%)`;
-    ctx.beginPath();ctx.ellipse(f.x,f.y-s*0.9,s*0.36,s*0.95,0,0,TWO);ctx.fill();
+    // Ömre + tona göre sprite: taze/sarı → yaşlı/kızıl
+    const spi=(lf>0.6? (hue<20?1:0) : (hue<24?2:1));
+    const sp=_flameSprites[spi];
+    // Alev dili: dikey uzatılmış, yukarı kayık, yumuşak (mat)
+    const w=s*1.7, h=s*2.9;
+    ctx.globalAlpha=lf*0.5;                       // mat: gözü almayan yumuşaklık
+    ctx.drawImage(sp, f.x-w/2, f.y-h*0.62, w, h);
     return true;
   });
   ctx.restore();
