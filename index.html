@@ -3982,6 +3982,9 @@ async function _pullCloudOverwrite(uid){
       const d=snap.data();
       acct.best=d.best||0; acct.games=d.games||0; acct.total=d.total||0;
       if(d.code){myCode=d.code;localStorage.setItem('tm_my_code',d.code);}
+      if(d.name) acct.nickname=d.name;      // hesabın adı
+      if(d.country) acct.country=d.country; // hesabın ülkesi
+      if(d.country) acct._setupDone=true;   // profil kurulmuş → sorma
       localStorage.setItem('tm_xp',String(d.xp||0));
       localStorage.setItem('tiliq_best',String(d.best||0));
     } else {
@@ -4076,22 +4079,23 @@ function _onFirebaseUser(user){
         _showMergeDialog(user.uid, cloud);
       } else {
         // Hesap boş → yereli otomatik aktar (dünya sıralamasına yazılsın)
-        _firestoreSync(user.uid);
-        _postLoginSetup();
+        _firestoreSync(user.uid).then(()=>_postLoginSetup());
       }
     }).catch(()=>{
       // Cloud okunamadıysa yine de senkronize et — skor kaybolmasın
-      _firestoreSync(user.uid);
+      _firestoreSync(user.uid).then(()=>{
+        acct._mergedUid=user.uid;
+        localStorage.setItem('tm_acct',JSON.stringify(acct));
+        _postLoginSetup();
+      });
+    });
+  } else {
+    // Yerel ilerleme yok veya daha önce aktarıldı — normal senkronizasyon
+    _firestoreSync(user.uid).then(()=>{
       acct._mergedUid=user.uid;
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       _postLoginSetup();
     });
-  } else {
-    // Yerel ilerleme yok veya daha önce aktarıldı — normal senkronizasyon
-    _firestoreSync(user.uid);
-    acct._mergedUid=user.uid;
-    localStorage.setItem('tm_acct',JSON.stringify(acct));
-    _postLoginSetup();
   }
 }
 
@@ -4551,6 +4555,10 @@ async function _firestoreSync(uid){
     if(snap.exists()){
       const d=snap.data();
       if(d.code){myCode=d.code;localStorage.setItem('tm_my_code',d.code);}
+      // İsim + ülke: hesaptan geri yükle (yeni cihazda tekrar sorma)
+      if(d.name && !acct.nickname) acct.nickname=d.name;
+      if(d.country) acct.country=d.country;
+      if(d.country) acct._setupDone=true;  // ülke set edilmişse profil kurulmuş → sorma
       if((d.best||0)>acct.best) acct.best=d.best;
       if((d.games||0)>acct.games) acct.games=d.games;
       if((d.total||0)>acct.total) acct.total=d.total;
@@ -4574,7 +4582,7 @@ async function _firestoreSync(uid){
       setInvUndos(Math.max(getInvUndos(),d.invUndos||0));
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       const xpNow=getXP();
-      await setDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),xp:xpNow,level:calcLevel(xpNow),
+      await setDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
         vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos()},{merge:true});
     }else{
       const xpNow=getXP();
