@@ -2318,9 +2318,11 @@ const ADMOB_BANNER_ID='ca-app-pub-1366817286080705/5782005360';
 let _adCb=null,_adTick=null,_admobListeners=[];
 let _interReady=false;
 let _bannerShown=false;
+const BANNER_ENABLED=false;   // Banner kapalı — görsel olarak kötü duruyordu. true yaparsan geri açılır.
 
 // ── BANNER (alt şerit — sadece menüde, HUD'u kapatmaz) ───────────────────────
 async function showBanner(){
+  if(!BANNER_ENABLED)return;        // Banner devre dışı
   if(isNoAds())return;              // Reklamsız/VIP kullanıcıya gösterme
   const AdMob=_getAdMob();
   if(!AdMob||_bannerShown)return;   // Web/test: banner yok
