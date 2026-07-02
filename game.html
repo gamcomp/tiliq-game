@@ -3206,11 +3206,12 @@ function _initFireGL(){
 ' float outer=mix(8.0,95.0,inten),inner=mix(3.0,30.0,inten);\n'+
 ' float band=smoothstep(outer,0.0,d)*smoothstep(-inner,5.0,d);\n'+
 ' if(band<=0.002){discard;}\n'+
-' float t=u_time*0.9;\n'+
-' vec2 fp=px*0.019;\n'+
-' vec2 warp=vec2(fbm(fp*1.7+vec2(0.0,-t*1.3)),fbm(fp*1.7+vec2(5.2,-t*1.05)));\n'+
-' float n=fbm(fp+warp*0.9+vec2(0.0,-t*1.7));\n'+
-' n=pow(n,1.55);\n'+
+' float t=u_time*1.15;\n'+                                    // hafif daha canli akis
+' vec2 fp=vec2(px.x*0.021,px.y*0.014);\n'+                     // dikey esneme -> yukari uzayan alev dilleri
+' vec2 warp=vec2(fbm(fp*1.7+vec2(0.0,-t*1.4)),fbm(fp*1.7+vec2(5.2,-t*1.15)));\n'+
+' float n=fbm(fp+warp*0.95+vec2(0.0,-t*1.9));\n'+
+' float n2=fbm(fp*2.4+warp*1.3+vec2(3.7,-t*2.6));\n'+          // ic filaman detayi (derinlik)
+' n=pow(n,1.55)*(0.72+0.55*n2);\n'+
 ' float flame=band*n*(0.55+0.9*inten);\n'+
 ' flame*=smoothstep(outer,-inner*0.5,d);\n'+
 ' flame=smoothstep(0.20,0.95,flame);\n'+          // zayif alanlari at: kirmizi taban/pus kalksin, sadece belirgin alev dilleri kalsin\n'+
@@ -3292,7 +3293,26 @@ function _drawCellFire(gx,gy,now){
   _fire.scale += (tg.scale-_fire.scale)*0.10;
   _fireTier = tg.tier;
   _applyBoardGlow(tg.tier);
-  if(_fireGLOK) return; // WebGL ateş aktif → partikül/2D glow'u atla (shader çiziyor)
+  if(_fireGLOK){
+    // GL alevin üstüne yükselen kor taneleri (temalı) — shader'a canlılık katar
+    if(tg.tier>=1 && now-_cellFireT>140 && sparks.length<70){
+      _cellFireT=now;
+      const gs2=CELL*GRID;
+      const thm=(typeof getFlameTheme==='function')?getFlameTheme():null;
+      const cols=thm?thm.sw.slice(1):['#FF8A3D','#FFD27A'];
+      const en=tg.tier>=4?4:tg.tier>=3?3:tg.tier>=2?2:1;
+      for(let i=0;i<en;i++){
+        const side=Math.random();
+        let ex,ey;
+        if(side<0.5){ex=gx+Math.random()*gs2;ey=gy+gs2-2;}   // alt kenar
+        else if(side<0.75){ex=gx+2;ey=gy+Math.random()*gs2;} // sol kenar
+        else {ex=gx+gs2-2;ey=gy+Math.random()*gs2;}          // sağ kenar
+        sparks.push({x:ex,y:ey,vx:(Math.random()-.5)*.8,vy:-(1.2+Math.random()*2.0),
+          a:1,c:cols[i%cols.length],sz:1.3+Math.random()*1.6,type:'ember',fade:.016});
+      }
+    }
+    return; // partikül alev/2D glow'u atla (shader çiziyor)
+  }
 
   if(_fire.count<1 && !flames.length) return;
   const gs=CELL*GRID;
