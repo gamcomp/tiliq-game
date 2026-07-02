@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tiliq — Combo Alevi Önizleme</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{margin:0;background:radial-gradient(ellipse at 50% 100%,#2A1108 0%,#180C06 40%,#100603 100%);
+  color:#f3e7e0;font-family:system-ui,sans-serif;padding:16px 10px 50px;display:flex;flex-direction:column;align-items:center;}
+h1{font-size:18px;margin:4px 0 2px;font-weight:800;}
+.sub{font-size:12px;color:#c9a99c;margin:0 0 14px;text-align:center;max-width:420px;line-height:1.5;}
+.stage{position:relative;width:340px;height:340px;}
+.board{position:absolute;left:40px;top:40px;width:260px;height:260px;border-radius:16px;
+  background:linear-gradient(180deg,rgba(64,38,25,.94),rgba(33,19,13,.96));
+  border:1.5px solid rgba(255,200,140,.22);box-shadow:0 4px 12px rgba(0,0,0,.45);}
+.board .g{position:absolute;inset:10px;border-radius:10px;background:
+  repeating-linear-gradient(0deg,#ffffff09 0 1px,transparent 1px 30px),
+  repeating-linear-gradient(90deg,#ffffff09 0 1px,transparent 1px 30px);}
+.tile{position:absolute;width:26px;height:26px;border-radius:6px;box-shadow:inset 0 -3px 6px #00000040,inset 0 2px 4px #ffffff40;}
+canvas.fx{position:absolute;left:0;top:0;width:340px;height:340px;pointer-events:none;mix-blend-mode:screen;}
+.ctrl{width:340px;max-width:94vw;background:#22110d;border:1px solid #3a201a;border-radius:14px;padding:12px 14px;margin-top:16px;}
+.ctrl label{font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;margin-bottom:6px;}
+#cv{color:#ff9a4a;}
+input[type=range]{width:100%;accent-color:#ff6a2a;height:24px;}
+.themes{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.tbtn{flex:1;min-width:56px;background:#1a0d09;border:1px solid #3a201a;border-radius:10px;color:#f3e7e0;
+  padding:8px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
+.tbtn.on{border-color:#ff9a4a;background:#331a10;}
+.note{font-size:11px;color:#a98c80;margin-top:14px;text-align:center;max-width:420px;line-height:1.5;}
+</style>
+</head>
+<body>
+<h1>🔥 Combo Alevi — Güncel Hali</h1>
+<p class="sub">Oyundaki <b>birebir aynı shader</b>: dikey uzayan diller + iç filaman detayı + temalı kor taneleri. Kaydırıcı = combo yoğunluğu.</p>
+<div class="stage" id="stage">
+  <div class="board"><div class="g" id="grid"></div></div>
+  <canvas class="fx" id="gl"></canvas>
+  <canvas class="fx" id="em"></canvas>
+</div>
+<div class="ctrl">
+  <label>Combo yoğunluğu <span id="cv">×5</span></label>
+  <input type="range" id="combo" min="1" max="10" value="5" step="1">
+  <div class="themes" id="themes"></div>
+</div>
+<p class="note">Oyunda: Mağaza → Temalar → 🔥 Alev Temaları'ndan satın alınıp seçilir. Kor taneleri temanın renginde yükselir.</p>
+<script>
+const FSHADER="precision highp float;\nuniform vec2 u_res;uniform float u_time;uniform float u_inten;uniform vec4 u_board;\nuniform vec3 u_f1;uniform vec3 u_f2;uniform vec3 u_f3;uniform vec3 u_f4;\nfloat hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}\nfloat noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);\n float a=hash(i),b=hash(i+vec2(1,0)),c=hash(i+vec2(0,1)),d=hash(i+vec2(1,1));\n return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}\nfloat fbm(vec2 p){float s=0.,a=.5;for(int i=0;i<5;i++){s+=a*noise(p);p*=2.03;a*=.5;}return s;}\nfloat sdRR(vec2 p,vec2 b,float r){vec2 q=abs(p)-b+r;return min(max(q.x,q.y),0.)+length(max(q,0.))-r;}\nvoid main(){\n vec2 px=vec2(gl_FragCoord.x,u_res.y-gl_FragCoord.y);\n vec2 bc=u_board.xy+u_board.zw*0.5,bh=u_board.zw*0.5;\n float r=min(bh.x,bh.y)*0.12;\n float d=sdRR(px-bc,bh,r);\n float inten=u_inten;\n float outer=mix(8.0,95.0,inten),inner=mix(3.0,30.0,inten);\n float band=smoothstep(outer,0.0,d)*smoothstep(-inner,5.0,d);\n if(band<=0.002){discard;}\n float t=u_time*1.15;\n vec2 fp=vec2(px.x*0.021,px.y*0.014);\n vec2 warp=vec2(fbm(fp*1.7+vec2(0.0,-t*1.4)),fbm(fp*1.7+vec2(5.2,-t*1.15)));\n float n=fbm(fp+warp*0.95+vec2(0.0,-t*1.9));\n float n2=fbm(fp*2.4+warp*1.3+vec2(3.7,-t*2.6));\n n=pow(n,1.55)*(0.72+0.55*n2);\n float flame=band*n*(0.55+0.9*inten);\n flame*=smoothstep(outer,-inner*0.5,d);\n flame=smoothstep(0.20,0.95,flame);\n if(flame<=0.01){discard;}\n vec3 col=vec3(0.0);\n col+=u_f1*smoothstep(0.02,0.32,flame);\n col+=u_f2*smoothstep(0.22,0.58,flame);\n col+=u_f3*smoothstep(0.48,0.82,flame);\n col+=u_f4*smoothstep(0.78,1.03,flame)*inten;\n float a=clamp(flame*1.2,0.0,1.0);\n gl_FragColor=vec4(col*a,a);\n}";
+const THEMES=[{"id":"flame_classic","name":"Klasik Ateş","emoji":"🔥","gl":[[0.8,0.2,0.05],[1,0.48,0.09],[1,0.84,0.34],[1,0.97,0.88]],"sw":["#CC3311","#FF7A17","#FFD657","#FFF8E0"]},{"id":"flame_ice","name":"Buz Alevi","emoji":"🧊","gl":[[0.08,0.3,0.8],[0.2,0.58,1],[0.6,0.86,1],[0.94,0.99,1]],"sw":["#1450CC","#3494FF","#99DBFF","#F0FCFF"]},{"id":"flame_emerald","name":"Zümrüt Alevi","emoji":"🌿","gl":[[0.04,0.42,0.2],[0.1,0.72,0.36],[0.52,0.96,0.52],[0.92,1,0.9]],"sw":["#0B6B33","#1AB85C","#85F585","#EBFFE6"]},{"id":"flame_mystic","name":"Mistik Alev","emoji":"🔮","gl":[[0.42,0.08,0.55],[0.72,0.22,0.92],[0.94,0.52,1],[1,0.92,1]],"sw":["#6B158C","#B838EB","#F085FF","#FFEBFF"]},{"id":"flame_gold","name":"Altın Alev","emoji":"👑","gl":[[0.55,0.3,0.02],[0.95,0.65,0.1],[1,0.86,0.36],[1,0.99,0.92]],"sw":["#8C4D05","#F2A619","#FFDB5C","#FFFCEB"]}];
+const TILES=[['#6BCB77',60,80],['#FFD93D',120,80],['#FF6B6B',180,120],['#4D96FF',80,150],['#C08B72',150,180],['#8AB89A',110,60]];
+const grid=document.getElementById('grid');
+TILES.forEach(([c,x,y])=>{const d=document.createElement('div');d.className='tile';d.style.cssText='left:'+x+'px;top:'+y+'px;background:'+c;grid.appendChild(d);});
+
+// WebGL — oyundaki shader
+const cv=document.getElementById('gl');cv.width=340;cv.height=340;
+const gl=cv.getContext('webgl',{alpha:true,premultipliedAlpha:true});
+const mk=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
+  if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))console.warn(gl.getShaderInfoLog(o));return o;};
+const pr=gl.createProgram();
+gl.attachShader(pr,mk(gl.VERTEX_SHADER,'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}'));
+gl.attachShader(pr,mk(gl.FRAGMENT_SHADER,FSHADER));
+gl.linkProgram(pr);gl.useProgram(pr);
+const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+const lc=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(lc);gl.vertexAttribPointer(lc,2,gl.FLOAT,false,0,0);
+const U=n=>gl.getUniformLocation(pr,n);
+const u={res:U('u_res'),time:U('u_time'),inten:U('u_inten'),board:U('u_board'),f1:U('u_f1'),f2:U('u_f2'),f3:U('u_f3'),f4:U('u_f4')};
+gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.viewport(0,0,340,340);
+
+// Kor taneleri (oyundaki ember davranışı)
+const em=document.getElementById('em');em.width=340;em.height=340;
+const ec=em.getContext('2d');let embers=[];
+
+let themeIdx=0,inten=0.85,tier=3;
+function tierOf(cb){return cb<=2?{i:.3,t:1}:cb<=4?{i:.6,t:2}:cb<=9?{i:.85,t:3}:{i:1,t:4};}
+const slider=document.getElementById('combo'),cvl=document.getElementById('cv');
+slider.oninput=()=>{cvl.textContent='×'+slider.value;const r=tierOf(+slider.value);inten=r.i;tier=r.t;};
+
+const tdiv=document.getElementById('themes');
+THEMES.forEach((t,ix)=>{const b=document.createElement('button');b.className='tbtn'+(ix===0?' on':'');
+  b.textContent=t.emoji+' '+t.name.split(' ')[0];
+  b.onclick=()=>{themeIdx=ix;document.querySelectorAll('.tbtn').forEach((x,k)=>x.classList.toggle('on',k===ix));};
+  tdiv.appendChild(b);});
+
+let lastEm=0;
+function loop(now){
+  const th=THEMES[themeIdx];
+  // shader
+  gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.useProgram(pr);
+  gl.uniform2f(u.res,340,340);gl.uniform1f(u.time,now*0.001);gl.uniform1f(u.inten,inten);
+  gl.uniform4f(u.board,40,40,260,260);
+  const g4=th.gl;
+  gl.uniform3f(u.f1,g4[0][0],g4[0][1],g4[0][2]);gl.uniform3f(u.f2,g4[1][0],g4[1][1],g4[1][2]);
+  gl.uniform3f(u.f3,g4[2][0],g4[2][1],g4[2][2]);gl.uniform3f(u.f4,g4[3][0],g4[3][1],g4[3][2]);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  // korlar
+  if(now-lastEm>140&&embers.length<70){lastEm=now;
+    const cols=th.sw.slice(1);const en=tier>=4?4:tier>=3?3:tier>=2?2:1;
+    for(let i=0;i<en;i++){const s=Math.random();let x,y;
+      if(s<0.5){x=40+Math.random()*260;y=298;}else if(s<0.75){x=42;y=40+Math.random()*260;}else{x=298;y=40+Math.random()*260;}
+      embers.push({x,y,vx:(Math.random()-.5)*.8,vy:-(1.2+Math.random()*2),a:1,c:cols[i%cols.length],sz:1.3+Math.random()*1.6});}}
+  ec.clearRect(0,0,340,340);ec.globalCompositeOperation='lighter';
+  embers=embers.filter(p=>p.a>0);
+  for(const p of embers){
+    ec.globalAlpha=p.a*.45;ec.strokeStyle=p.c;ec.lineWidth=p.sz*.85;
+    ec.beginPath();ec.moveTo(p.x,p.y);ec.lineTo(p.x-p.vx*2.6,p.y-p.vy*2.6);ec.stroke();
+    ec.globalAlpha=p.a;ec.fillStyle=p.c;
+    ec.beginPath();ec.arc(p.x,p.y,p.sz,0,Math.PI*2);ec.fill();
+    p.x+=p.vx;p.y+=p.vy;p.vy+=.02;p.a-=.016;p.sz*=.985;
+  }
+  ec.globalAlpha=1;
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
