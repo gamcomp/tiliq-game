@@ -111,13 +111,13 @@ body::after{
 
 /* ── MENU ── */
 #screen-menu{justify-content:flex-start;gap:0;padding:0;overflow-y:auto;}
-#menu-scroll{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px 20px 16px;flex:1;width:100%;}
-#menu-nav{display:flex;flex-shrink:0;width:100%;padding:10px 20px max(16px,env(safe-area-inset-bottom,16px));
-  background:linear-gradient(180deg,rgba(30,15,9,.72),rgba(20,8,12,.92));backdrop-filter:blur(14px);
-  border-top:1px solid transparent;
-  border-image:linear-gradient(90deg,transparent,rgba(212,168,67,.35),transparent) 1;}
-#menu-nav .menu-row{max-width:100%;}
-[data-theme="light"] #menu-nav{background:rgba(248,240,228,.9);}
+#menu-scroll{display:flex;flex-direction:column;align-items:center;gap:15px;padding:22px 18px 14px;flex:1;width:100%;}
+/* Modern yüzen dock — ekrana yapışık bar yerine havada duran cam kapsül */
+#menu-nav{display:flex;flex-shrink:0;width:100%;padding:4px 16px max(14px,env(safe-area-inset-bottom,14px));background:transparent;border:none;justify-content:center;}
+#menu-nav .menu-row{max-width:340px;background:linear-gradient(180deg,rgba(46,24,16,.88),rgba(26,13,9,.94));
+  border:1px solid rgba(255,200,140,.16);border-radius:22px;padding:8px;gap:4px;
+  backdrop-filter:blur(16px);box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);}
+[data-theme="light"] #menu-nav .menu-row{background:rgba(255,252,246,.92);border-color:rgba(120,70,30,.18);}
 
 /* Menü giriş animasyonu — kademeli yükselerek belirme */
 #menu-scroll>*{animation:menuIn .42s cubic-bezier(.22,1,.36,1) both;}
@@ -171,11 +171,11 @@ body::after{
   box-shadow:0 6px 22px rgba(0,0,0,.35),0 0 0 1px rgba(255,200,140,.14),inset 0 1px 0 rgba(255,255,255,.05);}
 
 /* Avatar alanı — cam kart + altın avatar halkası */
-.menu-av{display:flex;align-items:center;gap:10px;
+.menu-av{display:flex;align-items:center;gap:11px;
   background:linear-gradient(180deg,rgba(255,225,180,.085),rgba(255,210,160,.03));
-  border:1px solid var(--gb);border-radius:18px;
-  padding:10px 18px;cursor:pointer;backdrop-filter:blur(12px);transition:background .2s,transform .12s;
-  width:100%;max-width:320px;
+  border:1px solid var(--gb);border-radius:22px;
+  padding:11px 18px;cursor:pointer;backdrop-filter:blur(12px);transition:background .2s,transform .12s;
+  width:100%;max-width:340px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 4px 14px rgba(0,0,0,.22);}
 .menu-av:hover{background:var(--dim2);}
 .menu-av:active{transform:scale(.98);}
@@ -190,10 +190,10 @@ body::after{
 .streak-n{font-size:15px;font-weight:900;}
 
 /* ── GÜNLÜK HAZİNE + OYUNCU SEVİYESİ KARTI ── */
-#daily-card{width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;}
+#daily-card{width:100%;max-width:340px;display:flex;flex-direction:column;gap:11px;}
 
 /* Hazine kutusu */
-.treasure-box{background:linear-gradient(135deg,rgba(196,113,74,.18),rgba(212,168,67,.12));border:1.5px solid rgba(212,168,67,.35);border-radius:20px;padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;position:relative;overflow:hidden;transition:transform .12s,box-shadow .12s;}
+.treasure-box{background:linear-gradient(135deg,rgba(196,113,74,.18),rgba(212,168,67,.12));border:1.5px solid rgba(212,168,67,.35);border-radius:22px;padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;position:relative;overflow:hidden;transition:transform .12s,box-shadow .12s;}
 .treasure-box:not(.claimed){animation:tbGlow 2.6s ease-in-out infinite;}
 @keyframes tbGlow{0%,100%{box-shadow:0 0 0 rgba(212,168,67,0)}50%{box-shadow:0 0 18px rgba(212,168,67,.28)}}
 .treasure-box:active{transform:scale(.97);}
@@ -239,10 +239,10 @@ body::after{
 @keyframes tbClaim{0%{transform:scale(1)}30%{transform:scale(1.15) rotate(-5deg)}60%{transform:scale(.95) rotate(3deg)}100%{transform:scale(1) rotate(0)}}
 
 /* Oyuncu seviyesi */
-.level-card{background:linear-gradient(180deg,rgba(255,225,180,.07),rgba(255,210,160,.025));border:1px solid var(--gb);border-radius:20px;padding:12px 14px;backdrop-filter:blur(10px);
+.level-card{background:linear-gradient(180deg,rgba(255,225,180,.07),rgba(255,210,160,.025));border:1px solid var(--gb);border-radius:22px;padding:13px 15px;backdrop-filter:blur(10px);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 4px 14px rgba(0,0,0,.2);}
 .level-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
-.level-badge{background:linear-gradient(135deg,var(--accent),var(--acc2));border-radius:10px;padding:4px 10px;font-size:12px;font-weight:900;color:#fff;}
+.level-badge{background:linear-gradient(135deg,var(--accent),var(--acc2));border-radius:999px;padding:4px 12px;font-size:12px;font-weight:900;color:#fff;box-shadow:0 2px 8px rgba(196,113,74,.35);}
 .level-xp-text{font-size:11px;color:var(--dim);font-weight:600;}
 .level-track{height:8px;background:var(--dim2);border-radius:4px;overflow:hidden;position:relative;}
 .level-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--acc2));transition:width .8s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden;}
@@ -255,7 +255,7 @@ body::after{
 .level-unlock-hint{font-size:10px;color:var(--dim);display:flex;align-items:center;gap:4px;}
 .level-stats{display:flex;gap:10px;}
 .lstat{text-align:center;}
-.lstat-n{font-size:15px;font-weight:900;color:var(--text);}
+.lstat-n{font-size:15px;font-weight:900;color:#E8C87A;text-shadow:0 1px 6px rgba(212,168,67,.25);}
 .lstat-l{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;}
 
 /* Hazine claim coin patlaması */
@@ -277,6 +277,12 @@ body::after{
   background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%);
   transform:translateX(-120%);animation:playShine 3.6s ease-in-out infinite;pointer-events:none;}
 @keyframes playShine{0%,60%{transform:translateX(-120%)}90%,100%{transform:translateX(120%)}}
+/* Menüdeki ana CTA — modern büyük form + ▶ ikon kapsülü */
+#menu-scroll .btn-play{display:flex;align-items:center;justify-content:center;gap:11px;
+  padding:17px 0;font-size:21px;border-radius:22px;max-width:340px;}
+.play-ico{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.22);
+  display:inline-flex;align-items:center;justify-content:center;font-size:13px;line-height:1;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 6px rgba(0,0,0,.2);padding-left:2px;}
 .auth-btn{
   display:flex;align-items:center;justify-content:center;gap:10px;
   width:100%;border:none;border-radius:14px;padding:13px;
@@ -294,13 +300,12 @@ body::after{
 
 /* Menü alt butonlar — ikona sahip 4'lü ızgara */
 .menu-row{display:flex;gap:8px;width:100%;max-width:320px;}
-.btn-menu{flex:1;background:linear-gradient(180deg,rgba(255,225,180,.08),rgba(255,210,160,.025));border:1px solid var(--gb);color:var(--text);
-  border-radius:14px;padding:11px 6px;font-size:11px;font-weight:700;cursor:pointer;
-  font-family:inherit;backdrop-filter:blur(12px);transition:background .2s,transform .12s;
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);}
-.btn-menu .m-icon{font-size:18px;line-height:1;}
-.btn-menu:hover{background:var(--dim2);}
+.btn-menu{flex:1;background:transparent;border:none;color:var(--text);
+  border-radius:16px;padding:10px 4px;font-size:10.5px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:background .2s,transform .12s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;}
+.btn-menu .m-icon{font-size:21px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));}
+.btn-menu:hover{background:rgba(255,200,140,.07);}
 .btn-wide{flex:none;width:100%;max-width:320px;}
 
 /* ── GAME SCREEN ── */
@@ -309,7 +314,7 @@ body::after{
 #title{font-size:14px;font-weight:900;flex:1;letter-spacing:-.3px;background:linear-gradient(135deg,#5B8DB8,#C4714A,#D4A843);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .chip{background:linear-gradient(180deg,rgba(255,225,180,.09),rgba(255,210,160,.035));border:1px solid var(--gb);border-radius:16px;padding:2px 8px;display:flex;flex-direction:column;align-items:center;min-width:44px;backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 3px 10px rgba(0,0,0,.25);}
 /* Eksik pressed durumları — dokunsal geri bildirim */
-.btn-menu:active{transform:scale(.97);background:var(--dim2);}
+.btn-menu:active{transform:scale(.94);background:rgba(255,200,140,.10);}
 .btn-icon:active{transform:scale(.92);}
 .btn-secondary:active{transform:scale(.97);opacity:.85;}
 .btn-play-sm:active{transform:scale(.96);box-shadow:0 2px 8px rgba(196,113,74,.35);}
@@ -787,7 +792,7 @@ input[type="text"]::placeholder{color:var(--dim);}
     </div>
 
     <!-- Ana CTA -->
-    <button class="btn-play" onclick="onPlayPressed()"><span data-t="play">Oyna</span></button>
+    <button class="btn-play" onclick="onPlayPressed()"><span class="play-ico">▶</span><span data-t="play">Oyna</span></button>
 
   </div><!-- /menu-scroll -->
 
