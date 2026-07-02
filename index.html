@@ -32,7 +32,11 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;overflow:hidden;}
 body{
-  background:radial-gradient(ellipse at 50% 100%,#2A1108 0%,#180C06 40%,#100603 100%);
+  /* AI mağara ambiyansı (assets/bg_game.webp) + koyu overlay; dosya yoksa gradyana düşer */
+  background:
+    linear-gradient(rgba(16,6,3,.58),rgba(16,6,3,.80)),
+    url('assets/bg_game.webp') center/cover no-repeat,
+    radial-gradient(ellipse at 50% 100%,#2A1108 0%,#180C06 40%,#100603 100%);
   font-family:system-ui,-apple-system,sans-serif;
   color:var(--text); touch-action:none; user-select:none;
   display:flex; justify-content:center;
