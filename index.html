@@ -2507,7 +2507,7 @@ function updateUndoBtn(){
 // ── BOMB ─────────────────────────────────────────────────────────────────────
 let bombCount=0,bombMode=false,bombType='normal',bombXP=0;
 let _invBombsInPlay=0;   // mevcut bombCount içinde envanterden gelen (bonus) bomba sayısı
-const BOMB_THRESHOLD=150,BOMB_MAX=3;
+const BOMB_THRESHOLD=450,BOMB_MAX=3; // 150→450: bomba kazanmak 3× zor (puan barı daha yavaş dolar)
 let _bombHoldTimer=null,_bombHoldInterval=null;
 
 function updateBombBar(){
