@@ -3206,11 +3206,11 @@ function _initFireGL(){
 ' float outer=mix(8.0,95.0,inten),inner=mix(3.0,30.0,inten);\n'+
 ' float band=smoothstep(outer,0.0,d)*smoothstep(-inner,5.0,d);\n'+
 ' if(band<=0.002){discard;}\n'+
-' float t=u_time*1.15;\n'+                                    // hafif daha canli akis
+' float t=u_time*1.5;\n'+                                      // canli ve hizli akis
 ' vec2 fp=vec2(px.x*0.021,px.y*0.014);\n'+                     // dikey esneme -> yukari uzayan alev dilleri
-' vec2 warp=vec2(fbm(fp*1.7+vec2(0.0,-t*1.4)),fbm(fp*1.7+vec2(5.2,-t*1.15)));\n'+
-' float n=fbm(fp+warp*0.95+vec2(0.0,-t*1.9));\n'+
-' float n2=fbm(fp*2.4+warp*1.3+vec2(3.7,-t*2.6));\n'+          // ic filaman detayi (derinlik)
+' vec2 warp=vec2(fbm(fp*1.7+vec2(0.0,-t*1.5)),fbm(fp*1.7+vec2(5.2,-t*1.25)));\n'+
+' float n=fbm(fp+warp*1.1+vec2(0.0,-t*2.1));\n'+               // daha oynak turbulans + hizli yukselis
+' float n2=fbm(fp*2.4+warp*1.4+vec2(3.7,-t*2.9));\n'+          // ic filaman detayi (derinlik)
 ' n=pow(n,1.55)*(0.72+0.55*n2);\n'+
 ' float flame=band*n*(0.55+0.9*inten);\n'+
 ' flame*=smoothstep(outer,-inner*0.5,d);\n'+
