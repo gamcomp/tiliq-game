@@ -264,7 +264,7 @@ body::after{
 #combo-chip.c-inferno .chip-val{color:#FF6B6B;font-size:17px;text-shadow:0 0 8px #FF0033;}
 
 #combo-chip.pop{animation:comboPop .25s cubic-bezier(.36,2,.6,1) forwards;}
-@keyframes comboPop{0%{transform:scale(1);}40%{transform:scale(1.45);}70%{transform:scale(.95);}100%{transform:scale(1);}}
+@keyframes comboPop{0%{transform:scale(1);}40%{transform:scale(1.3);}70%{transform:scale(.9);}100%{transform:scale(1);}}
 @keyframes fireFlicker{from{box-shadow:0 0 10px rgba(255,80,0,.5);}to{box-shadow:0 0 26px rgba(255,0,0,.9),0 0 42px rgba(255,120,0,.6);}}
 
 /* Timer kritik: son %25'te kırmızı titreme */
@@ -288,6 +288,18 @@ body::after{
 
 #game-container{position:relative;flex-shrink:0;}
 #gameCanvas{display:block;cursor:pointer;}
+/* ── ALEV SİSTEMİ v2 (combo'ya bağlı) ── */
+#fxCanvas{position:absolute;z-index:2;pointer-events:none;}
+#fire-vin{position:fixed;inset:0;z-index:5;pointer-events:none;background:#ff2200;opacity:0;transition:opacity 1.2s ease;}
+#fire-flash{position:fixed;inset:0;z-index:6;pointer-events:none;background:#fff;opacity:0;}
+#fire-flash.on{animation:fireWhite 2s linear infinite;}
+@keyframes fireWhite{0%,100%{opacity:0}3%{opacity:.3}7%{opacity:0}}
+#gameCanvas.fshake1{animation:fsh1 .1s steps(2) infinite;}
+#gameCanvas.fshake2{animation:fsh2 .08s steps(2) infinite;}
+@keyframes fsh1{0%,100%{transform:translate(0,0)}25%{transform:translate(1px,-1px)}50%{transform:translate(-1px,1px)}75%{transform:translate(-1px,-1px)}}
+@keyframes fsh2{0%,100%{transform:translate(0,0)}25%{transform:translate(2px,-2px)}50%{transform:translate(-2px,2px)}75%{transform:translate(-2px,-2px)}}
+#combo-chip.inf10{animation:inf10 .3s ease-in-out infinite;}
+@keyframes inf10{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
 @keyframes shake{0%{transform:translateX(0)}10%{transform:translateX(-9px) rotate(-.5deg)}22%{transform:translateX(8px) rotate(.4deg)}35%{transform:translateX(-7px) rotate(-.3deg)}50%{transform:translateX(6px)}65%{transform:translateX(-4px)}80%{transform:translateX(3px)}100%{transform:translateX(0)}}
 @keyframes shakeBig{0%{transform:translateX(0) scale(1)}8%{transform:translateX(-14px) scale(1.01) rotate(-.8deg)}18%{transform:translateX(12px) scale(.99) rotate(.6deg)}30%{transform:translateX(-10px) rotate(-.4deg)}44%{transform:translateX(8px)}58%{transform:translateX(-6px)}72%{transform:translateX(4px)}86%{transform:translateX(-2px)}100%{transform:translateX(0) scale(1)}}
 @keyframes shakeSm{0%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(1px)}100%{transform:translateX(0)}}
@@ -1928,6 +1940,7 @@ function resizeCanvas(){
   const vw=Math.min(window.innerWidth,480);
   canvas.width=vw;canvas.height=CELL*GRID+TRAY()+GOY+12;
   canvas.style.width=canvas.width+'px';canvas.style.height=canvas.height+'px';
+  if(typeof _fxResize==='function')_fxResize(); // alev kanvasını da boyutla
 }
 
 // ── TEMA PALETLERİ ────────────────────────────────────────────────────────────
@@ -2886,6 +2899,7 @@ function startGame(){
   initGrid();genPieces();
   score=0;combo=0;dead=false;
   floats=[];flashes=[];bounce=null;sparks=[];shockwaves=[];celebs=[];
+  if(typeof _fxReset==='function')_fxReset(); // alev sistemi sıfırla
   selPiece=null;undoState=null;
   rescueUsed=false;
   _r2adWatched=0;_r2adUsedThisGame=false;_rescueShownThisGame=false;
@@ -3039,6 +3053,197 @@ function spawnPlaceDust(cells,ci){
     }
   }
 }
+
+// ── ALEV SİSTEMİ v2 — combo'ya bağlı partikül ateşi ─────────────────────────
+// Ayrı taşmalı 2D kanvas (board üstünü aşabilir), particle pool, eased tier geçişleri.
+const _FX_MOBILE=/Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent)||(window.matchMedia&&matchMedia('(pointer:coarse)').matches);
+const _FX_MAX=_FX_MOBILE?150:300;         // ekranda max toplam partikül
+const _FX_HALF=_FX_MOBILE?0.5:1;          // düşük cihazda emisyon yarıya
+const _FX_MX=60,_FX_MT=160,_FX_MB=45;     // fx kanvas taşma marjları (alev board üstünü aşar)
+// Combo tier tablosu — spec eşikleri: 0 / 1-2 / 3-4 / 5-9 / 10+
+const _FX_TIERS=[
+  {eL:0, eR:0, eB:0,  eE:0, sc:0,   gA:0,   gS:0,  vin:0},
+  {eL:8, eR:8, eB:12, eE:5, sc:.35, gA:.3,  gS:15, vin:0},
+  {eL:25,eR:25,eB:35, eE:15,sc:.65, gA:.6,  gS:35, vin:0},
+  {eL:50,eR:50,eB:70, eE:30,sc:.85, gA:.85, gS:60, vin:.3},
+  {eL:90,eR:90,eB:120,eE:60,sc:1,   gA:1,   gS:100,vin:.3},
+];
+function _fxTierOf(){ if(comboTimeLeft<=0||combo<1)return 0; return combo<=2?1:combo<=4?2:combo<=9?3:4; }
+
+let _fxCv=null,_fxCtx=null,_fxSpr=null;
+let _fxParts=[];const _fxPool=[];
+let _fxCur={eL:0,eR:0,eB:0,eE:0,sc:0,gA:0,gS:0,vin:0};
+let _fxAcc={L:0,R:0,B:0,E:0};
+let _fxLastT=0,_fxDomTier=-1;
+let _fxVinEl=null,_fxFlashEl=null;
+
+function _fxBuildSprites(){
+  // Damla (teardrop) alev sprite'ı: taban #ffee00 → orta #ff6600 → uç #cc2200 → şeffaf + parlak iç çekirdek
+  const tear=(base,mid,tip,core)=>{
+    const w=64,h=96,cv=document.createElement('canvas');cv.width=w;cv.height=h;
+    const g=cv.getContext('2d');
+    const path=()=>{g.beginPath();g.moveTo(w/2,3);
+      g.bezierCurveTo(w*0.95,h*0.45,w*0.85,h*0.98,w/2,h-3);
+      g.bezierCurveTo(w*0.15,h*0.98,w*0.05,h*0.45,w/2,3);g.closePath();};
+    let gr=g.createLinearGradient(0,h,0,0);
+    gr.addColorStop(0,base);gr.addColorStop(.45,mid);gr.addColorStop(.8,tip);gr.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=gr;path();g.fill();
+    g.save();g.translate(w/2,h*0.94);g.scale(.5,.55);g.translate(-w/2,-h*0.94);
+    gr=g.createLinearGradient(0,h,0,0);
+    gr.addColorStop(0,core);gr.addColorStop(.6,base);gr.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=gr;path();g.fill();g.restore();
+    try{const c2=document.createElement('canvas');c2.width=w;c2.height=h;
+      const g2=c2.getContext('2d');g2.filter='blur(2.5px)';g2.drawImage(cv,0,0);return c2;}catch(e){return cv;}
+  };
+  const dot=(inner,outer)=>{ // kor: #ffcc44 → #ff6600 → şeffaf
+    const s=16,cv=document.createElement('canvas');cv.width=s;cv.height=s;
+    const g=cv.getContext('2d');
+    const gr=g.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+    gr.addColorStop(0,inner);gr.addColorStop(.45,outer);gr.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=gr;g.beginPath();g.arc(s/2,s/2,s/2,0,Math.PI*2);g.fill();return cv;
+  };
+  _fxSpr={
+    flame:tear('#ffee00','#ff6600','#cc2200','#fff8d0'),
+    flameHot:tear('#ffcc00','#ff4400','#aa1100','#ffe9b0'), // combo 5+ daha kızıl
+    ember:dot('#ffcc44','#ff6600'),
+  };
+}
+
+function _fxInit(){
+  const gc=document.getElementById('game-container'); if(!gc)return;
+  _fxCv=document.createElement('canvas');_fxCv.id='fxCanvas';
+  gc.appendChild(_fxCv);
+  _fxCtx=_fxCv.getContext('2d');
+  _fxBuildSprites();
+  _fxVinEl=document.createElement('div');_fxVinEl.id='fire-vin';document.body.appendChild(_fxVinEl);
+  _fxFlashEl=document.createElement('div');_fxFlashEl.id='fire-flash';document.body.appendChild(_fxFlashEl);
+  _fxResize();
+}
+function _fxResize(){
+  if(!_fxCv)return;
+  _fxCv.width=canvas.width+_FX_MX*2;_fxCv.height=canvas.height+_FX_MT+_FX_MB;
+  _fxCv.style.width=_fxCv.width+'px';_fxCv.style.height=_fxCv.height+'px';
+  _fxCv.style.left=(-_FX_MX)+'px';_fxCv.style.top=(-_FX_MT)+'px';
+}
+function _fxReset(){
+  for(const p of _fxParts)_fxPool.push(p);
+  _fxParts.length=0;_fxAcc.L=_fxAcc.R=_fxAcc.B=_fxAcc.E=0;
+  for(const k in _fxCur)_fxCur[k]=0;
+  if(_fxCtx)_fxCtx.clearRect(0,0,_fxCv.width,_fxCv.height);
+  _fxApplyDom(0);
+}
+function _fxSpawn(kind,hot){ // kind: 0=sol,1=sağ,2=alt kenar alevi, 3=kor
+  if(_fxParts.length>=_FX_MAX)return;
+  const bx=GOX()+_FX_MX,by=GOY+_FX_MT,gs=CELL*GRID;
+  const p=_fxPool.pop()||{};
+  p.kind=kind;p.hot=hot;
+  if(kind===3){ // kor — board sınırının 40px dışında rastgele
+    const side=Math.floor(Math.random()*4),off=4+Math.random()*40;
+    if(side===0){p.x=bx-off;p.y=by+Math.random()*gs;}
+    else if(side===1){p.x=bx+gs+off;p.y=by+Math.random()*gs;}
+    else if(side===2){p.x=bx+Math.random()*gs;p.y=by+gs+off;}
+    else {p.x=bx+Math.random()*gs;p.y=by-off*0.5;}
+    p.life=1.0+Math.random()*1.0;            // 1.0–2.0s
+    p.size=2+Math.random()*4;                // 2–6px
+    p.vy=-(60+Math.random()*80)/p.life;
+    p.vx=((Math.random()*80)-40)/p.life;     // ±40px saçılma
+    p.flick=2+Math.random()*6;p.ph=Math.random()*Math.PI*2;
+    p.rot=0;
+  } else {
+    if(kind===0){p.x=bx-10+(Math.random()*8-4);p.y=by+gs*(1-Math.pow(Math.random(),1.5));}
+    else if(kind===1){p.x=bx+gs+10+(Math.random()*8-4);p.y=by+gs*(1-Math.pow(Math.random(),1.5));}
+    else {p.x=bx+Math.random()*gs;p.y=by+gs+10+(Math.random()*6-3);}
+    p.life=0.8+Math.random()*0.6;            // 0.8–1.4s
+    p.size=8+Math.random()*16;               // 8–24px
+    p.vy=-(120+Math.random()*80)/p.life;     // ömür boyunca -120..-200px
+    p.vx=((Math.random()*40)-20)/p.life;     // ±20px yatay drift
+    p.rot=(Math.random()*30-15)*Math.PI/180; // ±15°
+  }
+  p.age=0;
+  _fxParts.push(p);
+}
+function _fxApplyDom(tier){
+  if(tier===_fxDomTier)return;_fxDomTier=tier;
+  canvas.classList.toggle('fshake1',tier===2||tier===3); // 1px sarsıntı
+  canvas.classList.toggle('fshake2',tier>=4);            // 2px sarsıntı
+  if(_fxVinEl)_fxVinEl.style.opacity=tier>=4?'0.15':'0'; // tam ekran turuncu vinyet
+  if(_fxFlashEl)_fxFlashEl.classList.toggle('on',tier>=4); // 2sn'de bir beyaz flash
+  const ch=document.getElementById('combo-chip');
+  if(ch)ch.classList.toggle('inf10',tier>=4);            // rozet nabzı
+}
+function _fxUpdate(now){
+  if(!_fxCtx)return;
+  let dt=(now-_fxLastT)/1000;_fxLastT=now;
+  if(dt<=0||dt>0.05)dt=0.016;
+  const tier=_fxTierOf(),T=_FX_TIERS[tier];
+  _fxApplyDom(tier);
+  // Yumuşak geçiş: artışta ~0.3s içinde oturur, sıfırlanınca ~1.5s'de söner
+  for(const k in _fxCur){
+    const tgt=T[k],tau=(tgt>_fxCur[k])?0.09:0.5;
+    _fxCur[k]+=(tgt-_fxCur[k])*(1-Math.exp(-dt/tau));
+  }
+  if(_fxParts.length===0&&_fxCur.gA<0.01&&_fxCur.eB<0.5){
+    _fxCtx.clearRect(0,0,_fxCv.width,_fxCv.height);return;
+  }
+  // Emisyon (partikül/sn × dt, mobilde yarı)
+  const hot=tier>=3;
+  _fxAcc.L+=_fxCur.eL*_FX_HALF*dt;while(_fxAcc.L>=1){_fxAcc.L--;_fxSpawn(0,hot);}
+  _fxAcc.R+=_fxCur.eR*_FX_HALF*dt;while(_fxAcc.R>=1){_fxAcc.R--;_fxSpawn(1,hot);}
+  _fxAcc.B+=_fxCur.eB*_FX_HALF*dt;while(_fxAcc.B>=1){_fxAcc.B--;_fxSpawn(2,hot);}
+  _fxAcc.E+=_fxCur.eE*_FX_HALF*dt;while(_fxAcc.E>=1){_fxAcc.E--;_fxSpawn(3,hot);}
+  // Çizim — additive, pool ile in-place compaction (GC spike yok)
+  const c2=_fxCtx;
+  c2.clearRect(0,0,_fxCv.width,_fxCv.height);
+  c2.globalCompositeOperation='lighter';
+  let w=0;
+  for(let i=0;i<_fxParts.length;i++){
+    const p=_fxParts[i];p.age+=dt;
+    const t=p.age/p.life;
+    if(t>=1){_fxPool.push(p);continue;}
+    p.x+=p.vx*dt;p.y+=p.vy*dt;
+    if(p.kind===3){ // kor: 0.4–1.0 titrek parlaklık
+      const a=(0.4+0.6*(0.5+0.5*Math.sin(now*0.001*p.flick*6.28+p.ph)))*(1-t);
+      const s=p.size*2.6;
+      c2.globalAlpha=a;
+      c2.drawImage(_fxSpr.ember,p.x-s/2,p.y-s/2,s,s);
+    } else { // alev: ölçek 0.6→1.0→0.3, opaklık 0.9→0
+      const sc=t<0.35?0.6+(t/0.35)*0.4:1.0-((t-0.35)/0.65)*0.7;
+      const sz=p.size*Math.max(_fxCur.sc,0.05)*sc;
+      const fw=sz*2.2,fh=sz*4.6;
+      c2.globalAlpha=0.9*(1-t);
+      c2.translate(p.x,p.y);c2.rotate(p.rot);
+      c2.drawImage(p.hot?_fxSpr.flameHot:_fxSpr.flame,-fw/2,-fh,fw,fh);
+      c2.setTransform(1,0,0,1,0,0);
+    }
+    _fxParts[w++]=p;
+  }
+  _fxParts.length=w;
+  // Board glow — #ff4400 (10+ → #ff8800), nabız 0.6→1.0→0.6 / 0.8s
+  if(_fxCur.gA>0.02){
+    const bx=GOX()+_FX_MX,by=GOY+_FX_MT,gs=CELL*GRID;
+    const pulse=0.6+0.4*(0.5+0.5*Math.sin(now*0.00785));
+    const A=_fxCur.gA*pulse,S=Math.max(4,_fxCur.gS);
+    const col=tier>=4?'255,136,0':'255,68,0';
+    const ring=(pad,lw,al)=>{c2.globalAlpha=al;c2.lineWidth=lw;c2.strokeStyle='rgb('+col+')';
+      c2.beginPath();
+      if(c2.roundRect)c2.roundRect(bx-pad,by-pad,gs+pad*2,gs+pad*2,16);else c2.rect(bx-pad,by-pad,gs+pad*2,gs+pad*2);
+      c2.stroke();};
+    ring(S*0.35,S,A*0.22);
+    ring(S*0.2,S*0.5,A*0.4);
+    ring(3,Math.max(2,S*0.15),A*0.85);
+  }
+  // Kenar vinyeti (combo 5+): koyu kırmızı #330000
+  if(_fxCur.vin>0.01){
+    c2.globalCompositeOperation='source-over';
+    const W=_fxCv.width,H=_fxCv.height;
+    const vg=c2.createRadialGradient(W/2,H/2,Math.min(W,H)*0.35,W/2,H/2,Math.max(W,H)*0.72);
+    vg.addColorStop(0,'rgba(51,0,0,0)');
+    vg.addColorStop(1,'rgba(51,0,0,'+_fxCur.vin.toFixed(3)+')');
+    c2.globalAlpha=1;c2.fillStyle=vg;c2.fillRect(0,0,W,H);
+  }
+  c2.globalCompositeOperation='source-over';c2.globalAlpha=1;
+}
+_fxInit();
 
 function spawnExplosion(x,y,c,big=false){
   const count=big?22:14;
@@ -3666,6 +3871,7 @@ function draw(){
   if(celebs.length>3)celebs.splice(0,celebs.length-3);
   tickComboTimer(now);
   drawShockwaves();drawSparks();drawBoard(now);drawDrag();drawTray();drawFloats();drawCelebrations(now);
+  _fxUpdate(now); // alev sistemi v2 (ayrı fx kanvasına çizer)
 }
 
 let _rafId=null;
@@ -3776,6 +3982,8 @@ function showScreen(id){
   document.getElementById('screen-'+id).classList.add('active');
   // Banner: menüde göster, oyunda gizle (HUD'u kapatmasın)
   if(id==='game') hideBanner(); else showBanner();
+  // Oyun ekranından çıkınca alev/vinyet/flash overlay'lerini kapat
+  if(id!=='game'&&typeof _fxReset==='function')_fxReset();
 }
 function showModal(id){
   if(id==='account'){openAccountModal();syncMyCodeUI();}
