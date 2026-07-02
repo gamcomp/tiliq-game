@@ -3753,49 +3753,84 @@ function h2r(hex){return`${parseInt(hex.slice(1,3),16)},${parseInt(hex.slice(3,5
 // ── DRAW ──────────────────────────────────────────────────────────────────────
 let hov=null;
 
+// ── TABLA TASARIM SİSTEMİ — skorla değişen 108 benzersiz tabla ─────────────────
+// 12 malzeme ailesi × 9 zenginlik kademesi. Skor eşiği aşıldıkça tabla evrilir.
+const BOARD_FAMS=[
+  {n:'Bronz',  h:26, s:45},{n:'Yakut',  h:355,s:55},{n:'Okyanus',h:205,s:48},{n:'Zümrüt',h:150,s:45},
+  {n:'Ametist',h:278,s:45},{n:'Altın',  h:44, s:60},{n:'Safir',  h:222,s:52},{n:'Kor',   h:12, s:58},
+  {n:'Orman',  h:120,s:35},{n:'Fuşya',  h:318,s:48},{n:'Çelik',  h:210,s:14},{n:'Gece',  h:262,s:30},
+];
+const BOARD_STEPS=9, BOARD_COUNT=BOARD_FAMS.length*BOARD_STEPS; // 108 tabla
+const _ROMAN=['I','II','III','IV','V','VI','VII','VIII','IX'];
+function boardDesign(i){
+  i=Math.max(0,Math.min(BOARD_COUNT-1,i|0));
+  const fam=BOARD_FAMS[i%BOARD_FAMS.length], step=Math.floor(i/BOARD_FAMS.length);
+  return {idx:i,name:fam.n+' '+_ROMAN[step],h:fam.h,s:fam.s,step,
+          l:15+step*1.3,           // zemin parlaklığı kademeyle artar
+          acc:0.22+step*0.055};    // aksan gücü kademeyle artar
+}
+// Eşik eğrisi: ilk tablalar hızlı gelir (oyuncu sistemi keşfeder), sonrası kilometre taşı.
+// i. tabla eşiği ≈ 120×i^1.45 → #2=120, #10≈3.3K, #30≈17K, #108≈107K puan
+const BOARD_THRESH=(()=>{const a=[0];for(let i=1;i<BOARD_COUNT;i++)a.push(Math.round(120*Math.pow(i,1.45)));return a;})();
+function boardIndexForScore(sc){let i=0;while(i+1<BOARD_COUNT&&sc>=BOARD_THRESH[i+1])i++;return i;}
+let _boardIdxCur=0;
+
 // ── PREMIUM BOARD KATMANI — çerçeve + 64 çökük mücevher yuvası + vinyet.
-// Bir kez offscreen'e çizilir; her frame tek drawImage (64 rrect/frame yerine → perf artışı).
+// Bir kez offscreen'e çizilir; her frame tek drawImage. Tasarım skor indeksinden gelir.
 const _BL_PAD=10;
 let _boardLayer=null,_boardLayerKey='';
 function _buildBoardLayer(){
-  const d=isDark(),key=CELL+'|'+d;
+  const d=isDark(),bd0=boardDesign(_boardIdxCur),key=CELL+'|'+d+'|'+bd0.idx;
   if(_boardLayer&&_boardLayerKey===key)return;
   _boardLayerKey=key;
   const gs=CELL*GRID,W=gs+_BL_PAD*2,H=gs+_BL_PAD*2;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;
   const g=cv.getContext('2d');
-  const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.lineTo(x+w-r,y);g.quadraticCurveTo(x+w,y,x+w,y+r);g.lineTo(x+w,y+h-r);g.quadraticCurveTo(x+w,y+h,x+w-r,y+h);g.lineTo(x+r,y+h);g.quadraticCurveTo(x,y+h,x,y+h-r);g.lineTo(x,y+r);g.quadraticCurveTo(x,y,x+r,y);g.closePath();};
-  // Çerçeve zemini: sıcak dikey degrade + yumuşak dış gölge (temaya uyumlu)
+  const {h,s,l,acc,step}=bd0;
+  const hsla=(hh,ss,ll,aa)=>`hsla(${hh},${ss}%,${ll}%,${aa})`;
+  const rr=(x,y,w,hh2,r)=>{g.beginPath();g.moveTo(x+r,y);g.lineTo(x+w-r,y);g.quadraticCurveTo(x+w,y,x+w,y+r);g.lineTo(x+w,y+hh2-r);g.quadraticCurveTo(x+w,y+hh2,x+w-r,y+hh2);g.lineTo(x+r,y+hh2);g.quadraticCurveTo(x,y+hh2,x,y+hh2-r);g.lineTo(x,y+r);g.quadraticCurveTo(x,y,x+r,y);g.closePath();};
+  // Çerçeve zemini: aile rengiyle dikey degrade + dış gölge
   g.save();
-  g.shadowColor=d?'rgba(0,0,0,.45)':'rgba(60,30,10,.16)';g.shadowBlur=12;g.shadowOffsetY=4;
+  g.shadowColor='rgba(0,0,0,.45)';g.shadowBlur=12;g.shadowOffsetY=4;
   const bgr=g.createLinearGradient(0,4,0,H-4);
-  if(d){bgr.addColorStop(0,'rgba(64,38,25,.94)');bgr.addColorStop(.55,'rgba(45,27,18,.95)');bgr.addColorStop(1,'rgba(33,19,13,.96)');}
-  else{bgr.addColorStop(0,'rgba(255,252,246,.96)');bgr.addColorStop(1,'rgba(240,228,210,.96)');}
+  bgr.addColorStop(0,hsla(h,s,l+7,.95));
+  bgr.addColorStop(.55,hsla(h,s,l,.95));
+  bgr.addColorStop(1,hsla(h,s,Math.max(6,l-6),.96));
   rr(4,4,W-8,H-8,16);g.fillStyle=bgr;g.fill();
   g.restore();
-  // Kenarlık: üstte sıcak parlak → altta sönük degrade
-  const bd=g.createLinearGradient(0,0,0,H);
-  if(d){bd.addColorStop(0,'rgba(255,200,140,.22)');bd.addColorStop(1,'rgba(255,150,80,.06)');}
-  else{bd.addColorStop(0,'rgba(120,70,30,.24)');bd.addColorStop(1,'rgba(120,70,30,.10)');}
-  rr(4,4,W-8,H-8,16);g.strokeStyle=bd;g.lineWidth=1.5;g.stroke();
-  // İç üst rim ışığı — tepeden vuran ışık hissi
-  rr(5.5,5.5,W-11,H-11,14);g.strokeStyle=d?'rgba(255,255,255,.05)':'rgba(255,255,255,.65)';g.lineWidth=1;g.stroke();
-  // Soketler: çökük yuva (üstte iç gölge, altta kenar ışığı) — taşlar yuvaya oturmuş durur
+  // Kenarlık: aile aksanı — üstte parlak, altta sönük (kademeyle güçlenir)
+  const bdg=g.createLinearGradient(0,0,0,H);
+  bdg.addColorStop(0,hsla(h,Math.min(90,s+25),62,acc));
+  bdg.addColorStop(1,hsla(h,Math.min(90,s+25),45,acc*0.3));
+  rr(4,4,W-8,H-8,16);g.strokeStyle=bdg;g.lineWidth=1.5;g.stroke();
+  // İç üst rim ışığı
+  rr(5.5,5.5,W-11,H-11,14);g.strokeStyle='rgba(255,255,255,.055)';g.lineWidth=1;g.stroke();
+  // Kademe 6+: çift iç çerçeve (asalet çizgisi)
+  if(step>=6){rr(8,8,W-16,H-16,12);g.strokeStyle=hsla(h,70,68,.14);g.lineWidth=1;g.stroke();}
+  // Soketler: çökük yuva — alt kenar ışığı yüksek kademede aile rengine döner
   for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++){
-    const x=_BL_PAD+c*CELL+1.5,y=_BL_PAD+r*CELL+1.5,s=CELL-3;
-    const sg=g.createLinearGradient(0,y,0,y+s);
-    if(d){sg.addColorStop(0,'rgba(0,0,0,.34)');sg.addColorStop(.7,'rgba(0,0,0,.15)');sg.addColorStop(1,'rgba(255,255,255,.028)');}
-    else{sg.addColorStop(0,'rgba(0,0,0,.10)');sg.addColorStop(1,'rgba(0,0,0,.03)');}
-    rr(x,y,s,s,6);g.fillStyle=sg;g.fill();
-    g.strokeStyle=d?'rgba(0,0,0,.28)':'rgba(0,0,0,.09)';g.lineWidth=1;
-    g.beginPath();g.moveTo(x+6,y+1);g.lineTo(x+s-6,y+1);g.stroke();          // üst iç gölge
-    g.strokeStyle=d?'rgba(255,255,255,.055)':'rgba(255,255,255,.7)';
-    g.beginPath();g.moveTo(x+6,y+s-1);g.lineTo(x+s-6,y+s-1);g.stroke();      // alt kenar ışığı
+    const x=_BL_PAD+c*CELL+1.5,y=_BL_PAD+r*CELL+1.5,sz=CELL-3;
+    const sg=g.createLinearGradient(0,y,0,y+sz);
+    sg.addColorStop(0,'rgba(0,0,0,.34)');sg.addColorStop(.7,'rgba(0,0,0,.15)');
+    sg.addColorStop(1,step>=3?hsla(h,60,70,.05+step*.006):'rgba(255,255,255,.028)');
+    rr(x,y,sz,sz,6);g.fillStyle=sg;g.fill();
+    g.strokeStyle='rgba(0,0,0,.28)';g.lineWidth=1;
+    g.beginPath();g.moveTo(x+6,y+1);g.lineTo(x+sz-6,y+1);g.stroke();
+    g.strokeStyle=step>=3?hsla(h,55,75,.07):'rgba(255,255,255,.055)';
+    g.beginPath();g.moveTo(x+6,y+sz-1);g.lineTo(x+sz-6,y+sz-1);g.stroke();
   }
-  // Vinyet: merkezde sıcak nefes, köşelerde koyulaşma (derinlik)
+  // Kademe 8+: köşe mücevher noktaları
+  if(step>=8){
+    for(const[cx,cy]of[[10,10],[W-10,10],[10,H-10],[W-10,H-10]]){
+      const gg=g.createRadialGradient(cx,cy,0,cx,cy,5);
+      gg.addColorStop(0,hsla(h,85,80,.9));gg.addColorStop(.5,hsla(h,80,60,.5));gg.addColorStop(1,hsla(h,80,50,0));
+      g.fillStyle=gg;g.beginPath();g.arc(cx,cy,5,0,Math.PI*2);g.fill();
+    }
+  }
+  // Vinyet: merkezde aile renginde nefes, köşelerde koyulaşma
   const vg=g.createRadialGradient(W/2,H*0.42,gs*0.2,W/2,H/2,gs*0.85);
-  vg.addColorStop(0,'rgba(255,220,170,0.04)');vg.addColorStop(.6,'rgba(0,0,0,0)');
-  vg.addColorStop(1,d?'rgba(0,0,0,.15)':'rgba(60,30,10,.05)');
+  vg.addColorStop(0,hsla(h,65,75,.045));vg.addColorStop(.6,'rgba(0,0,0,0)');
+  vg.addColorStop(1,'rgba(0,0,0,.15)');
   rr(4,4,W-8,H-8,16);g.fillStyle=vg;g.fill();
   _boardLayer=cv;
 }
@@ -3869,7 +3904,17 @@ function _drawGlint(gx,gy,now){
 
 function drawBoard(now){
   const gx=GOX(),gy=GOY;
-  _buildBoardLayer(); // cache'li — CELL/tema değişmedikçe yeniden çizilmez
+  // Skor arttıkça tabla evrilir (108 tasarım). Organik geçişte (1-3 kademe) kutlama.
+  const bi=boardIndexForScore(score||0);
+  if(bi!==_boardIdxCur){
+    const organic=bi>_boardIdxCur&&(bi-_boardIdxCur)<=3&&!dead&&score>0;
+    _boardIdxCur=bi;
+    if(organic){
+      floats.push({x:canvas.width/2,y:gy+CELL*GRID*0.35,txt:'🎨 '+boardDesign(bi).name,a:1,vy:-1.2,c:'#FFD93D',big:true});
+      vibrate([15,10,25]);
+    }
+  }
+  _buildBoardLayer(); // cache'li — CELL/tema/tabla indeksi değişmedikçe yeniden çizilmez
   ctx.drawImage(_boardLayer,gx-_BL_PAD,gy-_BL_PAD);
 
   // Bomb mode crosshair hint
