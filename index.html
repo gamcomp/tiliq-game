@@ -3191,14 +3191,14 @@ function _initFireGL(){
 ' float r=min(bh.x,bh.y)*0.12;\n'+
 ' float d=sdRR(px-bc,bh,r);\n'+
 ' float inten=u_inten;\n'+
-' float outer=mix(8.0,95.0,inten),inner=mix(3.0,30.0,inten);\n'+
+' float outer=mix(8.0,115.0,inten),inner=mix(3.0,34.0,inten);\n'+
 ' float band=smoothstep(outer,0.0,d)*smoothstep(-inner,5.0,d);\n'+
 ' if(band<=0.002){discard;}\n'+
-' float t=u_time*1.7;\n'+
-' vec2 fp=vec2(px.x*0.023,px.y*0.013);\n'+                                       // dikey esnetme: uzun alev dilleri\n'+
+' float t=u_time*2.3;\n'+
+' vec2 fp=vec2(px.x*0.027,px.y*0.013);\n'+                                       // dikey esnetme: uzun alev dilleri\n'+
 ' vec2 warp=vec2(fbm(fp*1.9+vec2(0.0,-t*1.7)),fbm(fp*1.9+vec2(7.3,-t*1.4)));\n'+   // turbulans\n'+
 ' float n=fbm(fp*1.15+warp*1.25+vec2(0.0,-t*2.3));\n'+                             // hizli yukari akis\n'+
-' n=pow(n,1.8);\n'+
+' n=pow(n,1.7);\n'+
 ' float flame=band*n*(0.55+0.9*inten);\n'+
 ' flame*=smoothstep(outer,-inner*0.5,d);\n'+
 ' flame=smoothstep(0.20,0.95,flame);\n'+          // zayif alanlari at: kirmizi taban/pus kalksin, sadece belirgin alev dilleri kalsin\n'+
@@ -3207,7 +3207,7 @@ function _initFireGL(){
 ' col+=vec3(0.80,0.20,0.05)*smoothstep(0.02,0.32,flame);\n'+   // hafif kizil taban (azaltildi)\n'+
 ' col+=vec3(1.0,0.48,0.09)*smoothstep(0.22,0.58,flame);\n'+
 ' col+=vec3(1.0,0.84,0.34)*smoothstep(0.48,0.82,flame);\n'+
-' col+=vec3(1.0,0.97,0.88)*smoothstep(0.78,1.03,flame)*inten;\n'+
+' col+=vec3(1.0,0.98,0.90)*smoothstep(0.78,1.03,flame)*1.0;\n'+
 ' float a=clamp(flame*1.2,0.0,1.0);\n'+
 ' gl_FragColor=vec4(col*a,a);\n'+
 '}';
