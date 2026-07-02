@@ -3195,20 +3195,24 @@ function _initFireGL(){
 ' float band=smoothstep(outer,0.0,d)*smoothstep(-inner,5.0,d);\n'+
 ' if(band<=0.002){discard;}\n'+
 ' float t=u_time*2.3;\n'+
-' vec2 fp=vec2(px.x*0.027,px.y*0.013);\n'+                                       // dikey esnetme: uzun alev dilleri\n'+
-' vec2 warp=vec2(fbm(fp*1.9+vec2(0.0,-t*1.7)),fbm(fp*1.9+vec2(7.3,-t*1.4)));\n'+   // turbulans\n'+
-' float n=fbm(fp*1.15+warp*1.25+vec2(0.0,-t*2.3));\n'+                             // hizli yukari akis\n'+
-' n=pow(n,1.7);\n'+
-' float flame=band*n*(0.55+0.9*inten);\n'+
+' vec2 fp=vec2(px.x*0.027,px.y*0.010);\n'+                                        // guclu dikey esnetme: uzun dikey alev dilleri\n'+
+' vec2 warp=vec2(fbm(fp*1.9+vec2(0.0,-t*1.8)),fbm(fp*1.9+vec2(7.3,-t*1.5)));\n'+
+' vec2 sp=fp*1.15+warp*1.3+vec2(0.0,-t*2.5);\n'+                                   // hizli yukari akis\n'+
+' float n1=fbm(sp);\n'+
+' float n2=fbm(sp+vec2(0.0,0.55));\n'+                                            // biraz asagidan ornek -> yukari uzanan dil\n'+
+' float n3=fbm(sp+vec2(0.0,1.05));\n'+                                            // daha asagidan -> daha uzun dil\n'+
+' float n=max(n1,max(n2*0.9,n3*0.78));\n'+                                        // yukari dogru cekilmis alev\n'+
+' n=pow(n,1.55);\n'+
+' float flame=band*n*(0.95+1.05*inten);\n'+                                       // daha yogun\n'+
 ' flame*=smoothstep(outer,-inner*0.5,d);\n'+
-' flame=smoothstep(0.20,0.95,flame);\n'+          // zayif alanlari at: kirmizi taban/pus kalksin, sadece belirgin alev dilleri kalsin\n'+
+' flame=smoothstep(0.11,0.92,flame);\n'+                                          // esik dustu -> daha dolu/yogun alev\n'+
 ' if(flame<=0.01){discard;}\n'+
 ' vec3 col=vec3(0.0);\n'+
 ' col+=vec3(0.80,0.20,0.05)*smoothstep(0.02,0.32,flame);\n'+   // hafif kizil taban (azaltildi)\n'+
 ' col+=vec3(1.0,0.48,0.09)*smoothstep(0.22,0.58,flame);\n'+
 ' col+=vec3(1.0,0.84,0.34)*smoothstep(0.48,0.82,flame);\n'+
 ' col+=vec3(1.0,0.98,0.90)*smoothstep(0.78,1.03,flame)*1.0;\n'+
-' float a=clamp(flame*1.2,0.0,1.0);\n'+
+' float a=clamp(flame*1.4,0.0,1.0);\n'+
 ' gl_FragColor=vec4(col*a,a);\n'+
 '}';
     const sh=(ty,src)=>{const s=gl.createShader(ty);gl.shaderSource(s,src);gl.compileShader(s);
