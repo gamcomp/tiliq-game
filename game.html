@@ -966,6 +966,7 @@ input[type="text"]::placeholder{color:var(--dim);}
         <button class="lang-btn" onclick="setLang('AR')" data-lang="AR"><span class="flag">🇸🇦</span>AR</button>
         <button class="lang-btn" onclick="setLang('ZH')" data-lang="ZH"><span class="flag">🇨🇳</span>ZH</button>
       </div>
+      <div style="text-align:center;font-size:10px;color:var(--dim);opacity:.75;margin-top:6px">Tiliq · <span id="build-ver">?</span></div>
     </div>
   </div>
 </div>
@@ -2000,6 +2001,10 @@ function drawCelebrations(now){
 }
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
+// Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
+const BUILD_VER='v2026.07.03-1';
+try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
+
 const canvas=document.getElementById('gameCanvas');
 const ctx=canvas.getContext('2d');
 const GRID=8;
