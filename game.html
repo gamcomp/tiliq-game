@@ -3775,6 +3775,123 @@ const BOARD_THRESH=(()=>{const a=[0];for(let i=1;i<BOARD_COUNT;i++)a.push(Math.r
 function boardIndexForScore(sc){let i=0;while(i+1<BOARD_COUNT&&sc>=BOARD_THRESH[i+1])i++;return i;}
 let _boardIdxCur=0;
 
+// ── TABLA MALZEME DOKULARI — her aileye özgü görsel tema (bir kez render, maliyet yok)
+// Deterministik: seed'li PRNG → aynı tabla her zaman aynı görünür.
+function _seededRnd(seed){let t=seed|0;return function(){t=t+0x6D2B79F5|0;let r=Math.imul(t^t>>>15,1|t);r=r+Math.imul(r^r>>>7,61|r)^r;return((r^r>>>14)>>>0)/4294967296;};}
+function _paintBoardMaterial(g,W,H,bd){
+  const {h,s,l,step,idx}=bd, fam=idx%12;
+  const rnd=_seededRnd(1234+idx*77);
+  const A=0.10+step*0.02;                          // desen görünürlüğü kademeyle artar
+  const hsla=(hh,ss,ll,aa)=>`hsla(${hh},${ss}%,${ll}%,${aa})`;
+  g.save();
+  // Çerçeve içine kırp
+  const r=16,x0=4,y0=4,w=W-8,hh2=H-8;
+  g.beginPath();g.moveTo(x0+r,y0);g.lineTo(x0+w-r,y0);g.quadraticCurveTo(x0+w,y0,x0+w,y0+r);g.lineTo(x0+w,y0+hh2-r);g.quadraticCurveTo(x0+w,y0+hh2,x0+w-r,y0+hh2);g.lineTo(x0+r,y0+hh2);g.quadraticCurveTo(x0,y0+hh2,x0,y0+hh2-r);g.lineTo(x0,y0+r);g.quadraticCurveTo(x0,y0,x0+r,y0);g.closePath();g.clip();
+
+  if(fam===0||fam===10){ // Bronz & Çelik — fırçalanmış metal (yatay ince çizgiler + diyagonal sheen)
+    g.lineWidth=1;
+    for(let y=6;y<H;y+=2.5+rnd()*3){
+      g.globalAlpha=A*(0.25+rnd()*0.6);g.strokeStyle=hsla(h,s+8,58+rnd()*14,1);
+      g.beginPath();g.moveTo(4,y);g.lineTo(W-4,y+(rnd()*2-1));g.stroke();
+    }
+    const sg=g.createLinearGradient(0,0,W,H);
+    sg.addColorStop(.33,'rgba(255,255,255,0)');sg.addColorStop(.5,hsla(h,50,82,A*0.55));sg.addColorStop(.67,'rgba(255,255,255,0)');
+    g.globalAlpha=1;g.fillStyle=sg;g.fillRect(0,0,W,H);
+  } else if(fam===1||fam===4||fam===6){ // Yakut, Ametist, Safir — mücevher fasetleri
+    const n=24+step*5;
+    for(let i=0;i<n;i++){
+      const x=rnd()*W,y=rnd()*H,rz=9+rnd()*24,lit=rnd()>0.5;
+      g.globalAlpha=A*(0.28+rnd()*0.5);
+      g.fillStyle=hsla(h,s+22,lit?l+20:Math.max(5,l-9),1);
+      g.beginPath();g.moveTo(x,y-rz);g.lineTo(x+rz*0.9,y+rz*0.55);g.lineTo(x-rz*0.85,y+rz*0.5);g.closePath();g.fill();
+    }
+    if(fam===4||fam===6){ // ışıltı noktaları
+      for(let i=0;i<10+step*3;i++){
+        g.globalAlpha=A*(0.5+rnd()*0.5);g.fillStyle='rgba(255,255,255,.9)';
+        g.beginPath();g.arc(rnd()*W,rnd()*H,0.6+rnd()*1.1,0,Math.PI*2);g.fill();
+      }
+    }
+  } else if(fam===2){ // Okyanus — dalga çizgileri
+    g.lineWidth=1.4;
+    const rows=8+step;
+    for(let k=0;k<rows;k++){
+      const yb=(k+0.5)*H/rows,ph=rnd()*6.28;
+      g.globalAlpha=A*(0.5+rnd()*0.5);g.strokeStyle=hsla(h,58,52+rnd()*18,1);
+      g.beginPath();
+      for(let x=0;x<=W;x+=7){const y=yb+Math.sin(x*0.05+ph)*(3+step*0.3);x===0?g.moveTo(x,y):g.lineTo(x,y);}
+      g.stroke();
+    }
+  } else if(fam===3){ // Zümrüt — keskin kristal damarları (diyagonal)
+    g.lineWidth=1.2;
+    for(let i=0;i<10+step*2;i++){
+      let x=rnd()*W,y=rnd()*H;
+      g.globalAlpha=A*(0.4+rnd()*0.5);g.strokeStyle=hsla(h,55,60+rnd()*18,1);
+      g.beginPath();g.moveTo(x,y);
+      for(let k2=0;k2<4;k2++){x+=(rnd()*36-10);y+=(rnd()*26-6);g.lineTo(x,y);}
+      g.stroke();
+    }
+  } else if(fam===5){ // Altın — cilalı metal: çift diyagonal sheen + nokta filigran
+    for(const off of[0.30,0.62]){
+      const sg=g.createLinearGradient(0,0,W,H);
+      sg.addColorStop(Math.max(0,off-0.09),'rgba(255,255,255,0)');
+      sg.addColorStop(off,hsla(48,85,80,A*0.7));
+      sg.addColorStop(Math.min(1,off+0.09),'rgba(255,255,255,0)');
+      g.globalAlpha=1;g.fillStyle=sg;g.fillRect(0,0,W,H);
+    }
+    for(let i=0;i<16+step*4;i++){
+      g.globalAlpha=A*(0.4+rnd()*0.5);g.fillStyle=hsla(46,90,72,1);
+      g.beginPath();g.arc(rnd()*W,rnd()*H,0.8+rnd()*1.4,0,Math.PI*2);g.fill();
+    }
+  } else if(fam===7){ // Kor — közlenmiş yüzey: parlayan çatlak hatları
+    g.lineWidth=1.6;g.shadowColor=hsla(18,95,55,0.8);g.shadowBlur=4;
+    for(let i=0;i<6+step*2;i++){
+      let x=rnd()*W,y=rnd()*H;
+      g.globalAlpha=A*(0.55+rnd()*0.45);g.strokeStyle=hsla(16+rnd()*14,95,52+rnd()*12,1);
+      g.beginPath();g.moveTo(x,y);
+      for(let k2=0;k2<5;k2++){x+=(rnd()*30-15);y+=(rnd()*22-11);g.lineTo(x,y);}
+      g.stroke();
+    }
+    g.shadowBlur=0;
+  } else if(fam===8){ // Orman — ahşap damarı: dikey dalgalı çizgiler + budaklar
+    g.lineWidth=1.1;
+    for(let x=7;x<W;x+=4+rnd()*4){
+      const ph=rnd()*6.28;
+      g.globalAlpha=A*(0.35+rnd()*0.5);g.strokeStyle=hsla(h-90+rnd()*20,38,30+rnd()*16,1); // kahve tonları
+      g.beginPath();
+      for(let y=0;y<=H;y+=8){const xx=x+Math.sin(y*0.04+ph)*2.5;y===0?g.moveTo(xx,y):g.lineTo(xx,y);}
+      g.stroke();
+    }
+    for(let i=0;i<2+Math.floor(step/3);i++){ // budak halkaları
+      const bx=20+rnd()*(W-40),by=20+rnd()*(H-40);
+      for(let rr2=2;rr2<=8;rr2+=2.5){
+        g.globalAlpha=A*0.5;g.strokeStyle=hsla(28,35,26,1);g.lineWidth=1;
+        g.beginPath();g.ellipse(bx,by,rr2*1.3,rr2,rnd()*0.6,0,Math.PI*2);g.stroke();
+      }
+    }
+  } else if(fam===9){ // Fuşya — ipek/aurora şeritleri
+    for(let i=0;i<4+Math.floor(step/2);i++){
+      const off=rnd();
+      const sg=g.createLinearGradient(0,H,W,0);
+      sg.addColorStop(Math.max(0,off-0.12),'rgba(255,255,255,0)');
+      sg.addColorStop(off,hsla(h-20+rnd()*40,70,65,A*0.5));
+      sg.addColorStop(Math.min(1,off+0.12),'rgba(255,255,255,0)');
+      g.globalAlpha=1;g.fillStyle=sg;g.fillRect(0,0,W,H);
+    }
+  } else { // Gece — yıldız alanı + nebula lekeleri
+    for(let i=0;i<2+Math.floor(step/3);i++){
+      const nx=rnd()*W,ny=rnd()*H,nr=28+rnd()*40;
+      const ng=g.createRadialGradient(nx,ny,0,nx,ny,nr);
+      ng.addColorStop(0,hsla(h+rnd()*60-30,60,45,A*0.55));ng.addColorStop(1,'rgba(0,0,0,0)');
+      g.globalAlpha=1;g.fillStyle=ng;g.beginPath();g.arc(nx,ny,nr,0,Math.PI*2);g.fill();
+    }
+    for(let i=0;i<30+step*8;i++){
+      g.globalAlpha=0.25+rnd()*0.65;g.fillStyle=rnd()>0.85?hsla(48,90,80,1):'rgba(255,255,255,.9)';
+      g.beginPath();g.arc(rnd()*W,rnd()*H,0.5+rnd()*1.2,0,Math.PI*2);g.fill();
+    }
+  }
+  g.restore();g.globalAlpha=1;
+}
+
 // ── PREMIUM BOARD KATMANI — çerçeve + 64 çökük mücevher yuvası + vinyet.
 // Bir kez offscreen'e çizilir; her frame tek drawImage. Tasarım skor indeksinden gelir.
 const _BL_PAD=10;
@@ -3798,6 +3915,8 @@ function _buildBoardLayer(){
   bgr.addColorStop(1,hsla(h,s,Math.max(6,l-6),.96));
   rr(4,4,W-8,H-8,16);g.fillStyle=bgr;g.fill();
   g.restore();
+  // Malzeme dokusu: aileye özgü görsel tema (ahşap damarı / faset / dalga / çatlak / yıldız...)
+  _paintBoardMaterial(g,W,H,bd0);
   // Kenarlık: aile aksanı — üstte parlak, altta sönük (kademeyle güçlenir)
   const bdg=g.createLinearGradient(0,0,0,H);
   bdg.addColorStop(0,hsla(h,Math.min(90,s+25),62,acc));
