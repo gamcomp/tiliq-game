@@ -3177,6 +3177,8 @@ function _initFireGL(){
     if(!gl)return;
     const OCT=_FIRE_MOBILE?4:5;
     const vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+    // Referans konsept: yukarı süzülen dil adveksiyonu (alev altındaki çerçeveden beslenir),
+    // parlak sıcak çerçeve rim'i, arka planda süzülen kor tanecikleri, dışa taşan alevler.
     const fs='precision highp float;\n'+
 'uniform vec2 u_res;uniform float u_time;uniform float u_inten;uniform vec4 u_board;\n'+
 'float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}\n'+
@@ -3188,32 +3190,50 @@ function _initFireGL(){
 'void main(){\n'+
 ' vec2 px=vec2(gl_FragCoord.x,u_res.y-gl_FragCoord.y);\n'+
 ' vec2 bc=u_board.xy+u_board.zw*0.5,bh=u_board.zw*0.5;\n'+
-' float r=min(bh.x,bh.y)*0.12;\n'+
-' float d=sdRR(px-bc,bh,r);\n'+
+' float rr=min(bh.x,bh.y)*0.10;\n'+
 ' float inten=u_inten;\n'+
-' float outer=mix(8.0,115.0,inten),inner=mix(3.0,34.0,inten);\n'+
-' float band=smoothstep(outer,0.0,d)*smoothstep(-inner,5.0,d);\n'+
-' if(band<=0.002){discard;}\n'+
-' float t=u_time*2.3;\n'+
-' vec2 fp=vec2(px.x*0.027,px.y*0.010);\n'+                                        // guclu dikey esnetme: uzun dikey alev dilleri\n'+
-' vec2 warp=vec2(fbm(fp*1.9+vec2(0.0,-t*1.8)),fbm(fp*1.9+vec2(7.3,-t*1.5)));\n'+
-' vec2 sp=fp*1.15+warp*1.3+vec2(0.0,-t*2.5);\n'+                                   // hizli yukari akis\n'+
-' float n1=fbm(sp);\n'+
-' float n2=fbm(sp+vec2(0.0,0.55));\n'+                                            // biraz asagidan ornek -> yukari uzanan dil\n'+
-' float n3=fbm(sp+vec2(0.0,1.05));\n'+                                            // daha asagidan -> daha uzun dil\n'+
-' float n=max(n1,max(n2*0.9,n3*0.78));\n'+                                        // yukari dogru cekilmis alev\n'+
-' n=pow(n,1.55);\n'+
-' float flame=band*n*(0.95+1.05*inten);\n'+                                       // daha yogun\n'+
-' flame*=smoothstep(outer,-inner*0.5,d);\n'+
-' flame=smoothstep(0.11,0.92,flame);\n'+                                          // esik dustu -> daha dolu/yogun alev\n'+
-' if(flame<=0.01){discard;}\n'+
+' float t=u_time*2.1;\n'+
+' float d0=sdRR(px-bc,bh,rr);\n'+
 ' vec3 col=vec3(0.0);\n'+
-' col+=vec3(0.80,0.20,0.05)*smoothstep(0.02,0.32,flame);\n'+   // hafif kizil taban (azaltildi)\n'+
-' col+=vec3(1.0,0.48,0.09)*smoothstep(0.22,0.58,flame);\n'+
-' col+=vec3(1.0,0.84,0.34)*smoothstep(0.48,0.82,flame);\n'+
-' col+=vec3(1.0,0.98,0.90)*smoothstep(0.78,1.03,flame)*1.0;\n'+
-' float a=clamp(flame*1.4,0.0,1.0);\n'+
-' gl_FragColor=vec4(col*a,a);\n'+
+' vec2 q1=px*0.030+vec2(0.0,t*0.7);vec2 i1=floor(q1),g1=fract(q1)-0.5;float h1=hash(i1);\n'+
+' vec2 o1=(vec2(h1,fract(h1*57.3))-0.5)*0.8;\n'+
+' float e1=smoothstep(0.17,0.0,length(g1-o1))*step(0.76,h1)*(0.5+0.5*sin(t*3.0+h1*40.0));\n'+
+' vec2 q2=px*0.015+vec2(0.0,t*0.4);vec2 i2=floor(q2),g2=fract(q2)-0.5;float h2=hash(i2+7.7);\n'+
+' vec2 o2=(vec2(h2,fract(h2*39.7))-0.5)*0.8;\n'+
+' float e2=smoothstep(0.20,0.0,length(g2-o2))*step(0.80,h2)*(0.5+0.5*sin(t*2.2+h2*40.0));\n'+
+' float ember=(e1*0.9+e2*0.7)*inten;\n'+
+' col+=vec3(1.0,0.55,0.16)*ember;\n'+
+' float glow=exp(-abs(d0)/(24.0+62.0*inten))*(0.10+0.24*inten);\n'+
+' col+=vec3(1.0,0.32,0.05)*glow;\n'+
+' float H=mix(24.0,150.0,inten);\n'+
+' float outer=mix(7.0,24.0,inten);\n'+
+' float dA=sdRR(px-bc+vec2(0.0,H*0.5),bh,rr);\n'+
+' float dB=sdRR(px-bc+vec2(0.0,H),bh,rr);\n'+
+' float nr=min(abs(d0),min(abs(dA),abs(dB)));\n'+
+' float flame=0.0;\n'+
+' if(nr<outer+10.0){\n'+
+'  vec2 fp=vec2(px.x*0.026,px.y*0.012);\n'+
+'  vec2 warp=vec2(fbm(fp*1.9+vec2(0.0,-t*0.85)),fbm(fp*1.9+vec2(7.3,-t*0.7)));\n'+
+'  vec2 sp2=fp*1.2+warp*1.2+vec2(0.0,-t*1.15);\n'+
+'  float n1=fbm(sp2),n2=fbm(sp2+vec2(0.0,0.6)),n3=fbm(sp2+vec2(3.1,1.2));\n'+
+'  float s0=smoothstep(outer,0.0,abs(d0));\n'+
+'  float s1=smoothstep(outer,0.0,abs(dA));\n'+
+'  float s2=smoothstep(outer,0.0,abs(dB));\n'+
+'  flame=max(s0*n1,max(s1*n2*0.85,s2*n3*0.68));\n'+
+'  flame=pow(flame,1.35)*(1.15+1.0*inten);\n'+
+'  flame*=smoothstep(-mix(8.0,20.0,inten),4.0,d0);\n'+
+'  flame=smoothstep(0.10,0.85,flame);\n'+
+' }\n'+
+' float rim=smoothstep(mix(2.0,5.0,inten),0.0,abs(d0))*(0.72+0.28*sin(t*3.3+px.x*0.045+px.y*0.05));\n'+
+' col+=vec3(0.80,0.20,0.05)*smoothstep(0.02,0.30,flame);\n'+
+' col+=vec3(1.0,0.45,0.08)*smoothstep(0.20,0.55,flame);\n'+
+' col+=vec3(1.0,0.80,0.28)*smoothstep(0.45,0.80,flame);\n'+
+' col+=vec3(1.0,0.96,0.85)*smoothstep(0.75,1.02,flame);\n'+
+' col+=vec3(1.0,0.60,0.14)*rim*(0.55+0.65*inten);\n'+
+' col+=vec3(1.0,0.95,0.75)*rim*rim*inten;\n'+
+' float a=clamp(flame*1.35+rim*0.85+glow+ember,0.0,1.0);\n'+
+' if(a<=0.012){discard;}\n'+
+' gl_FragColor=vec4(col*min(a+0.15,1.0),a);\n'+
 '}';
     const sh=(ty,src)=>{const s=gl.createShader(ty);gl.shaderSource(s,src);gl.compileShader(s);
       if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){console.warn('fire sh',gl.getShaderInfoLog(s));return null;}return s;};
@@ -3230,10 +3250,13 @@ function _initFireGL(){
     _fireGL=gl;_fireProg=prog;_fireGLOK=true;_resizeFireGL();
   }catch(e){console.warn('fire GL init failed',e);_fireGLOK=false;}
 }
+// Ateş kanvası oyun kanvasından taşar → alevler board dışına/yukarısına uzanır (referans görünüm)
+const _FIRE_MX=70,_FIRE_MT=110,_FIRE_MB=40;
 function _resizeFireGL(){
   if(!_fireGLOK||!_fireCv)return;
-  _fireCv.width=canvas.width;_fireCv.height=canvas.height;
-  _fireCv.style.width=canvas.width+'px';_fireCv.style.height=canvas.height+'px';
+  _fireCv.width=canvas.width+_FIRE_MX*2;_fireCv.height=canvas.height+_FIRE_MT+_FIRE_MB;
+  _fireCv.style.width=_fireCv.width+'px';_fireCv.style.height=_fireCv.height+'px';
+  _fireCv.style.left=(-_FIRE_MX)+'px';_fireCv.style.top=(-_FIRE_MT)+'px';
   _fireGL.viewport(0,0,_fireCv.width,_fireCv.height);
 }
 function _renderFireGL(now){
@@ -3246,7 +3269,7 @@ function _renderFireGL(now){
   gl.uniform2f(_fireU.res,_fireCv.width,_fireCv.height);
   gl.uniform1f(_fireU.time,now*0.001);
   gl.uniform1f(_fireU.inten,inten);
-  const gs=CELL*GRID;gl.uniform4f(_fireU.board,GOX(),GOY,gs,gs);
+  const gs=CELL*GRID;gl.uniform4f(_fireU.board,GOX()+_FIRE_MX,GOY+_FIRE_MT,gs,gs); // board konumu, taşmalı kanvas uzayında
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
 _initFireGL(); // WebGL ateşini başlat (başarısızsa partikül fallback)
