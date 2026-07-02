@@ -287,7 +287,9 @@ body::after{
 #undo-btn:not(:disabled){background:rgba(86,207,225,.1);}
 
 #game-container{position:relative;flex-shrink:0;}
-#gameCanvas{display:block;cursor:pointer;}
+#gameCanvas{display:block;cursor:pointer;transition:box-shadow .35s ease;}
+#gameCanvas.combo-inferno{animation:comboPulse .3s infinite alternate;}
+@keyframes comboPulse{from{box-shadow:0 0 60px #ffaa00,0 0 120px #ff2200;}to{box-shadow:0 0 100px #ffcc00,0 0 190px #ff0000;}}
 
 @keyframes shake{0%{transform:translateX(0)}10%{transform:translateX(-9px) rotate(-.5deg)}22%{transform:translateX(8px) rotate(.4deg)}35%{transform:translateX(-7px) rotate(-.3deg)}50%{transform:translateX(6px)}65%{transform:translateX(-4px)}80%{transform:translateX(3px)}100%{transform:translateX(0)}}
 @keyframes shakeBig{0%{transform:translateX(0) scale(1)}8%{transform:translateX(-14px) scale(1.01) rotate(-.8deg)}18%{transform:translateX(12px) scale(.99) rotate(.6deg)}30%{transform:translateX(-10px) rotate(-.4deg)}44%{transform:translateX(8px)}58%{transform:translateX(-6px)}72%{transform:translateX(4px)}86%{transform:translateX(-2px)}100%{transform:translateX(0) scale(1)}}
@@ -2887,6 +2889,7 @@ function startGame(){
   initGrid();genPieces();
   score=0;combo=0;dead=false;
   floats=[];flashes=[];bounce=null;sparks=[];shockwaves=[];celebs=[];flames=[];
+  _fire.count=0;_fire.speed=0;_fire.scale=0;_applyBoardGlow(0); // alev/glow sıfırla
   selPiece=null;undoState=null;
   rescueUsed=false;
   _r2adWatched=0;_r2adUsedThisGame=false;_rescueShownThisGame=false;
@@ -3079,8 +3082,36 @@ function spawnFlame(cx,cy,comboLevel){
   }
 }
 
-// Yumuşak alev sprite'ları — bir kez üretilir, additive çizilince gerçek ateş olur.
-// Beyaz yerine sıcak turuncu tonlar (mat, doğal ateş; göz almayan)
+// ── COMBO ALEV SİSTEMİ (kademeli, smooth, particle pool) ──────────────────────
+// Mobilde partikül sayısı yarıya iner (perf).
+const _FIRE_MOBILE = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent)
+  || (window.matchMedia && matchMedia('(pointer:coarse)').matches);
+
+// Particle pool — ölü alev objeleri yeniden kullanılır (yeni obje yaratılmaz)
+const _flamePool=[];
+function _pf(x,y,vx,vy,size,hue,decay){
+  let f=_flamePool.pop(); if(!f)f={};
+  f.x=x;f.y=y;f.vx=vx;f.vy=vy;f.size=size;f.hue=hue;
+  f.a=1;f.life=1;f.decay=decay;
+  f.wobble=Math.random()*Math.PI*2;f.wobbleSpeed=.13+Math.random()*.07;
+  flames.push(f);
+}
+
+// Combo → hedef alev parametreleri (referans Meshy kademeleri)
+//  0: yok | 1-2: 20/spd1/0.3 | 3-4: 60/spd2/0.6 | 5-9: 120/spd3/0.85 | 10+: 200/spd4/1.0+flash
+function _fireTargets(cb){
+  let t;
+  if(cb<=0)      t={count:0,  speed:0, scale:0,   tier:0};
+  else if(cb<=2) t={count:20, speed:1, scale:0.3, tier:1};
+  else if(cb<=4) t={count:60, speed:2, scale:0.6, tier:2};
+  else if(cb<=9) t={count:120,speed:3, scale:0.85,tier:3};
+  else           t={count:200,speed:4, scale:1.0, tier:4};
+  if(_FIRE_MOBILE) t.count=Math.round(t.count*0.5); // mobilde yarı partikül
+  return t;
+}
+// Eased (smooth geçiş) mevcut değerler + hedef tier
+let _fire={count:0,speed:0,scale:0}, _fireTier=0, _fireCap=_FIRE_MOBILE?120:220;
+
 let _flameSprites=null;
 function _buildFlameSprites(){
   const specs=[
@@ -3102,90 +3133,121 @@ function drawFlames(now){
   if(!_flameSprites)_buildFlameSprites();
   ctx.save();
   ctx.globalCompositeOperation='lighter';   // additive → üst üste binince ateş
-  flames=flames.filter(f=>{
+  // In-place compaction: ölü alevleri pool'a geri ver, yeni dizi yaratma
+  let w=0;
+  for(let i=0;i<flames.length;i++){
+    const f=flames[i];
     f.life-=f.decay;
-    if(f.life<=0)return false;
+    if(f.life<=0){_flamePool.push(f);continue;}
     f.x+=f.vx;f.y+=f.vy;
     f.vy-=.05;                                    // yukarı ivme
     f.vx+=Math.sin(f.wobble)*0.09;f.wobble+=f.wobbleSpeed; // türbülans
     f.size*=.965;
     const s=f.size*f.life;
-    if(s<1)return false;
+    if(s<1){_flamePool.push(f);continue;}
     const lf=f.life;
     const hue=f.hue!==undefined?f.hue:24;
     // Ömre + tona göre sprite: taze/sarı → yaşlı/kızıl
     const spi=(lf>0.6? (hue<20?1:0) : (hue<24?2:1));
     const sp=_flameSprites[spi];
-    // Alev dili: uzun, dikey, yukarı kayık — daha canlı
-    const w=s*1.65, h=s*3.8;                      // daha uzun alev
+    // Alev dili: uzun, dikey, yukarı kayık
+    const wd=s*1.65, hh=s*3.8;
     ctx.globalAlpha=lf*0.62;                      // canlı ama gözü almayan
-    ctx.drawImage(sp, f.x-w/2, f.y-h*0.66, w, h);
-    return true;
-  });
+    ctx.drawImage(sp, f.x-wd/2, f.y-hh*0.66, wd, hh);
+    flames[w++]=f;
+  }
+  flames.length=w;
   ctx.restore();
   ctx.globalAlpha=1;
 }
 
-// Grid çerçevesinden yükselen alev — combo aktifken 4 kenardan içe/dışa alevlenir
+// Grid çerçevesinden yükselen alev — combo kademesine göre 4 kenardan alevlenir
 let _cellFireT=0;
+// Tier değişince canvas box-shadow glow'unu güncelle (her frame değil → repaint az)
+function _applyBoardGlow(tier){
+  if(tier===_lastGlowTier)return; _lastGlowTier=tier;
+  const cv=canvas;
+  if(tier>=4){ cv.style.boxShadow='0 0 80px #ffaa00, 0 0 160px #ff0000'; cv.classList.add('combo-inferno'); }
+  else if(tier>=3){ cv.style.boxShadow='0 0 50px #ff6600, 0 0 100px #ff0000'; cv.classList.remove('combo-inferno'); }
+  else if(tier>=2){ cv.style.boxShadow='0 0 30px #ff6600, 0 0 60px #ff3300'; cv.classList.remove('combo-inferno'); }
+  else { cv.style.boxShadow='none'; cv.classList.remove('combo-inferno'); }
+}
+let _lastGlowTier=-1;
+
 function _drawCellFire(gx,gy,now){
-  if(combo<2||comboTimeLeft<=0)return;
-  const intensity=Math.min(combo,8);
-  const timerPct=comboTimeLeft/COMBO_DURATION;
-  const gs=CELL*GRID; // grid boyutu
+  const timerPct=comboTimeLeft>0?comboTimeLeft/COMBO_DURATION:0;
+  // Hedef parametreler (combo bittiğinde 0'a doğru smooth söner)
+  const tg=(combo>=1&&comboTimeLeft>0)?_fireTargets(combo):{count:0,speed:0,scale:0,tier:0};
+  const targetCount=tg.count*(timerPct*0.4+0.6); // süre azalınca yoğunluk düşer
+  // Smooth geçiş (easing)
+  _fire.count += (targetCount-_fire.count)*0.10;
+  _fire.speed += (tg.speed-_fire.speed)*0.10;
+  _fire.scale += (tg.scale-_fire.scale)*0.10;
+  _fireTier = tg.tier;
+  _applyBoardGlow(tg.tier);
 
-  // Her ~55ms'de yeni alev parçacıkları üret
-  if(now-_cellFireT>55){
+  if(_fire.count<1 && !flames.length) return;
+  const gs=CELL*GRID;
+  const spd=_fire.speed, scl=_fire.scale, tier=Math.max(1,Math.round(_fire.scale*4)||1);
+
+  // Her ~33ms'de hedef sayıya kadar doldur (60fps'e yakın, dozlu spawn)
+  if(now-_cellFireT>33){
     _cellFireT=now;
-    const count=4+intensity*2; // combo arttıkça daha yoğun
-    const speed=(1.4+intensity*.25)*(timerPct*.35+.65);
-
-    const _flame=(ex,ey,vx,vy)=>{
+    const active=flames.length;
+    let need=Math.min(Math.round(_fire.count)-active, 24); // frame başına max 24 spawn
+    if(active>=_fireCap) need=0;
+    for(let i=0;i<need;i++){
+      // Hue: tier arttıkça kızıla kayar (dış #ff2200 → iç #ffcc00)
       const t=Math.random();
-      const hue=intensity>=6?Math.round(t*18):intensity>=4?Math.round(14+t*20):Math.round(34+t*16);
-      flames.push({
-        x:ex,y:ey,vx,vy,
-        size:(5+Math.random()*7)*(0.75+intensity*.07),
-        hue,a:1,life:1,
-        decay:.028+Math.random()*.022,
-        wobble:Math.random()*Math.PI*2,wobbleSpeed:.13+Math.random()*.07
-      });
-    };
-
-    for(let i=0;i<count;i++){
-      const t=Math.random();
-      // Alt kenar → yukarı
-      _flame(gx+t*gs, gy+gs, (Math.random()-.5)*1.2, -(speed+Math.random()*speed*.6));
-      // Üst kenar → aşağı (daha az yoğun)
-      if(intensity>=4)
-        _flame(gx+Math.random()*gs, gy, (Math.random()-.5)*1.2, speed*.5+Math.random()*speed*.4);
-      // Sol kenar → sağa
-      _flame(gx, gy+Math.random()*gs, speed*.55+Math.random()*.6, (Math.random()-.5)*1.2);
-      // Sağ kenar → sola
-      _flame(gx+gs, gy+Math.random()*gs, -(speed*.55+Math.random()*.6), (Math.random()-.5)*1.2);
+      const hue = tier>=4 ? Math.round(t*16) : tier>=3 ? Math.round(10+t*22) : Math.round(30+t*18);
+      const size=(4+Math.random()*7)*(0.45+scl*0.95);
+      const decay=.028+Math.random()*.02;
+      const sp=(spd*0.9+Math.random()*spd*0.7)||0.6;
+      // Kenar seçimi: alt her zaman; tier>=2 → sol/sağ; tier>=2 → üst; düşük tier köşeler
+      const edge = (tier<=1) ? (Math.random()<0.7?0:(Math.random()<0.5?1:2))   // alt ağırlıklı + köşe
+                             : Math.floor(Math.random()*4);
+      if(edge===0)      _pf(gx+Math.random()*gs, gy+gs, (Math.random()-.5)*1.3, -sp, size, hue, decay);        // alt → yukarı
+      else if(edge===1) _pf(gx, gy+Math.random()*gs, sp*0.8+Math.random()*0.6, (Math.random()-.5)*1.3, size, hue, decay); // sol → sağ
+      else if(edge===2) _pf(gx+gs, gy+Math.random()*gs, -(sp*0.8+Math.random()*0.6), (Math.random()-.5)*1.3, size, hue, decay); // sağ → sol
+      else              _pf(gx+Math.random()*gs, gy, (Math.random()-.5)*1.3, sp*0.55, size, hue, decay);       // üst → aşağı
     }
-    // Yükselen korlar (ember) — yüksek combo'da alevden kıvılcım yükselir
-    if(intensity>=4 && sparks.length<80){
-      const en=Math.min(2,intensity-3);
+    // Kıvılcım yağmuru — tier>=3 yükselen korlar, tier>=4 yoğun beyaz-altın
+    if(tier>=3 && sparks.length<78){
+      const en=tier>=4?4:2;
       for(let i=0;i<en;i++){
         const ex=gx+Math.random()*gs;
-        sparks.push({x:ex,y:gy+gs-2,vx:(Math.random()-.5)*.9,vy:-(1.4+Math.random()*2.2),
-          a:1,c:i%2?'#FFD27A':'#FF8A3D',sz:1.4+Math.random()*1.6,type:'ember',fade:.018});
+        sparks.push({x:ex,y:gy+gs-2,vx:(Math.random()-.5)*1.1,vy:-(1.6+Math.random()*(tier>=4?3.4:2.4)),
+          a:1,c:tier>=4&&i%3===0?'#ffffff':(i%2?'#ffcc00':'#ff6600'),sz:1.4+Math.random()*1.7,type:'ember',fade:.017});
       }
     }
   }
 
-  // Grid çerçevesine kor/glow — organik titreme (flicker) + additive katmanlı
-  const flick=0.80+Math.sin(now*0.013)*0.11+Math.sin(now*0.033)*0.06; // titrek kor
-  const glowA=(0.5+intensity*.055)*timerPct*flick;
-  const gh=intensity>=6?6:intensity>=3?26:44; // ateş tonu (kırmızı→sarı)
+  // Grid çerçevesine kor/glow — kademeli, titrek (flicker) + additive katmanlı
+  if(tg.tier>=1){
+    const flick=0.80+Math.sin(now*0.013)*0.11+Math.sin(now*0.033)*0.06;
+    const pulse=tg.tier>=4?(0.85+Math.sin(now*0.02)*0.15):1; // inferno nabız
+    const glowA=(0.28+scl*0.5)*timerPct*flick*pulse;
+    const gh=tier>=4?4:tier>=3?18:34; // dış ton (#ff2200→#ffcc00)
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    const rr=(pad)=>{ctx.beginPath();ctx.roundRect?ctx.roundRect(gx-pad,gy-pad,gs+pad*2,gs+pad*2,18):ctx.rect(gx-pad,gy-pad,gs+pad*2,gs+pad*2);ctx.stroke();};
+    ctx.globalAlpha=glowA*0.5;ctx.strokeStyle=`hsl(${gh},100%,45%)`;ctx.lineWidth=8+scl*14;rr(6);
+    ctx.globalAlpha=glowA;ctx.strokeStyle=`hsl(${gh+16},100%,66%)`;ctx.lineWidth=3+scl*5;rr(3);
+    ctx.restore();ctx.globalAlpha=1;
+  }
+}
+
+// Combo 10+ → tüm ekrana beyaz-altın flash (inferno). En üstte, hafif nabızlı.
+function _drawInfernoFlash(now){
+  const p=0.07+0.05*Math.abs(Math.sin(now*0.02));
   ctx.save();
   ctx.globalCompositeOperation='lighter';
-  const rr=(pad)=>{ctx.beginPath();ctx.roundRect?ctx.roundRect(gx-pad,gy-pad,gs+pad*2,gs+pad*2,18):ctx.rect(gx-pad,gy-pad,gs+pad*2,gs+pad*2);ctx.stroke();};
-  // dış yumuşak hale
-  ctx.globalAlpha=glowA*0.5;ctx.strokeStyle=`hsl(${gh},100%,45%)`;ctx.lineWidth=8+intensity*.8;rr(6);
-  // iç parlak kor
-  ctx.globalAlpha=glowA;ctx.strokeStyle=`hsl(${gh+14},100%,66%)`;ctx.lineWidth=3+intensity*.4;rr(3);
+  const cx=canvas.width/2, cy=GOY+CELL*GRID/2, R=Math.max(canvas.width,canvas.height)*0.75;
+  const grd=ctx.createRadialGradient(cx,cy,R*0.25,cx,cy,R);
+  grd.addColorStop(0,`rgba(255,240,190,${p})`);
+  grd.addColorStop(0.5,`rgba(255,150,40,${p*0.5})`);
+  grd.addColorStop(1,'rgba(255,80,0,0)');
+  ctx.fillStyle=grd;ctx.fillRect(0,0,canvas.width,canvas.height);
   ctx.restore();ctx.globalAlpha=1;
 }
 
@@ -3761,9 +3823,10 @@ function draw(){
   if(shockwaves.length>12)shockwaves.splice(0,shockwaves.length-12);
   if(floats.length>10)floats.splice(0,floats.length-10);
   if(celebs.length>3)celebs.splice(0,celebs.length-3);
-  if(flames.length>60)flames.splice(0,flames.length-60);
+  if(flames.length>_fireCap)flames.splice(0,flames.length-_fireCap);
   tickComboTimer(now);
   drawShockwaves();drawSparks();drawFlames(now);drawBoard(now);drawDrag();drawTray();drawFloats();drawCelebrations(now);
+  if(combo>=10&&comboTimeLeft>0)_drawInfernoFlash(now); // inferno: en üstte beyaz-altın flash
 }
 
 let _rafId=null;
