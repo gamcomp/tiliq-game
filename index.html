@@ -3369,7 +3369,7 @@ function _compileFireProgram(gl,OCT){
 ' float n2=fbm(fp*2.4+warp*1.4+vec2(3.7,-t*2.9));\n'+          // ic filaman detayi (derinlik)
 ' n=pow(n,1.55)*(0.72+0.55*n2);\n'+
 // Dil ayrismasi: kenar boyunca yukari kayan sicak noktalar -> referanstaki gibi ayrik alev dilleri
-' float tng=0.35+1.05*noise(vec2(px.y*0.045,t*0.55));\n'+
+' float tng=0.35+1.05*noise(vec2((px.x+px.y)*0.032,t*0.55));\n'+  // x+y: sol/sag VE ust/alt kenarda da dil ayrismasi calisir
 ' float flame=band*n*tng*(0.62+0.95*inten);\n'+
 ' flame*=smoothstep(outer,-inner*0.5,d);\n'+
 ' flame=smoothstep(0.20,0.95,flame);\n'+          // zayif alanlari at: kirmizi taban/pus kalksin, sadece belirgin alev dilleri kalsin\n'+
@@ -3443,13 +3443,12 @@ _initFireGL(); // WebGL ateşini başlat (başarısızsa partikül fallback)
 // Grid çerçevesinden yükselen alev — combo kademesine göre 4 kenardan alevlenir
 let _cellFireT=0;
 // Tier değişince canvas box-shadow glow'unu güncelle (her frame değil → repaint az)
+// Düz kızıl box-shadow kaldırıldı (kullanıcı isteği, 2026-07-04) — gerçek alev
+// shader'ı (4 kenar) zaten kendi ışıltısını taşıyor, üstüne düz renk bulanıklığı
+// eklemek üst/altta "kırmızılık" gibi görünüyordu. Sadece tier>=4 pulse kalıyor.
 function _applyBoardGlow(tier){
   if(tier===_lastGlowTier)return; _lastGlowTier=tier;
-  const cv=canvas;
-  if(tier>=4){ cv.style.boxShadow='0 0 80px #ffaa00, 0 0 160px #ff0000'; cv.classList.add('combo-inferno'); }
-  else if(tier>=3){ cv.style.boxShadow='0 0 50px #ff6600, 0 0 100px #ff0000'; cv.classList.remove('combo-inferno'); }
-  else if(tier>=2){ cv.style.boxShadow='0 0 30px #ff6600, 0 0 60px #ff3300'; cv.classList.remove('combo-inferno'); }
-  else { cv.style.boxShadow='none'; cv.classList.remove('combo-inferno'); }
+  canvas.classList.toggle('combo-inferno',tier>=4);
 }
 let _lastGlowTier=-1;
 
