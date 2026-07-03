@@ -1156,6 +1156,17 @@ input[type="text"]::placeholder{color:var(--dim);}
   </div>
 </div>
 
+<!-- ALEV TEMASI BÜYÜK ÖNİZLEME -->
+<div id="modal-flame-preview" class="modal" style="z-index:300" onclick="if(event.target===this)closeFlamePreview()">
+  <div class="modal-card" style="max-width:300px;border-radius:24px;align-items:center;text-align:center;padding:20px 20px 22px">
+    <canvas id="flame-prev-big" width="224" height="256" style="width:190px;height:217px;border-radius:14px;margin-bottom:12px"></canvas>
+    <div id="fp-big-name" style="font-size:17px;font-weight:800;margin-bottom:4px"></div>
+    <div id="fp-big-desc" style="font-size:12px;color:var(--dim);margin-bottom:16px"></div>
+    <button id="fp-big-btn" class="btn-play" style="width:100%;font-size:15px;padding:13px" onclick="fpBigAction()"></button>
+    <button class="btn-secondary" style="width:100%;margin-top:8px" onclick="closeFlamePreview()" data-t="close">Kapat</button>
+  </div>
+</div>
+
 <!-- LEADERBOARD -->
 <div id="lb-panel" onclick="bgClick(event)">
   <div id="lb-card">
@@ -3425,7 +3436,7 @@ function _resizeFireGL(){
 }
 function _renderFireGL(now){
   if(!_fireGLOK)return;
-  const inten=Math.max(0,Math.min(1,_fire.scale)); // tier'lere göre eased yoğunluk
+  const inten=Math.max(0,Math.min(1,_fire.scale))*1.3; // tier'lere göre eased yoğunluk + %30 boost (kullanıcı isteği, 2026-07-04)
   if(inten<0.01){ if(_fireCv.style.opacity!=='0')_fireCv.style.opacity='0'; return; }
   if(_fireCv.style.opacity!=='1')_fireCv.style.opacity='1';
   const gl=_fireGL;
@@ -5063,13 +5074,45 @@ function flameCard(f){
   const badgeCls=active?'active-b':'free';
   const btnTxt=active?t('btnActive'):owned?t('btnApply'):'🪙 '+f.coins;
   const btnCls=active?'active-btn':owned?'owned-btn':'';
-  return`<div class="theme-card${active?' active':''}${!owned?' locked':''}" onclick="storeFlameClick('${f.id}')">
+  return`<div class="theme-card${active?' active':''}${!owned?' locked':''}" onclick="openFlamePreview('${f.id}')">
     ${badgeTxt?`<span class="theme-card-badge ${badgeCls}">${badgeTxt}</span>`:''}
     <canvas class="flame-prev" id="fprev-${f.id}" width="112" height="128" data-flame="${f.id}"></canvas>
     <div class="theme-card-name">${f.name}</div>
     <div class="theme-card-price" style="color:var(--dim);font-size:10px">${f.desc}</div>
     <button class="theme-card-btn ${btnCls}" onclick="event.stopPropagation();storeFlameClick('${f.id}')">${btnTxt}</button>
   </div>`;
+}
+
+// Karta tıklayınca büyük, canlı önizleme aç (satın alma değil — sadece vitrin)
+let _fpBigId=null,_fpBigRaf=null,_fpBigT0=0;
+function openFlamePreview(id){
+  const f=FLAME_THEMES.find(x=>x.id===id); if(!f)return;
+  _fpBigId=id;
+  const owned=tmOwns(id)||f.coins===0, active=activeFlameId===id;
+  document.getElementById('fp-big-name').textContent=f.emoji+' '+f.name;
+  document.getElementById('fp-big-desc').textContent=f.desc;
+  const btn=document.getElementById('fp-big-btn');
+  btn.textContent=active?t('btnActive'):owned?t('btnApply'):'🪙 '+f.coins;
+  btn.style.opacity=active?'.6':'1';
+  btn.style.pointerEvents=active?'none':'';
+  document.getElementById('modal-flame-preview').classList.add('active');
+  _initFlamePreviewGL();
+  if(_fpBigRaf)cancelAnimationFrame(_fpBigRaf);
+  _fpBigT0=performance.now();
+  const cv=document.getElementById('flame-prev-big');
+  (function frame(now){
+    const t=(now-_fpBigT0)/1000;
+    if(_fpGL) _renderFlameThemeToCanvas(cv,f,t);
+    else _drawFlameFallback(cv,f);
+    _fpBigRaf=requestAnimationFrame(frame);
+  })(performance.now());
+}
+function closeFlamePreview(){
+  document.getElementById('modal-flame-preview').classList.remove('active');
+  if(_fpBigRaf){cancelAnimationFrame(_fpBigRaf);_fpBigRaf=null;}
+}
+function fpBigAction(){
+  if(_fpBigId){storeFlameClick(_fpBigId);closeFlamePreview();}
 }
 
 // ── ALEV ÖNİZLEME (mağaza kartları) — GERÇEK oyun shader'ı, gerçek combo görünümü ──
@@ -5080,7 +5123,7 @@ function _initFlamePreviewGL(){
   if(_fpGL!==null)return; // bir kere dene (başarısızsa null yerine false koy, tekrar denemesin)
   try{
     const cv=document.createElement('canvas');
-    cv.width=112;cv.height=128;
+    cv.width=224;cv.height=256; // büyük önizleme modalında da net görünsün diye yüksek çözünürlük
     const gl=cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false})
           || cv.getContext('experimental-webgl',{alpha:true,premultipliedAlpha:true});
     if(!gl){_fpGL=false;return;}
@@ -5097,8 +5140,8 @@ function _renderFlameThemeToCanvas(dstCanvas,theme,t){
   gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
   gl.uniform2f(u.res,cv.width,cv.height);
   gl.uniform1f(u.time,t);
-  gl.uniform1f(u.inten,0.9); // sabit canlı yoğunluk — vitrin niyetiyle
-  const m=14; // kenar payı — alev dilleri canvas içinde görünsün
+  gl.uniform1f(u.inten,1.25); // sabit yüksek yoğunluk — vitrin niyetiyle (kullanıcı isteği, 2026-07-04)
+  const m=28; // kenar payı — alev dilleri canvas içinde görünsün
   gl.uniform4f(u.board,m,m,cv.width-m*2,cv.height-m*2);
   const g4=theme.gl;
   gl.uniform3f(u.f1,g4[0][0],g4[0][1],g4[0][2]);
