@@ -487,11 +487,11 @@ input[type="text"]::placeholder{color:var(--dim);}
 #lb-head{padding:14px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--divider);flex-shrink:0;}
 #lb-head h3{font-size:16px;font-weight:800;background:linear-gradient(135deg,#FFD93D,#FF9F43);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 #lb-close{background:var(--glass);border:1px solid var(--gb);border-radius:50%;width:30px;height:30px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);}
-#my-banner{margin:10px 14px 0;background:linear-gradient(135deg,rgba(124,77,255,.2),rgba(224,64,251,.15));border:1px solid rgba(124,77,255,.3);border-radius:11px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+#my-banner,#my-banner-ta{margin:10px 14px 0;background:linear-gradient(135deg,rgba(124,77,255,.2),rgba(224,64,251,.15));border:1px solid rgba(124,77,255,.3);border-radius:11px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 #my-banner .rank-n{font-size:22px;font-weight:900;color:#FFD93D;}
 #my-banner .rank-lbl{font-size:9px;color:var(--dim);}
 #my-banner .rank-sc{font-size:15px;font-weight:800;}
-#lb-list{overflow-y:auto;flex:1;padding:7px 14px 26px;}
+#lb-list,#lb-list-ta{overflow-y:auto;flex:1;padding:7px 14px 26px;}
 #lb-list::-webkit-scrollbar{width:3px;}
 #lb-list::-webkit-scrollbar-thumb{background:var(--dim2);border-radius:2px;}
 .lb-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:13px;margin-bottom:4px;
@@ -820,6 +820,7 @@ input[type="text"]::placeholder{color:var(--dim);}
 
     <!-- Ana CTA -->
     <button class="btn-play" onclick="onPlayPressed()"><span class="play-ico">▶</span><span data-t="play">Oyna</span></button>
+    <button class="btn-secondary" style="width:100%;max-width:340px" onclick="startNewGame('timeattack')" data-t="timeAttack">⏱ Zaman Yarışı</button>
 
   </div><!-- /menu-scroll -->
 
@@ -864,6 +865,7 @@ input[type="text"]::placeholder{color:var(--dim);}
   <div id="header">
     <button class="btn-icon" onclick="backToMenu()">‹</button>
     <div id="title" data-t="appName">Tiliq</div>
+    <div class="chip" id="ta-timer-chip" style="display:none"><div class="chip-lbl" data-t="time">Süre</div><div class="chip-val" id="taTimerDisplay">60</div></div>
     <div class="chip"><div class="chip-lbl" data-t="score">Skor</div><div class="chip-val" id="scoreDisplay">0</div></div>
     <div class="chip"><div class="chip-lbl" data-t="best">En İyi</div><div class="chip-val" id="bestDisplay">0</div></div>
     <div class="chip combo-chip-wrap" id="combo-chip">
@@ -1164,6 +1166,7 @@ input[type="text"]::placeholder{color:var(--dim);}
     <!-- TABS -->
     <div class="lb-tabs">
       <button class="lb-tab active" data-tab="global" data-t="tabGlobal" onclick="setLBTab('global')">🌍 World</button>
+      <button class="lb-tab" data-tab="timeattack" data-t="tabTimeAttack" onclick="setLBTab('timeattack')">⏱ Time</button>
       <button class="lb-tab" data-tab="friends" data-t="tabFriends" onclick="setLBTab('friends')">👥 Friends</button>
     </div>
 
@@ -1174,6 +1177,15 @@ input[type="text"]::placeholder{color:var(--dim);}
         <div style="text-align:right"><div class="rank-lbl" data-t="yourScoreLb">Skorun</div><div class="rank-sc" id="my-score-lb">0</div></div>
       </div>
       <div id="lb-list"></div>
+    </div>
+
+    <!-- ZAMAN YARIŞI TAB -->
+    <div class="lb-tab-body" data-tab="timeattack">
+      <div id="my-banner-ta">
+        <div><div class="rank-lbl" data-t="yourRank">Sıran</div><div class="rank-n" id="my-rank-ta">#--</div></div>
+        <div style="text-align:right"><div class="rank-lbl" data-t="yourScoreLb">Skorun</div><div class="rank-sc" id="my-score-lb-ta">0</div></div>
+      </div>
+      <div id="lb-list-ta"></div>
     </div>
 
     <!-- FRIENDS TAB -->
@@ -1202,11 +1214,11 @@ input[type="text"]::placeholder{color:var(--dim);}
 <script>
 // ── TRANSLATIONS ─────────────────────────────────────────────────────────────
 const T={
-TR:{appName:'Tiliq',play:'Oyna',settings:'Ayarlar',account:'Hesap',leaderboard:'Sıralama',score:'Skor',best:'En İyi',combo:'Kombo',sound:'Ses',volume:'Ses Seviyesi',haptic:'Titreşim',theme:'Tema',dark:'Koyu',light:'Açık',language:'Dil',save:'Kaydet',close:'Kapat',back:'Geri',gameOver:'Oyun Bitti!',playAgain:'Tekrar Oyna',mainMenu:'Ana Menü',yourScore:'Skorun',worldRank:'Dünya Sıralaması',newRecord:'🎉 Yeni Rekor!',profile:'Profil',username:'Kullanıcı Adı',highScore:'En Yüksek',gamesPlayed:'Oyun',totalPoints:'Toplam',worldBoard:'🌍 Dünya Sıralaması',yourRank:'Sıran',yourScoreLb:'Skorun',guest:'Misafir',days:'Gün',undo:'Geri Al',bomb:'Bomba',rescue:'Kurtarma',
+TR:{appName:'Tiliq',play:'Oyna',timeAttack:'⏱ Zaman Yarışı',time:'Süre',timeUp:'Süre Doldu!',settings:'Ayarlar',account:'Hesap',leaderboard:'Sıralama',score:'Skor',best:'En İyi',combo:'Kombo',sound:'Ses',volume:'Ses Seviyesi',haptic:'Titreşim',theme:'Tema',dark:'Koyu',light:'Açık',language:'Dil',save:'Kaydet',close:'Kapat',back:'Geri',gameOver:'Oyun Bitti!',playAgain:'Tekrar Oyna',mainMenu:'Ana Menü',yourScore:'Skorun',worldRank:'Dünya Sıralaması',newRecord:'🎉 Yeni Rekor!',profile:'Profil',username:'Kullanıcı Adı',highScore:'En Yüksek',gamesPlayed:'Oyun',totalPoints:'Toplam',worldBoard:'🌍 Dünya Sıralaması',yourRank:'Sıran',yourScoreLb:'Skorun',guest:'Misafir',days:'Gün',undo:'Geri Al',bomb:'Bomba',rescue:'Kurtarma',
 m_combos:'5 Kombo Al',m_rows:'5 Satır Temizle',m_score:'500 Puan Kazan',dailyMissions:'Günlük Görevler',
 store:'Mağaza',continueGame:'Devam Et',editProfile:'Profili Düzenle →',comboExpired:'Kombo Bitti',dailyClaimed:'BUGÜN TOPLANDΙ',dailyRefresh:'Yarın yenilenir',dailyCollect:'Topla!',iapSoon:'Satın alma yakında aktif olacak!',iapSuccess:'Satın alma başarılı!',restored:'Satın almalar geri yüklendi.',copyCode:'Kopyala',codeCopied:'Kopyalandı!',yourCode:'Oyuncu Kodun',codeShare:'Bu kodu arkadaşlarına ver',friendsTitle:'Arkadaşlarım',addFriend:'Arkadaş Ekle',enterName:'Sıralamada görünmek için adın ne?',namePh:'Takma adın...',rescue2ad:'2 kısa reklam izle, devam et',superBomb:'Süper Bomba',tileTheme:'Karo Teması',loginForRank:'Sıralama için giriş yap',loginForFriends:'Arkadaşların için Google ile giriş yap',friendCodePh:'ABC123',friendCodeLbl:'Oyuncu Kodun',friendCodeSub:'Bu kodu arkadaşlarına ver 👇',rankTitle:'🏆 Sıralama',
 tabThemes:'🎨 Temalar',tabPower:'⚡ Güçler',tabVip:'👑 VIP',
-tabGlobal:'🌍 Dünya',tabFriends:'👥 Arkadaşlar',lbShare:'Paylaş',lbMyCode:'Kodun',lbAmongFriends:'Arkadaşlar Arasında',
+tabGlobal:'🌍 Dünya',tabTimeAttack:'⏱ Süre',tabFriends:'👥 Arkadaşlar',lbShare:'Paylaş',lbMyCode:'Kodun',lbAmongFriends:'Arkadaşlar Arasında',
 statLast:'Son Skor',statGames:'Oyun',statBest:'En İyi',statStreak:'Seri',dailyBonus:'GÜNLÜK BONUS',tomorrow:'Yarın',mergeTitle:'İlerlemeni Aktar?',mergeDesc:'Bu cihazdaki ilerlemeyi hesabına aktaralım mı? Hayır dersen hesabındaki mevcut veriler kullanılır.',mergeYes:'Evet, Aktar',mergeNo:'Hayır, Hesabı Kullan',inventory:'Envanter',invCoins:'Coin',invBombs:'Bomba',invUndos:'Geri Al',invThemes:'Tema',invBoost:'XP',
 storeTitle:'🛍️ Mağaza',syncDesc:'Skorunu buluta kaydet, her cihazdan eriş',accountConn:'✅ Hesabına bağlısın',maxLevel:'👑 Maksimum seviye!',
 freeSection:'Ücretsiz',premiumSection:'Premium Temalar',powerSection:'Güçlendiriciler',coinSection:'Coin Paketleri',
@@ -1227,11 +1239,11 @@ tut5T:'Kombo = Çarpan! 🔥',tut5D:'Aynı hamlede birden fazla satır temizlers
 tut6T:'Güçlendiriciler 💣',tut6D:'Sıkıştığında yardım al!<br><strong>💣 Bomba</strong> — bir alanı temizler<br><strong>🛟 Kurtarma</strong> — oyuna devam et',tut6bomb:'Bomba',tut6bombD:'3×3 alanı temizler',tut6undo:'Geri Al',tut6undoD:'Son hamleyi geri al',tut6rescue:'Kurtarma',tut6rescueD:'Oyuna devam et',
 ad:'REKLAM',adLoading:'Reklam yükleniyor…',adWatching:'Reklam izleniyor…',adReward:'Ödülünüz hazırlanıyor',
 setupTitle:'🎮 Profili Tamamla',setupDesc:'Dünya sıralamasında görünmek için bilgilerini gir',setupNickLbl:'Takma Ad',setupNickPh:'Adın…',setupCountryLbl:'🌍 Ülken',setupStart:'Başla 🚀',weeklyRanking:'HAFTALIK SIRALAMA',weeklyScore:'Bu Hafta',continueOrNew:'Devam mı, Yeni mi?',newGame:'Yeni Oyun',tutRT:'Parçayı Döndür 🔄',tutRD:'Seçili parçaya tekrar dokun — saat yönünde döner! 4 farklı yönü dene.',tutRsub:'TEKRAR DOKUN → DÖNER'},
-EN:{appName:'Tiliq',play:'Play',settings:'Settings',account:'Account',leaderboard:'Rankings',score:'Score',best:'Best',combo:'Combo',sound:'Sound',volume:'Volume',haptic:'Haptic',theme:'Theme',dark:'Dark',light:'Light',language:'Language',save:'Save',close:'Close',back:'Back',gameOver:'Game Over!',playAgain:'Play Again',mainMenu:'Main Menu',yourScore:'Your Score',worldRank:'World Ranking',newRecord:'🎉 New Record!',profile:'Profile',username:'Username',highScore:'Best',gamesPlayed:'Games',totalPoints:'Total',worldBoard:'🌍 World Rankings',yourRank:'Your Rank',yourScoreLb:'Your Score',guest:'Guest',days:'Days',undo:'Undo',bomb:'Bomb',rescue:'Rescue',
+EN:{appName:'Tiliq',play:'Play',timeAttack:'⏱ Time Attack',time:'Time',timeUp:'Time\'s Up!',settings:'Settings',account:'Account',leaderboard:'Rankings',score:'Score',best:'Best',combo:'Combo',sound:'Sound',volume:'Volume',haptic:'Haptic',theme:'Theme',dark:'Dark',light:'Light',language:'Language',save:'Save',close:'Close',back:'Back',gameOver:'Game Over!',playAgain:'Play Again',mainMenu:'Main Menu',yourScore:'Your Score',worldRank:'World Ranking',newRecord:'🎉 New Record!',profile:'Profile',username:'Username',highScore:'Best',gamesPlayed:'Games',totalPoints:'Total',worldBoard:'🌍 World Rankings',yourRank:'Your Rank',yourScoreLb:'Your Score',guest:'Guest',days:'Days',undo:'Undo',bomb:'Bomb',rescue:'Rescue',
 m_combos:'Get 5 Combos',m_rows:'Clear 5 Rows',m_score:'Score 500 pts',dailyMissions:'Daily Missions',
 store:'Store',continueGame:'Continue',editProfile:'Edit Profile →',comboExpired:'Combo Ended',dailyClaimed:'CLAIMED TODAY',dailyRefresh:'Refreshes tomorrow',dailyCollect:'Collect!',iapSoon:'Purchase coming soon!',iapSuccess:'Purchase successful!',restored:'Purchases restored.',copyCode:'Copy',codeCopied:'Copied!',yourCode:'Your Code',codeShare:'Share this code with friends',friendsTitle:'Friends',addFriend:'Add Friend',enterName:"What's your name?",namePh:'Your nickname...',rescue2ad:'Watch 2 short ads to continue',superBomb:'Super Bomb',tileTheme:'Tile Theme',loginForRank:'Sign in for rankings',loginForFriends:'Sign in with Google to add friends',friendCodePh:'ABC123',friendCodeLbl:'Your Code',friendCodeSub:'Share this code with friends 👇',rankTitle:'🏆 Rankings',
 tabThemes:'🎨 Themes',tabPower:'⚡ Power',tabVip:'👑 VIP',
-tabGlobal:'🌍 World',tabFriends:'👥 Friends',lbShare:'Share',lbMyCode:'Your Code',lbAmongFriends:'Among Friends',
+tabGlobal:'🌍 World',tabTimeAttack:'⏱ Time',tabFriends:'👥 Friends',lbShare:'Share',lbMyCode:'Your Code',lbAmongFriends:'Among Friends',
 statLast:'Last',statGames:'Games',statBest:'Best',statStreak:'Streak',dailyBonus:'DAILY BONUS',tomorrow:'Tomorrow',mergeTitle:'Transfer Progress?',mergeDesc:'Move your progress on this device to your account? If no, your account\'s existing data is used.',mergeYes:'Yes, Transfer',mergeNo:'No, Use Account',inventory:'Inventory',invCoins:'Coins',invBombs:'Bombs',invUndos:'Undos',invThemes:'Themes',invBoost:'XP',
 storeTitle:'🛍️ Store',syncDesc:'Save your score to the cloud, access from any device',accountConn:'✅ Connected to your account',maxLevel:'👑 Maximum level!',
 freeSection:'Free',premiumSection:'Premium Themes',powerSection:'Power-Ups',coinSection:'Coin Packs',
@@ -1536,6 +1548,14 @@ function playBomb(){
   noise(.5,.2,60,400);
   tone(180,.6,.1,'sawtooth');
   setTimeout(()=>{noise(.25,.1,300,1200);tone(450,.3,.07,'square');},120);
+}
+// Menü/UI dokunuşu: hafif tık (CLAUDE.md 8.5 — Buton dokunuşu → Light)
+function playTapLight(){tone(700,.05,.045,'sine');}
+// Satın alma onayı: yükselen 3'lü çan (CLAUDE.md 8.6/8.5 — Satın alma → Medium + ses)
+function playPurchase(){
+  tone(660,.12,.09,'sine');
+  setTimeout(()=>tone(880,.14,.11,'sine'),90);
+  setTimeout(()=>tone(1320,.22,.13,'sine'),190);
 }
 // Geri al: tersine "çıtır"
 function playUndo(){
@@ -2371,6 +2391,11 @@ function buildPool(){
 // ── GAME STATE ────────────────────────────────────────────────────────────────
 let grid=[],pieces=[],score=0,combo=0,best=0,selPiece=null,dead=false;
 
+// ── ZAMAN YARIŞI MODU ────────────────────────────────────────────────────────
+let gameMode='endless'; // 'endless' | 'timeattack'
+const TA_DURATION=60000; // ms
+let taTimeLeft=0,_taLastTick=0,_taWarnedFinal=false;
+
 // ── COMBO TIMER ───────────────────────────────────────────────────────────────
 const COMBO_DURATION=7500; // ms — her line clear'da sıfırlanır (uzatıldı)
 let comboTimeLeft=0;       // kalan ms
@@ -2415,6 +2440,22 @@ function tickComboTimer(now){
 
   // Timer doldu → combo sıfırla
   if(comboTimeLeft<=0) _expireCombo();
+}
+
+function tickTimeAttack(now){
+  if(gameMode!=='timeattack'||dead)return;
+  const dt=now-_taLastTick;
+  _taLastTick=now;
+  taTimeLeft=Math.max(0,taTimeLeft-dt);
+  const disp=document.getElementById('taTimerDisplay');
+  if(disp){
+    disp.textContent=Math.ceil(taTimeLeft/1000);
+    disp.style.color=taTimeLeft<=5000?'#FF4455':(taTimeLeft<=10000?'#FFD93D':'');
+  }
+  if(taTimeLeft<=5000&&!_taWarnedFinal){_taWarnedFinal=true;vibrate([15,10,15]);} // son 5sn başlangıcı — tek seferlik titreşim
+  if(taTimeLeft<=0&&!dead){
+    dead=true;playOver();vibrate([80,40,120]);setTimeout(showOver,420);
+  }
 }
 
 function _expireCombo(){
@@ -2622,7 +2663,7 @@ function updateUndoBtn(){
 // ── BOMB ─────────────────────────────────────────────────────────────────────
 let bombCount=0,bombMode=false,bombType='normal',bombXP=0;
 let _invBombsInPlay=0;   // mevcut bombCount içinde envanterden gelen (bonus) bomba sayısı
-const BOMB_THRESHOLD=450,BOMB_MAX=3; // 150→450: bomba kazanmak 3× zor (puan barı daha yavaş dolar)
+const BOMB_THRESHOLD=700,BOMB_MAX=3; // 450→700: orta-çok zor arası (kullanıcı isteği, 2026-07-04) — güçlü kombolar olmadan tek satır temizlemelerle dolması ~%55 daha uzun sürer
 let _bombHoldTimer=null,_bombHoldInterval=null;
 
 function updateBombBar(){
@@ -3017,6 +3058,15 @@ function startGame(){
   if(bar)bar.style.display='none';
   const ch2=document.getElementById('combo-chip');
   if(ch2)ch2.classList.remove('c-warm','c-hot','c-fire','c-inferno','timer-critical');
+  // Zaman Yarışı: süreyi sıfırla, chip'i göster/gizle
+  taTimeLeft=gameMode==='timeattack'?TA_DURATION:0;
+  _taLastTick=performance.now();_taWarnedFinal=false;
+  const taChip=document.getElementById('ta-timer-chip');
+  if(taChip){
+    taChip.style.display=gameMode==='timeattack'?'':'none';
+    const disp=document.getElementById('taTimerDisplay');
+    if(disp){disp.textContent=Math.ceil(taTimeLeft/1000);disp.style.color='';}
+  }
   // Envanterden bonus bombaları yükle (kalıcı — kullanılmadıkça düşmez)
   bombCount=Math.min(BOMB_MAX,getInvBombs());
   _invBombsInPlay=bombCount;
@@ -3678,20 +3728,22 @@ function showOver(){
   acct.games++;localStorage.setItem('tm_acct',JSON.stringify(acct));
   addXP(Math.floor(score/10)+20);
   document.getElementById('finalScore').textContent=score.toLocaleString();
-  localStorage.setItem('tiliq_last_score',String(score));
-  const prev=parseInt(localStorage.getItem('tiliq_best')||'0');
+  const bestKey=gameMode==='timeattack'?'tiliq_best_timeattack':'tiliq_best';
+  if(gameMode==='endless') localStorage.setItem('tiliq_last_score',String(score));
+  const prev=parseInt(localStorage.getItem(bestKey)||'0');
   document.getElementById('best-banner').style.display=score>0&&score>=prev?'block':'none';
-  if(score>0&&score>=prev){localStorage.setItem('tiliq_best',score);}
-  // rank badge: leaderboard'daki pozisyona göre
+  if(score>0&&score>=prev){localStorage.setItem(bestKey,score);}
+  // rank badge: Zaman Yarışı skorları ayrı tutuluyor, dünya sıralamasına (endless) karışmaz
   const lbData=JSON.parse(localStorage.getItem('tiliq_lb')||'[]');
   const rank=lbData.filter(e=>e.score>score).length+1;
-  document.getElementById('rank-badge').textContent=`🌍 #${rank}`;
+  document.getElementById('rank-badge').textContent=gameMode==='timeattack'?'⏱':`🌍 #${rank}`;
   // Tek devam butonu (rescue-2ad) — eski "Kurtarma" butonunu gizle
   const rb=document.getElementById('rescue-btn');
   if(rb) rb.style.display='none';
   const r2=document.getElementById('rescue-2ad');
+  const taTimedOut=gameMode==='timeattack'&&taTimeLeft<=0;
   if(r2){
-    r2.style.display=(_rescueShownThisGame||_r2adUsedThisGame)?'none':'flex';
+    r2.style.display=(_rescueShownThisGame||_r2adUsedThisGame||taTimedOut)?'none':'flex';
     const sub=document.getElementById('r2-sub-text');
     if(sub) sub.textContent='';   // "2 reklam" yazısı kaldırıldı — tek reklam
     const badge=document.getElementById('r2-badge');
@@ -3700,9 +3752,13 @@ function showOver(){
   }
   _rescueShownThisGame=true;
   onGameOver(score);
-  // Her oyun sonunda haftalık skoru güncelle ve Firestore'a yaz
-  updateMyWeeklyScore(score);
-  _firestorePushScore();
+  // Zaman Yarışı skoru ayrı alanda (bestTimeAttack) tutulur — endless best/haftalık'a karışmaz
+  if(gameMode==='endless'){
+    updateMyWeeklyScore(score);
+    _firestorePushScore();
+  } else {
+    _firestorePushTimeAttackScore();
+  }
   document.getElementById('overlay').classList.add('active');
 }
 
@@ -4317,6 +4373,7 @@ function draw(){
   if(celebs.length>3)celebs.splice(0,celebs.length-3);
   if(flames.length>_fireCap)flames.splice(0,flames.length-_fireCap);
   tickComboTimer(now);
+  tickTimeAttack(now);
   drawShockwaves();drawSparks();drawFlames(now);drawBoard(now);drawDrag();drawTray();drawFloats();drawCelebrations(now);
   _renderFireGL(now); // WebGL ateş katmanı (aktifse)
   if(!_fireGLOK && combo>=10 && comboTimeLeft>0)_drawInfernoFlash(now); // fallback: 2D beyaz-altın flash
@@ -4432,6 +4489,7 @@ function showScreen(id){
   if(id==='game') hideBanner(); else showBanner();
 }
 function showModal(id){
+  playTapLight();vibrate(10);
   if(id==='account'){openAccountModal();syncMyCodeUI();}
   if(id==='add-friend'){syncMyCodeUI();renderFriendCards();}
   document.getElementById('modal-'+id).classList.add('active');
@@ -4575,13 +4633,13 @@ async function _initLeaderboardManager(){
     const db=getFirestore(_fbApp);
     window._leaderboardManager={
       _db:db,
-      async getTopScores(n=500){
+      async getTopScores(n=500,field='best'){
         // orderBy yerine client-side sort (index gerekmez)
         const snap=await getDocs(query(collection(db,'users'),limit(500)));
         const all=snap.docs.map(d=>({uid:d.id,...d.data()}));
         // Sıralama: skor DESC, eşitse skoru ÖNCE yapan (bestAt küçük) üstte
-        return all.filter(u=>(u.best||0)>0).sort((a,b)=>
-          (b.best||0)-(a.best||0) || ((a.bestAt||Infinity)-(b.bestAt||Infinity))
+        return all.filter(u=>(u[field]||0)>0).sort((a,b)=>
+          (b[field]||0)-(a[field]||0) || ((a.bestAt||Infinity)-(b.bestAt||Infinity))
         ).slice(0,n);
       },
       async getMyRank(){return null;}
@@ -4896,11 +4954,11 @@ async function iapBuy(id){
       localStorage.setItem('tm_coins',String(total));
       updateStoreCoinBal();
       showCelebration(`+${amount} 🪙 ${t('iapSuccess')}`,'#D4A843');
-      vibrate([20,10,40]);
+      playPurchase();vibrate([20,10,40]);
     } else if(active[RC_ENTITLEMENT_VIP]||active[RC_ENTITLEMENT_NO_ADS]){
       if(id==='tiliq_vip_monthly')_applyVip(); else _applyNoAds();
       showCelebration('✅ '+t('iapSuccess'),'#6BCB77');
-      vibrate([20,10,40,10,60]);
+      playPurchase();vibrate([20,10,40,10,60]);
     }
     syncWallet();   // satın almayı hesaba işle
     renderStoreBody();
@@ -5093,6 +5151,7 @@ function storePowerBuy(id){
 
 function renderTmStore(){renderStoreBody();}
 function showTmStoreModal(){
+  playTapLight();vibrate(10);
   storeTab='themes';
   document.querySelectorAll('.store-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab==='themes'));
   updateStoreCoinBal();
@@ -5113,7 +5172,8 @@ function onPlayPressed(){
   }
 }
 
-function startNewGame(){
+function startNewGame(mode='endless'){
+  gameMode=mode;
   clearGameState();
   showScreen('game');
   resizeCanvas();
@@ -5126,8 +5186,8 @@ function startScreen(){
   startNewGame();
 }
 function backToMenu(){
-  // Oyun devam ediyorsa kaydet
-  if(!dead && grid.length && score>0) saveGameState();
+  // Oyun devam ediyorsa kaydet (Zaman Yarışı devam ettirilemez — süre duraklatılmaz)
+  if(!dead && grid.length && score>0 && gameMode==='endless') saveGameState();
   // Son Skor: oyun ortasında çıkışta da güncellensin (yalnızca game-over'da kalmasın)
   if(score>0) localStorage.setItem('tiliq_last_score',String(score));
   dead=true;bombMode=false;
@@ -5154,10 +5214,10 @@ function _lbRow(i,name,sc,isMe,lv){
   return`<div class="lb-row${isMe?' me':''}"><div class="lb-rn ${rc}">${med}</div><div class="lb-nm">${name}${_lvBadge(lv)}${isMe?' 👈':''}</div><div class="lb-sc">${Number(sc).toLocaleString()}</div></div>`;
 }
 
-async function renderLB(ps){
-  const list=document.getElementById('lb-list');
-  const rankEl=document.getElementById('my-rank');
-  const scoreEl=document.getElementById('my-score-lb');
+async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreId='my-score-lb'){
+  const list=document.getElementById(listId);
+  const rankEl=document.getElementById(rankId);
+  const scoreEl=document.getElementById(scoreId);
   scoreEl.textContent=ps.toLocaleString();
   list.innerHTML=`<div style="text-align:center;padding:24px;opacity:.5;font-size:13px">${t('loading')}</div>`;
 
@@ -5165,10 +5225,10 @@ async function renderLB(ps){
   const LB = window._leaderboardManager;
   if(LB && LB._db){
     try{
-      const full = await LB.getTopScores(500);   // tam sıralı liste (tiebreaker'lı)
+      const full = await LB.getTopScores(500,field);   // tam sıralı liste (tiebreaker'lı)
       const myUID = acct.uid||null;
       const myName = playerLabel();
-      let rows = full.map(p=>({n:(p.country||'🏳️')+' '+(p.name||t('guest')),s:p.best||0,uid:p.uid,lv:calcLevel(p.xp||0),bestAt:p.bestAt||Infinity}));
+      let rows = full.map(p=>({n:(p.country||'🏳️')+' '+(p.name||t('guest')),s:p[field]||0,uid:p.uid,lv:calcLevel(p.xp||0),bestAt:p.bestAt||Infinity}));
       // Kullanıcı listede yoksa kendi satırını ekle (sırasını hesaplamak için)
       const inList = myUID?rows.some(r=>r.uid===myUID):false;
       if(!inList) rows.push({n:myFlag()+' '+myName,s:ps,uid:myUID||'__me__',me:true,lv:calcLevel(getXP()),bestAt:parseInt(localStorage.getItem('tm_bestAt')||'0')||Infinity});
@@ -5197,6 +5257,7 @@ async function renderLB(ps){
 }
 
 function toggleLB(){
+  playTapLight();vibrate(10);
   const p=document.getElementById('lb-panel');
   if(!p.classList.contains('open')){
     // Giriş yoksa arkadaşlar sekmesinde takılı kalmasın — dünyaya düş
@@ -5204,7 +5265,13 @@ function toggleLB(){
     currentLBTab=startTab;
     document.querySelectorAll('.lb-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===startTab));
     document.querySelectorAll('.lb-tab-body').forEach(b=>b.classList.toggle('active',b.dataset.tab===startTab));
-    renderLB(Math.max(score, acct.best||0));
+    if(startTab==='timeattack'){
+      const taPrev=parseInt(localStorage.getItem('tiliq_best_timeattack')||'0');
+      const ps=gameMode==='timeattack'?Math.max(score,taPrev):taPrev;
+      renderLB(ps,'bestTimeAttack','lb-list-ta','my-rank-ta','my-score-lb-ta');
+    } else {
+      renderLB(Math.max(score, acct.best||0));
+    }
     if(startTab==='friends'){renderFriendsLB();fetchFriendScores();}
   }
   p.classList.toggle('open');
@@ -5307,6 +5374,29 @@ async function _firestorePushScore(){
       if(currentLBTab==='friends'){renderFriendsLB();fetchFriendScores();}
     }
   }catch(e){console.warn('pushScore:',e);}
+}
+
+// Zaman Yarışı en iyi skorunu ayrı alana (bestTimeAttack) yazar — endless best'i etkilemez
+async function _firestorePushTimeAttackScore(){
+  if(!acct.uid||!_fbApp)return;
+  try{
+    const {getFirestore,doc,setDoc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const db=getFirestore(_fbApp);
+    const ref=doc(db,'users',acct.uid);
+    const snap=await getDoc(ref);
+    const prev=snap.exists()?snap.data():{};
+    const prevBest=prev.bestTimeAttack||0;
+    const myBest=parseInt(localStorage.getItem('tiliq_best_timeattack')||'0');
+    if(myBest<=prevBest)return; // geriye gitmesin, gereksiz yazma yapma
+    await setDoc(ref,{
+      uid:acct.uid,best:acct.best||0,bestTimeAttack:myBest,
+      name:displayName(),code:myCode.toUpperCase(),country:acct.country||''
+    },{merge:true});
+    const lbPanel=document.getElementById('lb-panel');
+    if(lbPanel&&lbPanel.classList.contains('open')&&currentLBTab==='timeattack'){
+      renderLB(myBest,'bestTimeAttack','lb-list-ta','my-rank-ta','my-score-lb-ta');
+    }
+  }catch(e){console.warn('pushTimeAttackScore:',e);}
 }
 
 // Satın almaları/cüzdanı hesaba (Firestore) yaz — başka cihazda da geçerli olsun
@@ -5488,6 +5578,10 @@ function setLBTab(tab){
   if(tab==='friends'){
     renderFriendsLB();
     fetchFriendScores(); // sunucudan güncel skorları çek (async, sonra tekrar render)
+  }
+  if(tab==='timeattack'){
+    const ps=parseInt(localStorage.getItem('tiliq_best_timeattack')||'0');
+    renderLB(ps,'bestTimeAttack','lb-list-ta','my-rank-ta','my-score-lb-ta');
   }
 }
 
