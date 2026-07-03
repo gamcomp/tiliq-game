@@ -622,6 +622,7 @@ input[type="text"]::placeholder{color:var(--dim);}
 .theme-card.locked{opacity:.75;}
 .theme-card-swatches{display:flex;justify-content:center;gap:3px;margin-bottom:7px;}
 .theme-swatch{width:14px;height:14px;border-radius:4px;flex-shrink:0;}
+.flame-prev{width:56px;height:64px;display:block;margin:0 auto 4px;}
 .theme-card-name{font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px;}
 .theme-card-price{font-size:10px;color:var(--dim);}
 .theme-card-badge{position:absolute;top:6px;right:6px;font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;}
@@ -5013,12 +5014,15 @@ function renderStoreBody(){
       <div class="theme-grid">${STORE_THEMES.filter(th=>th.coins>0).map(themeCard).join('')}</div>
       <div class="store-section-title" style="margin-top:8px">${ts('flameSection','🔥 Alev Temaları')}</div>
       <div class="theme-grid">${FLAME_THEMES.map(flameCard).join('')}</div>`;
+    _startFlamePreviews();
   } else if(storeTab==='power'){
+    _stopFlamePreviews();
     el.innerHTML=`<div class="store-section-title">${t('powerSection')}</div>
       ${STORE_POWERUPS.filter(p=>!p.price).map(powerCard).join('')}
       <div class="store-section-title" style="margin-top:8px">${t('coinSection')}</div>
       ${STORE_POWERUPS.filter(p=>p.price).map(powerCard).join('')}`;
   } else {
+    _stopFlamePreviews();
     el.innerHTML=vipSection();
   }
 }
@@ -5047,20 +5051,70 @@ function themeCard(th){
 // Alev teması kartı — combo ateşinin rengini değiştirir (premium içerik)
 function flameCard(f){
   const owned=tmOwns(f.id)||f.coins===0, active=activeFlameId===f.id;
-  const swatches=f.sw.map(c=>`<div class="theme-swatch" style="background:${c}"></div>`).join('');
   const badgeTxt=active?t('badgeActive'):owned?t('badgeOwned'):'';
   const badgeCls=active?'active-b':'free';
   const btnTxt=active?t('btnActive'):owned?t('btnApply'):'🪙 '+f.coins;
   const btnCls=active?'active-btn':owned?'owned-btn':'';
   return`<div class="theme-card${active?' active':''}${!owned?' locked':''}" onclick="storeFlameClick('${f.id}')">
     ${badgeTxt?`<span class="theme-card-badge ${badgeCls}">${badgeTxt}</span>`:''}
-    <div style="font-size:26px;margin-bottom:6px">${f.emoji}</div>
-    <div class="theme-card-swatches">${swatches}</div>
+    <canvas class="flame-prev" id="fprev-${f.id}" width="112" height="128" data-flame="${f.id}"></canvas>
     <div class="theme-card-name">${f.name}</div>
     <div class="theme-card-price" style="color:var(--dim);font-size:10px">${f.desc}</div>
     <button class="theme-card-btn ${btnCls}" onclick="event.stopPropagation();storeFlameClick('${f.id}')">${btnTxt}</button>
   </div>`;
 }
+
+// ── ALEV ÖNİZLEME (mağaza kartlarında mini animasyonlu alev) ─────────────────
+let _flamePrevRaf=null;
+function _rgbf(c,a){return`rgba(${(c[0]*255)|0},${(c[1]*255)|0},${(c[2]*255)|0},${a})`;}
+function _drawFlamePreview(ctx,w,h,gl,t,seed){
+  ctx.clearRect(0,0,w,h);
+  const baseX=w/2,baseY=h*0.92;
+  // Arka glow
+  const glow=ctx.createRadialGradient(baseX,h*0.55,2,baseX,h*0.55,w*0.62);
+  glow.addColorStop(0,_rgbf(gl[1],.35));
+  glow.addColorStop(1,_rgbf(gl[1],0));
+  ctx.fillStyle=glow;ctx.fillRect(0,0,w,h);
+  // 3 alev dili — farklı faz/hız ile sallanır
+  const tongues=[{amp:.09,spd:1.6,ph:seed,scaleY:1.0,scaleX:1.0,a:1},
+                 {amp:.13,spd:2.1,ph:seed+2.1,scaleY:.72,scaleX:.62,a:.85},
+                 {amp:.07,spd:1.3,ph:seed+4.4,scaleY:.5,scaleX:.4,a:.7}];
+  tongues.forEach(tg=>{
+    const sway=Math.sin(t*tg.spd+tg.ph)*w*tg.amp;
+    const tipY=baseY-h*0.86*tg.scaleY;
+    const midY=baseY-h*0.42*tg.scaleY;
+    const halfW=w*0.30*tg.scaleX;
+    const grad=ctx.createLinearGradient(0,baseY,0,tipY);
+    grad.addColorStop(0,_rgbf(gl[0],tg.a));
+    grad.addColorStop(.55,_rgbf(gl[1],tg.a));
+    grad.addColorStop(.85,_rgbf(gl[2],tg.a));
+    grad.addColorStop(1,_rgbf(gl[3],tg.a*.9));
+    ctx.fillStyle=grad;
+    ctx.beginPath();
+    ctx.moveTo(baseX-halfW,baseY);
+    ctx.quadraticCurveTo(baseX-halfW*1.15+sway*.3,midY,baseX+sway*.6,tipY);
+    ctx.quadraticCurveTo(baseX+halfW*1.15+sway*.3,midY,baseX+halfW,baseY);
+    ctx.closePath();
+    ctx.fill();
+  });
+}
+function _startFlamePreviews(){
+  _stopFlamePreviews();
+  const canvases=[...document.querySelectorAll('canvas.flame-prev')];
+  if(!canvases.length)return;
+  const ctxs=canvases.map(c=>({c,ctx:c.getContext('2d'),f:getFlamePreviewData(c.dataset.flame),seed:Math.random()*10}));
+  const t0=performance.now();
+  function frame(now){
+    const t=(now-t0)/1000;
+    ctxs.forEach(o=>{if(o.f)_drawFlamePreview(o.ctx,o.c.width,o.c.height,o.f.gl,t,o.seed);});
+    _flamePrevRaf=requestAnimationFrame(frame);
+  }
+  _flamePrevRaf=requestAnimationFrame(frame);
+}
+function _stopFlamePreviews(){
+  if(_flamePrevRaf){cancelAnimationFrame(_flamePrevRaf);_flamePrevRaf=null;}
+}
+function getFlamePreviewData(id){return FLAME_THEMES.find(f=>f.id===id);}
 function storeFlameClick(id){
   const f=FLAME_THEMES.find(x=>x.id===id);
   if(!f)return;
@@ -5162,7 +5216,7 @@ function showTmStoreModal(){
   renderStoreBody();
   document.getElementById('modal-store-tm').classList.add('active');
 }
-function hideTmStoreModal(){document.getElementById('modal-store-tm').classList.remove('active');}
+function hideTmStoreModal(){document.getElementById('modal-store-tm').classList.remove('active');_stopFlamePreviews();}
 
 function onPlayPressed(){
   const st=loadGameState();
