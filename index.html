@@ -2679,7 +2679,11 @@ function updateUndoBtn(){
 // ── BOMB ─────────────────────────────────────────────────────────────────────
 let bombCount=0,bombMode=false,bombType='normal',bombXP=0;
 let _invBombsInPlay=0;   // mevcut bombCount içinde envanterden gelen (bonus) bomba sayısı
-const BOMB_THRESHOLD=700,BOMB_MAX=3; // 450→700: orta-çok zor arası (kullanıcı isteği, 2026-07-04) — güçlü kombolar olmadan tek satır temizlemelerle dolması ~%55 daha uzun sürer
+// 700->950: bomba kazanmak daha da zorlaştı (kullanıcı isteği, 2026-07-04).
+// Stok: satın alma YOKSA en fazla 2 bomba taşınabilir (BOMB_MAX_FREE). Mağazadan
+// bomba alındıysa (envanter) bu sınırın üstüne çıkılabilir, üst sınır BOMB_MAX_TOTAL.
+const BOMB_THRESHOLD=950,BOMB_MAX_FREE=2,BOMB_MAX_TOTAL=9;
+function bombCap(){return Math.max(BOMB_MAX_FREE,_invBombsInPlay);} // satın alınmışsa daha yüksek
 let _bombHoldTimer=null,_bombHoldInterval=null;
 
 function updateBombBar(){
@@ -2708,7 +2712,8 @@ function addBombXP(gain){
   if(dead)return;
   const wasCount=bombCount;
   bombXP+=gain;
-  while(bombXP>=BOMB_THRESHOLD&&bombCount<BOMB_MAX){
+  const cap=bombCap();
+  while(bombXP>=BOMB_THRESHOLD&&bombCount<cap){
     bombXP-=BOMB_THRESHOLD;
     bombCount++;
     tone(660,.12,.07,'sine');
@@ -2718,7 +2723,7 @@ function addBombXP(gain){
     const cx=canvas.width/2, cy=GOY+CELL*GRID/2;
     floats.push({x:cx,y:cy,txt:'💣 +1 Bomba!',a:1,vy:-1.8,c:'#FF9F43',big:true});
   }
-  if(bombCount>=BOMB_MAX)bombXP=BOMB_THRESHOLD; // dolu göster
+  if(bombCount>=cap)bombXP=BOMB_THRESHOLD; // dolu göster
   updateBombBar();
 }
 
@@ -3085,7 +3090,7 @@ function startGame(){
     if(disp){disp.textContent=Math.ceil(taTimeLeft/1000);disp.style.color='';}
   }
   // Envanterden bonus bombaları yükle (kalıcı — kullanılmadıkça düşmez)
-  bombCount=Math.min(BOMB_MAX,getInvBombs());
+  bombCount=Math.min(BOMB_MAX_TOTAL,getInvBombs());
   _invBombsInPlay=bombCount;
   bombMode=false;bombXP=0;
   // Bonus geri alma haklarını yükle (bedava undo)
