@@ -3062,6 +3062,7 @@ function resume2Ad(){
 // ── OYUN BAŞLATMA ─────────────────────────────────────────────────────────────
 function startGame(){
   clearGameState();
+  shufflePaintingOrder(); // her yeni oyunda tablo sırası karışsın
   initGrid();genPieces();
   score=0;combo=0;dead=false;
   floats=[];flashes=[];bounce=null;sparks=[];shockwaves=[];celebs=[];flames=[];
@@ -3903,6 +3904,18 @@ const BOARD_PAINTINGS=[
   {file:'painting_10_night_watch.webp',      name:'Gece Devriyesi',       artist:'Rembrandt'},
   {file:'painting_11_impression_sunrise.webp',name:'İzlenim, Gün Doğumu', artist:'Monet'},
   {file:'painting_12_wanderer_fog.webp',     name:'Sis Gezgini',          artist:'Friedrich'},
+  {file:'painting_13_whistlers_mother.webp', name:'Ressamın Annesi',      artist:'Whistler'},
+  {file:'painting_14_las_meninas.webp',      name:'Nedimeler',            artist:'Velázquez'},
+  {file:'painting_15_third_of_may.webp',     name:'3 Mayıs 1808',         artist:'Goya'},
+  {file:'painting_16_liberty_leading.webp',  name:'Halka Yol Gösteren Özgürlük',artist:'Delacroix'},
+  {file:'painting_17_garden_earthly.webp',   name:'Dünyevi Zevkler Bahçesi',artist:'Bosch'},
+  {file:'painting_18_ophelia.webp',          name:'Ophelia',              artist:'Millais'},
+  {file:'painting_19_arnolfini.webp',        name:'Arnolfini Portresi',    artist:'Van Eyck'},
+  {file:'painting_20_wheatfield_crows.webp', name:'Kargalı Buğday Tarlası',artist:'Van Gogh'},
+  {file:'painting_21_cafe_terrace.webp',     name:'Gece Kafe Terası',      artist:'Van Gogh'},
+  {file:'painting_22_moulin_galette.webp',   name:'Moulin de la Galette',  artist:'Renoir'},
+  {file:'painting_23_hay_wain.webp',         name:'Saman Arabası',         artist:'Constable'},
+  {file:'painting_24_boating_party.webp',    name:'Kürekçiler Öğle Yemeği',artist:'Renoir'},
 ];
 const _paintingImgs=BOARD_PAINTINGS.map(p=>{
   const img=new Image();
@@ -3910,6 +3923,14 @@ const _paintingImgs=BOARD_PAINTINGS.map(p=>{
   img.src='assets/paintings/'+p.file;
   return img;
 });
+// Tablo SIRASI her yeni oyunda karışır (Fisher-Yates) — aynı sırayla gelmesin.
+let _paintingOrder=BOARD_PAINTINGS.map((_,i)=>i);
+function shufflePaintingOrder(){
+  const a=_paintingOrder;
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  _boardLayerKey=''; // mevcut tabla katmanını da yeni sırayla yeniden çiz
+}
+function paintingForBoardIdx(idx){return BOARD_PAINTINGS[_paintingOrder[idx%_paintingOrder.length]];}
 // Marka rengi SABİT (kullanıcı isteği, 2026-07-04): tabla ilerledikçe renk değil,
 // malzeme/desen tarzı değişir (fam yalnızca _paintBoardMaterial'de hangi çizim
 // tekniğinin kullanılacağını seçer — rengi değil).
@@ -3931,7 +3952,7 @@ let _boardIdxCur=0;
 // Deterministik seçim: idx%12 → BOARD_PAINTINGS. Görsel hazır değilse zemin gradyanı
 // (bd'nin h/s/l'i) fallback olarak kalır, yüklenince bir sonraki frame'de görünür.
 function _paintBoardPainting(g,W,H,bd){
-  const{idx,step}=bd, img=_paintingImgs[idx%BOARD_PAINTINGS.length];
+  const{idx,step}=bd, img=_paintingImgs[_paintingOrder[idx%_paintingOrder.length]];
   g.save();
   // Çerçeve içine kırp
   const r=16,x0=4,y0=4,w=W-8,hh2=H-8;
@@ -4085,7 +4106,7 @@ function drawBoard(now){
     const organic=bi>_boardIdxCur&&(bi-_boardIdxCur)<=3&&!dead&&score>0;
     _boardIdxCur=bi;
     if(organic){
-      const _pw=BOARD_PAINTINGS[bi%BOARD_PAINTINGS.length];
+      const _pw=paintingForBoardIdx(bi);
       floats.push({x:canvas.width/2,y:gy+CELL*GRID*0.35,txt:'🎨 '+_pw.name+' — '+_pw.artist,a:1,vy:-1.2,c:'#FFD93D',big:true});
       vibrate([15,10,25]);
     }
