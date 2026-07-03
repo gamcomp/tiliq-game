@@ -3373,11 +3373,14 @@ function _compileFireProgram(gl,OCT){
 ' vec2 px=vec2(gl_FragCoord.x,u_res.y-gl_FragCoord.y);\n'+
 ' vec2 bc=u_board.xy+u_board.zw*0.5,bh=u_board.zw*0.5;\n'+
 ' float r=min(bh.x,bh.y)*0.12;\n'+
-// Ates SADECE sol/sag dikey kenarlarda — ust/alt kenarda kirmizilik olusmaz
+// Ates 4 kenarda da (sol/sag/ust/alt) — duz kirmizilik yerine gercek alev dilleri
 ' float y1=bc.y-bh.y+r, y2=bc.y+bh.y-r;\n'+
+' float x1=bc.x-bh.x+r, x2=bc.x+bh.x-r;\n'+
 ' float dl=seg(px,vec2(bc.x-bh.x,y1),vec2(bc.x-bh.x,y2));\n'+
 ' float dr2=seg(px,vec2(bc.x+bh.x,y1),vec2(bc.x+bh.x,y2));\n'+
-' float du=min(dl,dr2);\n'+
+' float dt2=seg(px,vec2(x1,bc.y-bh.y),vec2(x2,bc.y-bh.y));\n'+
+' float db2=seg(px,vec2(x1,bc.y+bh.y),vec2(x2,bc.y+bh.y));\n'+
+' float du=min(min(dl,dr2),min(dt2,db2));\n'+
 ' float inb=step(abs(px.x-bc.x),bh.x)*step(abs(px.y-bc.y),bh.y);\n'+
 ' float d=mix(du,-du,inb);\n'+
 ' float inten=u_inten;\n'+
