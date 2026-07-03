@@ -3339,14 +3339,9 @@ function drawFlames(now){
 // ── WEBGL ATEŞ SHADER'I — gerçek zamanlı akışkan alev (board çerçevesi) ─────────
 // Board'un üstündeki #fireCanvas'a çizilir; combo yoğunluğuyla (_fire.scale) sürülür.
 // WebGL yoksa/derlenemezse _fireGLOK=false → partikül sistemi fallback devreye girer.
-let _fireGLOK=false,_fireGL=null,_fireProg=null,_fireU={},_fireCv=null;
-function _initFireGL(){
-  try{
-    _fireCv=document.getElementById('fireCanvas'); if(!_fireCv)return;
-    const gl=_fireCv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false})
-          || _fireCv.getContext('experimental-webgl',{alpha:true,premultipliedAlpha:true});
-    if(!gl)return;
-    const OCT=_FIRE_MOBILE?4:5;
+// Ateş shader'ını derleyip {gl,prog,u} döndürür — hem gerçek board hem mağaza
+// önizlemeleri AYNI shader'ı kullanır (pixel-pixel aynı görünüm).
+function _compileFireProgram(gl,OCT){
     const vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
     const fs='precision highp float;\n'+
 'uniform vec2 u_res;uniform float u_time;uniform float u_inten;uniform vec4 u_board;\n'+
@@ -3392,21 +3387,34 @@ function _initFireGL(){
 ' float a=clamp(flame*1.2,0.0,1.0);\n'+
 ' gl_FragColor=vec4(col*a,a);\n'+
 '}';
-    const sh=(ty,src)=>{const s=gl.createShader(ty);gl.shaderSource(s,src);gl.compileShader(s);
-      if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){console.warn('fire sh',gl.getShaderInfoLog(s));return null;}return s;};
-    const v=sh(gl.VERTEX_SHADER,vs),f=sh(gl.FRAGMENT_SHADER,fs); if(!v||!f)return;
-    const prog=gl.createProgram();gl.attachShader(prog,v);gl.attachShader(prog,f);gl.linkProgram(prog);
-    if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){console.warn('fire link',gl.getProgramInfoLog(prog));return;}
-    gl.useProgram(prog);
-    const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
-    const loc=gl.getAttribLocation(prog,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
-    _fireU={res:gl.getUniformLocation(prog,'u_res'),time:gl.getUniformLocation(prog,'u_time'),
-            inten:gl.getUniformLocation(prog,'u_inten'),board:gl.getUniformLocation(prog,'u_board'),
-            f1:gl.getUniformLocation(prog,'u_f1'),f2:gl.getUniformLocation(prog,'u_f2'),
-            f3:gl.getUniformLocation(prog,'u_f3'),f4:gl.getUniformLocation(prog,'u_f4')};
-    gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
-    _fireGL=gl;_fireProg=prog;_fireGLOK=true;_resizeFireGL();
+  const sh=(ty,src)=>{const s=gl.createShader(ty);gl.shaderSource(s,src);gl.compileShader(s);
+    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){console.warn('fire sh',gl.getShaderInfoLog(s));return null;}return s;};
+  const v=sh(gl.VERTEX_SHADER,vs),f=sh(gl.FRAGMENT_SHADER,fs); if(!v||!f)return null;
+  const prog=gl.createProgram();gl.attachShader(prog,v);gl.attachShader(prog,f);gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){console.warn('fire link',gl.getProgramInfoLog(prog));return null;}
+  gl.useProgram(prog);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(prog,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  const u={res:gl.getUniformLocation(prog,'u_res'),time:gl.getUniformLocation(prog,'u_time'),
+          inten:gl.getUniformLocation(prog,'u_inten'),board:gl.getUniformLocation(prog,'u_board'),
+          f1:gl.getUniformLocation(prog,'u_f1'),f2:gl.getUniformLocation(prog,'u_f2'),
+          f3:gl.getUniformLocation(prog,'u_f3'),f4:gl.getUniformLocation(prog,'u_f4')};
+  gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+  return{gl,prog,u};
+}
+
+let _fireGLOK=false,_fireGL=null,_fireProg=null,_fireU={},_fireCv=null;
+function _initFireGL(){
+  try{
+    _fireCv=document.getElementById('fireCanvas'); if(!_fireCv)return;
+    const gl=_fireCv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false})
+          || _fireCv.getContext('experimental-webgl',{alpha:true,premultipliedAlpha:true});
+    if(!gl)return;
+    const OCT=_FIRE_MOBILE?4:5;
+    const r=_compileFireProgram(gl,OCT);
+    if(!r)return;
+    _fireGL=r.gl;_fireProg=r.prog;_fireU=r.u;_fireGLOK=true;_resizeFireGL();
   }catch(e){console.warn('fire GL init failed',e);_fireGLOK=false;}
 }
 function _resizeFireGL(){
@@ -5064,57 +5072,74 @@ function flameCard(f){
   </div>`;
 }
 
-// ── ALEV ÖNİZLEME (mağaza kartlarında mini animasyonlu alev) ─────────────────
-let _flamePrevRaf=null;
-function _rgbf(c,a){return`rgba(${(c[0]*255)|0},${(c[1]*255)|0},${(c[2]*255)|0},${a})`;}
-function _drawFlamePreview(ctx,w,h,gl,t,seed){
-  ctx.clearRect(0,0,w,h);
-  const baseX=w/2,baseY=h*0.92;
-  // Arka glow
-  const glow=ctx.createRadialGradient(baseX,h*0.55,2,baseX,h*0.55,w*0.62);
-  glow.addColorStop(0,_rgbf(gl[1],.35));
-  glow.addColorStop(1,_rgbf(gl[1],0));
-  ctx.fillStyle=glow;ctx.fillRect(0,0,w,h);
-  // 3 alev dili — farklı faz/hız ile sallanır
-  const tongues=[{amp:.09,spd:1.6,ph:seed,scaleY:1.0,scaleX:1.0,a:1},
-                 {amp:.13,spd:2.1,ph:seed+2.1,scaleY:.72,scaleX:.62,a:.85},
-                 {amp:.07,spd:1.3,ph:seed+4.4,scaleY:.5,scaleX:.4,a:.7}];
-  tongues.forEach(tg=>{
-    const sway=Math.sin(t*tg.spd+tg.ph)*w*tg.amp;
-    const tipY=baseY-h*0.86*tg.scaleY;
-    const midY=baseY-h*0.42*tg.scaleY;
-    const halfW=w*0.30*tg.scaleX;
-    const grad=ctx.createLinearGradient(0,baseY,0,tipY);
-    grad.addColorStop(0,_rgbf(gl[0],tg.a));
-    grad.addColorStop(.55,_rgbf(gl[1],tg.a));
-    grad.addColorStop(.85,_rgbf(gl[2],tg.a));
-    grad.addColorStop(1,_rgbf(gl[3],tg.a*.9));
-    ctx.fillStyle=grad;
-    ctx.beginPath();
-    ctx.moveTo(baseX-halfW,baseY);
-    ctx.quadraticCurveTo(baseX-halfW*1.15+sway*.3,midY,baseX+sway*.6,tipY);
-    ctx.quadraticCurveTo(baseX+halfW*1.15+sway*.3,midY,baseX+halfW,baseY);
-    ctx.closePath();
-    ctx.fill();
-  });
+// ── ALEV ÖNİZLEME (mağaza kartları) — GERÇEK oyun shader'ı, gerçek combo görünümü ──
+// Tek paylaşımlı offscreen WebGL context: her kart için sırayla uniformları değiştirip
+// render edip 2D canvas'a "blit" eder. Böylece önizleme gerçek oyundakiyle piksel piksel aynı.
+let _fpGL=null,_flamePrevRaf=null,_fpT0=0;
+function _initFlamePreviewGL(){
+  if(_fpGL!==null)return; // bir kere dene (başarısızsa null yerine false koy, tekrar denemesin)
+  try{
+    const cv=document.createElement('canvas');
+    cv.width=112;cv.height=128;
+    const gl=cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false})
+          || cv.getContext('experimental-webgl',{alpha:true,premultipliedAlpha:true});
+    if(!gl){_fpGL=false;return;}
+    const r=_compileFireProgram(gl,_FIRE_MOBILE?4:5);
+    if(!r){_fpGL=false;return;}
+    gl.viewport(0,0,cv.width,cv.height);
+    _fpGL={cv,...r};
+  }catch(e){console.warn('flame preview GL init failed',e);_fpGL=false;}
+}
+function _renderFlameThemeToCanvas(dstCanvas,theme,t){
+  if(!_fpGL)return false;
+  const{gl,prog,u,cv}=_fpGL;
+  gl.useProgram(prog);
+  gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform2f(u.res,cv.width,cv.height);
+  gl.uniform1f(u.time,t);
+  gl.uniform1f(u.inten,0.9); // sabit canlı yoğunluk — vitrin niyetiyle
+  const m=14; // kenar payı — alev dilleri canvas içinde görünsün
+  gl.uniform4f(u.board,m,m,cv.width-m*2,cv.height-m*2);
+  const g4=theme.gl;
+  gl.uniform3f(u.f1,g4[0][0],g4[0][1],g4[0][2]);
+  gl.uniform3f(u.f2,g4[1][0],g4[1][1],g4[1][2]);
+  gl.uniform3f(u.f3,g4[2][0],g4[2][1],g4[2][2]);
+  gl.uniform3f(u.f4,g4[3][0],g4[3][1],g4[3][2]);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  const dctx=dstCanvas.getContext('2d');
+  dctx.clearRect(0,0,dstCanvas.width,dstCanvas.height);
+  dctx.drawImage(cv,0,0,dstCanvas.width,dstCanvas.height);
+  return true;
 }
 function _startFlamePreviews(){
   _stopFlamePreviews();
+  _initFlamePreviewGL();
   const canvases=[...document.querySelectorAll('canvas.flame-prev')];
   if(!canvases.length)return;
-  const ctxs=canvases.map(c=>({c,ctx:c.getContext('2d'),f:getFlamePreviewData(c.dataset.flame),seed:Math.random()*10}));
-  const t0=performance.now();
+  const items=canvases.map(c=>({c,f:FLAME_THEMES.find(x=>x.id===c.dataset.flame)}));
+  _fpT0=performance.now();
   function frame(now){
-    const t=(now-t0)/1000;
-    ctxs.forEach(o=>{if(o.f)_drawFlamePreview(o.ctx,o.c.width,o.c.height,o.f.gl,t,o.seed);});
+    const t=(now-_fpT0)/1000;
+    if(_fpGL){ items.forEach(o=>{if(o.f)_renderFlameThemeToCanvas(o.c,o.f,t);}); }
+    else { items.forEach(o=>{if(o.f)_drawFlameFallback(o.c,o.f);}); _flamePrevRaf=null; return; } // GL yok: statik yedek, animasyon döngüsü gerekmiyor
     _flamePrevRaf=requestAnimationFrame(frame);
   }
   _flamePrevRaf=requestAnimationFrame(frame);
 }
+// WebGL yoksa: temanın renk rampasıyla basit statik gradyan (kart boş kalmasın)
+function _drawFlameFallback(dstCanvas,theme){
+  const ctx=dstCanvas.getContext('2d'),w=dstCanvas.width,h=dstCanvas.height;
+  const g4=theme.gl,rgb=c=>`rgb(${(c[0]*255)|0},${(c[1]*255)|0},${(c[2]*255)|0})`;
+  const grad=ctx.createLinearGradient(0,h,0,0);
+  grad.addColorStop(0,rgb(g4[0]));grad.addColorStop(.5,rgb(g4[1]));
+  grad.addColorStop(.8,rgb(g4[2]));grad.addColorStop(1,rgb(g4[3]));
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle=grad;
+  ctx.beginPath();ctx.roundRect(w*0.12,h*0.08,w*0.76,h*0.84,10);ctx.fill();
+}
 function _stopFlamePreviews(){
   if(_flamePrevRaf){cancelAnimationFrame(_flamePrevRaf);_flamePrevRaf=null;}
 }
-function getFlamePreviewData(id){return FLAME_THEMES.find(f=>f.id===id);}
 function storeFlameClick(id){
   const f=FLAME_THEMES.find(x=>x.id===id);
   if(!f)return;
