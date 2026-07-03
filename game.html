@@ -1197,12 +1197,16 @@ input[type="text"]::placeholder{color:var(--dim);}
         </div>
         <button class="btn-copy-code" id="copy-code-lb-btn" data-t="lbShare" onclick="shareMyCode()">Paylaş</button>
       </div>
-      <div style="margin:6px 14px 0;text-align:center;font-size:11px;color:var(--dim);font-weight:700">
+      <div class="theme-row" style="margin:8px 14px 0">
+        <button class="theme-btn active" id="fr-mode-weekly" onclick="setFriendsBoardMode('weekly')" data-t="weeklyShort">📅 Haftalık</button>
+        <button class="theme-btn" id="fr-mode-ta" onclick="setFriendsBoardMode('timeattack')" data-t="tabTimeAttack">⏱ Süre</button>
+      </div>
+      <div id="fr-weekly-countdown-row" style="margin:6px 14px 0;text-align:center;font-size:11px;color:var(--dim);font-weight:700">
         📅 <span data-t="weeklyRanking">HAFTALIK SIRALAMA</span> &nbsp;·&nbsp; <span id="weekly-countdown" style="color:#D4A843">--:--:--</span>
       </div>
       <div id="my-banner-friends" style="margin:4px 14px 0;background:linear-gradient(135deg,rgba(196,113,74,.18),rgba(212,168,67,.1));border:1px solid rgba(212,168,67,.3);border-radius:11px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <div><div class="rank-lbl" data-t="lbAmongFriends">Among Friends</div><div class="rank-n" id="my-rank-friends">#--</div></div>
-        <div style="text-align:right"><div class="rank-lbl" data-t="weeklyScore">Bu Hafta</div><div class="rank-sc" id="my-score-friends">0</div></div>
+        <div style="text-align:right"><div class="rank-lbl" id="fr-score-lbl" data-t="weeklyScore">Bu Hafta</div><div class="rank-sc" id="my-score-friends">0</div></div>
       </div>
       <div id="lb-friends-list" style="overflow-y:auto;flex:1;padding:7px 14px 10px;"></div>
       <button class="btn-add-friend" onclick="if(requireAccount('loginForFriends'))showModal('add-friend')">+ <span data-t="addFriend">Add Friend</span></button>
@@ -1238,7 +1242,7 @@ tut4T:'Satırı Doldur = Temizle! ✨',tut4D:'Yatay veya dikey bir satır tamame
 tut5T:'Kombo = Çarpan! 🔥',tut5D:'Aynı hamlede birden fazla satır temizlersen kombo çarpanı devreye girer! ×2 · ×3 · ×5',tut5row1:'1 satır',tut5row2:'2 satır',tut5row3:'3+ satır',tut5strat:'Strateji: birden fazla satırı tek hamlede temizle',
 tut6T:'Güçlendiriciler 💣',tut6D:'Sıkıştığında yardım al!<br><strong>💣 Bomba</strong> — bir alanı temizler<br><strong>🛟 Kurtarma</strong> — oyuna devam et',tut6bomb:'Bomba',tut6bombD:'3×3 alanı temizler',tut6undo:'Geri Al',tut6undoD:'Son hamleyi geri al',tut6rescue:'Kurtarma',tut6rescueD:'Oyuna devam et',
 ad:'REKLAM',adLoading:'Reklam yükleniyor…',adWatching:'Reklam izleniyor…',adReward:'Ödülünüz hazırlanıyor',
-setupTitle:'🎮 Profili Tamamla',setupDesc:'Dünya sıralamasında görünmek için bilgilerini gir',setupNickLbl:'Takma Ad',setupNickPh:'Adın…',setupCountryLbl:'🌍 Ülken',setupStart:'Başla 🚀',weeklyRanking:'HAFTALIK SIRALAMA',weeklyScore:'Bu Hafta',continueOrNew:'Devam mı, Yeni mi?',newGame:'Yeni Oyun',tutRT:'Parçayı Döndür 🔄',tutRD:'Seçili parçaya tekrar dokun — saat yönünde döner! 4 farklı yönü dene.',tutRsub:'TEKRAR DOKUN → DÖNER'},
+setupTitle:'🎮 Profili Tamamla',setupDesc:'Dünya sıralamasında görünmek için bilgilerini gir',setupNickLbl:'Takma Ad',setupNickPh:'Adın…',setupCountryLbl:'🌍 Ülken',setupStart:'Başla 🚀',weeklyRanking:'HAFTALIK SIRALAMA',weeklyShort:'📅 Haftalık',weeklyScore:'Bu Hafta',continueOrNew:'Devam mı, Yeni mi?',newGame:'Yeni Oyun',tutRT:'Parçayı Döndür 🔄',tutRD:'Seçili parçaya tekrar dokun — saat yönünde döner! 4 farklı yönü dene.',tutRsub:'TEKRAR DOKUN → DÖNER'},
 EN:{appName:'Tiliq',play:'Play',timeAttack:'⏱ Time Attack',time:'Time',timeUp:'Time\'s Up!',settings:'Settings',account:'Account',leaderboard:'Rankings',score:'Score',best:'Best',combo:'Combo',sound:'Sound',volume:'Volume',haptic:'Haptic',theme:'Theme',dark:'Dark',light:'Light',language:'Language',save:'Save',close:'Close',back:'Back',gameOver:'Game Over!',playAgain:'Play Again',mainMenu:'Main Menu',yourScore:'Your Score',worldRank:'World Ranking',newRecord:'🎉 New Record!',profile:'Profile',username:'Username',highScore:'Best',gamesPlayed:'Games',totalPoints:'Total',worldBoard:'🌍 World Rankings',yourRank:'Your Rank',yourScoreLb:'Your Score',guest:'Guest',days:'Days',undo:'Undo',bomb:'Bomb',rescue:'Rescue',
 m_combos:'Get 5 Combos',m_rows:'Clear 5 Rows',m_score:'Score 500 pts',dailyMissions:'Daily Missions',
 store:'Store',continueGame:'Continue',editProfile:'Edit Profile →',comboExpired:'Combo Ended',dailyClaimed:'CLAIMED TODAY',dailyRefresh:'Refreshes tomorrow',dailyCollect:'Collect!',iapSoon:'Purchase coming soon!',iapSuccess:'Purchase successful!',restored:'Purchases restored.',copyCode:'Copy',codeCopied:'Copied!',yourCode:'Your Code',codeShare:'Share this code with friends',friendsTitle:'Friends',addFriend:'Add Friend',enterName:"What's your name?",namePh:'Your nickname...',rescue2ad:'Watch 2 short ads to continue',superBomb:'Super Bomb',tileTheme:'Tile Theme',loginForRank:'Sign in for rankings',loginForFriends:'Sign in with Google to add friends',friendCodePh:'ABC123',friendCodeLbl:'Your Code',friendCodeSub:'Share this code with friends 👇',rankTitle:'🏆 Rankings',
@@ -1263,7 +1267,7 @@ tut4T:'Fill a Row = Clear! ✨',tut4D:'When a row is fully filled it clears auto
 tut5T:'Combo = Multiplier! 🔥',tut5D:'Clear multiple rows in one move to activate the combo multiplier! ×2 · ×3 · ×5',tut5row1:'1 row',tut5row2:'2 rows',tut5row3:'3+ rows',tut5strat:'Strategy: clear multiple rows in one move',
 tut6T:'Power-Ups 💣',tut6D:'Get help when stuck!<br><strong>💣 Bomb</strong> — clears an area<br><strong>🛟 Rescue</strong> — continue playing',tut6bomb:'Bomb',tut6bombD:'Clears 3×3 area',tut6undo:'Undo',tut6undoD:'Undo last move',tut6rescue:'Rescue',tut6rescueD:'Continue playing',
 ad:'AD',adLoading:'Loading ad…',adWatching:'Watching ad…',adReward:'Preparing your reward',
-setupTitle:'🎮 Complete Profile',setupDesc:'Enter your info to appear in world rankings',setupNickLbl:'Nickname',setupNickPh:'Your name…',setupCountryLbl:'🌍 Your Country',setupStart:'Let\'s Go 🚀',weeklyRanking:'WEEKLY RANKING',weeklyScore:'This Week',continueOrNew:'Continue or New?',newGame:'New Game',tutRT:'Rotate Pieces 🔄',tutRD:'Tap a selected piece again — it rotates clockwise! Try all 4 directions.',tutRsub:'TAP AGAIN → ROTATES'},
+setupTitle:'🎮 Complete Profile',setupDesc:'Enter your info to appear in world rankings',setupNickLbl:'Nickname',setupNickPh:'Your name…',setupCountryLbl:'🌍 Your Country',setupStart:'Let\'s Go 🚀',weeklyRanking:'WEEKLY RANKING',weeklyShort:'📅 Weekly',weeklyScore:'This Week',continueOrNew:'Continue or New?',newGame:'New Game',tutRT:'Rotate Pieces 🔄',tutRD:'Tap a selected piece again — it rotates clockwise! Try all 4 directions.',tutRsub:'TAP AGAIN → ROTATES'},
 JA:{appName:'Tiliq',play:'プレイ',settings:'設定',account:'アカウント',leaderboard:'ランキング',score:'スコア',best:'ベスト',combo:'コンボ',sound:'サウンド',volume:'音量',haptic:'振動',theme:'テーマ',dark:'ダーク',light:'ライト',language:'言語',save:'保存',close:'閉じる',back:'戻る',gameOver:'ゲームオーバー！',playAgain:'もう一度',mainMenu:'メニュー',yourScore:'スコア',worldRank:'世界ランキング',newRecord:'🎉 新記録！',profile:'プロフィール',username:'ユーザー名',highScore:'ベスト',gamesPlayed:'ゲーム数',totalPoints:'合計',worldBoard:'🌍 世界ランキング',yourRank:'順位',yourScoreLb:'スコア',guest:'ゲスト',days:'日',undo:'元に戻す',bomb:'ボム',rescue:'救出',
 m_combos:'コンボ5回',m_rows:'5列消す',m_score:'500点獲得',dailyMissions:'デイリーミッション',
 store:'ストア',continueGame:'続ける',editProfile:'プロフィール編集 →',comboExpired:'コンボ終了',dailyClaimed:'本日獲得済み',dailyRefresh:'明日リセット',dailyCollect:'受け取る！',iapSoon:'近日公開予定！',iapSuccess:'購入完了！',restored:'購入を復元しました。',copyCode:'コピー',codeCopied:'コピー済み！',yourCode:'あなたのコード',codeShare:'このコードを友達に送ろう',friendsTitle:'フレンド',addFriend:'フレンド追加',enterName:'あなたの名前は？',namePh:'ニックネーム...',rescue2ad:'広告2本見て続ける',superBomb:'スーパーボム',tileTheme:'タイルテーマ',loginForRank:'ランキングにはログインが必要',loginForFriends:'フレンド機能にはGoogleログインが必要',friendCodePh:'ABC123',friendCodeLbl:'あなたのコード',friendCodeSub:'このコードを友達に送ろう 👇',rankTitle:'🏆 ランキング',
@@ -5393,8 +5397,9 @@ async function _firestorePushTimeAttackScore(){
       name:displayName(),code:myCode.toUpperCase(),country:acct.country||''
     },{merge:true});
     const lbPanel=document.getElementById('lb-panel');
-    if(lbPanel&&lbPanel.classList.contains('open')&&currentLBTab==='timeattack'){
-      renderLB(myBest,'bestTimeAttack','lb-list-ta','my-rank-ta','my-score-lb-ta');
+    if(lbPanel&&lbPanel.classList.contains('open')){
+      if(currentLBTab==='timeattack') renderLB(myBest,'bestTimeAttack','lb-list-ta','my-rank-ta','my-score-lb-ta');
+      if(currentLBTab==='friends'&&friendsBoardMode==='timeattack') renderFriendsLB();
     }
   }catch(e){console.warn('pushTimeAttackScore:',e);}
 }
@@ -5557,9 +5562,19 @@ function updateMyWeeklyScore(newScore){
   return false;
 }
 
-function buildFriendBoard(){
+function buildFriendBoard(mode=friendsBoardMode){
+  if(mode==='timeattack'){
+    const myTA=parseInt(localStorage.getItem('tiliq_best_timeattack')||'0');
+    const myLive=(gameMode==='timeattack'&&typeof score!=='undefined')?score:0;
+    const board=[
+      ...getFriends().map(f=>({n:f.name,s:f.bestTimeAttack||0,code:f.code,friend:true,lv:f.level||0})),
+      {n:playerLabel(),s:Math.max(myTA,myLive),code:myCode,me:true,lv:calcLevel(getXP())},
+    ];
+    board.sort((a,b)=>b.s-a.s);
+    return board;
+  }
   // Kendi skorun: yerel kaynakların EN YÜKSEĞİ (stale görünmesin)
-  const myWeekly=Math.max(getMyWeeklyScore()||0, acct.best||0, (typeof score!=='undefined'?score:0));
+  const myWeekly=Math.max(getMyWeeklyScore()||0, acct.best||0, (gameMode==='endless'&&typeof score!=='undefined'?score:0));
   const board=[
     ...getFriends().map(f=>({n:f.name,s:f.weeklyScore||f.score||0,code:f.code,friend:true,lv:f.level||0})),
     {n:playerLabel(),s:myWeekly,code:myCode,me:true,lv:calcLevel(getXP())},
@@ -5569,6 +5584,17 @@ function buildFriendBoard(){
 }
 
 let currentLBTab='global';
+let friendsBoardMode='weekly'; // 'weekly' | 'timeattack' — arkadaş sıralaması modu
+function setFriendsBoardMode(mode){
+  friendsBoardMode=mode;
+  document.getElementById('fr-mode-weekly').classList.toggle('active',mode==='weekly');
+  document.getElementById('fr-mode-ta').classList.toggle('active',mode==='timeattack');
+  const cd=document.getElementById('fr-weekly-countdown-row');
+  if(cd) cd.style.display=mode==='weekly'?'':'none';
+  const lbl=document.getElementById('fr-score-lbl');
+  if(lbl) lbl.textContent=mode==='weekly'?t('weeklyScore'):t('tabTimeAttack');
+  renderFriendsLB();
+}
 function setLBTab(tab){
   // Arkadaşlar sekmesi giriş gerektirir
   if(tab==='friends'&&!requireAccount('loginForFriends')) return;
@@ -5589,9 +5615,9 @@ function renderFriendsLB(){
   startWeeklyCountdown();
   const board=buildFriendBoard();
   const myR=board.findIndex(p=>p.me)+1;
-  const myS=getMyWeeklyScore().toLocaleString();
+  const me=board.find(p=>p.me);
   document.getElementById('my-rank-friends').textContent='#'+myR;
-  document.getElementById('my-score-friends').textContent=myS;
+  document.getElementById('my-score-friends').textContent=(me?me.s:0).toLocaleString();
   const el=document.getElementById('my-code-lb');
   if(el)el.textContent=myCode;
 
@@ -5758,6 +5784,7 @@ async function fetchFriendScores(){
           if(idx>=0){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
             friends[idx].weeklyScore=(fd.weeklyReset===ws)?(fd.weeklyScore||0):0;
+            friends[idx].bestTimeAttack=fd.bestTimeAttack||0;
             friends[idx].name=fd.name||friends[idx].name;
             friends[idx].level=calcLevel(fd.xp||0);
           }
@@ -5795,6 +5822,7 @@ async function fetchFriendScores(){
           if(idx>=0){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
             friends[idx].weeklyScore=(fd.weeklyReset===ws2)?(fd.weeklyScore||0):friends[idx].weeklyScore||0;
+            friends[idx].bestTimeAttack=fd.bestTimeAttack||0;
             friends[idx].name=fd.name||friends[idx].name;
             friends[idx].level=calcLevel(fd.xp||0);
           }
