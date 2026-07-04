@@ -2261,14 +2261,16 @@ function drawMenuArt(now){
   mctx.beginPath();mctx.roundRect(0,0,W,H,12);mctx.clip();
   const baseY=(H-_MA_TILE)/2;
   const elapsed=(now-_menuArtT0)/1000;
-  const scroll=(elapsed*_MA_SPEED)%_MA_STEP;
-  const n=Math.ceil(W/_MA_STEP)+2;
-  const startI=-1; // soldan bir fazla karo ile başla, kayarken bosluk gorunmesin
-  for(let k=0;k<n;k++){
-    const i=startI+k;
+  // Gerçek sonsuz akış: D sınırsız artar, her karonun mantıksal indeksi (i) de D ile
+  // birlikte kayar — böylece slotlar sabit kalıp sıçramak yerine karolar ekrandan
+  // sürekli akıp yeni karolarla değişir (önceki sürüm slotları STEP içinde sıçratıyordu).
+  const D=elapsed*_MA_SPEED;
+  const firstI=Math.floor((-_MA_STEP-D)/_MA_STEP);
+  const lastI=Math.ceil((W+_MA_STEP-D)/_MA_STEP);
+  for(let i=firstI;i<=lastI;i++){
     const tex=TILE_OFFSCREENS[((i%TILE_OFFSCREENS.length)+TILE_OFFSCREENS.length)%TILE_OFFSCREENS.length];
     if(!tex)continue;
-    const x=i*_MA_STEP+scroll;
+    const x=i*_MA_STEP+D;
     const si=((i%_MA_OFF.length)+_MA_OFF.length)%_MA_OFF.length;
     const y=baseY+_MA_OFF[si]+Math.sin(elapsed*1.6+si*1.1)*6; // sürekli yukarı-aşağı dalgalanma
     const a=_MA_ANG[si]*Math.PI/180;
