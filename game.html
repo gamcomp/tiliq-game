@@ -5392,6 +5392,9 @@ async function _firestoreSync(uid){
       if(d.country) acct.country=d.country;
       if(d.country) acct._setupDone=true;  // ülke set edilmişse profil kurulmuş → sorma
       if(d.bestAt) localStorage.setItem('tm_bestAt',String(d.bestAt)); // tiebreaker zamanı
+      // Zaman Yarışı rekoru: iki yönlü hizala (bulut > yerel ise indir)
+      const _taLocal=parseInt(localStorage.getItem('tiliq_best_timeattack')||'0');
+      if((d.bestTimeAttack||0)>_taLocal) localStorage.setItem('tiliq_best_timeattack',String(d.bestTimeAttack));
       if((d.best||0)>acct.best) acct.best=d.best;
       if((d.games||0)>acct.games) acct.games=d.games;
       if((d.total||0)>acct.total) acct.total=d.total;
@@ -5424,6 +5427,9 @@ async function _firestoreSync(uid){
     }
     _refreshCodeDisplays();
     updateStoreCoinBal();
+    // Yerel Zaman Yarışı rekoru buluttakinden yüksekse hemen gönder — oyuncu
+    // rekorunu tekrar kırmadan da dünya süre sıralamasında görünsün
+    _firestorePushTimeAttackScore();
   }catch(e){console.warn('Firestore sync:',e);}
 }
 
