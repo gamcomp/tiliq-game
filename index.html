@@ -4760,8 +4760,11 @@ function _onFirebaseUser(user){
     return;
   }
   acct._googleName = user.displayName || user.email || '';
-  // Kullanıcı kendi nickname'ini girmemişse Google adını kullan
-  if(!acct.nickname) acct.nickname = acct._googleName;
+  // DİKKAT: acct.nickname'e YAZMA — displayName() zaten nickname boşsa _googleName'e
+  // düşüyor (görüntüleme için yeterli). Buraya yazmak, _firestoreSync'in gerçek
+  // kayıtlı takma adı (örn. "Behzat") buluttan geri yüklemesini ENGELLİYORDU çünkü
+  // sync kontrolü "!acct.nickname" idi ve bu satır onu Google tam adıyla ("Behzat
+  // Berk Incearap") dolduruyordu — kullanıcı raporu, 2026-07-07.
   acct.uid  = user.uid;
   acct._fbLogged = true;
   localStorage.setItem('tm_acct', JSON.stringify(acct));
@@ -4888,6 +4891,15 @@ function _resetToGuestState(){
   updateStoreCoinBal();
 }
 window._authSignOut = async function(){
+  // KRİTİK: sıfırlamadan ÖNCE mevcut ilerlemeyi buluta KESİN olarak gönder.
+  // Önceden sıfırlama önce yapılıyordu; buluttaki veri (senkron gecikmesi
+  // yüzünden) yerelden eskiyse, yereli sıfırlayıp sonra buluttaki eski veriyi
+  // çekmek gerçek ilerlemeyi kaybettiriyordu (kullanıcı raporu, 2026-07-07:
+  // 32 oyun → 26 oyuna düştü). Best-effort — hata olsa bile çıkışı engellemez.
+  if(acct.uid&&_fbApp){
+    try{ await _firestorePushScore(); }catch(e){}
+    try{ await _syncWalletToFirestore(); }catch(e){}
+  }
   try{
     if(_fbAuth) await _fbAuth.signOut();
   }catch(e){}
