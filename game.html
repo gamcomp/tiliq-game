@@ -5338,6 +5338,14 @@ function backToMenu(){
   if(!dead && grid.length && score>0 && gameMode==='endless') saveGameState();
   // Son Skor: oyun ortasında çıkışta da güncellensin (yalnızca game-over'da kalmasın)
   if(score>0) localStorage.setItem('tiliq_last_score',String(score));
+  // KRİTİK: menüye her dönüşte skoru/toplamı buluta senkronla. Önceden SADECE
+  // gerçek "Game Over" anında push oluyordu — oyuncu hiç kaybetmeden sürekli
+  // Devam Et ile TEK uzun oturumu sürdürürse (bomba/kurtarma ile), skoru asla
+  // buluta yazılmıyordu. Kullanıcı raporu: Patron'un buluttaki skoru (22.434)
+  // gerçek skorundan (38.348) çok düşük kalmıştı — bu yüzden.
+  if(gameMode==='endless'&&score>0){
+    if(score>best) noteNewBest(); else _firestorePushScore();
+  }
   dead=true;bombMode=false;
   document.getElementById('overlay').classList.remove('active');
   document.getElementById('bomb-btn').classList.remove('lit-normal','lit-super');
