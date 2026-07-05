@@ -3037,6 +3037,9 @@ function loadGameState(){
 }
 
 function clearGameState(){
+  // Zaman Yarışı endless'in kayıtlı (autosave) oyununa ASLA dokunmasın — önceden
+  // Zaman Yarışı başlatmak endless'te kaldığın yeri siliyordu (kullanıcı raporu, 2026-07-06).
+  if(gameMode!=='endless')return;
   localStorage.removeItem(SAVE_KEY);
   updateContinueBtn();
 }
@@ -3048,6 +3051,7 @@ function updateContinueBtn(){
 function continueGame(){
   const st=loadGameState();
   if(!st)return;
+  gameMode='endless'; // autosave her zaman endless'tir — önceki tur Zaman Yarışı olsa bile
   showScreen('game');
   resizeCanvas();
 
@@ -5440,10 +5444,28 @@ async function _firestoreSync(uid){
       }
       if('invBombs' in d) setInvBombs(d.invBombs||0);
       if('invUndos' in d) setInvUndos(d.invUndos||0);
+      // Arkadaş kodları: buluttan gelenleri yerel listeye ekle (başka cihazda
+      // eklenen arkadaşlar bu cihazda da görünsün — kullanıcı raporu, 2026-07-06).
+      // İsim/skor burada değil, arkadaşlar sekmesi açılınca fetchFriendScores ile
+      // canlı çekilir; burada sadece KOD ilişkisini taşıyoruz.
+      if(Array.isArray(d.friendCodes)&&d.friendCodes.length){
+        const localFriends=getFriends();
+        const haveCodes=new Set(localFriends.map(f=>f.code));
+        let added=false;
+        for(const code of d.friendCodes){
+          if(code&&code!==myCode.toUpperCase()&&!haveCodes.has(code)){
+            localFriends.push({code,name:t('guest'),score:0,added:Date.now()});
+            added=true;
+          }
+        }
+        // Doğrudan yaz — saveFriendsList() çağırırsak aynı listeyi hemen geri
+        // buluta pushlar (zararsız ama gereksiz), direkt localStorage yeterli.
+        if(added) localStorage.setItem('tm_friends',JSON.stringify(localFriends));
+      }
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       const xpNow=getXP();
       await setDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
-        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos()},{merge:true});
+        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),friendCodes:getFriends().map(f=>f.code).filter(Boolean)},{merge:true});
     }else{
       const xpNow=getXP();
       await setDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
@@ -5457,6 +5479,7 @@ async function _firestoreSync(uid){
   }catch(e){console.warn('Firestore sync:',e);}
 }
 
+let _pushRetried=false;
 async function _firestorePushScore(){
   if(!acct.uid||!_fbApp)return;
   try{
@@ -5492,7 +5515,13 @@ async function _firestorePushScore(){
       if(currentLBTab==='global') renderLB(acct.best);
       if(currentLBTab==='friends'){renderFriendsLB();fetchFriendScores();}
     }
-  }catch(e){console.warn('pushScore:',e);}
+  }catch(e){
+    console.warn('pushScore:',e);
+    // Geçici ağ/senkron hatasında tek seferlik yeniden dene — sessizce başarısız
+    // olup skorun buluta hiç yazılmaması sıralamada tutarsızlığa yol açıyordu
+    // (kullanıcı raporu, 2026-07-06: "patronun skoru sıralamayla aynı değil").
+    if(!_pushRetried){_pushRetried=true;setTimeout(()=>{_firestorePushScore();_pushRetried=false;},3000);}
+  }
 }
 
 // Zaman Yarışı en iyi skorunu ayrı alana (bestTimeAttack) yazar — endless best'i etkilemez
@@ -5551,6 +5580,23 @@ function getFriends(){
 }
 function saveFriendsList(arr){
   localStorage.setItem('tm_friends',JSON.stringify(arr));
+  _syncFriendCodesToFirestore(arr.map(f=>f.code).filter(Boolean));
+}
+// Arkadaş listesi (hangi kodlarla arkadaşız) hesaba senkron olsun — önceden
+// SADECE localStorage'daydı, telefonda eklenen arkadaş webde görünmüyordu
+// (kullanıcı raporu, 2026-07-06). Kodlar buluta yazılır, isim/skor her zaman
+// fetchFriendScores ile canlı çekilir (Firestore'da bayatlamasın diye).
+let _friendSyncTimer=null;
+function _syncFriendCodesToFirestore(codes){
+  if(!acct.uid||!_fbApp)return;
+  if(_friendSyncTimer)clearTimeout(_friendSyncTimer);
+  _friendSyncTimer=setTimeout(async()=>{
+    try{
+      const {getFirestore,doc,setDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      const db=getFirestore(_fbApp);
+      await setDoc(doc(db,'users',acct.uid),{friendCodes:codes},{merge:true});
+    }catch(e){console.warn('friend code sync:',e);}
+  },600);
 }
 
 // Arkadaş arama sonucu geçici verisi
