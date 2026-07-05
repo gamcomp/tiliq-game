@@ -2909,6 +2909,7 @@ function _bombChainCheck(row,col,type){
   if(chainRows.length||chainCols.length){
     const bonus=(chainRows.length+chainCols.length)*25;
     score+=bonus;
+    if(score>best)noteNewBest(); // burada da eksikti — zincir bonusu rekor kırdırabilir
     document.getElementById('scoreDisplay').textContent=score.toLocaleString();
     const cx=GOX()+col*CELL+CELL/2,cy=GOY+row*CELL+CELL/2;
     floats.push({x:cx,y:cy-CELL*2.5,txt:t('bombChain')+' +'+bonus,a:1,vy:-2,c:'#C77DFF',big:true});
@@ -3722,6 +3723,9 @@ function perfectClear(){
   // Perfect clear bonusu
   score+=500;acct.total+=500;
   document.getElementById('scoreDisplay').textContent=score.toLocaleString();
+  // EKSİKTİ: bu bonus yeni rekor kırdırabilir ama noteNewBest() hiç çağrılmıyordu —
+  // rekor ne yerelde ne buluta yazılmıyordu (kullanıcı raporu: "sıralamadaki skor donmuş").
+  if(score>best)noteNewBest();
   playPerfect();
 }
 function playPerfect(){
