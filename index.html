@@ -2165,6 +2165,7 @@ function applyThemePalette(id){
   CLR.length=0;t.clr.forEach(c=>CLR.push(c));
   GLOW.length=0;t.glow.forEach(g=>GLOW.push(g));
   reloadTileTextures();
+  if(typeof syncWallet==='function') syncWallet(); // seçim hesaba da yazılsın
 }
 
 // ── SERAMİK KARO TEXTURE SİSTEMİ ─────────────────────────────────────────────
@@ -4565,6 +4566,7 @@ function getFlameTheme(){return FLAME_THEMES.find(f=>f.id===activeFlameId)||FLAM
 function applyFlameTheme(id){
   activeFlameId=id;localStorage.setItem('tm_flame',id);
   _flameSprites=null; // 2D fallback sprite'ları yeni paletle yeniden üretilsin
+  if(typeof syncWallet==='function') syncWallet(); // seçim hesaba da yazılsın
 }
 
 const STORE_POWERUPS=[
@@ -4852,13 +4854,45 @@ window._authSignIn = async function(provider){
   }
 };
 
+// Çıkış yapınca hesaba ait TÜM yerel veriyi sıfırlar — önceden sadece uid/_fbLogged
+// temizleniyordu, isim/ülke/skor/coin/satın alımlar ekranda kalmaya devam edip
+// "çıkış yapılmamış gibi" görünüyordu (kullanıcı raporu, 2026-07-06).
+function _resetToGuestState(){
+  acct={name:'',color:'#7C4DFF',games:0,best:0,total:0};
+  localStorage.setItem('tm_acct',JSON.stringify(acct));
+  localStorage.removeItem('tiliq_best');
+  localStorage.removeItem('tiliq_best_timeattack');
+  localStorage.removeItem('tiliq_last_score');
+  localStorage.removeItem('tm_xp');
+  localStorage.removeItem('tm_bestAt');
+  localStorage.removeItem('tm_coins');
+  localStorage.removeItem('tm_owned');
+  localStorage.removeItem('tm_inv_bombs');
+  localStorage.removeItem('tm_inv_undos');
+  localStorage.removeItem('tiliq_vip');
+  localStorage.removeItem('tiliq_no_ads');
+  localStorage.removeItem('tm_friends');
+  localStorage.removeItem('tm_my_code');
+  localStorage.removeItem('tm_weekly');
+  localStorage.removeItem('tm_streak');
+  localStorage.removeItem('tm_flame');
+  localStorage.removeItem('tm_active_theme');
+  tmOwned=[];
+  myCode=genCode();localStorage.setItem('tm_my_code',myCode);
+  activeFlameId='flame_classic';
+  activeThemeId='classic';
+  CLR=getTheme().clr.slice();GLOW=getTheme().glow.slice();
+  reloadTileTextures();
+  _refreshAllNameDisplays();
+  _refreshCodeDisplays();
+  updateStoreCoinBal();
+}
 window._authSignOut = async function(){
   try{
     if(_fbAuth) await _fbAuth.signOut();
   }catch(e){}
   try{ const RC=_getRC(); if(RC&&_rcReady) await RC.logOut(); }catch(e){}
-  acct._fbLogged=false; acct.uid=null;
-  localStorage.setItem('tm_acct',JSON.stringify(acct));
+  _resetToGuestState();
   // Çıkıştan sonra anonim oturuma dön — dünya sıralaması okunabilir kalsın
   try{
     const {signInAnonymously}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
@@ -5466,6 +5500,10 @@ async function _firestoreSync(uid){
         // buluta pushlar (zararsız ama gereksiz), direkt localStorage yeterli.
         if(added) localStorage.setItem('tm_friends',JSON.stringify(localFriends));
       }
+      // Seçili tema/alev: hesaptan geri yükle (başka cihazda seçilen görünüm bu
+      // cihazda da uygulansın — kullanıcı isteği, 2026-07-06).
+      if(d.activeTheme && d.activeTheme!==activeThemeId && THEME_PALETTES[d.activeTheme]) applyThemePalette(d.activeTheme);
+      if(d.activeFlame && d.activeFlame!==activeFlameId && FLAME_THEMES.some(f=>f.id===d.activeFlame)) applyFlameTheme(d.activeFlame);
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       const xpNow=getXP();
       await setDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
@@ -5573,7 +5611,10 @@ async function _syncWalletToFirestore(){
       best:Math.max(acct.best||0,prev.best||0),
       vip:isVip(),noAds:isNoAds(),
       coins:parseInt(localStorage.getItem('tm_coins')||'0'),
-      owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos()
+      owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),
+      // Seçili tema/alev de hesaba bağlı olsun — başka cihazda açınca aynı görünüm
+      // (kullanıcı isteği, 2026-07-06: "ayarlar her cihazda aynı olsun")
+      activeTheme:activeThemeId,activeFlame:activeFlameId
     },{merge:true});
   }catch(e){console.warn('wallet sync:',e);}
 }
