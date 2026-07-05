@@ -3835,7 +3835,7 @@ function showOver(){
   addXP(Math.floor(score/10)+20);
   document.getElementById('finalScore').textContent=score.toLocaleString();
   const bestKey=gameMode==='timeattack'?'tiliq_best_timeattack':'tiliq_best';
-  if(gameMode==='endless') localStorage.setItem('tiliq_last_score',String(score));
+  localStorage.setItem(gameMode==='timeattack'?'tiliq_last_score_ta':'tiliq_last_score',String(score));
   const prev=parseInt(localStorage.getItem(bestKey)||'0');
   document.getElementById('best-banner').style.display=score>0&&score>=prev?'block':'none';
   if(score>0&&score>=prev){localStorage.setItem(bestKey,score);}
@@ -4866,6 +4866,7 @@ function _resetToGuestState(){
   localStorage.removeItem('tiliq_best');
   localStorage.removeItem('tiliq_best_timeattack');
   localStorage.removeItem('tiliq_last_score');
+  localStorage.removeItem('tiliq_last_score_ta');
   localStorage.removeItem('tm_xp');
   localStorage.removeItem('tm_bestAt');
   localStorage.removeItem('tm_coins');
@@ -5348,8 +5349,11 @@ function startScreen(){
 function backToMenu(){
   // Oyun devam ediyorsa kaydet (Zaman Yarışı devam ettirilemez — süre duraklatılmaz)
   if(!dead && grid.length && score>0 && gameMode==='endless') saveGameState();
-  // Son Skor: oyun ortasında çıkışta da güncellensin (yalnızca game-over'da kalmasın)
-  if(score>0) localStorage.setItem('tiliq_last_score',String(score));
+  // Son Skor: oyun ortasında çıkışta da güncellensin (yalnızca game-over'da kalmasın).
+  // KRİTİK: moda göre AYRI anahtara yaz — önceden tek 'tiliq_last_score' anahtarı
+  // hem normal oyun hem Zaman Yarışı tarafından kullanılıyordu, bu yüzden Zaman
+  // Yarışı'ndan çıkış normal oyunun "Son Skor"unu eziyordu (kullanıcı raporu, 2026-07-06).
+  if(score>0) localStorage.setItem(gameMode==='timeattack'?'tiliq_last_score_ta':'tiliq_last_score',String(score));
   // KRİTİK: menüye her dönüşte skoru/toplamı buluta senkronla. Önceden SADECE
   // gerçek "Game Over" anında push oluyordu — oyuncu hiç kaybetmeden sürekli
   // Devam Et ile TEK uzun oturumu sürdürürse (bomba/kurtarma ile), skoru asla
