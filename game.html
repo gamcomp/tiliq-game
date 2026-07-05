@@ -370,7 +370,6 @@ body::after{
 #undo-btn:not(:disabled){background:rgba(86,207,225,.1);}
 
 #game-container{position:relative;flex-shrink:0;}
-#board-painting-caption{width:100%;text-align:center;font-size:10px;font-weight:600;letter-spacing:.3px;color:var(--dim);opacity:.75;padding:3px 8px 2px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 #gameCanvas{display:block;cursor:pointer;transition:box-shadow .35s ease;}
 #gameCanvas.combo-inferno{animation:comboPulse .3s infinite alternate;}
 @keyframes comboPulse{from{box-shadow:0 0 60px #ffaa00,0 0 120px #ff2200;}to{box-shadow:0 0 100px #ffcc00,0 0 190px #ff0000;}}
@@ -932,7 +931,6 @@ input[type="text"]::placeholder{color:var(--dim);}
       </button>
     </div>
   </div>
-  <div id="board-painting-caption"></div>
 </div>
 
 <!-- TUTORIAL OVERLAY -->
@@ -1480,7 +1478,6 @@ function applyLang(){
   updateContinueBtn();
   // İsim çeviriyle ezilmesin — gerçek profil adını geri yaz
   if(typeof updateMenuAvatar==='function') updateMenuAvatar();
-  if(typeof updatePaintingCaption==='function') updatePaintingCaption();
 }
 function setLang(l){lang=l;applyLang();}
 
@@ -2419,6 +2416,23 @@ let gameMode='endless'; // 'endless' | 'timeattack'
 const TA_DURATION=60000; // ms
 let taTimeLeft=0,_taLastTick=0,_taWarnedFinal=false;
 
+// Yeni rekor — MOD-FARKINDA: Zaman Yarışı skoru endless dünya rekoruna KARIŞMAZ
+// (önceden TA skoru tiliq_best'i eziyordu — dünya sıralaması kirlenmişti)
+function noteNewBest(){
+  best=score;
+  if(gameMode==='timeattack'){
+    localStorage.setItem('tiliq_best_timeattack',String(best));
+    // TA push'u oyun sonunda (showOver) yapılır — oyun içinde sadece yerel kayıt
+  } else {
+    localStorage.setItem('tiliq_best',String(best));
+    localStorage.setItem('tm_bestAt',String(Date.now()));
+    acct.best=Math.max(acct.best,best);
+    updateMyWeeklyScore(score);
+    localStorage.setItem('tm_acct',JSON.stringify(acct));
+    pushMyScore();
+  }
+}
+
 // ── COMBO TIMER ───────────────────────────────────────────────────────────────
 const COMBO_DURATION=7500; // ms — her line clear'da sıfırlanır (uzatıldı)
 let comboTimeLeft=0;       // kalan ms
@@ -2690,7 +2704,6 @@ let _invBombsInPlay=0;   // mevcut bombCount içinde envanterden gelen (bonus) b
 // Stok: satın alma YOKSA en fazla 2 bomba taşınabilir (BOMB_MAX_FREE). Mağazadan
 // bomba alındıysa (envanter) bu sınırın üstüne çıkılabilir, üst sınır BOMB_MAX_TOTAL.
 const BOMB_THRESHOLD=950,BOMB_MAX_FREE=2,BOMB_MAX_TOTAL=9;
-function bombCap(){return Math.max(BOMB_MAX_FREE,_invBombsInPlay);} // satın alınmışsa daha yüksek
 let _bombHoldTimer=null,_bombHoldInterval=null;
 
 function updateBombBar(){
@@ -2720,8 +2733,10 @@ function addBombXP(gain){
   if(dead)return;
   const wasCount=bombCount;
   bombXP+=gain;
-  const cap=bombCap();
-  while(bombXP>=BOMB_THRESHOLD&&bombCount<cap){
+  // Limit KAZANILAN bomba sayısına bakar (bombCount-_invBombsInPlay), toplam değil —
+  // yoksa satın alınmış bombası olanların barı hiç dolmuyordu (kullanıcı raporu, 2026-07-04)
+  const earnedFull=()=>(bombCount-_invBombsInPlay)>=BOMB_MAX_FREE||bombCount>=BOMB_MAX_TOTAL;
+  while(bombXP>=BOMB_THRESHOLD&&!earnedFull()){
     bombXP-=BOMB_THRESHOLD;
     bombCount++;
     tone(660,.12,.07,'sine');
@@ -2731,7 +2746,7 @@ function addBombXP(gain){
     const cx=canvas.width/2, cy=GOY+CELL*GRID/2;
     floats.push({x:cx,y:cy,txt:'💣 +1 Bomba!',a:1,vy:-1.8,c:'#FF9F43',big:true});
   }
-  if(bombCount>=cap)bombXP=BOMB_THRESHOLD; // dolu göster
+  if(earnedFull())bombXP=BOMB_THRESHOLD; // dolu göster
   updateBombBar();
 }
 
@@ -2842,7 +2857,7 @@ function useBomb(row,col){
     const gain=affected.length*scorePerCell;
     if(gain>0){
       score+=gain;acct.total+=gain;
-      if(score>best){best=score;localStorage.setItem('tiliq_best',best);localStorage.setItem('tm_bestAt',String(Date.now()));acct.best=Math.max(acct.best,best);updateMyWeeklyScore(score);pushMyScore();}
+      if(score>best)noteNewBest();
       document.getElementById('scoreDisplay').textContent=score.toLocaleString();
       document.getElementById('bestDisplay').textContent=best.toLocaleString();
       floats.push({x:cx,y:cy-CELL*1.5,txt:'+'+gain,a:1,vy:-2.2,c:'#FFD93D',big:true,scale:1.7});
@@ -3017,9 +3032,10 @@ function continueGame(){
   // State geri yükle
   grid=st.grid.map(r=>[...r]);
   score=st.score; combo=0; // devam edince combo sıfırdan başlar
-  bombCount=st.bombCount||0; bombXP=st.bombXP||0;
-  // Envanter takibi: kayıtlı bombaların envanterden gelenleri ve bedava undo hakları
-  _invBombsInPlay=Math.min(bombCount,getInvBombs());
+  // Bombalar: kazanılanlar HER oyuna girişte sıfırlanır, sadece satın alınan
+  // (envanter) bombalar taşınır (kullanıcı isteği, 2026-07-04)
+  bombCount=Math.min(BOMB_MAX_TOTAL,getInvBombs()); bombXP=0;
+  _invBombsInPlay=bombCount;
   freeUndos=getInvUndos();
   pieces=st.pieces.map(p=>({
     shape:{cells:p.cells},ci:p.ci,placed:p.placed,rotFlash:0,rotT:0
@@ -3075,9 +3091,7 @@ function resume2Ad(){
 // ── OYUN BAŞLATMA ─────────────────────────────────────────────────────────────
 function startGame(){
   clearGameState();
-  shufflePaintingOrder(); // her yeni oyunda tablo sırası karışsın
   _boardIdxCur=0;
-  updatePaintingCaption();
   initGrid();genPieces();
   score=0;combo=0;dead=false;
   floats=[];flashes=[];bounce=null;sparks=[];shockwaves=[];celebs=[];flames=[];
@@ -3108,7 +3122,8 @@ function startGame(){
   document.getElementById('bomb-btn').classList.remove('lit-normal','lit-super');
   updateBombBar();
   updateUndoBtn();
-  best=parseInt(localStorage.getItem('tiliq_best')||'0');
+  // "En İyi" göstergesi moda göre: Zaman Yarışı kendi rekorunu gösterir
+  best=parseInt(localStorage.getItem(gameMode==='timeattack'?'tiliq_best_timeattack':'tiliq_best')||'0');
   document.getElementById('scoreDisplay').textContent='0';
   document.getElementById('bestDisplay').textContent=best;
   document.getElementById('comboDisplay').textContent='×1';
@@ -3160,7 +3175,7 @@ function place(pi,row,col){
     const base=tot*10+(tot>1?(tot-1)*5:0),gain=Math.round(base*Math.min(cm,5));
     score+=gain;acct.total+=gain;
     addBombXP(gain);
-    if(score>best){best=score;localStorage.setItem('tiliq_best',best);localStorage.setItem('tm_bestAt',String(Date.now()));acct.best=Math.max(acct.best,best);updateMyWeeklyScore(score);localStorage.setItem('tm_acct',JSON.stringify(acct));pushMyScore();}
+    if(score>best)noteNewBest();
     document.getElementById('scoreDisplay').textContent=score.toLocaleString();
     document.getElementById('bestDisplay').textContent=best.toLocaleString();
     document.getElementById('comboDisplay').textContent='×'+cm;
@@ -3924,79 +3939,6 @@ const BOARD_FAMS=[
 const BOARD_STEPS=9, BOARD_COUNT=BOARD_FAMS.length*BOARD_STEPS; // 108 tabla
 const _ROMAN=['I','II','III','IV','V','VI','VII','VIII','IX'];
 
-// ── ÜNLÜ TABLOLAR (kamu malı — ressamlar 70+ yıl önce vefat) — tabla arka planı ──
-// idx%12 ile BOARD_FAMS ile aynı döngüde değişir; skor arttıkça tablo sürekli değişir.
-const BOARD_PAINTINGS=[
-  {file:'painting_01_starry_night.webp',     name:'Yıldızlı Gece',        artist:'Van Gogh'},
-  {file:'painting_02_great_wave.webp',       name:'Büyük Dalga',          artist:'Hokusai'},
-  {file:'painting_03_pearl_earring.webp',    name:'İnci Küpeli Kız',      artist:'Vermeer'},
-  {file:'painting_04_mona_lisa.webp',        name:'Mona Lisa',            artist:'Da Vinci'},
-  {file:'painting_05_birth_venus.webp',      name:'Venüs\'ün Doğuşu',     artist:'Botticelli'},
-  {file:'painting_06_the_kiss.webp',         name:'Öpücük',               artist:'Klimt'},
-  {file:'painting_07_the_scream.webp',       name:'Çığlık',               artist:'Munch'},
-  {file:'painting_08_grande_jatte.webp',     name:'Grande Jatte',         artist:'Seurat'},
-  {file:'painting_09_water_lilies.webp',     name:'Nilüferler',           artist:'Monet'},
-  {file:'painting_10_night_watch.webp',      name:'Gece Devriyesi',       artist:'Rembrandt'},
-  {file:'painting_11_impression_sunrise.webp',name:'İzlenim, Gün Doğumu', artist:'Monet'},
-  {file:'painting_12_wanderer_fog.webp',     name:'Sis Gezgini',          artist:'Friedrich'},
-  {file:'painting_13_whistlers_mother.webp', name:'Ressamın Annesi',      artist:'Whistler'},
-  {file:'painting_14_las_meninas.webp',      name:'Nedimeler',            artist:'Velázquez'},
-  {file:'painting_15_third_of_may.webp',     name:'3 Mayıs 1808',         artist:'Goya'},
-  {file:'painting_16_liberty_leading.webp',  name:'Halka Yol Gösteren Özgürlük',artist:'Delacroix'},
-  {file:'painting_17_garden_earthly.webp',   name:'Dünyevi Zevkler Bahçesi',artist:'Bosch'},
-  {file:'painting_18_ophelia.webp',          name:'Ophelia',              artist:'Millais'},
-  {file:'painting_19_arnolfini.webp',        name:'Arnolfini Portresi',    artist:'Van Eyck'},
-  {file:'painting_20_wheatfield_crows.webp', name:'Kargalı Buğday Tarlası',artist:'Van Gogh'},
-  {file:'painting_21_cafe_terrace.webp',     name:'Gece Kafe Terası',      artist:'Van Gogh'},
-  {file:'painting_22_moulin_galette.webp',   name:'Moulin de la Galette',  artist:'Renoir'},
-  {file:'painting_23_hay_wain.webp',         name:'Saman Arabası',         artist:'Constable'},
-  {file:'painting_24_boating_party.webp',    name:'Kürekçiler Öğle Yemeği',artist:'Renoir'},
-];
-const _paintingImgs=BOARD_PAINTINGS.map(p=>{
-  const img=new Image();
-  img.onload=()=>{img._ready=true;_boardLayerKey='';}; // yüklenince tabla katmanını zorla yeniden çiz
-  img.src='assets/paintings/'+p.file;
-  return img;
-});
-// Tablo SIRASI her yeni oyunda karışır (Fisher-Yates) — aynı sırayla gelmesin.
-let _paintingOrder=BOARD_PAINTINGS.map((_,i)=>i);
-function shufflePaintingOrder(){
-  const a=_paintingOrder;
-  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
-  _boardLayerKey=''; // mevcut tabla katmanını da yeni sırayla yeniden çiz
-}
-function paintingForBoardIdx(idx){return BOARD_PAINTINGS[_paintingOrder[idx%_paintingOrder.length]];}
-
-// Tablo başlıkları — 14 dilin hepsinde (kullanıcı isteği, 2026-07-04: "ana kural").
-// Sanatçı adları özel isim olduğu için tüm dillerde Latin alfabesiyle bırakıldı
-// (uluslararası sanat eserlerinde yaygın uygulama), sadece eser adı çevriliyor.
-const PAINTING_NAMES={
-TR:['Yıldızlı Gece','Büyük Dalga','İnci Küpeli Kız','Mona Lisa','Venüs\'ün Doğuşu','Öpücük','Çığlık','Grande Jatte','Nilüferler','Gece Devriyesi','İzlenim, Gün Doğumu','Sis Gezgini','Ressamın Annesi','Nedimeler','3 Mayıs 1808','Halka Yol Gösteren Özgürlük','Dünyevi Zevkler Bahçesi','Ophelia','Arnolfini Portresi','Kargalı Buğday Tarlası','Gece Kafe Terası','Moulin de la Galette','Saman Arabası','Kürekçiler Öğle Yemeği'],
-EN:['The Starry Night','The Great Wave','Girl with a Pearl Earring','Mona Lisa','The Birth of Venus','The Kiss','The Scream','A Sunday on La Grande Jatte','Water Lilies','The Night Watch','Impression, Sunrise','Wanderer above the Sea of Fog','Whistler\'s Mother','Las Meninas','The Third of May 1808','Liberty Leading the People','The Garden of Earthly Delights','Ophelia','The Arnolfini Portrait','Wheatfield with Crows','Café Terrace at Night','Bal du Moulin de la Galette','The Hay Wain','Luncheon of the Boating Party'],
-JA:['星月夜','神奈川沖浪裏','真珠の耳飾りの少女','モナ・リザ','ヴィーナスの誕生','接吻','叫び','グランド・ジャット島の日曜日の午後','睡蓮','夜警','印象・日の出','雲海の上の旅人','画家の母の肖像','ラス・メニーナス','1808年5月3日','民衆を導く自由の女神','快楽の園','オフィーリア','アルノルフィーニ夫妻の肖像','カラスのいる麦畑','夜のカフェテラス','ムーラン・ド・ラ・ギャレットの舞踏会','干し草の車','舟遊びをする人々の昼食'],
-KO:['별이 빛나는 밤','가나가와 해변의 큰 파도','진주 귀걸이를 한 소녀','모나리자','비너스의 탄생','키스','절규','그랑드 자트 섬의 일요일 오후','수련','야경','인상, 해돋이','안개 바다 위의 방랑자','화가의 어머니','시녀들','1808년 5월 3일','민중을 이끄는 자유의 여신','세속적 쾌락의 정원','오필리아','아르놀피니 부부의 초상','까마귀가 있는 밀밭','밤의 카페 테라스','물랭 드 라 갈레트의 무도회','건초 마차','뱃놀이 일행의 점심'],
-DE:['Sternennacht','Die große Welle','Mädchen mit dem Perlenohrring','Mona Lisa','Die Geburt der Venus','Der Kuss','Der Schrei','Ein Sonntagnachmittag auf der Insel La Grande Jatte','Seerosen','Die Nachtwache','Impression, Sonnenaufgang','Wanderer über dem Nebelmeer','Whistlers Mutter','Las Meninas','Der 3. Mai 1808','Die Freiheit führt das Volk','Der Garten der Lüste','Ophelia','Das Arnolfini-Porträt','Weizenfeld mit Krähen','Caféterrasse am Abend','Ball im Moulin de la Galette','Der Heuwagen','Frühstück der Ruderer'],
-FR:['La Nuit étoilée','La Grande Vague','La Jeune Fille à la perle','La Joconde','La Naissance de Vénus','Le Baiser','Le Cri','Un dimanche après-midi à l\'Île de la Grande Jatte','Nymphéas','La Ronde de nuit','Impression, soleil levant','Le Voyageur contemplant une mer de nuages','La Mère de l\'artiste','Les Ménines','Le Trois Mai 1808','La Liberté guidant le peuple','Le Jardin des délices','Ophélie','Les Époux Arnolfini','Champ de blé aux corbeaux','Terrasse de café le soir','Bal du moulin de la Galette','La Charrette de foin','Le Déjeuner des canotiers'],
-ES:['La Noche Estrellada','La Gran Ola','La Joven de la Perla','La Mona Lisa','El Nacimiento de Venus','El Beso','El Grito','Una Tarde de Domingo en la Grande Jatte','Nenúfares','La Ronda de Noche','Impresión, Sol Naciente','El Caminante sobre el Mar de Nubes','La Madre del Artista','Las Meninas','El Tres de Mayo de 1808','La Libertad Guiando al Pueblo','El Jardín de las Delicias','Ofelia','El Matrimonio Arnolfini','Campo de Trigo con Cuervos','Terraza de Café por la Noche','Baile en el Moulin de la Galette','El Carro de Heno','El Almuerzo de los Remeros'],
-IT:['Notte Stellata','La Grande Onda','Ragazza con l\'Orecchino di Perla','Monna Lisa','La Nascita di Venere','Il Bacio','L\'Urlo','Un Pomeriggio alla Grande Jatte','Ninfee','La Ronda di Notte','Impressione, Levar del Sole','Viandante sul Mare di Nebbia','La Madre dell\'Artista','Las Meninas','Il 3 Maggio 1808','La Libertà che Guida il Popolo','Il Giardino delle Delizie','Ofelia','I Coniugi Arnolfini','Campo di Grano con Corvi','Terrazza del Caffè di Notte','Ballo al Moulin de la Galette','Il Carro di Fieno','Colazione dei Canottieri'],
-PT:['A Noite Estrelada','A Grande Onda','Rapariga com Brinco de Pérola','Mona Lisa','O Nascimento de Vênus','O Beijo','O Grito','Uma Tarde de Domingo na Grande Jatte','Nenúfares','A Ronda Noturna','Impressão, Nascer do Sol','O Caminhante sobre o Mar de Névoa','A Mãe do Artista','As Meninas','O Três de Maio de 1808','A Liberdade Guiando o Povo','O Jardim das Delícias','Ofélia','O Casal Arnolfini','Campo de Trigo com Corvos','Terraço de Café à Noite','Baile no Moulin de la Galette','A Carroça de Feno','O Almoço dos Barqueiros'],
-RU:['Звёздная ночь','Большая волна в Канагаве','Девушка с жемчужной серёжкой','Мона Лиза','Рождение Венеры','Поцелуй','Крик','Воскресный день на острове Гранд-Жатт','Кувшинки','Ночной дозор','Впечатление. Восходящее солнце','Странник над морем тумана','Мать художника','Менины','Третье мая 1808 года','Свобода, ведущая народ','Сад земных наслаждений','Офелия','Портрет четы Арнольфини','Пшеничное поле с воронами','Терраса кафе ночью','Бал в Мулен де ла Галетт','Телега сена','Завтрак гребцов'],
-HI:['तारों भरी रात','महान लहर','मोती की बाली वाली लड़की','मोना लिसा','शुक्र का जन्म','चुंबन','चीख़','ग्रांड जट्टे में रविवार की दोपहर','जल कुमुदिनी','नाइट वॉच','इम्प्रेशन, सूर्योदय','कोहरे के समुद्र पर यात्री','चित्रकार की माँ','लास मेनिनास','3 मई 1808','जनता का नेतृत्व करती स्वतंत्रता','सांसारिक सुखों का बाग़','ओफेलिया','अर्नोल्फिनी चित्र','कौवों वाला गेहूं का खेत','रात्रि कैफे छत','मूलाँ दे ला गालेट में नृत्य','घास की गाड़ी','नाविकों का दोपहर भोज'],
-NL:['De Sterrennacht','De Grote Golf','Meisje met de Parel','Mona Lisa','De Geboorte van Venus','De Kus','De Schreeuw','Een Zondagmiddag op het Eiland La Grande Jatte','Waterlelies','De Nachtwacht','Impressie, Zonsopgang','Wandelaar boven de Nevelzee','Whistlers Moeder','Las Meninas','De Derde Mei 1808','De Vrijheid Leidt het Volk','De Tuin der Lusten','Ophelia','Het Arnolfini-Portret','Korenveld met Kraaien','Caféterras \'s Avonds','Bal in Moulin de la Galette','De Hooiwagen','Het Roeiersdiner'],
-AR:['ليلة مرصعة بالنجوم','الموجة العظيمة','فتاة بقرط لؤلؤي','الموناليزا','ميلاد فينوس','القبلة','الصرخة','بعد ظهر أحد في جزيرة لا غراند جات','زنابق الماء','الحراسة الليلية','انطباع، شروق الشمس','المسافر فوق بحر الغيوم','والدة الرسام','وصيفات الشرف','الثالث من مايو 1808','الحرية تقود الشعب','حديقة المسرات الأرضية','أوفيليا','لوحة زوجي أرنولفيني','حقل قمح مع الغربان','شرفة المقهى ليلاً','حفلة في مولان دو لا غاليت','عربة القش','غداء ملاحي القوارب'],
-ZH:['星夜','神奈川冲浪里','戴珍珠耳环的少女','蒙娜丽莎','维纳斯的诞生','吻','呐喊','大碗岛的星期天下午','睡莲','夜巡','印象·日出','雾海上的旅人','惠斯勒的母亲','宫娥','1808年5月3日','自由引导人民','人间乐园','奥菲莉亚','阿尔诺芬尼夫妇像','麦田群鸦','夜间咖啡馆','煎饼磨坊的舞会','干草车','划船人的午餐'],
-};
-function paintingDisplayName(idx){
-  const arr=PAINTING_NAMES[lang]||PAINTING_NAMES.EN;
-  return (arr&&arr[idx])||BOARD_PAINTINGS[idx].name;
-}
-function updatePaintingCaption(){
-  const el=document.getElementById('board-painting-caption');
-  if(!el)return;
-  const bp=paintingForBoardIdx(_boardIdxCur);
-  const idx=_paintingOrder[_boardIdxCur%_paintingOrder.length];
-  el.textContent='🎨 '+paintingDisplayName(idx)+' — '+bp.artist;
-}
 // Marka rengi SABİT (kullanıcı isteği, 2026-07-04): tabla ilerledikçe renk değil,
 // malzeme/desen tarzı değişir (fam yalnızca _paintBoardMaterial'de hangi çizim
 // tekniğinin kullanılacağını seçer — rengi değil).
@@ -4013,27 +3955,6 @@ function boardDesign(i){
 const BOARD_THRESH=(()=>{const a=[0];for(let i=1;i<BOARD_COUNT;i++)a.push(Math.round(120*Math.pow(i,1.45)));return a;})();
 function boardIndexForScore(sc){let i=0;while(i+1<BOARD_COUNT&&sc>=BOARD_THRESH[i+1])i++;return i;}
 let _boardIdxCur=0;
-
-// ── TABLA ARKA PLANI: ÜNLÜ TABLO — skor arttıkça sürekli değişen sanat eseri.
-// Deterministik seçim: idx%12 → BOARD_PAINTINGS. Görsel hazır değilse zemin gradyanı
-// (bd'nin h/s/l'i) fallback olarak kalır, yüklenince bir sonraki frame'de görünür.
-function _paintBoardPainting(g,W,H,bd){
-  const{idx,step}=bd, img=_paintingImgs[_paintingOrder[idx%_paintingOrder.length]];
-  g.save();
-  // Çerçeve içine kırp
-  const r=16,x0=4,y0=4,w=W-8,hh2=H-8;
-  g.beginPath();g.moveTo(x0+r,y0);g.lineTo(x0+w-r,y0);g.quadraticCurveTo(x0+w,y0,x0+w,y0+r);g.lineTo(x0+w,y0+hh2-r);g.quadraticCurveTo(x0+w,y0+hh2,x0+w-r,y0+hh2);g.lineTo(x0+r,y0+hh2);g.quadraticCurveTo(x0,y0+hh2,x0,y0+hh2-r);g.lineTo(x0,y0+r);g.quadraticCurveTo(x0,y0,x0+r,y0);g.closePath();g.clip();
-
-  if(img&&img._ready){
-    g.globalAlpha=1;
-    g.drawImage(img,x0,y0,w,hh2);
-    // Okunabilirlik için koyu örtü — kademeyle hafif azalır (üst kademe = daha net tablo)
-    g.fillStyle=`rgba(8,4,2,${Math.max(0.30,0.46-step*0.016)})`;
-    g.fillRect(x0,y0,w,hh2);
-  }
-  // Görsel henüz yüklenmediyse: zemin gradyanı (üstte zaten çizildi) fallback olarak kalır
-  g.restore();g.globalAlpha=1;
-}
 
 // ── PREMIUM BOARD KATMANI — çerçeve + 64 çökük mücevher yuvası + vinyet.
 // Bir kez offscreen'e çizilir; her frame tek drawImage. Tasarım skor indeksinden gelir.
@@ -4058,8 +3979,6 @@ function _buildBoardLayer(){
   bgr.addColorStop(1,hsla(h,s,Math.max(6,l-6),.96));
   rr(4,4,W-8,H-8,16);g.fillStyle=bgr;g.fill();
   g.restore();
-  // Arka plan: ünlü tablo (skor arttıkça sürekli değişir)
-  _paintBoardPainting(g,W,H,bd0);
   // Kenarlık: aile aksanı — üstte parlak, altta sönük (kademeyle güçlenir)
   const bdg=g.createLinearGradient(0,0,0,H);
   bdg.addColorStop(0,hsla(h,Math.min(90,s+25),62,acc));
@@ -4171,8 +4090,8 @@ function drawBoard(now){
   if(bi!==_boardIdxCur){
     const organic=bi>_boardIdxCur&&(bi-_boardIdxCur)<=3&&!dead&&score>0;
     _boardIdxCur=bi;
-    updatePaintingCaption(); // ekranda anlık yazı yerine tepsi altındaki kalıcı etikette güncellenir
     if(organic){
+      floats.push({x:canvas.width/2,y:gy+CELL*GRID*0.35,txt:'🎨 '+boardDesign(bi).name,a:1,vy:-1.2,c:'#FFD93D',big:true});
       vibrate([15,10,25]);
     }
   }
@@ -5483,17 +5402,17 @@ async function _firestoreSync(uid){
       // ── SATIN ALMALAR / CÜZDAN: hesaptan çek ────────────────────────────────
       if(d.vip) _applyVip();
       if(d.noAds) _applyNoAds();
-      // Coin: en yüksek (asla kaybetme)
-      const localCoins=parseInt(localStorage.getItem('tm_coins')||'0');
-      localStorage.setItem('tm_coins',String(Math.max(localCoins,d.coins||0)));
-      // Sahip olunan temalar: birleştir
+      // Coin/envanter: BULUT esas alınır (Math.max ÇOĞALTMA yapıyordu — coin harcanır,
+      // bulut eski yüksek değeri tutar, girişte max() harcananı geri getirirdi).
+      // Her harcama/kazanç zaten syncWallet ile buluta anında yazılıyor.
+      if('coins' in d) localStorage.setItem('tm_coins',String(d.coins||0));
+      // Sahip olunan temalar: birleştir (tema geri alınamaz, birleştirme güvenli)
       if(Array.isArray(d.owned)){
         tmOwned=Array.from(new Set([...tmOwned,...d.owned]));
         localStorage.setItem('tm_owned',JSON.stringify(tmOwned));
       }
-      // Envanter (bonus bomba/undo): en yüksek
-      setInvBombs(Math.max(getInvBombs(),d.invBombs||0));
-      setInvUndos(Math.max(getInvUndos(),d.invUndos||0));
+      if('invBombs' in d) setInvBombs(d.invBombs||0);
+      if('invUndos' in d) setInvUndos(d.invUndos||0);
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       const xpNow=getXP();
       await setDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
@@ -5521,11 +5440,16 @@ async function _firestorePushScore(){
     // Haftalık skor = bu haftaki en iyi oyun (all-time'a sabitlenmez)
     const newWeekly=Math.max(prevWeekly,getMyWeeklyScore()||0);
     const xpNow=getXP();
+    // KRİTİK: kural "best/total/xp geriye gidemez" der — yerel değer buluttakinden
+    // düşükse TÜM yazma reddedilir (skorlar hiç güncellenmezdi). Bulutla kırp.
+    const wBest=Math.max(acct.best||0,prev.best||0);
+    const wTotal=Math.max(acct.total||0,prev.total||0);
+    const wXp=Math.max(xpNow,prev.xp||0);
     // setDoc merge: döküman yoksa oluşturur, varsa günceller (updateDoc gibi başarısız olmaz)
     await setDoc(ref,{
-      uid:acct.uid,best:acct.best||0,games:acct.games||0,total:acct.total||0,
+      uid:acct.uid,best:wBest,games:Math.max(acct.games||0,prev.games||0),total:wTotal,
       name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',
-      xp:xpNow,level:calcLevel(xpNow),
+      xp:wXp,level:calcLevel(wXp),
       weeklyScore:newWeekly,weeklyReset:ws
     },{merge:true});
     // bestAt (tiebreaker) ayrı yazılır — kural güncellenmeden önce sessizce
@@ -5553,8 +5477,9 @@ async function _firestorePushTimeAttackScore(){
     const prevBest=prev.bestTimeAttack||0;
     const myBest=parseInt(localStorage.getItem('tiliq_best_timeattack')||'0');
     if(myBest<=prevBest)return; // geriye gitmesin, gereksiz yazma yapma
+    // best'i bulutla kırp — yerel best düşükse anti-rollback kuralı TÜM yazmayı reddederdi
     await setDoc(ref,{
-      uid:acct.uid,best:acct.best||0,bestTimeAttack:myBest,
+      uid:acct.uid,best:Math.max(acct.best||0,prev.best||0),bestTimeAttack:myBest,
       name:displayName(),code:myCode.toUpperCase(),country:acct.country||''
     },{merge:true});
     const lbPanel=document.getElementById('lb-panel');
@@ -5575,10 +5500,14 @@ function syncWallet(){
 async function _syncWalletToFirestore(){
   if(!acct.uid||!_fbApp) return;
   try{
-    const {getFirestore,doc,setDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const {getFirestore,doc,setDoc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     const db=getFirestore(_fbApp);
-    await setDoc(doc(db,'users',acct.uid),{
-      best:acct.best||0,   // kural best:int ister — her zaman ekle
+    const ref=doc(db,'users',acct.uid);
+    const snap=await getDoc(ref);
+    const prev=snap.exists()?snap.data():{};
+    await setDoc(ref,{
+      // kural best:int ister + geriye gidemez — bulutla kırp, yoksa TÜM cüzdan yazması reddedilir
+      best:Math.max(acct.best||0,prev.best||0),
       vip:isVip(),noAds:isNoAds(),
       coins:parseInt(localStorage.getItem('tm_coins')||'0'),
       owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos()
