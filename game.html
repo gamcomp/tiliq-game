@@ -1932,10 +1932,7 @@ function claimTreasure(){
 
   // Kaydet
   localStorage.setItem('tm_treasure_date',todayStr());
-  if(coins){
-    let totalCoins=parseInt(localStorage.getItem('tm_coins')||'0')+coins;
-    localStorage.setItem('tm_coins',String(totalCoins));
-  }
+  if(coins) tmAddCoins(coins); // bekleyen-delta defteri üzerinden — senkron yarışında kaybolmaz
   // Bonus bomba / geri alma → kalıcı envantere ekle
   if(reward.bombs) setInvBombs(getInvBombs()+reward.bombs);
   if(reward.undos) setInvUndos(getInvUndos()+reward.undos);
@@ -2072,7 +2069,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.07-1';
+const BUILD_VER='v2026.07.07-2';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -4519,10 +4516,25 @@ let storeTab='themes';
 
 function tmOwns(id){return tmOwned.includes(id);}
 function tmGetCoins(){return parseInt(localStorage.getItem('tm_coins')||'0');}
+// ── COIN BEKLEYEN-DELTA DEFTERİ ──────────────────────────────────────────────
+// Sorun: girişte bulut coin'i yereli KÖRLEMESİNE eziyordu — girişten hemen önce/
+// sırasında kazanılan coinler (günlük ödül, satın alma) buluta yazılamadan
+// siliniyordu → "her girişte farklı coin" raporu. Çözüm: son onaylı bulut
+// yazımından beri biriken delta ayrı tutulur; bulut çekilince local = bulut + delta.
+function _coinPending(){return parseInt(localStorage.getItem('tm_coins_pending')||'0');}
+function _coinPend(d){localStorage.setItem('tm_coins_pending',String(_coinPending()+d));}
+function tmAddCoins(n){
+  if(!n)return;
+  localStorage.setItem('tm_coins',String(tmGetCoins()+n));
+  _coinPend(n);
+  if(typeof updateStoreCoinBal==='function') updateStoreCoinBal();
+  if(typeof syncWallet==='function') syncWallet();
+}
 function tmSpendCoins(n){
   const c=tmGetCoins();
   if(c<n)return false;
   localStorage.setItem('tm_coins',String(c-n));
+  _coinPend(-n);
   updateStoreCoinBal();
   if(typeof syncWallet==='function') syncWallet();
   return true;
@@ -4803,6 +4815,7 @@ function _resetToGuestState(){
   localStorage.removeItem('tm_xp');
   localStorage.removeItem('tm_bestAt');
   localStorage.removeItem('tm_coins');
+  localStorage.removeItem('tm_coins_pending');
   localStorage.removeItem('tm_owned');
   localStorage.removeItem('tm_inv_bombs');
   localStorage.removeItem('tm_inv_undos');
@@ -4942,9 +4955,7 @@ async function iapBuy(id){
     // Coin paketi (tüketilebilir) → coin ekle
     if(RC_COIN_AMOUNTS[id]!==undefined){
       const amount=RC_COIN_AMOUNTS[id];
-      const total=parseInt(localStorage.getItem('tm_coins')||'0')+amount;
-      localStorage.setItem('tm_coins',String(total));
-      updateStoreCoinBal();
+      tmAddCoins(amount); // bekleyen-delta defteri — satın alınan coin senkronda kaybolmaz
       showCelebration(`+${amount} 🪙 ${t('iapSuccess')}`,'#D4A843');
       playPurchase();vibrate([20,10,40]);
     } else if(active[RC_ENTITLEMENT_VIP]||active[RC_ENTITLEMENT_NO_ADS]){
@@ -5427,10 +5438,24 @@ async function _firestoreSync(uid){
       // ── SATIN ALMALAR / CÜZDAN: hesaptan çek ────────────────────────────────
       if(d.vip) _applyVip();
       if(d.noAds) _applyNoAds();
-      // Coin/envanter: BULUT esas alınır (Math.max ÇOĞALTMA yapıyordu — coin harcanır,
-      // bulut eski yüksek değeri tutar, girişte max() harcananı geri getirirdi).
-      // Her harcama/kazanç zaten syncWallet ile buluta anında yazılıyor.
-      if('coins' in d) localStorage.setItem('tm_coins',String(d.coins||0));
+      // Coin: BULUT + BEKLEYEN DELTA (körlemesine ezme YOK). Önceden bulut yereli
+      // direkt eziyordu — girişten hemen önce kazanılan coinler siliniyordu.
+      if('coins' in d){
+        localStorage.setItem('tm_coins',String(Math.max(0,(d.coins||0)+_coinPending())));
+      }
+      // Günlük ödül: başka cihazda BUGÜN alındıysa burada da alınmış say (çift ödül engeli)
+      const _todayInt=parseInt(todayStr().replace(/-/g,''));
+      if((d.treasureDate||0)===_todayInt) localStorage.setItem('tm_treasure_date',todayStr());
+      // Günlük seri: bulut daha ileriyse ve bugüne/düne aitse benimse (cihazlar arası tutarlılık)
+      if(d.dailyStreak&&d.treasureDate){
+        const _ts=String(d.treasureDate);
+        const _tIso=_ts.slice(0,4)+'-'+_ts.slice(4,6)+'-'+_ts.slice(6,8);
+        const _yIso=new Date(Date.now()-86400000).toISOString().slice(0,10);
+        const _loc=JSON.parse(localStorage.getItem('tm_streak')||'{"date":"","count":0}');
+        if((_tIso===todayStr()||_tIso===_yIso)&&d.dailyStreak>(_loc.count||0)){
+          localStorage.setItem('tm_streak',JSON.stringify({date:_tIso,count:d.dailyStreak}));
+        }
+      }
       // Sahip olunan temalar: birleştir (tema geri alınamaz, birleştirme güvenli)
       if(Array.isArray(d.owned)){
         tmOwned=Array.from(new Set([...tmOwned,...d.owned]));
@@ -5462,15 +5487,22 @@ async function _firestoreSync(uid){
       if(d.activeFlame && d.activeFlame!==activeFlameId && FLAME_THEMES.some(f=>f.id===d.activeFlame)) applyFlameTheme(d.activeFlame);
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       const xpNow=getXP();
+      const _pf1=_coinPending(); // yazım öncesi delta
       await setDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
         vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),friendCodes:getFriends().map(f=>f.code).filter(Boolean)},{merge:true});
+      _coinPend(-_pf1); // coin buluta yazıldı → delta onaylandı
     }else{
       const xpNow=getXP();
+      const _pf2=_coinPending();
       await setDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
         vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos()},{merge:true});
+      _coinPend(-_pf2);
     }
     _refreshCodeDisplays();
     updateStoreCoinBal();
+    // Senkron sonrası günlük ödül kartı/seri rozeti taze veriyle yenilensin
+    if(typeof renderDailyCard==='function') renderDailyCard();
+    if(typeof updateStreakDisplay==='function') updateStreakDisplay();
   }catch(e){console.warn('Firestore sync:',e);}
 }
 
@@ -5528,13 +5560,17 @@ function syncWallet(){
 }
 async function _syncWalletToFirestore(){
   if(!acct.uid||!_fbApp) return;
+  const _flushed=_coinPending(); // yazım öncesi bekleyen delta — başarıda onaylanır
   try{
     const {getFirestore,doc,setDoc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
     const db=getFirestore(_fbApp);
     const ref=doc(db,'users',acct.uid);
     const snap=await getDoc(ref);
     const prev=snap.exists()?snap.data():{};
-    await setDoc(ref,{
+    // Günlük ödül durumu da hesaba yazılır (cihazlar arası çift ödül engeli)
+    const _tDate=localStorage.getItem('tm_treasure_date')||'';
+    const _sj=JSON.parse(localStorage.getItem('tm_streak')||'{"date":"","count":0}');
+    const payload={
       // kural best:int ister + geriye gidemez — bulutla kırp, yoksa TÜM cüzdan yazması reddedilir
       best:Math.max(acct.best||0,prev.best||0),
       vip:isVip(),noAds:isNoAds(),
@@ -5542,10 +5578,21 @@ async function _syncWalletToFirestore(){
       owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),
       // Seçili tema/alev de hesaba bağlı olsun — başka cihazda açınca aynı görünüm
       // (kullanıcı isteği, 2026-07-06: "ayarlar her cihazda aynı olsun")
-      activeTheme:activeThemeId,activeFlame:activeFlameId
-    },{merge:true});
+      activeTheme:activeThemeId,activeFlame:activeFlameId,
+      dailyStreak:_sj.count||0
+    };
+    if(_tDate) payload.treasureDate=parseInt(_tDate.replace(/-/g,''))||0;
+    await setDoc(ref,payload,{merge:true});
+    // Yazım BAŞARILI → yazılan delta onaylandı (bu sırada eklenen yeni delta korunur)
+    _coinPend(-_flushed);
   }catch(e){console.warn('wallet sync:',e);}
 }
+// Sekme/uygulama kapanırken bekleyen cüzdan yazımını hemen gönder (800ms debounce kaybını önler)
+function _flushWalletNow(){
+  if(_walletSyncTimer){clearTimeout(_walletSyncTimer);_walletSyncTimer=null;_syncWalletToFirestore();}
+}
+window.addEventListener('pagehide',_flushWalletNow);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')_flushWalletNow();});
 
 function getFriends(){
   try{return JSON.parse(localStorage.getItem('tm_friends')||'[]');}
