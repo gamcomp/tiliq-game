@@ -2072,7 +2072,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.06-1';
+const BUILD_VER='v2026.07.07-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5333,10 +5333,22 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
       // Kullanıcı listede yoksa kendi satırını ekle (sırasını hesaplamak için)
       const inList = myUID?rows.some(r=>r.uid===myUID):false;
       if(!inList) rows.push({n:myFlag()+' '+myName,s:ps,uid:myUID||'__me__',me:true,lv:calcLevel(getXP()),bestAt:parseInt(localStorage.getItem('tm_bestAt')||'0')||Infinity});
+      else {
+        // TEK KAYNAK: "Skorun" bandı ile listedeki satır AYNI değeri göstersin.
+        // Yerel > bulut ise (push gecikti/başarısız) satırı yerel değere yükselt ve
+        // buluta arka planda senkron gönder; bulut > yerel ise bandı buluta hizala.
+        const mine=rows.find(r=>r.uid===myUID);
+        if(mine){
+          mine.me=true;
+          if(ps>mine.s){ mine.s=ps; try{_firestorePushScore();}catch(_){} }
+        }
+      }
       // Skor DESC, eşitse tarihe (bestAt) göre ASC
       rows.sort((a,b)=>b.s-a.s || (a.bestAt-b.bestAt));
       const myIdx=rows.findIndex(r=>r.uid===myUID||r.me);
       rankEl.textContent=myIdx>=0?'#'+(myIdx+1):'#--';
+      // Bandı, listede fiilen gösterilen kendi satır değerine eşitle (tam tutarlılık)
+      if(myIdx>=0) scoreEl.textContent=(rows[myIdx].s||0).toLocaleString();
       // Sadece top 20 göster
       const top20=rows.slice(0,20);
       let html=top20.map((r,i)=>_lbRow(i,r.n,r.s,r.uid===myUID||r.me,r.lv)).join('');
