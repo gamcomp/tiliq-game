@@ -1927,14 +1927,17 @@ async function _pushXPToFirestore(xp){
 
 // ── GÜNLÜK BONUS ÖDÜL SİSTEMİ ────────────────────────────────────────────────
 // 7 günlük döngü — coin, bomba ve geri alma hakkı serisine göre verilir
+// Ekonomi dengesi (2026-07-07): haftalık ücretsiz coin 775→240 (%69 kesinti).
+// Eski değerlerle en büyük paralı paket (750) her hafta bedavaya çıkıyordu —
+// paketler anlamsızlaşıyordu. Yeni denge: 100'lük paket ≈ 3 gün, 750'lik ≈ 3 hafta.
 const DAILY_REWARDS=[
-  {coins:50},                    // 1. gün
-  {coins:75},                    // 2. gün
-  {coins:30,bombs:1},            // 3. gün — bomba
-  {coins:100,undos:1},           // 4. gün — geri alma bonusu
-  {coins:120},                   // 5. gün
-  {coins:150},                   // 6. gün
-  {coins:250,bombs:2},           // 7. gün — büyük sandık (2 bomba)
+  {coins:15},                    // 1. gün
+  {coins:20},                    // 2. gün
+  {coins:10,bombs:1},            // 3. gün — bomba
+  {coins:25,undos:1},            // 4. gün — geri alma bonusu
+  {coins:30},                    // 5. gün
+  {coins:40},                    // 6. gün
+  {coins:100,bombs:1},           // 7. gün — büyük sandık
 ];
 function dailyReward(streak){
   const idx=(((streak||1)-1)%7+7)%7;
@@ -2115,7 +2118,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.07-5';
+const BUILD_VER='v2026.07.07-6';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -4548,9 +4551,9 @@ function applyFlameTheme(id){
 }
 
 const STORE_POWERUPS=[
-  {id:'bomb3',    name:'3 Bomba',         emoji:'💣', coins:60,  desc:'Sıkışınca işe yarar',  action:()=>addInventory('bombs',3)},
+  {id:'bomb3',    name:'3 Bomba',         emoji:'💣', coins:90,  desc:'Sıkışınca işe yarar',  action:()=>addInventory('bombs',3)},
   {id:'bomb10',   name:'10 Bomba',        emoji:'💣💣',coins:180, desc:'Büyük stok — %25 indirim', action:()=>addInventory('bombs',10)},
-  {id:'xp2',     name:'2× XP (1 Oyun)', emoji:'⚡', coins:40,  desc:'Sonraki oyunda çift XP',action:()=>activateXPBoost()},
+  {id:'xp2',     name:'2× XP (1 Oyun)', emoji:'⚡', coins:60,  desc:'Sonraki oyunda çift XP',action:()=>activateXPBoost()},
   {id:'coins100', name:'100 Coin',        emoji:'🪙', coins:null,price:'$2.99', desc:'Anlık coin yükle', action:()=>iapBuy('coins100')},
   {id:'coins300', name:'300 Coin',        emoji:'🪙🪙',coins:null,price:'$6.99', desc:'Popüler paket — %22 bonus', action:()=>iapBuy('coins300')},
   {id:'coins750', name:'750 Coin',        emoji:'🪙🪙🪙',coins:null,price:'$14.99',desc:'Büyük paket — %43 bonus',action:()=>iapBuy('coins750')},
