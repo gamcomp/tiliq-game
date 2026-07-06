@@ -216,13 +216,22 @@ body::after{
 .rw-chip.rw-coin{background:rgba(212,168,67,.18);color:#E0B84D;}
 .rw-chip.rw-bomb{background:rgba(255,107,53,.18);color:#FF8A5B;}
 .rw-chip.rw-undo{background:rgba(86,207,225,.18);color:#56CFE1;}
-.tb-streak{display:flex;align-items:center;gap:4px;margin-top:5px;}
-.tb-streak-dot{width:8px;height:8px;border-radius:50%;background:var(--dim2);}
-.tb-streak-dot.active{background:#FF9F43;}
-.tb-streak-dot.tb-dot-b{box-shadow:0 0 0 2px rgba(255,107,53,.35);}
-.tb-streak-dot.tb-dot-b.active{background:#FF6B35;}
-.tb-streak-dot.tb-dot-u{box-shadow:0 0 0 2px rgba(86,207,225,.35);}
-.tb-streak-dot.tb-dot-u.active{background:#56CFE1;}
+/* 7 günlük görsel ödül takvimi */
+.tb-streak{display:flex;align-items:stretch;gap:4px;margin-top:8px;}
+.tb-day{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  padding:5px 1px;border-radius:9px;min-width:0;
+  background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.05);}
+.tb-day-ico{font-size:12px;line-height:1.2;}
+.tb-day-amt{font-size:8.5px;font-weight:800;color:var(--dim);line-height:1;}
+.tb-day.done{background:rgba(107,203,119,.12);border-color:rgba(107,203,119,.32);}
+.tb-day.done .tb-day-ico{color:#6BCB77;font-size:11px;}
+.tb-day.today{background:linear-gradient(135deg,rgba(212,168,67,.28),rgba(196,113,74,.2));
+  border-color:rgba(212,168,67,.6);box-shadow:0 0 10px rgba(212,168,67,.3);
+  animation:tbToday 1.6s ease-in-out infinite;}
+.tb-day.today .tb-day-amt{color:#E8C87A;}
+.tb-day.big .tb-day-ico{font-size:14px;}
+.tb-day.big:not(.done){border-color:rgba(255,159,67,.4);}
+@keyframes tbToday{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 .tb-cta{background:linear-gradient(135deg,var(--accent),var(--acc2));border:none;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:800;color:#fff;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;box-shadow:0 4px 14px rgba(196,113,74,.4);}
 .tb-cta.claimed{background:rgba(107,203,119,.15);color:#6BCB77;border:1px solid rgba(107,203,119,.3);box-shadow:none;cursor:default;}
 
@@ -1922,10 +1931,10 @@ const DAILY_REWARDS=[
   {coins:50},                    // 1. gün
   {coins:75},                    // 2. gün
   {coins:30,bombs:1},            // 3. gün — bomba
-  {coins:100},                   // 4. gün
+  {coins:100,undos:1},           // 4. gün — geri alma bonusu
   {coins:120},                   // 5. gün
   {coins:150},                   // 6. gün
-  {coins:250,bombs:1},           // 7. gün — büyük ödül
+  {coins:250,bombs:2},           // 7. gün — büyük sandık (2 bomba)
 ];
 function dailyReward(streak){
   const idx=(((streak||1)-1)%7+7)%7;
@@ -2041,13 +2050,16 @@ function renderDailyCard(){
     tbCta.textContent=t('dailyCollect');tbCta.classList.remove('claimed');
   }
 
-  // Seri noktaları (7 gün) — bomba/undo günleri özel renkli
+  // 7 günlük görsel ödül takvimi — geçmiş ✔, bugün parlak, gelecek kilitli, 7. gün sandık
   const cycleDay=(((streak||1)-1)%7+7)%7;        // 0..6 bugünün döngü indeksi
-  const filled=claimed?cycleDay+1:cycleDay;       // dolu nokta sayısı
   tbStreak.innerHTML=[...Array(7)].map((_,i)=>{
     const r=DAILY_REWARDS[i];
-    const special=r.bombs?' tb-dot-b':r.undos?' tb-dot-u':'';
-    return `<div class="tb-streak-dot${i<filled?' active':''}${special}"></div>`;
+    const done=i<cycleDay||(claimed&&i===cycleDay);
+    const today=i===cycleDay&&!claimed;
+    const ico=done?'✔':(i===6?'🎁':(r.bombs?'💣':r.undos?'↩️':'🪙'));
+    const amt=done?'':(r.coins||'');
+    const cls='tb-day'+(done?' done':'')+(today?' today':'')+(i===6?' big':'');
+    return `<div class="${cls}"><div class="tb-day-ico">${ico}</div><div class="tb-day-amt">${amt}</div></div>`;
   }).join('');
 
   // Seviye çubuğu
@@ -2103,7 +2115,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.07-4';
+const BUILD_VER='v2026.07.07-5';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -4860,6 +4872,7 @@ function _resetToGuestState(){
   localStorage.removeItem('tm_my_code');
   localStorage.removeItem('tm_weekly');
   localStorage.removeItem('tm_streak');
+  localStorage.removeItem('tm_treasure_date'); // günlük ödül durumu hesaba ait — cihazda kalmasın
   localStorage.removeItem('tm_flame');
   localStorage.removeItem('tm_active_theme');
   tmOwned=[];
@@ -5479,17 +5492,20 @@ async function _firestoreSync(uid){
       if('coins' in d){
         localStorage.setItem('tm_coins',String(Math.max(0,(d.coins||0)+_coinPending())));
       }
-      // Günlük ödül: başka cihazda BUGÜN alındıysa burada da alınmış say (çift ödül engeli)
-      const _todayInt=parseInt(todayStr().replace(/-/g,''));
-      if((d.treasureDate||0)===_todayInt) localStorage.setItem('tm_treasure_date',todayStr());
-      // Günlük seri: bulut daha ileriyse ve bugüne/düne aitse benimse (cihazlar arası tutarlılık)
-      if(d.dailyStreak&&d.treasureDate){
-        const _ts=String(d.treasureDate);
-        const _tIso=_ts.slice(0,4)+'-'+_ts.slice(4,6)+'-'+_ts.slice(6,8);
-        const _yIso=new Date(Date.now()-86400000).toISOString().slice(0,10);
-        const _loc=JSON.parse(localStorage.getItem('tm_streak')||'{"date":"","count":0}');
-        if((_tIso===todayStr()||_tIso===_yIso)&&d.dailyStreak>(_loc.count||0)){
-          localStorage.setItem('tm_streak',JSON.stringify({date:_tIso,count:d.dailyStreak}));
+      // GÜNLÜK ÖDÜL/SERİ HESABA BAĞLIDIR — tarih-esaslı otorite:
+      // bulut kaydı yerel kadar yeni/daha yeniyse HESABIN serisi bu cihaza iner
+      // (başka hesabın/cihazın serisi devralınmaz); yerel daha yeniyse (bugün
+      // alındı, bulut henüz eski) yerel korunur ve cüzdan senkronu push eder.
+      {
+        const _todayInt=parseInt(todayStr().replace(/-/g,''));
+        const _locDateStr=localStorage.getItem('tm_treasure_date')||'';
+        const _locDateInt=_locDateStr?parseInt(_locDateStr.replace(/-/g,'')):0;
+        const _cldDateInt=d.treasureDate||0;
+        if(_cldDateInt>0&&_cldDateInt>=_locDateInt){
+          const _ts=String(_cldDateInt);
+          const _tIso=_ts.slice(0,4)+'-'+_ts.slice(4,6)+'-'+_ts.slice(6,8);
+          if(_cldDateInt===_todayInt) localStorage.setItem('tm_treasure_date',todayStr()); // bugün alınmış → çift ödül engeli
+          localStorage.setItem('tm_streak',JSON.stringify({date:_tIso,count:d.dailyStreak||0}));
         }
       }
       // Sahip olunan temalar: birleştir (tema geri alınamaz, birleştirme güvenli)
