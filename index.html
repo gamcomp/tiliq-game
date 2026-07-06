@@ -385,6 +385,18 @@ body::after{
 
 /* Ekran flash overlay */
 #vfx-flash{position:fixed;inset:0;pointer-events:none;z-index:999;opacity:0;max-width:480px;margin:0 auto;border-radius:0;}
+/* ── GİRİŞ DUVARI — hesap olmadan oyun açılmaz ── */
+#login-gate{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 100%,#2A1108 0%,#180C06 40%,#100603 100%);}
+#login-gate.show{display:flex;}
+.gate-card{display:flex;flex-direction:column;align-items:center;gap:12px;
+  width:min(88vw,340px);padding:30px 24px;border-radius:26px;
+  background:linear-gradient(180deg,rgba(255,225,180,.08),rgba(255,210,160,.025));
+  border:1px solid rgba(255,200,140,.18);backdrop-filter:blur(14px);
+  box-shadow:0 14px 44px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.07);
+  animation:menuIn .45s cubic-bezier(.22,1,.36,1) both;}
+.gate-msg{font-size:13px;color:var(--dim);text-align:center;line-height:1.55;margin:2px 0 6px;}
+.gate-card .auth-btn{width:100%;}
 @keyframes vfxFlash{0%{opacity:.7}100%{opacity:0}}
 #vfx-flash.boom{background:radial-gradient(circle at 50% 50%,#FFE5A0,#FF9F43 40%,transparent 70%);animation:vfxFlash .35s ease forwards;}
 #vfx-flash.line{background:linear-gradient(180deg,transparent 0%,rgba(107,203,119,.35) 50%,transparent 100%);animation:vfxFlash .4s ease forwards;}
@@ -704,6 +716,19 @@ input[type="text"]::placeholder{color:var(--dim);}
 </head>
 <body data-theme="dark">
 <div id="vfx-flash"></div>
+
+<!-- GİRİŞ DUVARI — hesap açılmadan oyun açılmaz (kullanıcı şartı) -->
+<div id="login-gate">
+  <div class="gate-card">
+    <span class="menu-logo-emoji">🏺</span>
+    <div class="menu-logo" style="font-size:42px" data-t="appName">Tiliq</div>
+    <p class="gate-msg" data-t="syncDesc">Save your score to the cloud, access from any device</p>
+    <button class="auth-btn auth-btn-google" onclick="window._authSignIn('google')">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+      <span data-t="googleSignIn">Sign in with Google</span>
+    </button>
+  </div>
+</div>
 
 <!-- MAIN MENU -->
 <!-- ── LOADING SCREEN ── -->
@@ -1633,6 +1658,15 @@ function playerLabel(){return myFlag()+' '+displayName();}
 
 // Arkadaş sistemi gerçek (Google) hesap gerektirir — Firestore auth zorunlu
 function isLoggedIn(){return !!(acct._fbLogged&&acct.uid);}
+
+// ── GİRİŞ DUVARI: hesap açılmadan oyun açılmaz (kullanıcı şartı, 2026-07-07) ──
+// acct._fbLogged tm_acct'te kalıcı → tekrar açılışta giriş yapmış kullanıcıya duvar titremez.
+function _updateLoginGate(){
+  const g=document.getElementById('login-gate');
+  if(!g)return;
+  g.classList.toggle('show',!isLoggedIn());
+}
+window.addEventListener('load',_updateLoginGate);
 function requireAccount(msgKey){
   if(isLoggedIn()) return true;
   // Sıralama paneli açıksa kapat (account modal'ı onun üstünde göstermek için)
@@ -2069,7 +2103,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.07-2';
+const BUILD_VER='v2026.07.07-3';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -4715,6 +4749,7 @@ function _onFirebaseUser(user){
   acct.uid  = user.uid;
   acct._fbLogged = true;
   localStorage.setItem('tm_acct', JSON.stringify(acct));
+  _updateLoginGate(); // giriş duvarını kaldır
   _rcLogIn(user.uid);   // RevenueCat'i bu hesaba bağla (entitlement taşınsın)
   const si=document.getElementById('auth-signout-area');
   const na=document.getElementById('auth-native-area');
@@ -4836,6 +4871,7 @@ function _resetToGuestState(){
   _refreshAllNameDisplays();
   _refreshCodeDisplays();
   updateStoreCoinBal();
+  _updateLoginGate(); // çıkış → giriş duvarı geri gelir (hesap şartı)
 }
 window._authSignOut = async function(){
   // KRİTİK: sıfırlamadan ÖNCE mevcut ilerlemeyi buluta KESİN olarak gönder.
