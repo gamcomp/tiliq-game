@@ -2309,7 +2309,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.08-8';
+const BUILD_VER='v2026.07.08-9';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5959,6 +5959,7 @@ async function _firestoreSync(uid){
       }
       if('invBombs' in d) setInvBombs(d.invBombs||0);
       if('invUndos' in d) setInvUndos(d.invUndos||0);
+      if('invColorBlast' in d) setColorBlast(d.invColorBlast||0);
       // Arkadaş kodları: buluttan gelenleri yerel listeye ekle (başka cihazda
       // eklenen arkadaşlar bu cihazda da görünsün — kullanıcı raporu, 2026-07-06).
       // İsim/skor burada değil, arkadaşlar sekmesi açılınca fetchFriendScores ile
@@ -6014,13 +6015,13 @@ async function _firestoreSync(uid){
       const xpNow=getXP();
       const _pf1=_coinPending(); // yazım öncesi delta
       await setDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
-        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),friendCodes:getFriends().map(f=>f.code).filter(Boolean)},{merge:true});
+        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast(),friendCodes:getFriends().map(f=>f.code).filter(Boolean)},{merge:true});
       _coinPend(-_pf1); // coin buluta yazıldı → delta onaylandı
     }else{
       const xpNow=getXP();
       const _pf2=_coinPending();
       await setDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
-        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos()},{merge:true});
+        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast()},{merge:true});
       _coinPend(-_pf2);
     }
     _refreshCodeDisplays();
@@ -6100,7 +6101,7 @@ async function _syncWalletToFirestore(){
       best:Math.max(acct.best||0,prev.best||0),
       vip:isVip(),noAds:isNoAds(),
       coins:parseInt(localStorage.getItem('tm_coins')||'0'),
-      owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),
+      owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast(),
       // Seçili tema/alev/maskot + tüm ayarlar hesaba bağlı — başka cihazda/tarayıcıda
       // açınca sistem AYNEN devam etsin (kullanıcı isteği, 2026-07-07: "her şeyiyle").
       activeTheme:activeThemeId,activeFlame:activeFlameId,
