@@ -1930,11 +1930,13 @@ async function _pushXPToFirestore(xp){
 // Ekonomi dengesi (2026-07-07): haftalık ücretsiz coin 775→240 (%69 kesinti).
 // Eski değerlerle en büyük paralı paket (750) her hafta bedavaya çıkıyordu —
 // paketler anlamsızlaşıyordu. Yeni denge: 100'lük paket ≈ 3 gün, 750'lik ≈ 3 hafta.
+// NOT: "undos" ödülü kaldırıldı — Geri Al butonu oyunda mevcut değil (kaldırılmıştı),
+// ödül vermek kullanıcıyı yanıltıyordu (kullanıcı raporu, 2026-07-07). Coin'e çevrildi.
 const DAILY_REWARDS=[
   {coins:15},                    // 1. gün
   {coins:20},                    // 2. gün
   {coins:10,bombs:1},            // 3. gün — bomba
-  {coins:25,undos:1},            // 4. gün — geri alma bonusu
+  {coins:35},                    // 4. gün
   {coins:30},                    // 5. gün
   {coins:40},                    // 6. gün
   {coins:100,bombs:1},           // 7. gün — büyük sandık
@@ -2118,7 +2120,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.07-6';
+const BUILD_VER='v2026.07.07-7';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3426,7 +3428,7 @@ function _compileFireProgram(gl,OCT){
 ' float inb=step(abs(px.x-bc.x),bh.x)*step(abs(px.y-bc.y),bh.y);\n'+
 ' float d=mix(du,-du,inb);\n'+
 ' float inten=u_inten;\n'+
-' float outer=mix(9.0,110.0,inten),inner=mix(3.0,32.0,inten);\n'+   // diller biraz daha uzun
+' float outer=mix(12.0,150.0,inten),inner=mix(4.0,46.0,inten);\n'+   // gorkemli: daha kalin/uzun alev bandi
 ' float band=smoothstep(outer,0.0,d)*smoothstep(-inner,5.0,d);\n'+
 ' if(band<=0.002){discard;}\n'+
 ' float t=u_time*1.5;\n'+                                      // canli ve hizli akis
@@ -3436,17 +3438,17 @@ function _compileFireProgram(gl,OCT){
 ' float n2=fbm(fp*2.4+warp*1.4+vec2(3.7,-t*2.9));\n'+          // ic filaman detayi (derinlik)
 ' n=pow(n,1.55)*(0.72+0.55*n2);\n'+
 // Dil ayrismasi: kenar boyunca yukari kayan sicak noktalar -> referanstaki gibi ayrik alev dilleri
-' float tng=0.35+1.05*noise(vec2((px.x+px.y)*0.032,t*0.55));\n'+  // x+y: sol/sag VE ust/alt kenarda da dil ayrismasi calisir
-' float flame=band*n*tng*(0.62+0.95*inten);\n'+
+' float tng=0.55+1.35*noise(vec2((px.x+px.y)*0.030,t*0.6));\n'+  // taban yukseldi: bosluk azaldi, ekran daha dolu
+' float flame=band*n*tng*(0.85+1.35*inten);\n'+                 // yogunluk artti: gorkemli/alevli
 ' flame*=smoothstep(outer,-inner*0.5,d);\n'+
-' flame=smoothstep(0.20,0.95,flame);\n'+          // zayif alanlari at: kirmizi taban/pus kalksin, sadece belirgin alev dilleri kalsin\n'+
+' flame=smoothstep(0.12,0.92,flame);\n'+          // esik dustu: daha dolu alev, ince pus yine elenir\n'+
 ' if(flame<=0.01){discard;}\n'+
 ' vec3 col=vec3(0.0);\n'+
-' col+=u_f1*smoothstep(0.02,0.32,flame);\n'+   // dis katman (tema)
-' col+=u_f2*smoothstep(0.22,0.58,flame);\n'+
-' col+=u_f3*smoothstep(0.48,0.82,flame);\n'+
-' col+=u_f4*smoothstep(0.78,1.03,flame)*inten;\n'+
-' float a=clamp(flame*1.2,0.0,1.0);\n'+
+' col+=u_f1*smoothstep(0.02,0.30,flame);\n'+   // dis katman (tema)
+' col+=u_f2*smoothstep(0.20,0.54,flame);\n'+
+' col+=u_f3*smoothstep(0.44,0.78,flame);\n'+
+' col+=u_f4*smoothstep(0.72,1.02,flame)*(0.6+0.6*inten);\n'+  // beyaz-sicak cekirdek daha erken/genis acilir
+' float a=clamp(flame*1.55,0.0,1.0);\n'+
 ' gl_FragColor=vec4(col*a,a);\n'+
 '}';
   const sh=(ty,src)=>{const s=gl.createShader(ty);gl.shaderSource(s,src);gl.compileShader(s);
@@ -3531,19 +3533,21 @@ function _drawCellFire(gx,gy,now){
   _fireTier = tg.tier;
   _applyBoardGlow(tg.tier);
   if(_fireGLOK){
-    // GL alevin üstüne yükselen kor taneleri (temalı) — shader'a canlılık katar
-    if(tg.tier>=1 && now-_cellFireT>140 && sparks.length<70){
+    // GL alevin üstüne yükselen kor taneleri (temalı) — görkemli/dolu his için yoğunlaştırıldı
+    if(tg.tier>=1 && now-_cellFireT>85 && sparks.length<130){
       _cellFireT=now;
       const gs2=CELL*GRID;
       const thm=(typeof getFlameTheme==='function')?getFlameTheme():null;
       const cols=thm?thm.sw.slice(1):['#FF8A3D','#FFD27A'];
-      const en=tg.tier>=4?4:tg.tier>=3?3:tg.tier>=2?2:1;
+      const en=tg.tier>=4?9:tg.tier>=3?6:tg.tier>=2?4:2;
       for(let i=0;i<en;i++){
-        let ex,ey; // sadece sol/sağ kenarlardan (üst/alt kırmızılık istenmiyor)
-        if(Math.random()<0.5){ex=gx+2;ey=gy+Math.random()*gs2;}  // sol kenar
-        else {ex=gx+gs2-2;ey=gy+Math.random()*gs2;}               // sağ kenar
-        sparks.push({x:ex,y:ey,vx:(Math.random()-.5)*.8,vy:-(1.2+Math.random()*2.0),
-          a:1,c:cols[i%cols.length],sz:1.3+Math.random()*1.6,type:'ember',fade:.016});
+        let ex,ey,vx,vy;
+        const side=Math.random();
+        if(side<0.4){ex=gx+2;ey=gy+Math.random()*gs2;vx=0.3+Math.random()*.8;vy=-(1.2+Math.random()*2.2);}        // sol kenar
+        else if(side<0.8){ex=gx+gs2-2;ey=gy+Math.random()*gs2;vx=-(0.3+Math.random()*.8);vy=-(1.2+Math.random()*2.2);} // sağ kenar
+        else {ex=gx+Math.random()*gs2;ey=gy+gs2-2;vx=(Math.random()-.5)*.9;vy=-(1.6+Math.random()*2.6);}          // alt kenar (yükseliş vurgusu)
+        sparks.push({x:ex,y:ey,vx,vy,
+          a:1,c:cols[i%cols.length],sz:1.4+Math.random()*1.9,type:'ember',fade:.014});
       }
     }
     return; // partikül alev/2D glow'u atla (shader çiziyor)
@@ -4098,17 +4102,10 @@ function _drawGlint(gx,gy,now){
 
 function drawBoard(now){
   const gx=GOX(),gy=GOY;
-  // Skor arttıkça tabla evrilir (108 tasarım). Organik geçişte (1-3 kademe) kutlama.
-  const bi=boardIndexForScore(score||0);
-  if(bi!==_boardIdxCur){
-    const organic=bi>_boardIdxCur&&(bi-_boardIdxCur)<=3&&!dead&&score>0;
-    _boardIdxCur=bi;
-    if(organic){
-      floats.push({x:canvas.width/2,y:gy+CELL*GRID*0.35,txt:'🎨 '+boardDesign(bi).name,a:1,vy:-1.2,c:'#FFD93D',big:true});
-      vibrate([15,10,25]);
-    }
-  }
-  _buildBoardLayer(); // cache'li — CELL/tema/tabla indeksi değişmedikçe yeniden çizilmez
+  // Tabla sabit tutulur — skora göre otomatik tema değişimi VE "🎨 isim" bildirimi
+  // kullanıcı isteğiyle kapatıldı (2026-07-07). boardDesign/BOARD_FAMS sistemi
+  // dokunulmadan duruyor — ileride "seç ve uygula" tarzı bir özelliğe temel olabilir.
+  _buildBoardLayer(); // cache'li — CELL/tema değişmedikçe yeniden çizilmez
   ctx.drawImage(_boardLayer,gx-_BL_PAD,gy-_BL_PAD);
 
   // Bomb mode crosshair hint
@@ -4349,7 +4346,7 @@ function drawDrag(){
 function draw(){
   const now=performance.now();
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(sparks.length>80)sparks.splice(0,sparks.length-80);
+  if(sparks.length>140)sparks.splice(0,sparks.length-140); // combo alevi kor tanesi limiti ile tutarlı
   if(shockwaves.length>12)shockwaves.splice(0,shockwaves.length-12);
   if(floats.length>10)floats.splice(0,floats.length-10);
   if(celebs.length>3)celebs.splice(0,celebs.length-3);
