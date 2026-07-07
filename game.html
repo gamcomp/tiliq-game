@@ -78,7 +78,8 @@ body::after{
 /* ── LOADING ── */
 #screen-loading{background:var(--bg);justify-content:center;align-items:center;gap:0;}
 .splash-logo-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;animation:splashIn .6s ease-out both;}
-.splash-emoji{font-size:72px;animation:splashBounce 1.2s ease-in-out infinite alternate;}
+.splash-emoji{width:96px;height:96px;object-fit:contain;animation:splashBounce 1.2s ease-in-out infinite alternate;
+  filter:drop-shadow(0 6px 16px rgba(212,168,67,.45));}
 .splash-title{font-size:52px;font-weight:900;letter-spacing:-2px;
   background:linear-gradient(135deg,#5B8DB8 0%,#C4714A 52%,#D4A843 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
@@ -157,7 +158,7 @@ body::after{
   text-align:center;filter:drop-shadow(0 2px 12px rgba(196,113,74,.45));
   animation:logoShine 5.5s ease-in-out infinite;}
 @keyframes logoShine{0%,100%{background-position:0% 0}50%{background-position:100% 0}}
-.menu-logo-emoji{font-size:46px;line-height:1;display:block;text-align:center;
+.menu-logo-emoji{width:64px;height:64px;object-fit:contain;display:block;margin:0 auto;
   filter:drop-shadow(0 4px 10px rgba(212,168,67,.5));animation:heroFloat 3.4s ease-in-out infinite;}
 @keyframes heroFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-6px) rotate(2deg)}}
 .menu-sub{font-size:11px;font-weight:700;color:var(--dim);text-align:center;
@@ -781,7 +782,7 @@ input[type="text"]::placeholder{color:var(--dim);}
 <!-- GİRİŞ DUVARI — hesap açılmadan oyun açılmaz (kullanıcı şartı) -->
 <div id="login-gate">
   <div class="gate-card">
-    <span class="menu-logo-emoji">🏺</span>
+    <img class="menu-logo-emoji" src="assets/logo.png" alt="Tiliq">
     <div class="menu-logo" style="font-size:42px" data-t="appName">Tiliq</div>
     <p class="gate-msg" data-t="gateMsg">Oturum aç</p>
     <button class="auth-btn auth-btn-google" onclick="window._authSignIn('google')">
@@ -795,7 +796,7 @@ input[type="text"]::placeholder{color:var(--dim);}
 <!-- ── LOADING SCREEN ── -->
 <div id="screen-loading" class="screen active">
   <div class="splash-logo-wrap">
-    <div class="splash-emoji">🏺</div>
+    <img class="splash-emoji" src="assets/logo.png" alt="Tiliq">
     <div class="splash-title">Tiliq</div>
     <div class="splash-sub">Block Puzzle</div>
     <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
@@ -863,7 +864,7 @@ input[type="text"]::placeholder{color:var(--dim);}
 
     <!-- Hero: logo -->
     <div class="menu-hero">
-      <span class="menu-logo-emoji">🏺</span>
+      <img class="menu-logo-emoji" src="assets/logo.png" alt="Tiliq">
       <div class="menu-logo" data-t="appName">Tiliq</div>
       <div class="menu-sub-line">
         <span class="menu-sub">Block Puzzle</span>
@@ -2241,7 +2242,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.07-11';
+const BUILD_VER='v2026.07.08-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
