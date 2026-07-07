@@ -1503,7 +1503,7 @@ function applyLang(){
   // İsim çeviriyle ezilmesin — gerçek profil adını geri yaz
   if(typeof updateMenuAvatar==='function') updateMenuAvatar();
 }
-function setLang(l){lang=l;applyLang();}
+function setLang(l){lang=l;applyLang();if(typeof syncWallet==='function')syncWallet();}
 
 function applyTheme(){
   document.body.setAttribute('data-theme',theme);
@@ -1511,7 +1511,7 @@ function applyTheme(){
   document.getElementById('btn-light').classList.toggle('active',theme==='light');
   localStorage.setItem('tm_theme',theme);
 }
-function setTheme(v){theme=v;applyTheme();}
+function setTheme(v){theme=v;applyTheme();if(typeof syncWallet==='function')syncWallet();}
 
 // ── SOUND ────────────────────────────────────────────────────────────────────
 let AC=null;
@@ -1520,16 +1520,19 @@ function updateSound(){
   sndOn=document.getElementById('snd-toggle').checked;
   document.getElementById('vol-row').style.opacity=sndOn?'1':'.4';
   localStorage.setItem('tm_snd',sndOn?'on':'off');
+  if(typeof syncWallet==='function')syncWallet();
 }
 function updateVol(v){
   sndVol=v/100;
   const sl=document.getElementById('vol-slider');
   sl.style.setProperty('--pct',v+'%');
   localStorage.setItem('tm_vol',sndVol);
+  if(typeof syncWallet==='function')syncWallet();
 }
 function updateHaptic(){
   hapOn=document.getElementById('hap-toggle').checked;
   localStorage.setItem('tm_hap',hapOn?'on':'off');
+  if(typeof syncWallet==='function')syncWallet();
 }
 
 // ── ASMR SES SİSTEMİ ─────────────────────────────────────────────────────────
@@ -1829,6 +1832,7 @@ function selectMascot(id){
   document.querySelectorAll('.mascot-dot').forEach(d=>d.classList.toggle('active',d.dataset.id===id));
   updateMenuAvatar();
   vibrate(10);
+  if(typeof syncWallet==='function')syncWallet();
 }
 function openAccountModal(){
   document.getElementById('av-big').textContent='';
@@ -2142,7 +2146,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.07-9';
+const BUILD_VER='v2026.07.07-10';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3058,6 +3062,7 @@ function saveGameState(){
       savedAt:Date.now()
     };
     localStorage.setItem(SAVE_KEY,JSON.stringify(state));
+    if(typeof syncSavedGame==='function') syncSavedGame(); // buluta debounce'lu gönder — cihaz değişince devam etsin
   }catch(e){}
 }
 
@@ -3068,7 +3073,35 @@ function loadGameState(){
 function clearGameState(){
   localStorage.removeItem(SAVE_KEY);
   updateContinueBtn();
+  if(typeof syncSavedGame==='function') syncSavedGame(); // buluttaki devam kaydını da temizle (hayalet oyun kalmasın)
 }
+
+// ── DEVAM EDEN OYUN — BULUT SENKRONU ─────────────────────────────────────────
+// Oyun ortasındaki state cihazlar arası taşınsın (kullanıcı isteği, 2026-07-07:
+// "oyunu nereden açarsa açsın sistem aynı haliyle devam etsin"). Debounce'lu —
+// her hamlede değil, saveGameState/clearGameState çağrıldığında ~1.5sn sonra yazılır.
+let _savedGameSyncTimer=null;
+function syncSavedGame(){
+  if(!acct.uid||!_fbApp)return;
+  if(_savedGameSyncTimer)clearTimeout(_savedGameSyncTimer);
+  _savedGameSyncTimer=setTimeout(_pushSavedGameToFirestore,1500);
+}
+async function _pushSavedGameToFirestore(){
+  if(!acct.uid||!_fbApp)return;
+  try{
+    const {getFirestore,doc,setDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const db=getFirestore(_fbApp);
+    const st=loadGameState();
+    const json=st?JSON.stringify(st):'';
+    if(json.length>7500)return; // güvenlik: rules sınırını (8000) aşan anormal veri yazılmasın
+    await setDoc(doc(db,'users',acct.uid),{savedGame:json,savedGameAt:st?st.savedAt:Date.now()},{merge:true});
+  }catch(e){console.warn('savedGame sync:',e);}
+}
+function _flushSavedGameNow(){
+  if(_savedGameSyncTimer){clearTimeout(_savedGameSyncTimer);_savedGameSyncTimer=null;_pushSavedGameToFirestore();}
+}
+window.addEventListener('pagehide',_flushSavedGameNow);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')_flushSavedGameNow();});
 
 function updateContinueBtn(){
   // Artık menüde ayrı buton yok — sadece state kontrolü
@@ -5555,10 +5588,39 @@ async function _firestoreSync(uid){
         // buluta pushlar (zararsız ama gereksiz), direkt localStorage yeterli.
         if(added) localStorage.setItem('tm_friends',JSON.stringify(localFriends));
       }
-      // Seçili tema/alev: hesaptan geri yükle (başka cihazda seçilen görünüm bu
-      // cihazda da uygulansın — kullanıcı isteği, 2026-07-06).
+      // Seçili tema/alev/maskot + tüm ayarlar: hesaptan geri yükle — oyun HANGİ
+      // cihazdan açılırsa açılsın en son bırakılan haliyle devam etsin
+      // (kullanıcı isteği, 2026-07-07: "her şeyiyle").
       if(d.activeTheme && d.activeTheme!==activeThemeId && THEME_PALETTES[d.activeTheme]) applyThemePalette(d.activeTheme);
       if(d.activeFlame && d.activeFlame!==activeFlameId && FLAME_THEMES.some(f=>f.id===d.activeFlame)) applyFlameTheme(d.activeFlame);
+      if(d.mascot && d.mascot!==acct.mascot && AV_MASCOTS.some(m=>m.id===d.mascot)) acct.mascot=d.mascot;
+      if(typeof d.soundOn==='boolean' && d.soundOn!==sndOn){sndOn=d.soundOn;localStorage.setItem('tm_snd',sndOn?'on':'off');}
+      if(typeof d.vol==='number'){const nv=d.vol/100;if(nv!==sndVol){sndVol=nv;localStorage.setItem('tm_vol',String(sndVol));}}
+      if(typeof d.hapticOn==='boolean' && d.hapticOn!==hapOn){hapOn=d.hapticOn;localStorage.setItem('tm_hap',hapOn?'on':'off');}
+      if(d.lang && d.lang!==lang){lang=d.lang;applyLang();}
+      if(d.uiTheme && d.uiTheme!==theme){theme=d.uiTheme;applyTheme();}
+      // Ekrandaki ses/titreşim toggle'larını taze değerle senkronla (Ayarlar açıksa)
+      {const st2=document.getElementById('snd-toggle');if(st2)st2.checked=sndOn;
+       const hg2=document.getElementById('hap-toggle');if(hg2)hg2.checked=hapOn;
+       const vr2=document.getElementById('vol-row');if(vr2)vr2.style.opacity=sndOn?'1':'.4';
+       const vs2=document.getElementById('vol-slider');if(vs2){vs2.value=Math.round(sndVol*100);vs2.style.setProperty('--pct',Math.round(sndVol*100)+'%');}}
+      // DEVAM EDEN OYUN: tarih-esaslı otorite — bulut yerelden daha yeniyse
+      // (başka cihazda oynanmış), yereldeki devam kaydı buluttakiyle değiştirilir.
+      if(typeof d.savedGame==='string' && d.savedGame){
+        try{
+          const cloudSt=JSON.parse(d.savedGame);
+          const localSt=loadGameState();
+          const cloudAt=d.savedGameAt||cloudSt.savedAt||0;
+          const localAt=localSt?localSt.savedAt||0:0;
+          if(cloudAt>localAt) localStorage.setItem(SAVE_KEY,d.savedGame);
+        }catch(e){}
+      } else if(d.savedGame==='' ){
+        // Bulutta oyun yok (başka cihazda bitirilmiş/yeni oyun başlatılmış) — yereldeki
+        // eski devam kaydını da temizle, "Devam Et" hayalet oyun göstermesin.
+        const localSt=loadGameState();
+        const cloudAt=d.savedGameAt||0;
+        if(localSt && cloudAt>=(localSt.savedAt||0)) localStorage.removeItem(SAVE_KEY);
+      }
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       const xpNow=getXP();
       const _pf1=_coinPending(); // yazım öncesi delta
@@ -5650,9 +5712,12 @@ async function _syncWalletToFirestore(){
       vip:isVip(),noAds:isNoAds(),
       coins:parseInt(localStorage.getItem('tm_coins')||'0'),
       owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),
-      // Seçili tema/alev de hesaba bağlı olsun — başka cihazda açınca aynı görünüm
-      // (kullanıcı isteği, 2026-07-06: "ayarlar her cihazda aynı olsun")
+      // Seçili tema/alev/maskot + tüm ayarlar hesaba bağlı — başka cihazda/tarayıcıda
+      // açınca sistem AYNEN devam etsin (kullanıcı isteği, 2026-07-07: "her şeyiyle").
       activeTheme:activeThemeId,activeFlame:activeFlameId,
+      mascot:acct.mascot||'ruby',
+      soundOn:!!sndOn,vol:Math.round((typeof sndVol==='number'?sndVol:0.7)*100),
+      hapticOn:!!hapOn,lang:lang||'TR',uiTheme:theme||'dark',
       dailyStreak:_sj.count||0
     };
     if(_tDate) payload.treasureDate=parseInt(_tDate.replace(/-/g,''))||0;
