@@ -2243,7 +2243,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.08-3';
+const BUILD_VER='v2026.07.08-4';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -4773,6 +4773,13 @@ const FB_CONFIG = {
 const FB_WEB_CLIENT_ID = '158314507461-gok3ji1mum1kofm3g674sm3cn0hl3of8.apps.googleusercontent.com';
 
 let _fbApp=null, _fbAuth=null;
+// "Auth durumu belli oldu mu" sinyali — RACE CONDITION FIX (2026-07-08, devam):
+// initFirebaseAuth() dinamik import + network gerektirir (yüzlerce ms-birkaç sn
+// sürebilir). Kullanıcı sayfa açılır açılmaz "Oyna"ya basarsa, onAuthStateChanged
+// HENÜZ hiç tetiklenmemiş olabiliyordu → _cloudSyncPromise hiç set edilmemiş
+// oluyordu → onPlayPressed hiç beklemeden eski/yerel veriyi okuyordu.
+let _authReadyResolve=null;
+const _authReadyPromise=new Promise(r=>{_authReadyResolve=r;});
 
 async function initFirebaseAuth(){
   try{
@@ -4783,6 +4790,7 @@ async function initFirebaseAuth(){
     _fbAuth=getAuth(_fbApp);
     onAuthStateChanged(_fbAuth, user=>{
       if(user) _onFirebaseUser(user);
+      if(_authReadyResolve){_authReadyResolve();_authReadyResolve=null;} // ilk callback = "auth durumu belli"
     });
     // Redirect sonrası dönüş kontrolü
     try{
@@ -5485,12 +5493,16 @@ function hideTmStoreModal(){document.getElementById('modal-store-tm').classList.
 // KISA bir süre beklenir (max 2.5sn) — aksi halde eski/yerel veri okunup yanlış
 // cihazdan devam ediliyordu (kullanıcı raporu, 2026-07-08: "3 yerden farklı puan").
 async function onPlayPressed(){
-  if(_cloudSyncPromise){
-    const btn=document.querySelector('.btn-play');
-    if(btn)btn.classList.add('syncing');
-    try{ await Promise.race([_cloudSyncPromise, new Promise(r=>setTimeout(r,2500))]); }catch(e){}
-    if(btn)btn.classList.remove('syncing');
-  }
+  const btn=document.querySelector('.btn-play');
+  if(btn)btn.classList.add('syncing');
+  try{
+    // 1) Önce "auth durumu belli oldu mu" bekle (max 2sn) — bu olmadan _cloudSyncPromise
+    //    henüz hiç set edilmemiş olabilir (initFirebaseAuth network/import gecikmesi).
+    await Promise.race([_authReadyPromise, new Promise(r=>setTimeout(r,2000))]);
+    // 2) Sonra gerçek bulut senkronu varsa onu bekle (max 2.5sn).
+    if(_cloudSyncPromise) await Promise.race([_cloudSyncPromise, new Promise(r=>setTimeout(r,2500))]);
+  }catch(e){}
+  if(btn)btn.classList.remove('syncing');
   const st=loadGameState();
   if(st&&st.score>0){
     // Yarım oyun var — sor
@@ -5857,6 +5869,12 @@ function _flushWalletNow(){
 }
 window.addEventListener('pagehide',_flushWalletNow);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')_flushWalletNow();});
+// EK GÜVENLİK AĞI (2026-07-08): iOS Safari'de sekme arka plana alınırken
+// visibilitychange/pagehide HER ZAMAN güvenilir tetiklenmiyor (Safari bazen JS'i
+// sayfa arka plana alınır alınmaz durduruyor, debounce timer'a fırsat kalmıyor).
+// window blur ek bir sinyal olarak eklendi — kullanıcı başka uygulamaya geçtiğinde/
+// sekme değiştirdiğinde de anında flush tetiklenir.
+window.addEventListener('blur',()=>{_flushWalletNow();if(typeof _flushSavedGameNow==='function')_flushSavedGameNow();});
 // Native (Android) uygulama arka plana alınırken/kapanırken web standardı
 // visibilitychange/pagehide GÜVENİLİR tetiklenmeyebilir (Capacitor WebView).
 // @capacitor/app'in appStateChange'i native ortamda kesin tetiklenir — hem cüzdan
