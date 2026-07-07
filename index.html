@@ -421,6 +421,8 @@ body::after{
 .bomb-info{display:flex;flex-direction:column;gap:3px;align-items:flex-start;}
 #bomb-bar{width:58px;height:5px;background:rgba(255,255,255,.13);border-radius:3px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.3);}
 #bomb-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#FF6B35,#FFD93D);border-radius:3px;transition:width .3s ease;position:relative;}
+#colorblast-bar{width:58px;height:5px;background:rgba(255,255,255,.13);border-radius:3px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.3);}
+#colorblast-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#8A5CF6,#C77DFF);border-radius:3px;transition:width .3s ease;position:relative;}
 /* İkon rozeti — düz emoji yerine sıcak degrade dairesel arka plan */
 #bomb-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;font-size:17px;flex-shrink:0;
   background:radial-gradient(circle at 35% 30%,#5A3A2A,#2A1810 70%);
@@ -1006,10 +1008,11 @@ input[type="text"]::placeholder{color:var(--dim);}
       <div id="bomb-hold-ring"><div id="bomb-hold-fill"></div></div>
       </div>
     </button>
-    <button class="bst-btn" id="colorblast-btn" onclick="activateColorBlast()">
+    <button class="bst-btn" id="colorblast-btn" onclick="activateColorBlast()" disabled>
       <span id="colorblast-icon">🎨</span>
       <div class="bomb-info">
-        <span><span id="colorblast-lbl" data-t="colorBlast">Renk Patlat</span><span id="colorblast-cnt" style="margin-left:3px">×0</span><span id="colorblast-ad-icon" style="margin-left:3px;font-size:10px;opacity:.75">📺</span></span>
+        <span><span id="colorblast-lbl" data-t="colorBlast">Renk Patlat</span><span id="colorblast-cnt" style="margin-left:3px">×0</span></span>
+        <div id="colorblast-bar"><div id="colorblast-bar-fill"></div></div>
       </div>
     </button>
     <div style="flex:1"></div>
@@ -2090,9 +2093,10 @@ function setInvBombs(n){localStorage.setItem('tm_inv_bombs',String(Math.max(0,n)
 function setInvUndos(n){localStorage.setItem('tm_inv_undos',String(Math.max(0,n)));}
 
 // ── RENK PATLAT (herhangi bir rengi tahtadan komple siler) ──────────────────
-// Kalıcı envanter, max 1 depolanır — sadece reklam izleyerek kazanılır/kullanılır
-// (kullanıcı isteği, 2026-07-08). Puanla kazanılan bomba sisteminden farklı olarak
-// XP eşiği yok: reklam = 1 şarj, buton tekrar basılınca o şarj tahtada kullanılır.
+// Kalıcı envanter, max 1 depolanır. Kazanım bombayla BİREBİR aynı barem mantığı:
+// sadece kombodan gelen puanla dolan bir XP çubuğu var (bkz. addColorBlastXP),
+// dolunca 1 şarj kazanılır. KULLANIM ise bombayla aynı şekilde reklam gerektirir
+// (kullanıcı isteği, 2026-07-08).
 const COLOR_BLAST_MAX=1;
 function getColorBlast(){return parseInt(localStorage.getItem('tm_inv_colorblast')||'0');}
 function setColorBlast(n){localStorage.setItem('tm_inv_colorblast',String(Math.max(0,Math.min(COLOR_BLAST_MAX,n))));}
@@ -2304,7 +2308,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.08-6';
+const BUILD_VER='v2026.07.08-7';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3109,22 +3113,53 @@ function _bombChainCheck(row,col,type){
 }
 
 // ── RENK PATLAT ──────────────────────────────────────────────────────────────
+// Kazanım artık bombayla aynı barem mantığı: sadece kombodan gelen puanla dolan
+// bir XP çubuğu var, dolunca 1 şarj kazanılır (max 1 — COLOR_BLAST_MAX). Reklam
+// alma aşamasında değil, KULLANIM aşamasında gerekiyor (bombayla birebir aynı
+// desen) — kullanıcı isteği, 2026-07-08.
+let colorBlastXP=0;
+const COLOR_BLAST_THRESHOLD=2400;
+function addColorBlastXP(gain){
+  if(dead)return;
+  if(getColorBlast()>=COLOR_BLAST_MAX)return;
+  colorBlastXP+=gain;
+  while(colorBlastXP>=COLOR_BLAST_THRESHOLD&&getColorBlast()<COLOR_BLAST_MAX){
+    colorBlastXP-=COLOR_BLAST_THRESHOLD;
+    setColorBlast(getColorBlast()+1);
+    tone(740,.12,.07,'sine');
+    setTimeout(()=>tone(988,.1,.06,'sine'),80);
+    vibrate([6,4,10]);
+    const cx=canvas.width/2, cy=GOY+CELL*GRID/2;
+    floats.push({x:cx,y:cy,txt:'🎨 +1 Renk Patlat!',a:1,vy:-1.8,c:'#C77DFF',big:true});
+  }
+  if(getColorBlast()>=COLOR_BLAST_MAX)colorBlastXP=COLOR_BLAST_THRESHOLD; // dolu göster
+  updateColorBlastBtn();
+}
+
 function updateColorBlastBtn(){
   const n=getColorBlast();
   const btn=document.getElementById('colorblast-btn');
   const cnt=document.getElementById('colorblast-cnt');
-  const adIcon=document.getElementById('colorblast-ad-icon');
   const lbl=document.getElementById('colorblast-lbl');
+  const fill=document.getElementById('colorblast-bar-fill');
   if(cnt) cnt.textContent='×'+n;
-  if(adIcon) adIcon.style.display=n>0?'none':'';
   if(lbl) lbl.textContent=t('colorBlast');
-  if(btn) btn.classList.toggle('lit-color',colorBlastMode);
+  if(fill){
+    const pct=Math.min(colorBlastXP/COLOR_BLAST_THRESHOLD,1)*100;
+    fill.style.width=pct+'%';
+  }
+  if(btn){
+    btn.disabled=(n===0);
+    btn.classList.toggle('ready',n>0&&!colorBlastMode);
+    btn.classList.toggle('lit-color',colorBlastMode);
+  }
 }
 
 function activateColorBlast(){
   if(dead)return;
+  if(getColorBlast()<=0)return;   // sadece şarjın varsa kullanılır
   const btn=document.getElementById('colorblast-btn');
-  // Zaten modundaysa tekrar basınca iptal
+  // Zaten modundaysa tekrar basınca iptal (reklam yok)
   if(colorBlastMode){
     colorBlastMode=false;
     if(btn) btn.classList.remove('lit-color');
@@ -3138,18 +3173,9 @@ function activateColorBlast(){
     showCelebration(t('colorBlastAct'),'#C77DFF',800);
     updateColorBlastBtn();
   };
-  if(getColorBlast()>0){
-    _enterMode();
-    return;
-  }
-  // Şarj yok — reklam izleyerek 1 şarj kazan, sonra doğrudan moda gir
-  const _grant=()=>{
-    setColorBlast(1);
-    if(typeof syncWallet==='function') syncWallet();
-    _enterMode();
-  };
-  if(isNoAds()) _grant();
-  else showRewardedAd(_grant);
+  // Her kullanımda reklam izlet (VIP/reklamsız kullanıcılar hariç) — bombayla aynı desen
+  if(isNoAds()) _enterMode();
+  else showRewardedAd(_enterMode);
 }
 
 function useColorBlast(row,col){
@@ -3164,6 +3190,7 @@ function useColorBlast(row,col){
     return;
   }
   setColorBlast(0);
+  colorBlastXP=0; // çubuk sıfırdan tekrar dolmaya başlar
   if(typeof syncWallet==='function') syncWallet();
   colorBlastMode=false;
   const btn=document.getElementById('colorblast-btn');
@@ -3378,6 +3405,7 @@ function continueGame(){
   // (envanter) bombalar taşınır (kullanıcı isteği, 2026-07-04)
   bombCount=Math.min(BOMB_MAX_TOTAL,getInvBombs()); bombXP=0;
   _invBombsInPlay=bombCount;
+  colorBlastXP=0;
   freeUndos=getInvUndos();
   pieces=st.pieces.map(p=>({
     shape:{cells:p.cells},ci:p.ci,placed:p.placed,rotFlash:0,rotT:0
@@ -3452,7 +3480,7 @@ function startGame(){
   bombCount=Math.min(BOMB_MAX_TOTAL,getInvBombs());
   _invBombsInPlay=bombCount;
   bombMode=false;bombXP=0;
-  colorBlastMode=false;
+  colorBlastMode=false;colorBlastXP=0;
   // Bonus geri alma haklarını yükle (bedava undo)
   freeUndos=getInvUndos();
   document.getElementById('bomb-btn').classList.remove('lit-normal','lit-super');
@@ -3512,6 +3540,7 @@ function place(pi,row,col){
     const base=tot*10+(tot>1?(tot-1)*5:0),gain=Math.round(base*Math.min(cm,5));
     score+=gain;acct.total+=gain;
     addBombXP(gain);
+    addColorBlastXP(gain); // Renk Patlat SADECE kombodan gelen bu puanla dolar
     if(score>best)noteNewBest();
     document.getElementById('scoreDisplay').textContent=score.toLocaleString();
     document.getElementById('bestDisplay').textContent=best.toLocaleString();
