@@ -2120,7 +2120,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.07-7';
+const BUILD_VER='v2026.07.07-8';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3428,7 +3428,7 @@ function _compileFireProgram(gl,OCT){
 ' float inb=step(abs(px.x-bc.x),bh.x)*step(abs(px.y-bc.y),bh.y);\n'+
 ' float d=mix(du,-du,inb);\n'+
 ' float inten=u_inten;\n'+
-' float outer=mix(12.0,150.0,inten),inner=mix(4.0,46.0,inten);\n'+   // gorkemli: daha kalin/uzun alev bandi
+' float outer=mix(9.0,95.0,inten),inner=mix(2.0,13.0,inten);\n'+   // DIS dogru gorkemli buyur, board ICINE cok az tasar (taslari kapatmasin)
 ' float band=smoothstep(outer,0.0,d)*smoothstep(-inner,5.0,d);\n'+
 ' if(band<=0.002){discard;}\n'+
 ' float t=u_time*1.5;\n'+                                      // canli ve hizli akis
@@ -3438,17 +3438,17 @@ function _compileFireProgram(gl,OCT){
 ' float n2=fbm(fp*2.4+warp*1.4+vec2(3.7,-t*2.9));\n'+          // ic filaman detayi (derinlik)
 ' n=pow(n,1.55)*(0.72+0.55*n2);\n'+
 // Dil ayrismasi: kenar boyunca yukari kayan sicak noktalar -> referanstaki gibi ayrik alev dilleri
-' float tng=0.55+1.35*noise(vec2((px.x+px.y)*0.030,t*0.6));\n'+  // taban yukseldi: bosluk azaldi, ekran daha dolu
-' float flame=band*n*tng*(0.85+1.35*inten);\n'+                 // yogunluk artti: gorkemli/alevli
+' float tng=0.45+1.1*noise(vec2((px.x+px.y)*0.030,t*0.6));\n'+  // dolu ama asiri degil
+' float flame=band*n*tng*(0.75+1.1*inten);\n'+                 // gorkemli ama board'u bogmuyor
 ' flame*=smoothstep(outer,-inner*0.5,d);\n'+
-' flame=smoothstep(0.12,0.92,flame);\n'+          // esik dustu: daha dolu alev, ince pus yine elenir\n'+
+' flame=smoothstep(0.16,0.94,flame);\n'+          // zayif alanlari at\n'+
 ' if(flame<=0.01){discard;}\n'+
 ' vec3 col=vec3(0.0);\n'+
 ' col+=u_f1*smoothstep(0.02,0.30,flame);\n'+   // dis katman (tema)
 ' col+=u_f2*smoothstep(0.20,0.54,flame);\n'+
 ' col+=u_f3*smoothstep(0.44,0.78,flame);\n'+
-' col+=u_f4*smoothstep(0.72,1.02,flame)*(0.6+0.6*inten);\n'+  // beyaz-sicak cekirdek daha erken/genis acilir
-' float a=clamp(flame*1.55,0.0,1.0);\n'+
+' col+=u_f4*smoothstep(0.72,1.02,flame)*(0.55+0.55*inten);\n'+  // beyaz-sicak cekirdek
+' float a=clamp(flame*1.3,0.0,1.0);\n'+
 ' gl_FragColor=vec4(col*a,a);\n'+
 '}';
   const sh=(ty,src)=>{const s=gl.createShader(ty);gl.shaderSource(s,src);gl.compileShader(s);
