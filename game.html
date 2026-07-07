@@ -2243,7 +2243,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.08-2';
+const BUILD_VER='v2026.07.08-3';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3633,9 +3633,17 @@ function _initFireGL(){
     _fireGL=r.gl;_fireProg=r.prog;_fireU=r.u;_fireGLOK=true;_resizeFireGL();
   }catch(e){console.warn('fire GL init failed',e);_fireGLOK=false;}
 }
+// PERFORMANS (2026-07-08, kullanıcı raporu "Android'de kasıyor"): WebGL alev
+// shader'ı tam çözünürlükte (canvas.width×height, ~480×700px) her frame FBM noise
+// hesaplıyordu — tam combo anında (en heyecanlı an) mobil GPU'yu zorluyordu.
+// Çözüm: dahili render çözünürlüğünü düşür, CSS boyutunu tam tut (tarayıcı
+// otomatik büyütür) — additive/bulanık bir efekt olduğu için kalite kaybı
+// gözle görülmez, fill-rate mobilde ~%70 azalır.
+const _FIRE_RENDER_SCALE=_FIRE_MOBILE?0.55:0.78;
 function _resizeFireGL(){
   if(!_fireGLOK||!_fireCv)return;
-  _fireCv.width=canvas.width;_fireCv.height=canvas.height;
+  _fireCv.width=Math.round(canvas.width*_FIRE_RENDER_SCALE);
+  _fireCv.height=Math.round(canvas.height*_FIRE_RENDER_SCALE);
   _fireCv.style.width=canvas.width+'px';_fireCv.style.height=canvas.height+'px';
   _fireGL.viewport(0,0,_fireCv.width,_fireCv.height);
 }
@@ -3649,7 +3657,11 @@ function _renderFireGL(now){
   gl.uniform2f(_fireU.res,_fireCv.width,_fireCv.height);
   gl.uniform1f(_fireU.time,now*0.001);
   gl.uniform1f(_fireU.inten,inten);
-  const gs=CELL*GRID;gl.uniform4f(_fireU.board,GOX(),GOY,gs,gs);
+  // Board koordinatları ana canvas piksel uzayında hesaplanır — fire canvas küçültülmüş
+  // dahili çözünürlükte olduğu için (_FIRE_RENDER_SCALE) aynı oranla ölçeklenmeli,
+  // yoksa alev board'dan kaymış görünür.
+  const gs=CELL*GRID;
+  gl.uniform4f(_fireU.board,GOX()*_FIRE_RENDER_SCALE,GOY*_FIRE_RENDER_SCALE,gs*_FIRE_RENDER_SCALE,gs*_FIRE_RENDER_SCALE);
   // Aktif alev temasının renk rampası
   const ft=(typeof getFlameTheme==='function')?getFlameTheme():null;
   const g4=ft?ft.gl:[[0.80,0.20,0.05],[1.0,0.48,0.09],[1.0,0.84,0.34],[1.0,0.97,0.88]];
@@ -3686,12 +3698,13 @@ function _drawCellFire(gx,gy,now){
   _applyBoardGlow(tg.tier);
   if(_fireGLOK){
     // GL alevin üstüne yükselen kor taneleri (temalı) — görkemli/dolu his için yoğunlaştırıldı
-    if(tg.tier>=1 && now-_cellFireT>85 && sparks.length<130){
+    const _emberCap=_FIRE_MOBILE?70:130; // mobilde kor tanesi tavanı düşürüldü (CPU/canvas maliyeti)
+    if(tg.tier>=1 && now-_cellFireT>85 && sparks.length<_emberCap){
       _cellFireT=now;
       const gs2=CELL*GRID;
       const thm=(typeof getFlameTheme==='function')?getFlameTheme():null;
       const cols=thm?thm.sw.slice(1):['#FF8A3D','#FFD27A'];
-      const en=tg.tier>=4?9:tg.tier>=3?6:tg.tier>=2?4:2;
+      const en=(tg.tier>=4?9:tg.tier>=3?6:tg.tier>=2?4:2)*(_FIRE_MOBILE?0.6:1)|0 || 1;
       for(let i=0;i<en;i++){
         let ex,ey,vx,vy;
         const side=Math.random();
@@ -4498,7 +4511,8 @@ function drawDrag(){
 function draw(){
   const now=performance.now();
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(sparks.length>140)sparks.splice(0,sparks.length-140); // combo alevi kor tanesi limiti ile tutarlı
+  const _sparksCap=_FIRE_MOBILE?80:140; // mobilde partikül tavanı düşürüldü ("Android'de kasıyor" raporu, 2026-07-08)
+  if(sparks.length>_sparksCap)sparks.splice(0,sparks.length-_sparksCap);
   if(shockwaves.length>12)shockwaves.splice(0,shockwaves.length-12);
   if(floats.length>10)floats.splice(0,floats.length-10);
   if(celebs.length>3)celebs.splice(0,celebs.length-3);
