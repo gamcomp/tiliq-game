@@ -181,7 +181,14 @@ body::after{
 .menu-av:hover{background:var(--dim2);}
 .menu-av:active{transform:scale(.98);}
 .av-circle{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff;flex-shrink:0;
+  background-size:cover;background-position:center;
   box-shadow:0 3px 12px rgba(0,0,0,.35),0 0 0 2px rgba(212,168,67,.45),0 0 14px rgba(212,168,67,.25);}
+/* Maskot avatar galerisi (profil ekranı) */
+.mascot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.mascot-dot{aspect-ratio:1;border-radius:50%;background-size:cover;background-position:center;cursor:pointer;
+  border:3px solid transparent;transition:transform .15s,border-color .15s;box-shadow:0 3px 10px rgba(0,0,0,.3);}
+.mascot-dot:hover{transform:scale(1.08);}
+.mascot-dot.active{border-color:#E8C87A;transform:scale(1.1);box-shadow:0 0 12px rgba(232,200,122,.5);}
 .av-info{flex:1;}
 .av-name{font-size:13px;font-weight:700;}
 .av-tap{font-size:10px;color:var(--dim);margin-top:1px;}
@@ -494,8 +501,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;hei
 .lang-btn.active{border-color:var(--acc2);background:rgba(212,168,67,.16);box-shadow:0 0 10px rgba(212,168,67,.18);}
 
 .avatar-center{display:flex;justify-content:center;padding:6px 0;}
-.av-big{width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.3);}
-.color-row{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;}
+.av-big{width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.3);background-size:cover;background-position:center;}
 .color-dot{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:transform .15s,border-color .15s;}
 .color-dot:hover{transform:scale(1.15);}
 .color-dot.active{border-color:#fff;transform:scale(1.15);}
@@ -823,7 +829,7 @@ input[type="text"]::placeholder{color:var(--dim);}
 
     <!-- Avatar / oyuncu -->
     <div class="menu-av" onclick="showModal('account')">
-      <div class="av-circle" id="av-menu" style="background:linear-gradient(135deg,#C4714A,#D4A843)">G</div>
+      <div class="av-circle" id="av-menu"></div>
       <div class="av-info">
         <div class="av-name" id="av-name-menu">Misafir</div>
         <div class="av-tap" data-t="editProfile">Edit Profile →</div>
@@ -1043,8 +1049,8 @@ input[type="text"]::placeholder{color:var(--dim);}
       <div style="width:32px"></div>
     </div>
     <div class="modal-body">
-      <div class="avatar-center"><div class="av-big" id="av-big">G</div></div>
-      <div class="color-row" id="color-row"></div>
+      <div class="avatar-center"><div class="av-big" id="av-big"></div></div>
+      <div class="mascot-grid" id="mascot-grid"></div>
       <div class="input-group">
         <label class="input-label" data-t="username">Takma Ad</label>
         <input type="text" id="username-input" maxlength="16"/>
@@ -1605,8 +1611,22 @@ function vibrate(pattern){
 }
 
 // ── ACCOUNT ──────────────────────────────────────────────────────────────────
-const AV_COLORS=['#7C4DFF','#FF6B9D','#56CFE1','#FFD93D','#6BCB77','#FF9F43'];
-let acct=JSON.parse(localStorage.getItem('tm_acct')||'null')||{name:'',color:'#7C4DFF',games:0,best:0,total:0};
+// AI üretimi mücevher maskotları — profil avatarı (2026-07-07). Her biri
+// assets/avatars/av_{id}.png (yuvarlak kırpılmış, şeffaf kenar). acct.color
+// (eski düz renk sistemi) fallback/gradient zemin olarak korunuyor.
+const AV_MASCOTS=[
+  {id:'ruby',    color:'#E5484D'},
+  {id:'emerald', color:'#3FB950'},
+  {id:'sapphire',color:'#4A9EFF'},
+  {id:'gold',    color:'#FFC53D'},
+  {id:'amethyst',color:'#9B6BFF'},
+  {id:'topaz',   color:'#FF8A3D'},
+  {id:'diamond', color:'#5FE3E3'},
+  {id:'quartz',  color:'#FF7AB8'},
+];
+function avatarImg(id){return 'assets/avatars/av_'+(id||'ruby')+'.png';}
+let acct=JSON.parse(localStorage.getItem('tm_acct')||'null')||{name:'',color:'#7C4DFF',mascot:'ruby',games:0,best:0,total:0};
+if(!acct.mascot) acct.mascot='ruby'; // eski hesaplar için varsayılan
 
 const LB_FLAGS={TR:'🇹🇷',EN:'🇺🇸',JA:'🇯🇵',KO:'🇰🇷',DE:'🇩🇪',FR:'🇫🇷',ES:'🇪🇸',PT:'🇧🇷',AR:'🇸🇦',ZH:'🇨🇳'};
 
@@ -1705,7 +1725,7 @@ function _refreshAllNameDisplays(){
   const inp=document.getElementById('username-input');
   if(inp) inp.value=acct.nickname||'';
   const avBig=document.getElementById('av-big');
-  if(avBig) avBig.textContent=displayName().charAt(0).toUpperCase()||'G';
+  if(avBig){avBig.textContent='';avBig.style.backgroundImage=`url(${avatarImg(acct.mascot)})`;}
 }
 
 function saveProfileSetup(){
@@ -1802,14 +1822,17 @@ function saveAccount(){
   _firestorePushScore();
   hideModal('account');
 }
-function selectAvatarColor(c){
-  acct.color=c;
-  document.getElementById('av-big').style.background=c;
-  document.querySelectorAll('.color-dot').forEach(d=>d.classList.toggle('active',d.dataset.c===c));
+function selectMascot(id){
+  acct.mascot=id;
+  localStorage.setItem('tm_acct',JSON.stringify(acct));
+  document.getElementById('av-big').style.backgroundImage=`url(${avatarImg(id)})`;
+  document.querySelectorAll('.mascot-dot').forEach(d=>d.classList.toggle('active',d.dataset.id===id));
+  updateMenuAvatar();
+  vibrate(10);
 }
 function openAccountModal(){
-  document.getElementById('av-big').textContent=displayName().charAt(0).toUpperCase()||'G';
-  document.getElementById('av-big').style.background=acct.color;
+  document.getElementById('av-big').textContent='';
+  document.getElementById('av-big').style.backgroundImage=`url(${avatarImg(acct.mascot)})`;
   document.getElementById('username-input').value=acct.nickname||acct.name||'';
   _selectedCountry=acct.country||'';
   const cb=document.getElementById('acct-country-btn');
@@ -1822,8 +1845,8 @@ function openAccountModal(){
   document.getElementById('st-games').textContent=acct.games;
   initAuthUI();
   document.getElementById('st-total').textContent=acct.total.toLocaleString();
-  const cr=document.getElementById('color-row');
-  cr.innerHTML=AV_COLORS.map(c=>`<div class="color-dot${c===acct.color?' active':''}" style="background:${c}" data-c="${c}" onclick="selectAvatarColor('${c}')"></div>`).join('');
+  const mg=document.getElementById('mascot-grid');
+  mg.innerHTML=AV_MASCOTS.map(m=>`<div class="mascot-dot${m.id===acct.mascot?' active':''}" style="background-image:url(${avatarImg(m.id)})" data-id="${m.id}" onclick="selectMascot('${m.id}')"></div>`).join('');
   renderInventory();
 }
 // Profil envanteri — kazanılan/alınan her şey
@@ -1848,9 +1871,8 @@ function renderInventory(){
 function updateMenuAvatar(){
   // Profil adı varsa onu göster; yoksa dile uygun "Misafir"
   const name=acct.nickname||acct.name||acct._googleName||t('guest');
-  const init=(name||'G').charAt(0).toUpperCase();
-  document.getElementById('av-menu').textContent=init;
-  document.getElementById('av-menu').style.background=acct.color;
+  const av=document.getElementById('av-menu');
+  if(av){av.textContent='';av.style.backgroundImage=`url(${avatarImg(acct.mascot)})`;}
   document.getElementById('av-name-menu').textContent=name;
 }
 
@@ -2120,7 +2142,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.07-8';
+const BUILD_VER='v2026.07.07-9';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -4855,7 +4877,7 @@ window._authSignIn = async function(provider){
 // temizleniyordu, isim/ülke/skor/coin/satın alımlar ekranda kalmaya devam edip
 // "çıkış yapılmamış gibi" görünüyordu (kullanıcı raporu, 2026-07-06).
 function _resetToGuestState(){
-  acct={name:'',color:'#7C4DFF',games:0,best:0,total:0};
+  acct={name:'',color:'#7C4DFF',mascot:'ruby',games:0,best:0,total:0};
   localStorage.setItem('tm_acct',JSON.stringify(acct));
   localStorage.removeItem('tiliq_best');
   localStorage.removeItem('tiliq_last_score');
