@@ -341,6 +341,7 @@ body::after{
   background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%);
   transform:translateX(-120%);animation:playShine 3.6s ease-in-out infinite;pointer-events:none;}
 @keyframes playShine{0%,60%{transform:translateX(-120%)}90%,100%{transform:translateX(120%)}}
+.btn-play.syncing{opacity:.75;animation:none;} /* buluttan devam-eden-oyun çekilirken kısa bekleme göstergesi */
 /* Menüdeki ana CTA — modern büyük form + ▶ ikon kapsülü */
 #menu-scroll .btn-play{display:flex;align-items:center;justify-content:center;gap:11px;
   padding:17px 0;font-size:21px;border-radius:22px;max-width:340px;}
@@ -2242,7 +2243,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.08-1';
+const BUILD_VER='v2026.07.08-2';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3180,7 +3181,7 @@ let _savedGameSyncTimer=null;
 function syncSavedGame(){
   if(!acct.uid||!_fbApp)return;
   if(_savedGameSyncTimer)clearTimeout(_savedGameSyncTimer);
-  _savedGameSyncTimer=setTimeout(_pushSavedGameToFirestore,1500);
+  _savedGameSyncTimer=setTimeout(_pushSavedGameToFirestore,800); // 1500->800: cihazlar arasi devam senkronunu hizlandir
 }
 async function _pushSavedGameToFirestore(){
   if(!acct.uid||!_fbApp)return;
@@ -4924,7 +4925,7 @@ function _onFirebaseUser(user){
   // İlk gerçek giriş VE yerel ilerleme VARSA: önce cloud'a bak.
   const localBest=acct.best||0;
   if(acct._mergedUid!==user.uid && localBest>0){
-    _fetchCloudData(user.uid).then(cloud=>{
+    _cloudSyncPromise=_fetchCloudData(user.uid).then(cloud=>{
       acct._mergedUid=user.uid;
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       if(cloud && (cloud.best||0)>0){
@@ -4932,11 +4933,11 @@ function _onFirebaseUser(user){
         _showMergeDialog(user.uid, cloud);
       } else {
         // Hesap boş → yereli otomatik aktar (dünya sıralamasına yazılsın)
-        _firestoreSync(user.uid).then(()=>_postLoginSetup());
+        return _firestoreSync(user.uid).then(()=>_postLoginSetup());
       }
     }).catch(()=>{
       // Cloud okunamadıysa yine de senkronize et — skor kaybolmasın
-      _firestoreSync(user.uid).then(()=>{
+      return _firestoreSync(user.uid).then(()=>{
         acct._mergedUid=user.uid;
         localStorage.setItem('tm_acct',JSON.stringify(acct));
         _postLoginSetup();
@@ -4944,7 +4945,7 @@ function _onFirebaseUser(user){
     });
   } else {
     // Yerel ilerleme yok veya daha önce aktarıldı — normal senkronizasyon
-    _firestoreSync(user.uid).then(()=>{
+    _cloudSyncPromise=_firestoreSync(user.uid).then(()=>{
       acct._mergedUid=user.uid;
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       _postLoginSetup();
@@ -5466,7 +5467,16 @@ function showTmStoreModal(){
 }
 function hideTmStoreModal(){document.getElementById('modal-store-tm').classList.remove('active');_stopFlamePreviews();}
 
-function onPlayPressed(){
+// "Oyna" butonuna basınca, buluttaki devam-eden-oyun senkronu henüz bitmemişse
+// KISA bir süre beklenir (max 2.5sn) — aksi halde eski/yerel veri okunup yanlış
+// cihazdan devam ediliyordu (kullanıcı raporu, 2026-07-08: "3 yerden farklı puan").
+async function onPlayPressed(){
+  if(_cloudSyncPromise){
+    const btn=document.querySelector('.btn-play');
+    if(btn)btn.classList.add('syncing');
+    try{ await Promise.race([_cloudSyncPromise, new Promise(r=>setTimeout(r,2500))]); }catch(e){}
+    if(btn)btn.classList.remove('syncing');
+  }
   const st=loadGameState();
   if(st&&st.score>0){
     // Yarım oyun var — sor
@@ -5613,6 +5623,10 @@ function _refreshCodeDisplays(){
   });
 }
 
+// Bulut senkronunun İLERLEME PROMISE'İ — race condition düzeltmesi (2026-07-08):
+// "Oyna" butonuna basılınca eski yerel veri okunuyordu çünkü _firestoreSync henüz
+// bitmemişken loadGameState() çağrılıyordu. Artık onPlayPressed bu promise'i bekliyor.
+let _cloudSyncPromise=null;
 async function _firestoreSync(uid){
   try{
     const {getFirestore,doc,getDoc,setDoc,updateDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
@@ -5829,6 +5843,21 @@ function _flushWalletNow(){
 }
 window.addEventListener('pagehide',_flushWalletNow);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')_flushWalletNow();});
+// Native (Android) uygulama arka plana alınırken/kapanırken web standardı
+// visibilitychange/pagehide GÜVENİLİR tetiklenmeyebilir (Capacitor WebView).
+// @capacitor/app'in appStateChange'i native ortamda kesin tetiklenir — hem cüzdan
+// hem devam-eden-oyun anında buluta yazılır (kullanıcı raporu, 2026-07-08:
+// "3 cihazdan farklı puandan devam ediyor" — kök neden buydu).
+(function(){
+  const AppPlugin=window.Capacitor?.Plugins?.App;
+  if(!AppPlugin)return;
+  AppPlugin.addListener('appStateChange',({isActive})=>{
+    if(!isActive){
+      _flushWalletNow();
+      if(typeof _flushSavedGameNow==='function')_flushSavedGameNow();
+    }
+  });
+})();
 
 function getFriends(){
   try{return JSON.parse(localStorage.getItem('tm_friends')||'[]');}
