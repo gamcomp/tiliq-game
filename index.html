@@ -1249,7 +1249,6 @@ input[type="text"]::placeholder{color:var(--dim);}
     <div style="display:flex;gap:6px;padding:0 14px 10px;flex-shrink:0;border-bottom:1px solid var(--gb);">
       <button class="store-tab active" data-tab="themes" data-t="tabThemes" onclick="setStoreTab('themes')">🎨 Themes</button>
       <button class="store-tab" data-tab="power" data-t="tabPower" onclick="setStoreTab('power')">⚡ Power</button>
-      <button class="store-tab" data-tab="vip" data-t="tabVip" onclick="setStoreTab('vip')">👑 VIP</button>
     </div>
     <div class="modal-body" id="store-body" style="padding:12px 14px;gap:8px;"></div>
   </div>
@@ -2058,7 +2057,25 @@ function isTreasureClaimed(){
   return localStorage.getItem('tm_treasure_date')===todayStr();
 }
 
+// Günlük ödül artık reklam izleyerek kazanılıyor (kullanıcı isteği, 2026-07-08).
+// Reklamsız satın alma (tiliq_no_ads) sahipleri için reklam atlanır — ücret ödedikleri
+// için tekrar reklam izletmek adil olmaz, ödül direkt verilir.
 function claimTreasure(sourceEl){
+  if(isTreasureClaimed()) return;
+  if(isNoAds()){ _grantTreasureReward(sourceEl); return; }
+  const btn=sourceEl||document.getElementById('tb-cta')||document.getElementById('dr-claim-btn');
+  const _resetBtn=()=>{if(btn){btn.disabled=false;if(btn.dataset._origText)btn.textContent=btn.dataset._origText;}};
+  if(btn){btn.disabled=true;btn.dataset._origText=btn.textContent;btn.textContent='📺 '+t('adLoading');}
+  // Güvenlik ağı: reklam izlenmeden kapatılırsa showRewardedAd callback'i hiç
+  // çağırmıyor — buton sonsuza dek "yükleniyor" kalmasın diye 45sn sonra sıfırlanır.
+  const _failsafe=setTimeout(_resetBtn,45000);
+  showRewardedAd(()=>{
+    clearTimeout(_failsafe);
+    _resetBtn();
+    _grantTreasureReward(sourceEl);
+  });
+}
+function _grantTreasureReward(sourceEl){
   if(isTreasureClaimed()) return;
   const streak=loadStreak();
   const reward=dailyReward(streak);
@@ -2127,7 +2144,7 @@ function renderDailyModal(){
   const ctaHtml=claimed
     ? `<button class="dr-cta-big" disabled>${t('dailyClaimedToday')}</button>
        <div class="dr-next-preview">🕐 ${t('tomorrow')}: ${rewardChips(dailyReward(streak+1))}</div>`
-    : `<button class="dr-cta-big" id="dr-claim-btn" onclick="claimTreasure(this)">${t('dailyCollect')} · ${rewardStr(todayReward)}</button>`;
+    : `<button class="dr-cta-big" id="dr-claim-btn" onclick="claimTreasure(this)">${isNoAds()?'':'📺 '}${t('dailyCollect')} · ${rewardStr(todayReward)}</button>`;
 
   body.innerHTML=`
     <div class="dr-hero">
@@ -2243,7 +2260,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.08-4';
+const BUILD_VER='v2026.07.08-5';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -4715,9 +4732,9 @@ function applyFlameTheme(id){
 }
 
 const STORE_POWERUPS=[
-  {id:'bomb3',    name:'3 Bomba',         emoji:'💣', coins:90,  desc:'Sıkışınca işe yarar',  action:()=>addInventory('bombs',3)},
-  {id:'bomb10',   name:'10 Bomba',        emoji:'💣💣',coins:180, desc:'Büyük stok — %25 indirim', action:()=>addInventory('bombs',10)},
-  {id:'xp2',     name:'2× XP (1 Oyun)', emoji:'⚡', coins:60,  desc:'Sonraki oyunda çift XP',action:()=>activateXPBoost()},
+  {id:'bomb3',    name:'3 Bomba',         emoji:'💣', coins:150, desc:'Sıkışınca işe yarar',  action:()=>addInventory('bombs',3)},
+  {id:'bomb10',   name:'10 Bomba',        emoji:'💣💣',coins:280, desc:'Büyük stok — %25 indirim', action:()=>addInventory('bombs',10)},
+  {id:'xp2',     name:'2× XP (1 Oyun)', emoji:'⚡', coins:100, desc:'Sonraki oyunda çift XP',action:()=>activateXPBoost()},
   {id:'coins100', name:'100 Coin',        emoji:'🪙', coins:null,price:'$2.99', desc:'Anlık coin yükle', action:()=>iapBuy('coins100')},
   {id:'coins300', name:'300 Coin',        emoji:'🪙🪙',coins:null,price:'$6.99', desc:'Popüler paket — %22 bonus', action:()=>iapBuy('coins300')},
   {id:'coins750', name:'750 Coin',        emoji:'🪙🪙🪙',coins:null,price:'$14.99',desc:'Büyük paket — %43 bonus',action:()=>iapBuy('coins750')},
@@ -5242,10 +5259,9 @@ function renderStoreBody(){
     el.innerHTML=`<div class="store-section-title">${t('powerSection')}</div>
       ${STORE_POWERUPS.filter(p=>!p.price).map(powerCard).join('')}
       <div class="store-section-title" style="margin-top:8px">${t('coinSection')}</div>
-      ${STORE_POWERUPS.filter(p=>p.price).map(powerCard).join('')}`;
-  } else {
-    _stopFlamePreviews();
-    el.innerHTML=vipSection();
+      ${STORE_POWERUPS.filter(p=>p.price).map(powerCard).join('')}
+      <div class="store-section-title" style="margin-top:8px">${t('noAdsTitle')}</div>
+      ${_noAdsSection()}`;
   }
 }
 
@@ -5421,22 +5437,10 @@ function powerCard(p){
   </div>`;
 }
 
-function vipSection(){
-  return`<div class="vip-hero">
-    <span class="vip-crown">👑</span>
-    <div class="vip-title">${t('vipTitle')}</div>
-    <div class="vip-price">${t('vipMonthly')}</div>
-    <div class="vip-perks">
-      <div class="vip-perk">${t('vipPerk1')}</div>
-      <div class="vip-perk">${t('vipPerk2')}</div>
-      <div class="vip-perk">${t('vipPerk3')}</div>
-      <div class="vip-perk">${t('vipPerk4')}</div>
-      <div class="vip-perk">${t('vipPerk5')}</div>
-      <div class="vip-perk">${t('vipPerk6')}</div>
-    </div>
-    <button class="vip-btn" onclick="iapBuy('tiliq_vip_monthly')">${t('vipStart')}</button>
-  </div>
-  <div style="background:var(--glass);border:1px solid var(--gb);border-radius:16px;padding:14px;">
+// VIP kaldırıldı (kullanıcı isteği, 2026-07-08) — reklamsız satın alma tek başına
+// kalan tek "aboneliksiz" IAP ürünü. Restore Purchases iOS'ta zorunlu, korunuyor.
+function _noAdsSection(){
+  return`<div style="background:var(--glass);border:1px solid var(--gb);border-radius:16px;padding:14px;">
     <div style="font-size:12px;font-weight:800;color:var(--text);margin-bottom:8px">${t('noAdsTitle')}</div>
     <div style="font-size:11px;color:var(--dim);margin-bottom:12px">${t('noAdsDesc')}</div>
     <button class="power-btn" style="width:100%;" onclick="iapBuy('tiliq_no_ads')">${t('noAdsBuy')}</button>
