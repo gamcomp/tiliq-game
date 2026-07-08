@@ -2203,6 +2203,14 @@ function _grantTreasureReward(sourceEl){
 }
 
 // ── GÜNLÜK ÖDÜLLER SAYFASI (tam modal) ───────────────────────────────────────
+// AI üretimi hazine/hediye görselleri — açık sandık (bugün/hazır), kapalı sandık
+// (kilitli/gelecek gün), hediye kutusu (7. gün büyük ödül). Emoji yerine kullanılır
+// (kullanıcı isteği, 2026-07-08).
+function _dailyImg(kind,px){
+  const src=kind==='open'?'assets/daily_chest_open.png':kind==='closed'?'assets/daily_chest_closed.png':'assets/daily_giftbox.png';
+  return `<img src="${src}" style="width:${px}px;height:${px}px;object-fit:contain;vertical-align:middle" alt="">`;
+}
+
 function renderDailyModal(){
   const body=document.getElementById('daily-modal-body');
   if(!body)return;
@@ -2214,7 +2222,7 @@ function renderDailyModal(){
     const done=i<cycleDay||(claimed&&i===cycleDay);
     const today=i===cycleDay&&!claimed;
     const locked=!done&&!today;
-    const ico=done?'✔':(i===6?'🎁':(r.bombs?'💣':r.undos?'↩️':'🪙'));
+    const ico=done?'✔':(i===6?_dailyImg('gift',34):(r.bombs?'💣':r.undos?'↩️':_dailyImg(locked?'closed':'open',28)));
     const amt=done?'':(r.coins?('+'+r.coins):'');
     const cls='dr-day'+(done?' done':'')+(today?' today':'')+(locked?' locked':'')+(i===6?' big':'');
     return `<div class="${cls}"><div class="dr-day-num">${t('dailyDay')} ${i+1}</div><div class="dr-day-ico">${ico}</div><div class="dr-day-amt">${amt}</div></div>`;
@@ -2228,7 +2236,7 @@ function renderDailyModal(){
 
   body.innerHTML=`
     <div class="dr-hero">
-      <div class="dr-hero-icon">${claimed?'✅':(todayReward.bombs?'💣':'🎁')}</div>
+      <div class="dr-hero-icon">${claimed?'✅':(todayReward.bombs?'💣':_dailyImg('open',64))}</div>
       <div class="dr-streak-row">🔥 <span class="n">${streak}</span> ${t('statStreak')}</div>
       <div class="dr-hero-sub">${t('dailyNote')}</div>
     </div>
@@ -2268,7 +2276,7 @@ function renderDailyCard(){
   } else {
     box.classList.remove('claimed');
     tbLabel.textContent=t('dailyBonus');tbLabel.classList.remove('claimed');
-    tbIcon.textContent=reward.bombs?'💣':reward.undos?'↩️':'🎁';
+    tbIcon.innerHTML=reward.bombs?'💣':reward.undos?'↩️':_dailyImg('open',40);
     tbAmount.innerHTML=rewardChips(reward);
     tbCta.textContent=t('dailyView');tbCta.classList.remove('claimed');
   }
@@ -2281,7 +2289,8 @@ function renderDailyCard(){
     const r=DAILY_REWARDS[i];
     const done=i<cycleDay||(claimed&&i===cycleDay);
     const today=i===cycleDay&&!claimed;
-    const ico=done?'✔':(i===6?'🎁':(r.bombs?'💣':r.undos?'↩️':'🪙'));
+    const locked=!done&&!today;
+    const ico=done?'✔':(i===6?_dailyImg('gift',18):(r.bombs?'💣':r.undos?'↩️':_dailyImg(locked?'closed':'open',15)));
     const amt=done?'':(r.coins||'');
     const cls='tb-day'+(done?' done':'')+(today?' today':'')+(i===6?' big':'');
     return `<div class="${cls}"><div class="tb-day-ico">${ico}</div><div class="tb-day-amt">${amt}</div></div>`;
@@ -2358,7 +2367,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.08-14';
+const BUILD_VER='v2026.07.08-15';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
