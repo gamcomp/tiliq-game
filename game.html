@@ -210,14 +210,17 @@ body::after{
   66%{box-shadow:0 0 20px rgba(199,125,255,.32);border-color:rgba(199,125,255,.55);}
 }
 .treasure-box:active{transform:scale(.97);}
-.treasure-box.claimed{border-color:rgba(107,203,119,.3);background:linear-gradient(135deg,rgba(107,203,119,.08),rgba(107,203,119,.04));cursor:default;}
+/* Toplandı durumu — soluk gri yerine canlı zümrüt/altın "başarı" görünümü (2026-07-08) */
+.treasure-box.claimed{border-color:rgba(107,203,119,.5);background:linear-gradient(120deg,rgba(107,203,119,.22),rgba(212,168,67,.14) 60%,rgba(107,203,119,.1) 100%);cursor:default;animation:tbGlowClaimed 3.2s ease-in-out infinite;}
+@keyframes tbGlowClaimed{0%,100%{box-shadow:0 0 0 rgba(107,203,119,0);}50%{box-shadow:0 0 16px rgba(107,203,119,.3);}}
 .treasure-box::before{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.16) 50%,transparent 70%);transform:translateX(-100%);}
-.treasure-box:not(.claimed)::before{animation:tbShine 3.8s ease-in-out infinite;} /* mobilde hover yok → otomatik süpürme */
+.treasure-box:not(.claimed)::before,.treasure-box.claimed::before{animation:tbShine 3.8s ease-in-out infinite;} /* mobilde hover yok → otomatik süpürme */
 @keyframes tbShine{0%,55%{transform:translateX(-100%)}85%,100%{transform:translateX(100%)}}
 .tb-icon{font-size:34px;line-height:1;flex-shrink:0;transition:transform .3s;width:52px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:50%;
   background:radial-gradient(circle,rgba(255,217,120,.35),rgba(232,147,90,.12) 65%,transparent 75%);box-shadow:0 0 0 1.5px rgba(255,217,120,.3) inset;}
 .treasure-box:not(.claimed) .tb-icon{animation:tbBounce 2s ease-in-out infinite;}
-.treasure-box.claimed .tb-icon{filter:grayscale(.5);animation:none;background:none;box-shadow:none;}
+.treasure-box.claimed .tb-icon{animation:tbClaimedPop .5s ease both;background:radial-gradient(circle,rgba(107,203,119,.4),rgba(107,203,119,.12) 65%,transparent 75%);box-shadow:0 0 0 1.5px rgba(107,203,119,.4) inset;}
+@keyframes tbClaimedPop{0%{transform:scale(.6) rotate(-8deg)}60%{transform:scale(1.15) rotate(4deg)}100%{transform:scale(1) rotate(0)}}
 .tb-body{flex:1;min-width:0;}
 .tb-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--acc2);margin-bottom:4px;}
 .tb-label.claimed{color:#6BCB77;}
@@ -247,7 +250,7 @@ body::after{
 @keyframes tbToday{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 .tb-cta{background:linear-gradient(135deg,#FF9F43,#D4A843,#C77DFF);background-size:200% 100%;border:none;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:800;color:#fff;cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap;box-shadow:0 4px 14px rgba(196,113,74,.45);animation:tbCtaFlow 3s ease-in-out infinite;}
 @keyframes tbCtaFlow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-.tb-cta.claimed{background:rgba(107,203,119,.15);color:#6BCB77;border:1px solid rgba(107,203,119,.3);box-shadow:none;animation:none;}
+.tb-cta.claimed{background:linear-gradient(135deg,#6BCB77,#4FA85C);color:#fff;border:none;box-shadow:0 4px 14px rgba(107,203,119,.4);animation:none;}
 
 /* ── GÜNLÜK ÖDÜLLER SAYFASI ─────────────────────────────────────────────── */
 .dr-hero{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;
@@ -288,8 +291,8 @@ body::after{
   box-shadow:0 6px 22px rgba(196,113,74,.45),inset 0 1px 0 rgba(255,255,255,.18);
   animation:playPulse 2.4s ease-in-out infinite;}
 .dr-cta-big:active{transform:scale(.97);}
-.dr-cta-big[disabled]{animation:none;cursor:default;opacity:.7;
-  background:rgba(107,203,119,.16);color:#6BCB77;box-shadow:none;}
+.dr-cta-big[disabled]{animation:tbGlowClaimed 3.2s ease-in-out infinite;cursor:default;opacity:1;
+  background:linear-gradient(135deg,#6BCB77 0%,#4FA85C 60%,#3D9048 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2);}
 .dr-note{font-size:11px;color:var(--dim);text-align:center;line-height:1.5;padding:0 6px;}
 .dr-next-preview{display:flex;align-items:center;justify-content:center;gap:8px;
   font-size:12px;color:var(--dim);font-weight:700;padding:10px;border-radius:12px;
@@ -2355,7 +2358,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.08-13';
+const BUILD_VER='v2026.07.08-14';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
