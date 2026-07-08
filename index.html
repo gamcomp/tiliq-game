@@ -986,6 +986,7 @@ input[type="text"]::placeholder{color:var(--dim);}
       </button>
     </div>
   </div>
+  <div id="banner-spacer-menu" style="width:100%;flex-shrink:0;height:0;"></div>
 
 </div>
 
@@ -1088,6 +1089,7 @@ input[type="text"]::placeholder{color:var(--dim);}
       </button>
     </div>
   </div>
+  <div id="banner-spacer-game" style="width:100%;flex-shrink:0;height:0;"></div>
 </div>
 
 <!-- TUTORIAL OVERLAY -->
@@ -2370,15 +2372,21 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.09-1';
+const BUILD_VER='v2026.07.09-2';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
 const ctx=canvas.getContext('2d');
 const GRID=8;
+// Banner reklamı oyun ekranında da gösterilebiliyor (bkz. aşağıdaki showBanner/hideBanner) —
+// calcCell() bu iki değişkeni kullandığı için (ilk çağrı script'in en başında, sayfa
+// yüklenirken olur) burada, dosyanın başında tanımlanmaları gerekiyor; yoksa "temporal
+// dead zone" hatası olurdu.
+let _bannerShown=false;
+const BANNER_RESERVE_PX=64; // adaptif banner için ayrılan güvenli alt boşluk (tepsi asla kapanmaz)
 function calcCell(){
   const vw=Math.min(window.innerWidth,480);
-  const vh=window.innerHeight-110;
+  const vh=window.innerHeight-110-(_bannerShown?BANNER_RESERVE_PX:0);
   return Math.min(Math.floor((vw-10)/GRID),Math.floor(vh/(GRID+3.6)),50);
 }
 let CELL=calcCell();
@@ -2869,10 +2877,21 @@ const ADMOB_INTERSTITIAL_ID='ca-app-pub-1366817286080705/5666042603';
 const ADMOB_BANNER_ID='ca-app-pub-1366817286080705/5782005360';
 let _adCb=null,_adTick=null,_admobListeners=[];
 let _interReady=false;
-let _bannerShown=false;
-const BANNER_ENABLED=false;   // Banner kapalı — görsel olarak kötü duruyordu. true yaparsan geri açılır.
+// Banner artık oyun içinde de gösteriliyor (kullanıcı isteği, 2026-07-09) — önceden
+// sadece menüde açıktı ("HUD'u kapatmaz" kuralı gereği tepsi/HUD ile çakışmasın diye
+// oyun ekranında kapalı tutuluyordu). Artık çakışmayı DOM'da GERÇEK bir boşluk elemanıyla
+// çözüyoruz (#banner-spacer-menu / #banner-spacer-game) — calcCell()'in vh küçültmesine
+// GÜVENMİYORUZ çünkü CELL çoğu telefonda genişlik tarafından 50px'e sabitleniyor, yükseklik
+// payı hiç etkisi olmuyor (test edilip görüldü). Spacer, canvas boyutundan bağımsız çalışır.
+const BANNER_ENABLED=true;
+function _setBannerSpacers(px){
+  const gm=document.getElementById('banner-spacer-menu');
+  const gg=document.getElementById('banner-spacer-game');
+  if(gm) gm.style.height=px+'px';
+  if(gg) gg.style.height=px+'px';
+}
 
-// ── BANNER (alt şerit — sadece menüde, HUD'u kapatmaz) ───────────────────────
+// ── BANNER (alt şerit — menü VE oyun ekranında, tepsi/HUD ile çakışmaz) ──────
 async function showBanner(){
   if(!BANNER_ENABLED)return;        // Banner devre dışı
   if(isNoAds())return;              // Reklamsız/VIP kullanıcıya gösterme
@@ -2886,13 +2905,19 @@ async function showBanner(){
       margin:0,
     });
     _bannerShown=true;
+    _setBannerSpacers(BANNER_RESERVE_PX);
+    // Oyun ekranındaysak tahtayı/tepsiyi de yeniden ölçekle (küçük ek güvenlik payı)
+    if(document.getElementById('screen-game')?.classList.contains('active')) resizeCanvas();
   }catch(e){ console.warn('Banner show:',e); }
 }
 async function hideBanner(){
   const AdMob=_getAdMob();
   if(!AdMob||!_bannerShown)return;
-  try{ await AdMob.hideBanner(); _bannerShown=false; }
-  catch(e){ console.warn('Banner hide:',e); }
+  try{
+    await AdMob.hideBanner(); _bannerShown=false;
+    _setBannerSpacers(0);
+    if(document.getElementById('screen-game')?.classList.contains('active')) resizeCanvas();
+  }catch(e){ console.warn('Banner hide:',e); }
 }
 
 // ── INTERSTITIAL (tam ekran, oyun bitişinde) ─────────────────────────────────
@@ -5085,8 +5110,9 @@ window.addEventListener('resize',()=>{if(document.getElementById('screen-game').
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
-  // Banner: menüde göster, oyunda gizle (HUD'u kapatmasın)
-  if(id==='game') hideBanner(); else showBanner();
+  // Banner: menüde ve oyunda göster (tepsi çakışması calcCell()'de ayrılan boşlukla
+  // önleniyor), yükleme/dil seçimi ekranlarında gizle
+  if(id==='menu'||id==='game') showBanner(); else hideBanner();
   // Karo vitrin şeridi: sadece menüdeyken kaysın (gereksiz yere arka planda çalışmasın)
   if(id==='menu') startMenuArtAnim(); else stopMenuArtAnim();
 }
