@@ -2370,7 +2370,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.08-17';
+const BUILD_VER='v2026.07.08-18';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2815,6 +2815,34 @@ function logEvent(name,params){
     try{ _fbLogEventFn(_fbAnalytics,name,params||{}); }catch(e){console.warn('Analytics log:',e);}
   }
 }
+// ── ÇÖKME RAPORLAMA (Crashlytics + Analytics çift kayıt) ─────────────────────
+// Native'de (Android/iOS) @capacitor-firebase/crashlytics gerçek Crashlytics'e
+// yazar (stack trace, crash-free-users %, dashboard uyarıları). Web'de bu plugin
+// "Not implemented" fırlatır — o yüzden HER YERDE ayrıca zaten çalıştığı doğrulanmış
+// Analytics'e de 'app_exception' event'i olarak düşüyoruz (web dahil kayıt garantisi).
+function _getCrashlytics(){
+  return window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FirebaseCrashlytics||null;
+}
+let _crashReportCount=0;
+function _reportError(err,fatal){
+  if(_crashReportCount>=20)return; // tek oturumda spam/döngü halinde sınırsız rapor atmasın
+  _crashReportCount++;
+  const message=(err&&(err.message||String(err)))||'Bilinmeyen hata';
+  const stackStr=(err&&err.stack)?String(err.stack).slice(0,600):'';
+  console.error('[Crash]',fatal?'FATAL':'non-fatal',message,stackStr);
+  const CL=_getCrashlytics();
+  if(CL){
+    CL.recordException({message:fatal?`[FATAL] ${message}`:message}).catch(()=>{});
+  }
+  logEvent('app_exception',{message:message.slice(0,100),fatal:!!fatal,build:BUILD_VER});
+}
+window.addEventListener('error',e=>{
+  _reportError(e.error||new Error(e.message||'window.onerror'),true);
+});
+window.addEventListener('unhandledrejection',e=>{
+  _reportError(e.reason instanceof Error?e.reason:new Error(String(e.reason)),false);
+});
+
 function onGameStart(){logEvent('game_start',{game:'tiliq'});}
 function onGameOver(s){
   logEvent('game_over',{game:'tiliq',score:s});
@@ -5359,6 +5387,7 @@ function _onFirebaseUser(user){
   localStorage.setItem('tm_acct', JSON.stringify(acct));
   _updateLoginGate(); // giriş duvarını kaldır
   _rcLogIn(user.uid);   // RevenueCat'i bu hesaba bağla (entitlement taşınsın)
+  _getCrashlytics()?.setUserId({userId:user.uid}).catch(()=>{}); // crash raporlarında "kimdi" bilgisi
   const si=document.getElementById('auth-signout-area');
   const na=document.getElementById('auth-native-area');
   const wa=document.getElementById('auth-web-area');
