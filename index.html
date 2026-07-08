@@ -2068,6 +2068,7 @@ function onLevelUp(lv){
   showCelebration(t('lvUp').replace('{n}',lv),'#C77DFF');
   vibrate([50,30,50,30,100]);
   floats.push({x:canvas.width/2,y:canvas.height/3,txt:`LV ${lv} ⬆️`,a:1,vy:-2.5,c:'#C77DFF',big:true,scale:1.5});
+  logEvent('level_up',{level:lv});
 }
 let _xpPushTimer=null;
 function _scheduleXPPush(xp){
@@ -2369,7 +2370,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.08-16';
+const BUILD_VER='v2026.07.08-17';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2804,7 +2805,16 @@ let floats=[],flashes=[],bounce=null,sparks=[],shockwaves=[],flames=[];
 let _tmGc=parseInt(localStorage.getItem('tiliq_gc')||'0');
 let _tmLastAd=0;
 let _tmRated=localStorage.getItem('tiliq_rated')==='1';
-function logEvent(name,params){console.log('[Analytics]',name,params?JSON.stringify(params):'');/* TODO: FirebaseAnalytics.logEvent(name,params) */}
+// _fbAnalytics/_fbLogEventFn initFirebaseAuth() içinde async kurulur (network+dinamik
+// import gerektirir) — sayfa yüklenir yüklenmez ilk birkaç logEvent çağrısı henüz hazır
+// olmayabilir, bu durumda sessizce sadece console.log'a düşer (veri kaybı: sadece ilk
+// birkaç olay, kritik değil — session_start zaten SDK kurulunca otomatik loglanır).
+function logEvent(name,params){
+  console.log('[Analytics]',name,params?JSON.stringify(params):'');
+  if(_fbAnalytics&&_fbLogEventFn){
+    try{ _fbLogEventFn(_fbAnalytics,name,params||{}); }catch(e){console.warn('Analytics log:',e);}
+  }
+}
 function onGameStart(){logEvent('game_start',{game:'tiliq'});}
 function onGameOver(s){
   logEvent('game_over',{game:'tiliq',score:s});
@@ -2892,7 +2902,7 @@ async function showRewardedAd(onRewarded){
     const l1=await AdMob.addListener('rewarded',()=>{rewarded=true;});
     const l2=await AdMob.addListener('rewardVideoAdClosed',()=>{
       l1.remove();l2.remove();
-      if(rewarded)onRewarded();
+      if(rewarded){logEvent('ad_rewarded',{ad_format:'rewarded'});onRewarded();}
     });
     _admobListeners=[l1,l2];
     await AdMob.prepareRewardVideoAd({adId:ADMOB_REWARDED_ID});
@@ -5166,11 +5176,13 @@ const FB_CONFIG = {
   projectId: 'tiliq-1c0a8',
   storageBucket: 'tiliq-1c0a8.appspot.com',
   messagingSenderId: '158314507461',
-  appId: '1:158314507461:web:f086fb6fd8778221b314ac'
+  appId: '1:158314507461:web:f086fb6fd8778221b314ac',
+  measurementId: 'G-E10E6LL5P6'
 };
 const FB_WEB_CLIENT_ID = '158314507461-gok3ji1mum1kofm3g674sm3cn0hl3of8.apps.googleusercontent.com';
 
 let _fbApp=null, _fbAuth=null;
+let _fbAnalytics=null, _fbLogEventFn=null; // gerçek Firebase Analytics (2026-07-08 — bkz. logEvent())
 // "Auth durumu belli oldu mu" sinyali — RACE CONDITION FIX (2026-07-08, devam):
 // initFirebaseAuth() dinamik import + network gerektirir (yüzlerce ms-birkaç sn
 // sürebilir). Kullanıcı sayfa açılır açılmaz "Oyna"ya basarsa, onAuthStateChanged
@@ -5186,6 +5198,17 @@ async function initFirebaseAuth(){
     if(!getApps().length) _fbApp=initializeApp(FB_CONFIG);
     else _fbApp=getApps()[0];
     _fbAuth=getAuth(_fbApp);
+    // Gerçek analytics — daha önce logEvent() sadece console.log yapıyordu, hiçbir
+    // yere veri gitmiyordu (BÜYÜT/ÖLDÜR kararları CPI+elde-tutma verisine dayanıyor
+    // ama bu veri hiç toplanmıyordu). isSupported() kontrolü önerilen resmi desen —
+    // bazı kısıtlı WebView ortamlarında Analytics SDK'sı sessizce çökmesin diye.
+    try{
+      const {getAnalytics,isSupported,logEvent:_fle}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js');
+      if(await isSupported()){
+        _fbAnalytics=getAnalytics(_fbApp);
+        _fbLogEventFn=_fle;
+      }
+    }catch(e){console.warn('Analytics init:',e);}
     onAuthStateChanged(_fbAuth, user=>{
       if(user) _onFirebaseUser(user);
       if(_authReadyResolve){_authReadyResolve();_authReadyResolve=null;} // ilk callback = "auth durumu belli"
@@ -5585,6 +5608,13 @@ async function iapBuy(id){
       showCelebration('✅ '+t('iapSuccess'),'#6BCB77');
       playPurchase();vibrate([20,10,40,10,60]);
     }
+    // Gerçek para geliri — CPI/ROAS hesapları için değer+para birimi dahil
+    logEvent('purchase',{
+      transaction_id:result.transaction?.transactionIdentifier||'',
+      value:pkg.product?.price,
+      currency:pkg.product?.currencyCode||'USD',
+      items:[{item_id:productId}],
+    });
     syncWallet();   // satın almayı hesaba işle
     renderStoreBody();
   }catch(e){
