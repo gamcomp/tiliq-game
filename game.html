@@ -1166,6 +1166,10 @@ input[type="text"]::placeholder{color:var(--dim);}
         <button class="lang-btn" onclick="setLang('PT')" data-lang="PT"><span class="flag">🇧🇷</span>PT</button>
         <button class="lang-btn" onclick="setLang('AR')" data-lang="AR"><span class="flag">🇸🇦</span>AR</button>
         <button class="lang-btn" onclick="setLang('ZH')" data-lang="ZH"><span class="flag">🇨🇳</span>ZH</button>
+        <button class="lang-btn" onclick="setLang('IT')" data-lang="IT"><span class="flag">🇮🇹</span>IT</button>
+        <button class="lang-btn" onclick="setLang('RU')" data-lang="RU"><span class="flag">🇷🇺</span>RU</button>
+        <button class="lang-btn" onclick="setLang('HI')" data-lang="HI"><span class="flag">🇮🇳</span>HI</button>
+        <button class="lang-btn" onclick="setLang('NL')" data-lang="NL"><span class="flag">🇳🇱</span>NL</button>
       </div>
       </div><!-- /dil kartı -->
       <div style="text-align:center;font-size:10px;color:var(--dim);opacity:.75;margin-top:2px">Tiliq · <span id="build-ver">?</span></div>
@@ -2372,7 +2376,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.09-3';
+const BUILD_VER='v2026.07.09-4';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
