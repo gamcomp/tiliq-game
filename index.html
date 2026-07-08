@@ -2372,7 +2372,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.09-2';
+const BUILD_VER='v2026.07.09-3';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2963,8 +2963,8 @@ async function showRewardedAd(onRewarded){
     _admobListeners.forEach(l=>l&&l.remove&&l.remove());
     _admobListeners=[];
     let rewarded=false;
-    const l1=await AdMob.addListener('rewarded',()=>{rewarded=true;});
-    const l2=await AdMob.addListener('rewardVideoAdClosed',()=>{
+    const l1=await AdMob.addListener('onRewardedVideoAdReward',()=>{rewarded=true;});
+    const l2=await AdMob.addListener('onRewardedVideoAdDismissed',()=>{
       l1.remove();l2.remove();
       if(rewarded){logEvent('ad_rewarded',{ad_format:'rewarded'});onRewarded();}
     });
