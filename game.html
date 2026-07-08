@@ -2370,7 +2370,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.08-18';
+const BUILD_VER='v2026.07.08-19';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2843,11 +2843,22 @@ window.addEventListener('unhandledrejection',e=>{
   _reportError(e.reason instanceof Error?e.reason:new Error(String(e.reason)),false);
 });
 
+// Uygulama içi değerlendirme (Google Play In-App Review API) — sadece native'de
+// çalışır, web'de plugin "Not implemented" fırlatır (mağaza kavramı yok, atlanır).
+// NOT: Play'in kendi kotası dialog'un GERÇEKTEN gösterilip gösterilmeyeceğini
+// belirler (requestReview() her çağrıldığında dialog çıkacağı garanti değildir,
+// bu Google'ın niyetli tasarımı) — biz sadece "ne zaman isteyelim" kararını veriyoruz.
+function _getInAppReview(){
+  return window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.InAppReview||null;
+}
 function onGameStart(){logEvent('game_start',{game:'tiliq'});}
 function onGameOver(s){
   logEvent('game_over',{game:'tiliq',score:s});
   _tmGc++;localStorage.setItem('tiliq_gc',_tmGc);
-  if(!_tmRated&&_tmGc>=3){_tmRated=true;localStorage.setItem('tiliq_rated','1');/* TODO: StoreReview */}
+  if(!_tmRated&&_tmGc>=3){
+    _tmRated=true;localStorage.setItem('tiliq_rated','1');
+    _getInAppReview()?.requestReview().catch(()=>{});
+  }
 }
 
 // ── REKLAM (AdMob) ────────────────────────────────────────────────────────────
