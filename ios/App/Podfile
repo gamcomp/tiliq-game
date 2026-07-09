@@ -12,6 +12,10 @@ def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
+  # AdMob plugin'in Consent (UMP) kaynak kodu bu pod'u ayrı bağımlılık olarak bekliyor —
+  # Google-Mobile-Ads-SDK 11.3.0 tek başına artık UMPConsentStatus tipini sağlamıyor
+  # ("has been renamed to 'ConsentStatus'" derleme hatası), pod eksikse Xcode build'i kırılıyor.
+  pod 'GoogleUserMessagingPlatform', '>= 2.7.0', '< 3.0.0'
   pod 'CapacitorCommunityInAppReview', :path => '../../node_modules/@capacitor-community/in-app-review'
   pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication'
   pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
