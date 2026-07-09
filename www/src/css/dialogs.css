@@ -1,0 +1,108 @@
+/* ── Tiliq Ortak Overlay ─────────────────────────────────────────────────── */
+.tq-overlay {
+  position: fixed; inset: 0; background: rgba(10,4,2,.82);
+  z-index: 200; display: flex; align-items: center; justify-content: center;
+  padding: 0 16px env(safe-area-inset-bottom,0);
+}
+.tq-overlay.hidden { display: none; }
+
+.tq-dlg-card {
+  background: linear-gradient(180deg,#2E1810,#180C06);
+  border: 1px solid rgba(255,190,120,.18);
+  border-radius: 20px; padding: 28px 22px;
+  width: min(380px,90vw); text-align: center;
+  animation: tqSlideUp .28s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+.tq-modal-card {
+  background: linear-gradient(180deg,#2E1810,#180C06);
+  border: 1px solid rgba(255,190,120,.18);
+  border-radius: 24px 24px 0 0;
+  width: min(480px,100vw); max-height: 80dvh;
+  display: flex; flex-direction: column; overflow: hidden;
+  animation: tqSlideUp .3s cubic-bezier(.34,1.56,.64,1) both;
+}
+.tq-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 14px 10px; border-bottom: 1px solid rgba(255,190,120,.1); flex-shrink: 0;
+}
+.tq-modal-head h3 { font-size: 16px; font-weight: 800; color: #FFF4E8; }
+.tq-modal-body { overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+.tq-icon-btn {
+  background: rgba(255,190,120,.08); border: 1px solid rgba(255,190,120,.18);
+  border-radius: 50%; width: 32px; height: 32px; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: #FFF4E8;
+  min-width: 44px; min-height: 44px;
+}
+
+@keyframes tqSlideUp {
+  from { transform: translateY(60px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Ortak Butonlar ─────────────────────────────────────────────────────── */
+.tq-btn {
+  display: block; width: 100%; border: none; border-radius: 14px;
+  padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer;
+  font-family: inherit; min-height: 48px; transition: transform .1s;
+}
+.tq-btn:active { transform: scale(.96); }
+
+.tq-btn-primary {
+  background: linear-gradient(135deg,#C4714A,#D4A843);
+  color: #FFF4E8; box-shadow: 0 4px 18px rgba(196,113,74,.4);
+}
+.tq-btn-sec {
+  background: rgba(255,190,120,.08); border: 1px solid rgba(255,190,120,.2);
+  color: rgba(255,244,232,.65); margin-top: 8px;
+}
+
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+.tq-spin-ring {
+  width: 32px; height: 32px; border: 3px solid rgba(255,190,120,.15);
+  border-top-color: #D4A843; border-radius: 50%;
+  animation: tqSpin .8s linear infinite; margin: 0 auto;
+}
+@keyframes tqSpin { to { transform: rotate(360deg); } }
+
+/* ── RewardDialog ─────────────────────────────────────────────────────────── */
+.rdlg-icon  { font-size: 52px; margin-bottom: 10px; }
+.rdlg-title { font-size: 18px; font-weight: 800; color: #FFF4E8; margin-bottom: 6px; }
+.rdlg-desc  { font-size: 14px; color: rgba(255,244,232,.6); margin-bottom: 22px; }
+.rdlg-spinner { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0; color: rgba(255,244,232,.55); font-size: 13px; }
+.rdlg-spinner.hidden, .rdlg-actions.hidden { display: none; }
+.rdlg-actions { display: flex; flex-direction: column; gap: 0; }
+
+/* ── DailyTaskPanel ─────────────────────────────────────────────────────── */
+.daily-panel { align-items: flex-end; }
+.daily-panel .tq-modal-card { border-radius: 24px 24px 0 0; }
+
+.dtp-item {
+  background: rgba(255,190,120,.04); border: 1px solid rgba(255,190,120,.1);
+  border-radius: 12px; padding: 12px; transition: border-color .2s;
+}
+.dtp-item.dtp-done { border-color: rgba(107,203,119,.4); background: rgba(107,203,119,.05); }
+.dtp-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.dtp-desc  { font-size: 13px; font-weight: 600; color: #FFF4E8; }
+.dtp-reward{ font-size: 12px; font-weight: 700; color: #D4A843; white-space: nowrap; margin-left: 8px; }
+.dtp-bar-wrap { height: 5px; background: rgba(255,255,255,.08); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+.dtp-bar { height: 100%; background: linear-gradient(90deg,#C4714A,#D4A843); border-radius: 3px; transition: width .4s; }
+.dtp-item.dtp-done .dtp-bar { background: linear-gradient(90deg,#6BCB77,#00D2D3); }
+.dtp-count { font-size: 11px; color: rgba(255,244,232,.45); }
+.dtp-check { color: #6BCB77; font-weight: 700; }
+
+@keyframes tqCoinFloat {
+  0%   { transform: translateX(-50%) translateY(0);   opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-56px); opacity: 0; }
+}
+.tq-coin-float {
+  font-size: 16px; font-weight: 800; color: #D4A843;
+  text-shadow: 0 2px 8px rgba(212,168,67,.6);
+  animation: tqCoinFloat 1.2s ease-out forwards;
+}
+
+/* ── AdLoadingOverlay ─────────────────────────────────────────────────────── */
+.ad-overlay { background: rgba(10,4,2,.88); z-index: 300; }
+.ad-card { max-width: 320px; }
+.ad-load-txt { font-size: 14px; color: rgba(255,244,232,.6); margin: 0 0 16px; line-height: 1.5; }

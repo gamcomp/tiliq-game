@@ -1,0 +1,31 @@
+{
+  "appId": "com.tiliq.game",
+  "appName": "Tiliq",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#14080C",
+    "preferredContentMode": "mobile",
+    "scrollEnabled": false,
+    "limitsNavigationsToAppBoundDomains": true
+  },
+  "plugins": {
+    "FirebaseAuthentication": {
+      "skipNativeAuth": false,
+      "providers": ["google.com"]
+    },
+    "AdMob": {
+      "initializeForTesting": false,
+      "tagForChildDirectedTreatment": false,
+      "tagForUnderAgeOfConsent": false
+    },
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#14080C",
+      "showSpinner": false
+    }
+  }
+}

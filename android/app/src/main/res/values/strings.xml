@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Tiliq</string>
+    <string name="title_activity_main">Tiliq</string>
+    <string name="package_name">com.tiliq.game</string>
+    <string name="custom_url_scheme">com.tiliq.game</string>
+</resources>

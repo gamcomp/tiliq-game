@@ -1,0 +1,60 @@
+/* ── Tiliq StoreModal ────────────────────────────────────────────────────── */
+.tq-store-modal { align-items: flex-end; z-index: 150; }
+.tq-store-modal .modal-card { max-height: 84dvh; }
+
+.tq-store-tabs {
+  display: flex; gap: 8px; padding: 0 14px 10px; flex-shrink: 0;
+}
+.tq-stab {
+  flex: 1; padding: 9px; border-radius: 11px; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit; min-height: 44px;
+  background: transparent; border: 1px solid rgba(255,190,120,.15);
+  color: rgba(255,244,232,.5); transition: all .15s;
+}
+.tq-stab.active {
+  background: rgba(196,113,74,.25); border-color: #C4714A; color: #FFF4E8;
+}
+
+.tq-sg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.tq-sc {
+  background: rgba(255,190,120,.04); border: 1px solid rgba(255,190,120,.1);
+  border-radius: 14px; padding: 13px 10px; text-align: center; transition: border-color .2s;
+}
+.tq-sc.tq-owned { border-color: rgba(212,168,67,.4); background: rgba(212,168,67,.06); }
+.tq-sc-icon  { font-size: 30px; margin-bottom: 6px; }
+.tq-sc-name  { font-size: 12px; font-weight: 700; color: #FFF4E8; margin-bottom: 3px; }
+.tq-sc-price { font-size: 11px; color: rgba(255,244,232,.5); margin-bottom: 8px; }
+.tq-owned-lbl{ color: #D4A843; font-weight: 700; }
+
+.tq-buy-btn {
+  display: block; width: 100%; background: linear-gradient(135deg,#C4714A,#D4A843);
+  border: none; border-radius: 10px; padding: 7px; font-size: 11px; font-weight: 700;
+  color: #FFF4E8; cursor: pointer; min-height: 34px; font-family: inherit;
+  transition: transform .1s;
+}
+.tq-buy-btn:active { transform: scale(.95); }
+.tq-buy-dis { background: rgba(255,190,120,.1); color: rgba(255,244,232,.3); cursor: not-allowed; }
+
+.tq-earn-btn {
+  display: block; width: 100%; background: rgba(212,168,67,.1);
+  border: 1px solid rgba(212,168,67,.3); border-radius: 10px;
+  padding: 5px; font-size: 10px; font-weight: 700; color: #D4A843;
+  cursor: pointer; min-height: 30px; margin-top: 6px; font-family: inherit;
+  transition: background .15s;
+}
+.tq-earn-btn:active { background: rgba(212,168,67,.2); }
+
+.tq-coin-badge {
+  background: rgba(212,168,67,.12); border: 1px solid rgba(212,168,67,.25);
+  border-radius: 20px; padding: 4px 10px; font-size: 13px; font-weight: 700;
+  color: #D4A843; display: flex; align-items: center; gap: 3px; white-space: nowrap;
+}
+
+.tq-restore-btn {
+  display: block; width: 100%; background: transparent;
+  border: 1px solid rgba(255,190,120,.12); border-radius: 11px;
+  padding: 11px; font-size: 12px; color: rgba(255,244,232,.4);
+  cursor: pointer; font-family: inherit; min-height: 44px; transition: border-color .15s;
+}
+.tq-restore-btn:active { border-color: rgba(255,190,120,.3); color: rgba(255,244,232,.7); }

@@ -1,0 +1,22 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Android
+android/local.properties
+android/key.properties
+android/**/build/
+android/.gradle/
+android/captures/
+android/app/release/
+*.jks
+*.keystore
+
+# iOS
+ios/App/Pods/
+ios/App/build/
+ios/App/DerivedData/
+ios/App/App/public/
+**/*.xcuserstate
+**/xcuserdata/
+.DS_Store

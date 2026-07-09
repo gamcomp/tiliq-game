@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "158314507461",
+    "project_id": "tiliq-1c0a8",
+    "storage_bucket": "tiliq-1c0a8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:158314507461:android:7c2fadba9479634fb314ac",
+        "android_client_info": {
+          "package_name": "com.tiliq.game"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "158314507461-2pgfh1qa2o74vt74pcvdi4amrgg7n6g8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tiliq.game",
+            "certificate_hash": "e4902b90851404cda0cdad03f0dc93b1ad627c90"
+          }
+        },
+        {
+          "client_id": "158314507461-306tf5ur98f708vqce658lc6b0icgfr9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tiliq.game",
+            "certificate_hash": "222b6a1fcc96f39279bf5df02a394ecfc0ea95fe"
+          }
+        },
+        {
+          "client_id": "158314507461-gok3ji1mum1kofm3g674sm3cn0hl3of8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyApT2EY_XOm5bzF21bOd0CtSVllttpWExw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "158314507461-gok3ji1mum1kofm3g674sm3cn0hl3of8.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "158314507461-97fac1odn1diae7lifju101i8u6kr6n6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.tiliq.game"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

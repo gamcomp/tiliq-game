@@ -1,0 +1,28 @@
+{
+  "name": "tiliq",
+  "version": "1.0.0",
+  "description": "Tiliq — Mobil Blok Puzzle Oyunu",
+  "scripts": {
+    "cap:add:ios": "npx cap add ios",
+    "cap:sync": "npx cap sync",
+    "cap:open:ios": "npx cap open ios",
+    "cap:run:ios": "npx cap run ios"
+  },
+  "dependencies": {
+    "@capacitor-community/admob": "^6.0.0",
+    "@capacitor-community/in-app-review": "^6.0.0",
+    "@capacitor-firebase/authentication": "^6.0.0",
+    "@capacitor-firebase/crashlytics": "^6.3.1",
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/app": "^6.0.3",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0",
+    "@revenuecat/purchases-capacitor": "^9.0.0",
+    "firebase": "^10.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  },
+  "author": "BehzatBerk",
+  "license": "UNLICENSED"
+}
