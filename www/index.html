@@ -2388,7 +2388,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.09-5';
+const BUILD_VER='v2026.07.10-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5486,7 +5486,11 @@ window._authSignIn = async function(provider){
     const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
     if(!FA){alert('Auth plugin yüklü değil');return;}
     try{
-      const result=isApple ? await FA.signInWithApple() : await FA.signInWithGoogle();
+      // Apple'ın nonce'u tek kullanımlık — plugin native Firebase'e ZATEN giriş yaparsa
+      // (skipNativeAuth:false varsayılanı), aynı nonce'u JS SDK'ya tekrar göndermek
+      // "auth/missing-or-invalid-nonce: Duplicate credential received" hatası verir.
+      // Apple için native girişi atlayıp sadece credential'ı JS SDK'ya bir kez gönderiyoruz.
+      const result=isApple ? await FA.signInWithApple({skipNativeAuth:true}) : await FA.signInWithGoogle();
       // Native plugin native Firebase SDK'ya giriş yapar; oyun Firestore için JS SDK
       // kullanıyor → credential ile JS SDK'ya da giriş yap (yoksa Firestore yetkisiz kalır).
       const idToken=result?.credential?.idToken;
