@@ -35,8 +35,12 @@ workflows:
           xcode-project use-profiles
       - name: Increment build number
         script: |
-          LATEST=$(app-store-connect get-latest-app-store-build-number "$APP_ID" 2>/dev/null || echo "0")
-          if [ -z "$LATEST" ]; then LATEST=0; fi
+          LATEST_STORE=$(app-store-connect get-latest-app-store-build-number "$APP_ID" 2>/dev/null || echo "0")
+          LATEST_TESTFLIGHT=$(app-store-connect get-latest-testflight-build-number "$APP_ID" 2>/dev/null || echo "0")
+          if [ -z "$LATEST_STORE" ]; then LATEST_STORE=0; fi
+          if [ -z "$LATEST_TESTFLIGHT" ]; then LATEST_TESTFLIGHT=0; fi
+          LATEST=$LATEST_STORE
+          if [ "$LATEST_TESTFLIGHT" -gt "$LATEST" ]; then LATEST=$LATEST_TESTFLIGHT; fi
           agvtool new-version -all $((LATEST + 1))
         working_directory: ios/App
       - name: Build ipa for distribution
