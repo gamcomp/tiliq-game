@@ -24,6 +24,15 @@
 	<string>ca-app-pub-1366817286080705~1900233584</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Bu veriler, sana daha alakalı reklamlar göstermek için kullanılır.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.158314507461-97fac1odn1diae7lifju101i8u6kr6n6</string>
+			</array>
+		</dict>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
