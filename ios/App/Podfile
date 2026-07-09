@@ -13,7 +13,10 @@ def capacitor_pods
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
   pod 'CapacitorCommunityInAppReview', :path => '../../node_modules/@capacitor-community/in-app-review'
-  pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication'
+  # Varsayılan 'Lite' alt-paket Google Sign-In'i tamamen dışarıda bırakıyor (RGCFA_INCLUDE_GOOGLE
+  # derleme bayrağı tanımlanmıyor) — GoogleAuthProviderHandler.swift'teki tüm kod sessizce atlanıyor,
+  # bu yüzden Google butonu hiçbir tepki vermiyordu. 'Google' alt paketini açıkça eklemek gerekiyor.
+  pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication', :subspecs => ['Google']
   pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
   pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
   pod 'RevenuecatPurchasesCapacitor', :path => '../../node_modules/@revenuecat/purchases-capacitor'
