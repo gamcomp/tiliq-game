@@ -16,6 +16,11 @@ workflows:
       node: 20
       xcode: latest
       cocoapods: default
+    cache:
+      cache_paths:
+        - $HOME/Library/Caches/CocoaPods
+        - ios/App/Pods
+        - $HOME/.npm
     scripts:
       - name: Install npm dependencies
         script: npm install
