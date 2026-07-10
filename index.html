@@ -2388,7 +2388,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.10-5';
+const BUILD_VER='v2026.07.10-DEBUG';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5522,8 +5522,13 @@ function _onFirebaseUser(user){
 }
 
 window._authSignIn = async function(provider){
+  // GEÇİCİ TEŞHİS MODU — iOS'ta giriş butonlarının hiçbir tepki vermemesi sorununu
+  // kesin olarak tespit etmek için her adımda alert() ile durum gösteriyoruz.
+  // Kaynak bulunduktan sonra bu alert'ler kaldırılacak.
+  alert('DEBUG 1/5: _authSignIn çağrıldı, provider='+provider);
   const _isNative=!!window.Capacitor?.isNativePlatform?.();
   const isApple=provider==='apple';
+  alert('DEBUG 2/5: isNative='+_isNative+' isApple='+isApple);
   if(_isNative){
     // Capacitor native Google/Apple Sign-In
     const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
@@ -5533,28 +5538,33 @@ window._authSignIn = async function(provider){
       // (skipNativeAuth:false varsayılanı), aynı nonce'u JS SDK'ya tekrar göndermek
       // "auth/missing-or-invalid-nonce: Duplicate credential received" hatası verir.
       // Apple için native girişi atlayıp sadece credential'ı JS SDK'ya bir kez gönderiyoruz.
+      alert('DEBUG 3/5: native '+(isApple?'signInWithApple':'signInWithGoogle')+' çağrılıyor...');
       const result=isApple ? await FA.signInWithApple({skipNativeAuth:true}) : await FA.signInWithGoogle();
+      alert('DEBUG 4/5: native çağrı döndü. idToken var mı: '+!!(result?.credential?.idToken)+' user var mı: '+!!(result?.user));
       // Native plugin native Firebase SDK'ya giriş yapar; oyun Firestore için JS SDK
       // kullanıyor → credential ile JS SDK'ya da giriş yap (yoksa Firestore yetkisiz kalır).
       const idToken=result?.credential?.idToken;
       const accessToken=result?.credential?.accessToken;
       if(idToken && _fbAuth){
+        alert('DEBUG 5/5: JS SDK import başlıyor (_fbAuth mevcut)...');
         const {GoogleAuthProvider,OAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
+        alert('DEBUG 6: import tamamlandı, signInWithCredential çağrılıyor...');
         const cred=isApple
           ? new OAuthProvider('apple.com').credential({idToken,rawNonce:result?.credential?.nonce,accessToken:result?.credential?.authorizationCode})
           : GoogleAuthProvider.credential(idToken, accessToken);
         const uc=await signInWithCredential(_fbAuth, cred);
+        alert('DEBUG 7: signInWithCredential tamamlandı, user var mı: '+!!(uc?.user));
         if(uc?.user) _onFirebaseUser(uc.user);
       } else if(result?.user){
+        alert('DEBUG 5b: idToken yok ama result.user var, onFirebaseUser çağrılıyor');
         _onFirebaseUser(result.user);
       } else {
-        alert('Giriş tamamlanamadı (token yok).');
+        alert('DEBUG 5c: idToken YOK, _fbAuth='+!!_fbAuth+', result.user YOK — Giriş tamamlanamadı (token yok).');
       }
     }catch(e){
       console.warn('Native '+provider+' auth:',e);
-      // Kullanıcı iptal ettiyse sessiz geç, değilse hatayı göster (teşhis için)
       const code=e?.code||''; const msg=e?.message||JSON.stringify(e);
-      if(!/cancel|1000|closed/i.test(code+msg)) alert('Giriş hatası: '+(code?code+' — ':'')+msg);
+      alert('DEBUG CATCH: code='+code+' msg='+msg);
     }
   } else {
     // Web: popup önce dene, başarısız olursa redirect
