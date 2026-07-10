@@ -5552,7 +5552,10 @@ window._authSignIn = async function(provider){
         const cred=isApple
           ? new OAuthProvider('apple.com').credential({idToken,rawNonce:result?.credential?.nonce,accessToken:result?.credential?.authorizationCode})
           : GoogleAuthProvider.credential(idToken, accessToken);
-        const uc=await signInWithCredential(_fbAuth, cred);
+        // signInWithCredential sessizce sonsuza dek askıda kalabiliyordu (ne başarı ne
+        // hata) — gerçek network hatasını görebilmek için 10sn zaman aşımı ekliyoruz.
+        const _timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT 10sn — signInWithCredential hiç yanıt vermedi')),10000));
+        const uc=await Promise.race([signInWithCredential(_fbAuth, cred), _timeout]);
         alert('DEBUG 7: signInWithCredential tamamlandı, user var mı: '+!!(uc?.user));
         if(uc?.user) _onFirebaseUser(uc.user);
       } else if(result?.user){
