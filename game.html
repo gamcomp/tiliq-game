@@ -2389,7 +2389,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.11-2';
+const BUILD_VER='v2026.07.11-3';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5491,6 +5491,16 @@ function _onFirebaseUser(user){
   if(si) si.style.display='block';
   if(na) na.style.display='none';
   if(wa) wa.style.display='none';
+  // GÜVENLİK AĞI (2026-07-11): profil kurulumu (showProfileSetup) daha önce SADECE
+  // _firestoreSync()'in tamamlanmasına bağlıydı — bu bir Firestore JS SDK çağrısı,
+  // ve iOS'ta bazı JS SDK ağ çağrılarının sessizce askıda kaldığını doğruladık. Eğer
+  // bu zincir hiç bitmezse kullanıcı profil kurulumuna ASLA ulaşamıyordu ("dil
+  // soruyor ama profil düzenlemesine ilerletmiyor" raporu). 8sn içinde Firestore
+  // yanıt vermezse, profil kurulumunu yine de başlatıyoruz — bulut senkronu arka
+  // planda devam edebilir, kullanıcı takılı kalmasın diye.
+  let _plsCalled=false;
+  const _postLoginSetupOnce=()=>{ if(_plsCalled)return; _plsCalled=true; _postLoginSetup(); };
+  setTimeout(_postLoginSetupOnce,8000);
   // İlk gerçek giriş VE yerel ilerleme VARSA: önce cloud'a bak.
   const localBest=acct.best||0;
   if(acct._mergedUid!==user.uid && localBest>0){
@@ -5499,17 +5509,18 @@ function _onFirebaseUser(user){
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       if(cloud && (cloud.best||0)>0){
         // Hesapta zaten veri var → çakışma, kullanıcıya sor
+        _plsCalled=true; // merge dialog kendi akışını yönetir, timeout'u iptal et
         _showMergeDialog(user.uid, cloud);
       } else {
         // Hesap boş → yereli otomatik aktar (dünya sıralamasına yazılsın)
-        return _firestoreSync(user.uid).then(()=>_postLoginSetup());
+        return _firestoreSync(user.uid).then(()=>_postLoginSetupOnce());
       }
     }).catch(()=>{
       // Cloud okunamadıysa yine de senkronize et — skor kaybolmasın
       return _firestoreSync(user.uid).then(()=>{
         acct._mergedUid=user.uid;
         localStorage.setItem('tm_acct',JSON.stringify(acct));
-        _postLoginSetup();
+        _postLoginSetupOnce();
       });
     });
   } else {
@@ -5517,7 +5528,7 @@ function _onFirebaseUser(user){
     _cloudSyncPromise=_firestoreSync(user.uid).then(()=>{
       acct._mergedUid=user.uid;
       localStorage.setItem('tm_acct',JSON.stringify(acct));
-      _postLoginSetup();
+      _postLoginSetupOnce();
     });
   }
 }
@@ -5701,20 +5712,26 @@ window._authSignOut = async function(){
     try{ await _firestorePushScore(); }catch(e){}
     try{ await _syncWalletToFirestore(); }catch(e){}
   }
+  // KRİTİK SIRALAMA (2026-07-11 düzeltmesi): yerel "çıkış yapıldı" durumu önce
+  // kaydedilir. Öncesinde bu, _fbAuth.signOut()/FA.signOut() gibi SDK çağrılarından
+  // SONRA çalışıyordu — ama bu çağrılar (özellikle JS SDK'nın _fbAuth.signOut()'u,
+  // iOS'ta bilinen WKWebView ağ sorunu yüzünden) askıda kalabiliyor, bu yüzden
+  // kullanıcı çıkışı bekleyip uygulamayı erken kapatırsa yerel durum HİÇ
+  // sıfırlanmamış oluyordu — "çıkış yapmıyor" raporu buradan geliyordu. Artık
+  // yerel sıfırlama garanti; SDK temizliği en iyi çaba olarak arkada kalabilir.
+  _resetToGuestState();
   try{
     if(_fbAuth) await _fbAuth.signOut();
   }catch(e){}
   try{
     // iOS'ta native girişi artık JS SDK'ya köprülemiyoruz (bkz. _authSignIn) — asıl
     // aktif oturum native Firebase SDK'da tutuluyor. Sadece _fbAuth.signOut() (JS
-    // SDK) çağırmak bu native oturumu KAPATMIYOR, bu yüzden uygulama kapatılıp
-    // açıldığında native SDK kullanıcıyı hâlâ giriş yapmış sanıyordu (kullanıcı
-    // raporu, 2026-07-11). Native plugin'in kendi signOut()'unu da çağırıyoruz.
+    // SDK) çağırmak bu native oturumu KAPATMIYOR. Native plugin'in kendi
+    // signOut()'unu da çağırıyoruz (bir sonraki girişte fresh prompt çıksın diye).
     const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
     if(FA) await FA.signOut();
   }catch(e){}
   try{ const RC=_getRC(); if(RC&&_rcReady) await RC.logOut(); }catch(e){}
-  _resetToGuestState();
   // Çıkıştan sonra anonim oturuma dön — dünya sıralaması okunabilir kalsın
   try{
     const {signInAnonymously}=await import('./assets/firebase/firebase-auth.js');
