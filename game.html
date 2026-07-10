@@ -2389,7 +2389,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.10-DEBUG';
+const BUILD_VER='v2026.07.11-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5571,53 +5571,31 @@ window._networkDiagnose = async function _networkDiagnose(){
 }
 
 window._authSignIn = async function(provider){
-  // GEÇİCİ TEŞHİS MODU — iOS'ta giriş butonlarının hiçbir tepki vermemesi sorununu
-  // kesin olarak tespit etmek için her adımda alert() ile durum gösteriyoruz.
-  // Kaynak bulunduktan sonra bu alert'ler kaldırılacak.
-  await _networkDiagnose();
-  alert('DEBUG 1/5: _authSignIn çağrıldı, provider='+provider);
   const _isNative=!!window.Capacitor?.isNativePlatform?.();
   const isApple=provider==='apple';
-  alert('DEBUG 2/5: isNative='+_isNative+' isApple='+isApple);
   if(_isNative){
     // Capacitor native Google/Apple Sign-In
     const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
     if(!FA){alert('Auth plugin yüklü değil');return;}
     try{
-      // Apple'ın nonce'u tek kullanımlık — plugin native Firebase'e ZATEN giriş yaparsa
-      // (skipNativeAuth:false varsayılanı), aynı nonce'u JS SDK'ya tekrar göndermek
-      // "auth/missing-or-invalid-nonce: Duplicate credential received" hatası verir.
-      // Apple için native girişi atlayıp sadece credential'ı JS SDK'ya bir kez gönderiyoruz.
-      alert('DEBUG 3/5: native '+(isApple?'signInWithApple':'signInWithGoogle')+' çağrılıyor...');
-      const result=isApple ? await FA.signInWithApple({skipNativeAuth:true}) : await FA.signInWithGoogle();
-      alert('DEBUG 4/5: native çağrı döndü. idToken var mı: '+!!(result?.credential?.idToken)+' user var mı: '+!!(result?.user));
-      // Native plugin native Firebase SDK'ya giriş yapar; oyun Firestore için JS SDK
-      // kullanıyor → credential ile JS SDK'ya da giriş yap (yoksa Firestore yetkisiz kalır).
-      const idToken=result?.credential?.idToken;
-      const accessToken=result?.credential?.accessToken;
-      if(idToken && _fbAuth){
-        alert('DEBUG 5/5: JS SDK import başlıyor (_fbAuth mevcut)...');
-        const {GoogleAuthProvider,OAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
-        alert('DEBUG 6: import tamamlandı, signInWithCredential çağrılıyor...');
-        const cred=isApple
-          ? new OAuthProvider('apple.com').credential({idToken,rawNonce:result?.credential?.nonce,accessToken:result?.credential?.authorizationCode})
-          : GoogleAuthProvider.credential(idToken, accessToken);
-        // signInWithCredential sessizce sonsuza dek askıda kalabiliyordu (ne başarı ne
-        // hata) — gerçek network hatasını görebilmek için 10sn zaman aşımı ekliyoruz.
-        const _timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT 10sn — signInWithCredential hiç yanıt vermedi')),10000));
-        const uc=await Promise.race([signInWithCredential(_fbAuth, cred), _timeout]);
-        alert('DEBUG 7: signInWithCredential tamamlandı, user var mı: '+!!(uc?.user));
-        if(uc?.user) _onFirebaseUser(uc.user);
-      } else if(result?.user){
-        alert('DEBUG 5b: idToken yok ama result.user var, onFirebaseUser çağrılıyor');
+      // ÖNEMLİ (2026-07-11 teşhis sonucu): Firebase JS SDK'sının gerçek CORS+POST
+      // istekleri (signInWithCredential dahil) bu WKWebView'de AbortController ile bile
+      // durdurulamayan şekilde SONSUZA KADAR askıda kalıyor — basit GET istekleri
+      // çalışıyor ama gerçek Firebase trafiği çalışmıyor (bilinen bir WKWebView/Capacitor
+      // ağ katmanı kısıtlaması). Bu yüzden native girişi JS SDK'ya KÖPRÜLEMİYORUZ artık —
+      // skipNativeAuth:false (varsayılan) ile native Firebase SDK kendi native ağ
+      // katmanını (URLSession, WKWebView fetch değil) kullanarak TÜM kimlik doğrulamayı
+      // kendi içinde tamamlıyor, result.user doğrudan kullanılabilir geliyor.
+      const result=isApple ? await FA.signInWithApple() : await FA.signInWithGoogle();
+      if(result?.user){
         _onFirebaseUser(result.user);
       } else {
-        alert('DEBUG 5c: idToken YOK, _fbAuth='+!!_fbAuth+', result.user YOK — Giriş tamamlanamadı (token yok).');
+        alert('Giriş tamamlanamadı — kullanıcı bilgisi alınamadı.');
       }
     }catch(e){
       console.warn('Native '+provider+' auth:',e);
       const code=e?.code||''; const msg=e?.message||JSON.stringify(e);
-      alert('DEBUG CATCH: code='+code+' msg='+msg);
+      if(!/cancel|1000|closed/i.test(code+msg)) alert('Giriş hatası: '+(code?code+' — ':'')+msg);
     }
   } else {
     // Web: popup önce dene, başarısız olursa redirect
