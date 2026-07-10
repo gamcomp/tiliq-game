@@ -5573,24 +5573,53 @@ window._networkDiagnose = async function _networkDiagnose(){
 window._authSignIn = async function(provider){
   const _isNative=!!window.Capacitor?.isNativePlatform?.();
   const isApple=provider==='apple';
-  if(_isNative){
-    // Capacitor native Google/Apple Sign-In
+  if(_isNative && _isIOS){
+    // iOS'A ÖZEL YOL (2026-07-11 teşhis sonucu): Firebase JS SDK'sının gerçek CORS+POST
+    // istekleri (signInWithCredential dahil) bu WKWebView'de AbortController ile bile
+    // durdurulamayan şekilde SONSUZA KADAR askıda kalıyor — basit GET istekleri çalışıyor
+    // ama gerçek Firebase trafiği çalışmıyor (bilinen bir WKWebView/Capacitor ağ katmanı
+    // kısıtlaması, sadece iOS'ta — Android'in WebView'i bu sorunu yaşamıyor, bu yüzden
+    // Android JS SDK köprüsünü kullanmaya devam ediyor, aşağıdaki genel native yol).
+    // skipNativeAuth:false (varsayılan) ile native Firebase SDK kendi native ağ katmanını
+    // (URLSession, WKWebView fetch değil) kullanarak TÜM kimlik doğrulamayı kendi içinde
+    // tamamlıyor, result.user doğrudan kullanılabilir geliyor.
     const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
     if(!FA){alert('Auth plugin yüklü değil');return;}
     try{
-      // ÖNEMLİ (2026-07-11 teşhis sonucu): Firebase JS SDK'sının gerçek CORS+POST
-      // istekleri (signInWithCredential dahil) bu WKWebView'de AbortController ile bile
-      // durdurulamayan şekilde SONSUZA KADAR askıda kalıyor — basit GET istekleri
-      // çalışıyor ama gerçek Firebase trafiği çalışmıyor (bilinen bir WKWebView/Capacitor
-      // ağ katmanı kısıtlaması). Bu yüzden native girişi JS SDK'ya KÖPRÜLEMİYORUZ artık —
-      // skipNativeAuth:false (varsayılan) ile native Firebase SDK kendi native ağ
-      // katmanını (URLSession, WKWebView fetch değil) kullanarak TÜM kimlik doğrulamayı
-      // kendi içinde tamamlıyor, result.user doğrudan kullanılabilir geliyor.
       const result=isApple ? await FA.signInWithApple() : await FA.signInWithGoogle();
       if(result?.user){
         _onFirebaseUser(result.user);
       } else {
         alert('Giriş tamamlanamadı — kullanıcı bilgisi alınamadı.');
+      }
+    }catch(e){
+      console.warn('Native '+provider+' auth (iOS):',e);
+      const code=e?.code||''; const msg=e?.message||JSON.stringify(e);
+      if(!/cancel|1000|closed/i.test(code+msg)) alert('Giriş hatası: '+(code?code+' — ':'')+msg);
+    }
+    return;
+  }
+  if(_isNative){
+    // Capacitor native Google/Apple Sign-In (Android — JS SDK köprüsü burada çalışıyor)
+    const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
+    if(!FA){alert('Auth plugin yüklü değil');return;}
+    try{
+      const result=isApple ? await FA.signInWithApple({skipNativeAuth:true}) : await FA.signInWithGoogle();
+      // Native plugin native Firebase SDK'ya giriş yapar; oyun Firestore için JS SDK
+      // kullanıyor → credential ile JS SDK'ya da giriş yap (yoksa Firestore yetkisiz kalır).
+      const idToken=result?.credential?.idToken;
+      const accessToken=result?.credential?.accessToken;
+      if(idToken && _fbAuth){
+        const {GoogleAuthProvider,OAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
+        const cred=isApple
+          ? new OAuthProvider('apple.com').credential({idToken,rawNonce:result?.credential?.nonce,accessToken:result?.credential?.authorizationCode})
+          : GoogleAuthProvider.credential(idToken, accessToken);
+        const uc=await signInWithCredential(_fbAuth, cred);
+        if(uc?.user) _onFirebaseUser(uc.user);
+      } else if(result?.user){
+        _onFirebaseUser(result.user);
+      } else {
+        alert('Giriş tamamlanamadı (token yok).');
       }
     }catch(e){
       console.warn('Native '+provider+' auth:',e);
