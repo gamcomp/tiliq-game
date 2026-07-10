@@ -55,10 +55,11 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
-        # submit_to_testflight yerine beta_groups kullanıyoruz — bu, Apple'ın "External
-        # Testing" inceleme sürecini (Beta App Description şart koşuyor, günler sürebilir)
-        # atlayıp doğrudan daha önce oluşturduğumuz "test" adlı Internal Testing grubuna
-        # yükler. Internal test incelemesiz, anında aktif olur.
-        beta_groups:
-          - test
+        # beta_groups KULLANMIYORUZ — "test" bir Internal Testing grubu, ve Apple yeni
+        # her build'i Internal gruplara zaten OTOMATİK ekliyor. Codemagic'in bunu ayrıca
+        # API ile "eklemeye" çalışması "Cannot add internal group to a build" hatasıyla
+        # başarısız oluyordu (build zaten TestFlight'a düşmüş olsa bile publish adımı
+        # failed görünüyordu). submit_to_testflight de kullanmıyoruz çünkü o External
+        # Testing incelemesini tetikliyor (Beta App Description şart koşar, günler sürer).
+        # Build zaten yüklenip işlendikten sonra Internal test grubunda otomatik belirir.
         # submit_to_app_store: false  — App Store metadata hazır olunca true yapılır
