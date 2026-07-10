@@ -2388,7 +2388,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.10-3';
+const BUILD_VER='v2026.07.10-4';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2977,9 +2977,26 @@ async function initAdMob(){
   try{
     await AdMob.initialize({initializeForTesting:false});
     _prepareInterstitial();   // ilk interstitial'ı önden hazırla
+    _prepareRewardedAd();     // ilk ödüllü reklamı önden hazırla ("reklamlar geç açılıyor" raporu — önceden hiç preload yoktu, her tıklamada sıfırdan indiriliyordu)
     // Menüdeysek banner'ı göster (AdMob hazır olduktan sonra)
     if(!document.getElementById('screen-game')?.classList.contains('active')) showBanner();
   }catch(e){console.warn('AdMob init:',e);}
+}
+
+// ── ÖDÜLLÜ REKLAM ÖN-YÜKLEME ─────────────────────────────────────────────────
+// Eskiden showRewardedAd() her çağrıldığında prepareRewardVideoAd() + showRewardVideoAd()
+// art arda çalışıyordu — yani kullanıcı butona bastığı AN network isteği başlıyordu,
+// reklam gösterilene kadar birkaç saniye boş bekleme oluyordu ("reklamlar çok geç açılıyor").
+// Şimdi reklam, ihtiyaç duyulmadan ÖNCE (oyun açılışında ve her izlemeden sonra) arka
+// planda hazırlanıyor; buton tıklandığında genelde zaten hazır, anında açılıyor.
+let _rewardReady=false, _rewardPreparing=false;
+async function _prepareRewardedAd(){
+  const AdMob=_getAdMob();
+  if(!AdMob||_rewardReady||_rewardPreparing)return;
+  _rewardPreparing=true;
+  try{ await AdMob.prepareRewardVideoAd({adId:ADMOB_REWARDED_ID}); _rewardReady=true; }
+  catch(e){ console.warn('Rewarded prepare:',e); }
+  finally{ _rewardPreparing=false; }
 }
 
 async function showRewardedAd(onRewarded){
@@ -2993,13 +3010,16 @@ async function showRewardedAd(onRewarded){
     const l1=await AdMob.addListener('onRewardedVideoAdReward',()=>{rewarded=true;});
     const l2=await AdMob.addListener('onRewardedVideoAdDismissed',()=>{
       l1.remove();l2.remove();
+      _rewardReady=false;
+      _prepareRewardedAd(); // sonraki için hemen yeniden hazırla
       if(rewarded){logEvent('ad_rewarded',{ad_format:'rewarded'});onRewarded();}
     });
     _admobListeners=[l1,l2];
-    await AdMob.prepareRewardVideoAd({adId:ADMOB_REWARDED_ID});
+    if(!_rewardReady) await _prepareRewardedAd(); // hazır değilse (nadir) burada bekle
     await AdMob.showRewardVideoAd();
   }catch(e){
     console.warn('AdMob rewarded error:',e);
+    _rewardReady=false;
     _showMockAd(onRewarded); // Hata durumunda mock'a düş
   }
 }
@@ -5023,6 +5043,12 @@ function draw(){
 
 let _rafId=null;
 function loop(){
+  // stopLoop() hiçbir yerden çağrılmıyordu — oyun ekranından menüye/ayarlara/mağazaya
+  // dönüldüğünde bile canvas+WebGL ateş katmanı arka planda sonsuza dek 60fps çizilmeye
+  // devam ediyordu (görünmez olsa bile). Bu, genel kasma/pil tüketiminin en büyük
+  // kaynaklarından biriydi. Artık sadece oyun ekranı gerçekten aktifken çalışıyor.
+  const gameActive=document.getElementById('screen-game')?.classList.contains('active');
+  if(!gameActive){stopLoop();return;}
   if(grid.length&&pieces.length)draw();
   _rafId=requestAnimationFrame(loop);
 }
