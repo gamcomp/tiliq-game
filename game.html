@@ -2389,7 +2389,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.11-1';
+const BUILD_VER='v2026.07.11-2';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5586,15 +5586,21 @@ window._authSignIn = async function(provider){
     const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
     if(!FA){alert('Auth plugin yüklü değil');return;}
     try{
-      const result=isApple ? await FA.signInWithApple() : await FA.signInWithGoogle();
+      // Apple çalışıyor ama Google hâlâ tepki vermiyor — Google'ın native akışı
+      // (GIDSignIn, ayrı bir web/Safari oturumu açabiliyor) sessizce takılırsa fark
+      // edebilmek için geçici olarak zaman aşımlı çalıştırıyoruz.
+      const _callPromise=isApple ? FA.signInWithApple() : FA.signInWithGoogle();
+      const _to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT 15sn — native '+provider+' çağrısı hiç dönmedi')),15000));
+      const result=await Promise.race([_callPromise,_to]);
       if(result?.user){
         _onFirebaseUser(result.user);
       } else {
-        alert('Giriş tamamlanamadı — kullanıcı bilgisi alınamadı.');
+        alert('Giriş tamamlanamadı — kullanıcı bilgisi alınamadı. result='+JSON.stringify(result));
       }
     }catch(e){
       console.warn('Native '+provider+' auth (iOS):',e);
       const code=e?.code||''; const msg=e?.message||JSON.stringify(e);
+      if(provider==='google') alert('DEBUG Google hata: code='+code+' msg='+msg);
       if(!/cancel|1000|closed/i.test(code+msg)) alert('Giriş hatası: '+(code?code+' — ':'')+msg);
     }
     return;
@@ -5697,6 +5703,15 @@ window._authSignOut = async function(){
   }
   try{
     if(_fbAuth) await _fbAuth.signOut();
+  }catch(e){}
+  try{
+    // iOS'ta native girişi artık JS SDK'ya köprülemiyoruz (bkz. _authSignIn) — asıl
+    // aktif oturum native Firebase SDK'da tutuluyor. Sadece _fbAuth.signOut() (JS
+    // SDK) çağırmak bu native oturumu KAPATMIYOR, bu yüzden uygulama kapatılıp
+    // açıldığında native SDK kullanıcıyı hâlâ giriş yapmış sanıyordu (kullanıcı
+    // raporu, 2026-07-11). Native plugin'in kendi signOut()'unu da çağırıyoruz.
+    const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
+    if(FA) await FA.signOut();
   }catch(e){}
   try{ const RC=_getRC(); if(RC&&_rcReady) await RC.logOut(); }catch(e){}
   _resetToGuestState();
