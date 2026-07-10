@@ -9,8 +9,7 @@
     "contentInset": "always",
     "backgroundColor": "#14080C",
     "preferredContentMode": "mobile",
-    "scrollEnabled": false,
-    "limitsNavigationsToAppBoundDomains": true
+    "scrollEnabled": false
   },
   "plugins": {
     "FirebaseAuthentication": {
