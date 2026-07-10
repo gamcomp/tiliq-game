@@ -5546,6 +5546,27 @@ window._networkDiagnose = async function _networkDiagnose(){
       report+=name+': BAŞARISIZ — '+(e?.name||e?.message||e)+' ('+Math.round(performance.now()-t0)+'ms)\n';
     }
   }
+  // Basit GET/no-cors testleri hepsi geçti — asıl sorun Firebase SDK'sının yaptığı
+  // GERÇEK POST isteği (CORS modu açık, JSON gövdeli) olabilir. Aynı deseni taklit
+  // eden gerçek bir POST isteği deneyip sonucu (başarı/hata/timeout) net görelim.
+  report+='\n--- GERÇEK POST TESTİ (Firebase deseni) ---\n';
+  const t1=performance.now();
+  try{
+    const ctrl2=new AbortController();
+    const to2=setTimeout(()=>ctrl2.abort(),8000);
+    const resp=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key='+FB_CONFIG.apiKey,{
+      method:'POST',
+      mode:'cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({requestUri:'http://localhost',returnSecureToken:true}),
+      signal:ctrl2.signal
+    });
+    clearTimeout(to2);
+    const txt=await resp.text();
+    report+='POST identitytoolkit: yanıt geldi! status='+resp.status+' ('+Math.round(performance.now()-t1)+'ms)\nGövde (ilk 200kr): '+txt.slice(0,200);
+  }catch(e){
+    report+='POST identitytoolkit: BAŞARISIZ — '+(e?.name||e?.message||e)+' ('+Math.round(performance.now()-t1)+'ms)';
+  }
   alert(report);
 }
 
