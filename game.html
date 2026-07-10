@@ -2097,7 +2097,7 @@ function _scheduleXPPush(xp){
 async function _pushXPToFirestore(xp){
   if(!acct.uid||!_fbApp) return;
   try{
-    const {getFirestore,doc,updateDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const {getFirestore,doc,updateDoc}=await import('./assets/firebase/firebase-firestore.js');
     const db=getFirestore(_fbApp);
     await updateDoc(doc(db,'users',acct.uid),{xp,level:calcLevel(xp)});
   }catch(_){}
@@ -2388,7 +2388,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.10-4';
+const BUILD_VER='v2026.07.10-5';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3556,7 +3556,7 @@ function syncSavedGame(){
 async function _pushSavedGameToFirestore(){
   if(!acct.uid||!_fbApp)return;
   try{
-    const {getFirestore,doc,setDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const {getFirestore,doc,setDoc}=await import('./assets/firebase/firebase-firestore.js');
     const db=getFirestore(_fbApp);
     const st=loadGameState();
     const json=st?JSON.stringify(st):'';
@@ -5317,8 +5317,8 @@ const _authReadyPromise=new Promise(r=>{_authReadyResolve=r;});
 
 async function initFirebaseAuth(){
   try{
-    const {initializeApp,getApps}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const {getAuth,onAuthStateChanged,getRedirectResult,signInAnonymously}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    const {initializeApp,getApps}=await import('./assets/firebase/firebase-app.js');
+    const {getAuth,onAuthStateChanged,getRedirectResult,signInAnonymously}=await import('./assets/firebase/firebase-auth.js');
     if(!getApps().length) _fbApp=initializeApp(FB_CONFIG);
     else _fbApp=getApps()[0];
     _fbAuth=getAuth(_fbApp);
@@ -5327,7 +5327,7 @@ async function initFirebaseAuth(){
     // ama bu veri hiç toplanmıyordu). isSupported() kontrolü önerilen resmi desen —
     // bazı kısıtlı WebView ortamlarında Analytics SDK'sı sessizce çökmesin diye.
     try{
-      const {getAnalytics,isSupported,logEvent:_fle}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js');
+      const {getAnalytics,isSupported,logEvent:_fle}=await import('./assets/firebase/firebase-analytics.js');
       if(await isSupported()){
         _fbAnalytics=getAnalytics(_fbApp);
         _fbLogEventFn=_fle;
@@ -5356,7 +5356,7 @@ async function initFirebaseAuth(){
 async function _initLeaderboardManager(){
   if(!_fbApp) return;
   try{
-    const {getFirestore,collection,getDocs,query,orderBy,limit,where}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const {getFirestore,collection,getDocs,query,orderBy,limit,where}=await import('./assets/firebase/firebase-firestore.js');
     const db=getFirestore(_fbApp);
     window._leaderboardManager={
       _db:db,
@@ -5381,7 +5381,7 @@ function _postLoginSetup(){
 }
 async function _fetchCloudData(uid){
   try{
-    const {getFirestore,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const {getFirestore,doc,getDoc}=await import('./assets/firebase/firebase-firestore.js');
     const db=getFirestore(_fbApp);
     const snap=await getDoc(doc(db,'users',uid));
     return snap.exists()?snap.data():null;
@@ -5391,7 +5391,7 @@ async function _fetchCloudData(uid){
 // Hesap boşsa temiz başla ve boş bir hesap dökümanı oluştur.
 async function _pullCloudOverwrite(uid){
   try{
-    const {getFirestore,doc,getDoc,setDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const {getFirestore,doc,getDoc,setDoc}=await import('./assets/firebase/firebase-firestore.js');
     const db=getFirestore(_fbApp);
     const ref=doc(db,'users',uid);
     const snap=await getDoc(ref);
@@ -5539,7 +5539,7 @@ window._authSignIn = async function(provider){
       const idToken=result?.credential?.idToken;
       const accessToken=result?.credential?.accessToken;
       if(idToken && _fbAuth){
-        const {GoogleAuthProvider,OAuthProvider,signInWithCredential}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+        const {GoogleAuthProvider,OAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
         const cred=isApple
           ? new OAuthProvider('apple.com').credential({idToken,rawNonce:result?.credential?.nonce,accessToken:result?.credential?.authorizationCode})
           : GoogleAuthProvider.credential(idToken, accessToken);
@@ -5559,7 +5559,7 @@ window._authSignIn = async function(provider){
   } else {
     // Web: popup önce dene, başarısız olursa redirect
     try{
-      const {GoogleAuthProvider,OAuthProvider,signInWithPopup,signInWithRedirect}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+      const {GoogleAuthProvider,OAuthProvider,signInWithPopup,signInWithRedirect}=await import('./assets/firebase/firebase-auth.js');
       const authP=isApple ? new OAuthProvider('apple.com') : new GoogleAuthProvider();
       if(isApple){ authP.addScope('email'); authP.addScope('name'); }
       else authP.setCustomParameters({client_id:FB_WEB_CLIENT_ID});
@@ -5632,7 +5632,7 @@ window._authSignOut = async function(){
   _resetToGuestState();
   // Çıkıştan sonra anonim oturuma dön — dünya sıralaması okunabilir kalsın
   try{
-    const {signInAnonymously}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    const {signInAnonymously}=await import('./assets/firebase/firebase-auth.js');
     if(_fbAuth&&!_fbAuth.currentUser) await signInAnonymously(_fbAuth);
   }catch(e){}
 };
@@ -6192,7 +6192,7 @@ function _refreshCodeDisplays(){
 let _cloudSyncPromise=null;
 async function _firestoreSync(uid){
   try{
-    const {getFirestore,doc,getDoc,setDoc,updateDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const {getFirestore,doc,getDoc,setDoc,updateDoc}=await import('./assets/firebase/firebase-firestore.js');
     const db=getFirestore(_fbApp);
     const ref=doc(db,'users',uid);
     const snap=await getDoc(ref);
@@ -6321,7 +6321,7 @@ let _pushRetried=false;
 async function _firestorePushScore(){
   if(!acct.uid||!_fbApp)return;
   try{
-    const {getFirestore,doc,setDoc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const {getFirestore,doc,setDoc,getDoc}=await import('./assets/firebase/firebase-firestore.js');
     const db=getFirestore(_fbApp);
     const ws=_getWeekStart();
     const ref=doc(db,'users',acct.uid);
@@ -6373,7 +6373,7 @@ async function _syncWalletToFirestore(){
   if(!acct.uid||!_fbApp) return;
   const _flushed=_coinPending(); // yazım öncesi bekleyen delta — başarıda onaylanır
   try{
-    const {getFirestore,doc,setDoc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const {getFirestore,doc,setDoc,getDoc}=await import('./assets/firebase/firebase-firestore.js');
     const db=getFirestore(_fbApp);
     const ref=doc(db,'users',acct.uid);
     const snap=await getDoc(ref);
@@ -6447,7 +6447,7 @@ function _syncFriendCodesToFirestore(codes){
   if(_friendSyncTimer)clearTimeout(_friendSyncTimer);
   _friendSyncTimer=setTimeout(async()=>{
     try{
-      const {getFirestore,doc,setDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      const {getFirestore,doc,setDoc}=await import('./assets/firebase/firebase-firestore.js');
       const db=getFirestore(_fbApp);
       await setDoc(doc(db,'users',acct.uid),{friendCodes:codes},{merge:true});
     }catch(e){console.warn('friend code sync:',e);}
@@ -6469,7 +6469,7 @@ async function searchFriendByCode(){
   const LB=window._leaderboardManager;
   if(LB&&LB._db){
     try{
-      const {collection,getDocs,query,where}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      const {collection,getDocs,query,where}=await import('./assets/firebase/firebase-firestore.js');
       const q=query(collection(LB._db,'users'),where('code','==',code.toUpperCase()));
       const snap=await getDocs(q);
       if(!snap.empty){
@@ -6515,7 +6515,7 @@ async function confirmAddFriend(){
   const LB=window._leaderboardManager;
   if(LB&&LB._db){
     try{
-      const {collection,doc,setDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      const {collection,doc,setDoc}=await import('./assets/firebase/firebase-firestore.js');
       const linkId=myCode+'_'+_friendSearchData.code;
       await setDoc(doc(collection(LB._db,'friendLinks'),linkId),{
         from:myCode,to:_friendSearchData.code,
@@ -6741,7 +6741,7 @@ async function fetchFriendScores(){
   const LB=window._leaderboardManager;
   if(!LB||!LB._db)return;
   try{
-    const {collection,getDocs,query,where,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    const {collection,getDocs,query,where,doc,getDoc}=await import('./assets/firebase/firebase-firestore.js');
     const db=LB._db;
     let friends=getFriends();
 
