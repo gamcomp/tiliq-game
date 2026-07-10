@@ -5521,10 +5521,37 @@ function _onFirebaseUser(user){
   }
 }
 
+// Ağ erişilebilirlik testi — signInWithCredential VE signInAnonymously'nin ikisi de
+// aynı şekilde askıda kaldığı için sorunun OAuth kod akışında değil, bu WKWebView'den
+// Google/Firebase sunucularına genel ağ erişiminde olup olmadığını kesinleştiriyoruz.
+async function _networkDiagnose(){
+  const tests=[
+    ['google.com (genel internet)','https://www.google.com/generate_204'],
+    ['identitytoolkit (Firebase Auth)','https://identitytoolkit.googleapis.com/'],
+    ['firestore.googleapis.com','https://firestore.googleapis.com/'],
+    ['gstatic.com (CDN)','https://www.gstatic.com/generate_204'],
+  ];
+  let report='AĞ TESTİ SONUÇLARI:\n';
+  for(const[name,url]of tests){
+    const t0=performance.now();
+    try{
+      const ctrl=new AbortController();
+      const to=setTimeout(()=>ctrl.abort(),5000);
+      await fetch(url,{mode:'no-cors',signal:ctrl.signal});
+      clearTimeout(to);
+      report+=name+': OK ('+Math.round(performance.now()-t0)+'ms)\n';
+    }catch(e){
+      report+=name+': BAŞARISIZ — '+(e?.name||e?.message||e)+' ('+Math.round(performance.now()-t0)+'ms)\n';
+    }
+  }
+  alert(report);
+}
+
 window._authSignIn = async function(provider){
   // GEÇİCİ TEŞHİS MODU — iOS'ta giriş butonlarının hiçbir tepki vermemesi sorununu
   // kesin olarak tespit etmek için her adımda alert() ile durum gösteriyoruz.
   // Kaynak bulunduktan sonra bu alert'ler kaldırılacak.
+  await _networkDiagnose();
   alert('DEBUG 1/5: _authSignIn çağrıldı, provider='+provider);
   const _isNative=!!window.Capacitor?.isNativePlatform?.();
   const isApple=provider==='apple';
