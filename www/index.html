@@ -2387,7 +2387,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.11-4';
+const BUILD_VER='v2026.07.11-5';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2886,11 +2886,15 @@ function onGameOver(s){
 }
 
 // ── REKLAM (AdMob) ────────────────────────────────────────────────────────────
-const ADMOB_REWARDED_ID='ca-app-pub-1366817286080705/9010803939';
+// AdMob'da Android ve iOS AYRI uygulama kayıtları (App ID farklı: Android ~3213315256,
+// iOS ~1900233584) — bir App ID altında oluşturulan reklam birimi SADECE o uygulamaya
+// hizmet verir. Android birimlerini iOS'ta kullanmak sessiz "no-fill"e yol açıyordu
+// (kullanıcı raporu, 2026-07-11: "reklamlar çalışıyor ama reklam gelmiyor").
+const ADMOB_REWARDED_ID=_isIOS?'ca-app-pub-1366817286080705/8274070242':'ca-app-pub-1366817286080705/9010803939';
 // Gerçek interstitial ad unit ID (com.tiliq.game)
-const ADMOB_INTERSTITIAL_ID='ca-app-pub-1366817286080705/5666042603';
+const ADMOB_INTERSTITIAL_ID=_isIOS?'ca-app-pub-1366817286080705/2069991062':'ca-app-pub-1366817286080705/5666042603';
 // Gerçek banner ad unit ID (com.tiliq.game)
-const ADMOB_BANNER_ID='ca-app-pub-1366817286080705/5782005360';
+const ADMOB_BANNER_ID=_isIOS?'ca-app-pub-1366817286080705/7286658728':'ca-app-pub-1366817286080705/5782005360';
 let _adCb=null,_adTick=null,_admobListeners=[];
 let _interReady=false;
 // Banner artık oyun içinde de gösteriliyor (kullanıcı isteği, 2026-07-09) — önceden
