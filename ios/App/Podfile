@@ -18,6 +18,9 @@ def capacitor_pods
   # bu yüzden Google butonu hiçbir tepki vermiyordu. 'Google' alt paketini açıkça eklemek gerekiyor.
   pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication', :subspecs => ['Google']
   pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
+  # iOS'ta Firestore JS SDK/WKWebView güvenilmez olduğu için (bkz. auth notu) Firestore
+  # okuma/yazmaları native bu eklenti üzerinden yapılıyor — Android/web JS SDK'ya dokunmuyor.
+  pod 'CapacitorFirebaseFirestore', :path => '../../node_modules/@capacitor-firebase/firestore'
   pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
   pod 'RevenuecatPurchasesCapacitor', :path => '../../node_modules/@revenuecat/purchases-capacitor'
 end

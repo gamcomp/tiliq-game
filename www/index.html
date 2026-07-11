@@ -2098,9 +2098,7 @@ function _scheduleXPPush(xp){
 async function _pushXPToFirestore(xp){
   if(!acct.uid||!_fbApp) return;
   try{
-    const {getFirestore,doc,updateDoc}=await import('./assets/firebase/firebase-firestore.js');
-    const db=getFirestore(_fbApp);
-    await updateDoc(doc(db,'users',acct.uid),{xp,level:calcLevel(xp)});
+    await _fsUpdateDoc('users/'+acct.uid,{xp,level:calcLevel(xp)});
   }catch(_){}
 }
 
@@ -2389,7 +2387,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.11-3';
+const BUILD_VER='v2026.07.11-4';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3557,12 +3555,10 @@ function syncSavedGame(){
 async function _pushSavedGameToFirestore(){
   if(!acct.uid||!_fbApp)return;
   try{
-    const {getFirestore,doc,setDoc}=await import('./assets/firebase/firebase-firestore.js');
-    const db=getFirestore(_fbApp);
     const st=loadGameState();
     const json=st?JSON.stringify(st):'';
     if(json.length>7500)return; // güvenlik: rules sınırını (8000) aşan anormal veri yazılmasın
-    await setDoc(doc(db,'users',acct.uid),{savedGame:json,savedGameAt:st?st.savedAt:Date.now()},{merge:true});
+    await _fsSetDoc('users/'+acct.uid,{savedGame:json,savedGameAt:st?st.savedAt:Date.now()},true);
   }catch(e){console.warn('savedGame sync:',e);}
 }
 function _flushSavedGameNow(){
@@ -5354,17 +5350,71 @@ async function initFirebaseAuth(){
   }catch(e){console.warn('Firebase init:',e);}
 }
 
+// ── FIRESTORE SOYUTLAMA KATMANI (2026-07-11) ─────────────────────────────────
+// iOS'ta Firebase JS SDK'nın WKWebView üzerinden yaptığı ağ istekleri güvenilir
+// çalışmıyor (bkz. _authSignIn'deki 2026-07-11 notu — aynı sorun Firestore JS SDK
+// çağrıları için de geçerli olabilir). Bu yüzden iOS'ta native @capacitor-firebase/
+// firestore eklentisini (native URLSession, WKWebView fetch değil) kullanıyoruz;
+// Android ve web'de mevcut, çalışan JS SDK yoluna dokunmuyoruz.
+function _fsNative(){
+  return (_isIOS && window.Capacitor?.isNativePlatform?.()) ? (window.Capacitor?.Plugins?.FirebaseFirestore||null) : null;
+}
+async function _fsGetDoc(path){
+  const N=_fsNative();
+  if(N){
+    const r=await N.getDocument({reference:path});
+    return r?.snapshot?.data ?? null;
+  }
+  const {getFirestore,doc,getDoc}=await import('./assets/firebase/firebase-firestore.js');
+  const db=getFirestore(_fbApp);
+  const snap=await getDoc(doc(db,path));
+  return snap.exists()?snap.data():null;
+}
+async function _fsSetDoc(path,data,merge){
+  const N=_fsNative();
+  if(N){ await N.setDocument({reference:path,data,merge:!!merge}); return; }
+  const {getFirestore,doc,setDoc}=await import('./assets/firebase/firebase-firestore.js');
+  const db=getFirestore(_fbApp);
+  await setDoc(doc(db,path),data,merge?{merge:true}:undefined);
+}
+async function _fsUpdateDoc(path,data){
+  const N=_fsNative();
+  if(N){ await N.updateDocument({reference:path,data}); return; }
+  const {getFirestore,doc,updateDoc}=await import('./assets/firebase/firebase-firestore.js');
+  const db=getFirestore(_fbApp);
+  await updateDoc(doc(db,path),data);
+}
+// constraints: [{type:'where',fieldPath,opStr,value}, {type:'orderBy',fieldPath,directionStr}, {type:'limit',limit}]
+async function _fsQueryCollection(path,constraints){
+  const N=_fsNative();
+  if(N){
+    const filters=(constraints||[]).filter(c=>c.type==='where');
+    const nonFilters=(constraints||[]).filter(c=>c.type!=='where');
+    const opts={reference:path};
+    if(filters.length) opts.compositeFilter={type:'and',queryConstraints:filters};
+    if(nonFilters.length) opts.queryConstraints=nonFilters;
+    const r=await N.getCollection(opts);
+    return (r?.snapshots||[]).map(s=>({id:s.id,...s.data}));
+  }
+  const {getFirestore,collection,getDocs,query,orderBy,limit,where}=await import('./assets/firebase/firebase-firestore.js');
+  const db=getFirestore(_fbApp);
+  const qc=(constraints||[]).map(c=>{
+    if(c.type==='where') return where(c.fieldPath,c.opStr,c.value);
+    if(c.type==='orderBy') return orderBy(c.fieldPath,c.directionStr||'asc');
+    if(c.type==='limit') return limit(c.limit);
+    return null;
+  }).filter(Boolean);
+  const snap=await getDocs(query(collection(db,path),...qc));
+  return snap.docs.map(d=>({id:d.id,...d.data()}));
+}
+
 async function _initLeaderboardManager(){
   if(!_fbApp) return;
   try{
-    const {getFirestore,collection,getDocs,query,orderBy,limit,where}=await import('./assets/firebase/firebase-firestore.js');
-    const db=getFirestore(_fbApp);
     window._leaderboardManager={
-      _db:db,
       async getTopScores(n=500,field='best'){
         // orderBy yerine client-side sort (index gerekmez)
-        const snap=await getDocs(query(collection(db,'users'),limit(500)));
-        const all=snap.docs.map(d=>({uid:d.id,...d.data()}));
+        const all=(await _fsQueryCollection('users',[{type:'limit',limit:500}])).map(d=>({uid:d.id,...d}));
         // Sıralama: skor DESC, eşitse skoru ÖNCE yapan (bestAt küçük) üstte
         return all.filter(u=>(u[field]||0)>0).sort((a,b)=>
           (b[field]||0)-(a[field]||0) || ((a.bestAt||Infinity)-(b.bestAt||Infinity))
@@ -5382,22 +5432,16 @@ function _postLoginSetup(){
 }
 async function _fetchCloudData(uid){
   try{
-    const {getFirestore,doc,getDoc}=await import('./assets/firebase/firebase-firestore.js');
-    const db=getFirestore(_fbApp);
-    const snap=await getDoc(doc(db,'users',uid));
-    return snap.exists()?snap.data():null;
+    return await _fsGetDoc('users/'+uid);
   }catch(e){return null;}
 }
 // "Hayır" seçilince: hesabın (cloud) verisini al, yereli onunla değiştir.
 // Hesap boşsa temiz başla ve boş bir hesap dökümanı oluştur.
 async function _pullCloudOverwrite(uid){
   try{
-    const {getFirestore,doc,getDoc,setDoc}=await import('./assets/firebase/firebase-firestore.js');
-    const db=getFirestore(_fbApp);
-    const ref=doc(db,'users',uid);
-    const snap=await getDoc(ref);
-    if(snap.exists()){
-      const d=snap.data();
+    const ref='users/'+uid;
+    const d=await _fsGetDoc(ref);
+    if(d){
       acct.best=d.best||0; acct.games=d.games||0; acct.total=d.total||0;
       if(d.code){myCode=d.code;localStorage.setItem('tm_my_code',d.code);}
       if(d.name) acct.nickname=d.name;      // hesabın adı
@@ -5410,7 +5454,7 @@ async function _pullCloudOverwrite(uid){
       acct.best=0; acct.games=0; acct.total=0;
       localStorage.setItem('tm_xp','0');
       localStorage.setItem('tiliq_best','0');
-      await setDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:0,games:0,total:0,uid,country:acct.country||'',xp:0,level:1});
+      await _fsSetDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:0,games:0,total:0,uid,country:acct.country||'',xp:0,level:1});
     }
     localStorage.setItem('tm_acct',JSON.stringify(acct));
     _refreshCodeDisplays();
@@ -6211,7 +6255,7 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
 
   // Firestore'dan gerçek veri çek
   const LB = window._leaderboardManager;
-  if(LB && LB._db){
+  if(LB){
     try{
       const full = await LB.getTopScores(500,field);   // tam sıralı liste (tiebreaker'lı)
       const myUID = acct.uid||null;
@@ -6294,12 +6338,9 @@ function _refreshCodeDisplays(){
 let _cloudSyncPromise=null;
 async function _firestoreSync(uid){
   try{
-    const {getFirestore,doc,getDoc,setDoc,updateDoc}=await import('./assets/firebase/firebase-firestore.js');
-    const db=getFirestore(_fbApp);
-    const ref=doc(db,'users',uid);
-    const snap=await getDoc(ref);
-    if(snap.exists()){
-      const d=snap.data();
+    const ref='users/'+uid;
+    const d=await _fsGetDoc(ref);
+    if(d){
       if(d.code){myCode=d.code;localStorage.setItem('tm_my_code',d.code);}
       // İsim + ülke: SADECE yerelde hiç yoksa buluttan doldur (yeni cihaz senaryosu).
       // Yerelde zaten varsa dokunma — aksi halde kullanıcı ülke değiştirse bile
@@ -6401,14 +6442,14 @@ async function _firestoreSync(uid){
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       const xpNow=getXP();
       const _pf1=_coinPending(); // yazım öncesi delta
-      await setDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
-        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast(),friendCodes:getFriends().map(f=>f.code).filter(Boolean)},{merge:true});
+      await _fsSetDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
+        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast(),friendCodes:getFriends().map(f=>f.code).filter(Boolean)},true);
       _coinPend(-_pf1); // coin buluta yazıldı → delta onaylandı
     }else{
       const xpNow=getXP();
       const _pf2=_coinPending();
-      await setDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
-        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast()},{merge:true});
+      await _fsSetDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
+        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast()},true);
       _coinPend(-_pf2);
     }
     _refreshCodeDisplays();
@@ -6423,12 +6464,9 @@ let _pushRetried=false;
 async function _firestorePushScore(){
   if(!acct.uid||!_fbApp)return;
   try{
-    const {getFirestore,doc,setDoc,getDoc}=await import('./assets/firebase/firebase-firestore.js');
-    const db=getFirestore(_fbApp);
     const ws=_getWeekStart();
-    const ref=doc(db,'users',acct.uid);
-    const snap=await getDoc(ref);
-    const prev=snap.exists()?snap.data():{};
+    const ref='users/'+acct.uid;
+    const prev=(await _fsGetDoc(ref))||{};
     const prevWeekly=(prev.weeklyReset===ws)?(prev.weeklyScore||0):0;
     // Haftalık skor = bu haftaki en iyi oyun (all-time'a sabitlenmez)
     const newWeekly=Math.max(prevWeekly,getMyWeeklyScore()||0);
@@ -6439,16 +6477,16 @@ async function _firestorePushScore(){
     const wTotal=Math.max(acct.total||0,prev.total||0);
     const wXp=Math.max(xpNow,prev.xp||0);
     // setDoc merge: döküman yoksa oluşturur, varsa günceller (updateDoc gibi başarısız olmaz)
-    await setDoc(ref,{
+    await _fsSetDoc(ref,{
       uid:acct.uid,best:wBest,games:Math.max(acct.games||0,prev.games||0),total:wTotal,
       name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',
       xp:wXp,level:calcLevel(wXp),
       weeklyScore:newWeekly,weeklyReset:ws
-    },{merge:true});
+    },true);
     // bestAt (tiebreaker) ayrı yazılır — kural güncellenmeden önce sessizce
     // başarısız olur, ana skor yazması etkilenmez. Kural eklendikçe kalıcı olur.
     const bestAt=parseInt(localStorage.getItem('tm_bestAt')||'0')||0;
-    if(bestAt>0){ try{ await setDoc(ref,{bestAt},{merge:true}); }catch(_){} }
+    if(bestAt>0){ try{ await _fsSetDoc(ref,{bestAt},true); }catch(_){} }
     // Sıralamalar açıksa anlık yenile
     const lbPanel=document.getElementById('lb-panel');
     if(lbPanel&&lbPanel.classList.contains('open')){
@@ -6475,11 +6513,8 @@ async function _syncWalletToFirestore(){
   if(!acct.uid||!_fbApp) return;
   const _flushed=_coinPending(); // yazım öncesi bekleyen delta — başarıda onaylanır
   try{
-    const {getFirestore,doc,setDoc,getDoc}=await import('./assets/firebase/firebase-firestore.js');
-    const db=getFirestore(_fbApp);
-    const ref=doc(db,'users',acct.uid);
-    const snap=await getDoc(ref);
-    const prev=snap.exists()?snap.data():{};
+    const ref='users/'+acct.uid;
+    const prev=(await _fsGetDoc(ref))||{};
     // Günlük ödül durumu da hesaba yazılır (cihazlar arası çift ödül engeli)
     const _tDate=localStorage.getItem('tm_treasure_date')||'';
     const _sj=JSON.parse(localStorage.getItem('tm_streak')||'{"date":"","count":0}');
@@ -6498,7 +6533,7 @@ async function _syncWalletToFirestore(){
       dailyStreak:_sj.count||0
     };
     if(_tDate) payload.treasureDate=parseInt(_tDate.replace(/-/g,''))||0;
-    await setDoc(ref,payload,{merge:true});
+    await _fsSetDoc(ref,payload,true);
     // Yazım BAŞARILI → yazılan delta onaylandı (bu sırada eklenen yeni delta korunur)
     _coinPend(-_flushed);
   }catch(e){console.warn('wallet sync:',e);}
@@ -6549,9 +6584,7 @@ function _syncFriendCodesToFirestore(codes){
   if(_friendSyncTimer)clearTimeout(_friendSyncTimer);
   _friendSyncTimer=setTimeout(async()=>{
     try{
-      const {getFirestore,doc,setDoc}=await import('./assets/firebase/firebase-firestore.js');
-      const db=getFirestore(_fbApp);
-      await setDoc(doc(db,'users',acct.uid),{friendCodes:codes},{merge:true});
+      await _fsSetDoc('users/'+acct.uid,{friendCodes:codes},true);
     }catch(e){console.warn('friend code sync:',e);}
   },600);
 }
@@ -6569,14 +6602,12 @@ async function searchFriendByCode(){
 
   // Firestore'da ara
   const LB=window._leaderboardManager;
-  if(LB&&LB._db){
+  if(LB){
     try{
-      const {collection,getDocs,query,where}=await import('./assets/firebase/firebase-firestore.js');
-      const q=query(collection(LB._db,'users'),where('code','==',code.toUpperCase()));
-      const snap=await getDocs(q);
-      if(!snap.empty){
-        const d=snap.docs[0].data();
-        _friendSearchData={code:code.toUpperCase(),name:d.name||t('guest'),score:d.best||0,uid:snap.docs[0].id};
+      const res=await _fsQueryCollection('users',[{type:'where',fieldPath:'code',opStr:'==',value:code.toUpperCase()}]);
+      if(res.length){
+        const d=res[0];
+        _friendSearchData={code:code.toUpperCase(),name:d.name||t('guest'),score:d.best||0,uid:d.id};
       }
     }catch(_){}
   }
@@ -6615,15 +6646,14 @@ async function confirmAddFriend(){
   document.getElementById('friend-search-result').classList.remove('visible');
   // Firestore'a çift yönlü bağlantı yaz (karşı taraf da bizi görsün)
   const LB=window._leaderboardManager;
-  if(LB&&LB._db){
+  if(LB){
     try{
-      const {collection,doc,setDoc}=await import('./assets/firebase/firebase-firestore.js');
       const linkId=myCode+'_'+_friendSearchData.code;
-      await setDoc(doc(collection(LB._db,'friendLinks'),linkId),{
+      await _fsSetDoc('friendLinks/'+linkId,{
         from:myCode,to:_friendSearchData.code,
         fromName:displayName(),fromScore:acct.best,fromUid:acct.uid||null,
         ts:Date.now()
-      });
+      },false);
     }catch(_){}
   }
   _friendSearchData=null;
@@ -6841,18 +6871,15 @@ async function pushMyScore(){
 
 async function fetchFriendScores(){
   const LB=window._leaderboardManager;
-  if(!LB||!LB._db)return;
+  if(!LB)return;
   try{
-    const {collection,getDocs,query,where,doc,getDoc}=await import('./assets/firebase/firebase-firestore.js');
-    const db=LB._db;
     let friends=getFriends();
 
     // 0) Kendi skorumu da Firestore'dan tazele — yerel veri eskiyse düzelt
     if(acct.uid){
       try{
-        const meSnap=await getDoc(doc(db,'users',acct.uid));
-        if(meSnap.exists()){
-          const md=meSnap.data();
+        const md=await _fsGetDoc('users/'+acct.uid);
+        if(md){
           if((md.best||0)>(acct.best||0)){
             acct.best=md.best;
             localStorage.setItem('tiliq_best',String(md.best));
@@ -6873,10 +6900,9 @@ async function fetchFriendScores(){
       const batches=[];
       for(let i=0;i<codes.length;i+=10) batches.push(codes.slice(i,i+10));
       for(const batch of batches){
-        const snap=await getDocs(query(collection(db,'users'),where('code','in',batch)));
+        const res=await _fsQueryCollection('users',[{type:'where',fieldPath:'code',opStr:'in',value:batch}]);
         const ws=_getWeekStart();
-        snap.forEach(d=>{
-          const fd=d.data();
+        res.forEach(fd=>{
           const fdCode=(fd.code||'').toUpperCase();
           const idx=friends.findIndex(f=>(f.code||'').toUpperCase()===fdCode);
           if(idx>=0){
@@ -6891,9 +6917,8 @@ async function fetchFriendScores(){
 
     // 2) Beni ekleyenleri de getir (friendLinks where to==myCode)
     const myCodeUC=myCode.toUpperCase();
-    const linkSnap=await getDocs(query(collection(db,'friendLinks'),where('to','==',myCodeUC)));
-    linkSnap.forEach(d=>{
-      const ld=d.data();
+    const linkRes=await _fsQueryCollection('friendLinks',[{type:'where',fieldPath:'to',opStr:'==',value:myCodeUC}]);
+    linkRes.forEach(ld=>{
       const fromUC=(ld.from||'').toUpperCase();
       if(!fromUC) return;
       if(!friends.some(f=>(f.code||'').toUpperCase()===fromUC)){
@@ -6905,15 +6930,14 @@ async function fetchFriendScores(){
     });
 
     // 3) Beni ekleyenlerin güncel skorlarını da Firestore'dan çek
-    const remoteAdded=linkSnap.docs.map(d=>(d.data().from||'').toUpperCase()).filter(c=>c&&c!==myCodeUC);
+    const remoteAdded=linkRes.map(ld=>(ld.from||'').toUpperCase()).filter(c=>c&&c!==myCodeUC);
     if(remoteAdded.length){
       const batches2=[];
       for(let i=0;i<remoteAdded.length;i+=10) batches2.push(remoteAdded.slice(i,i+10));
       for(const batch of batches2){
-        const snap=await getDocs(query(collection(db,'users'),where('code','in',batch)));
+        const res2=await _fsQueryCollection('users',[{type:'where',fieldPath:'code',opStr:'in',value:batch}]);
         const ws2=_getWeekStart();
-        snap.forEach(d=>{
-          const fd=d.data();
+        res2.forEach(fd=>{
           const fdCode=(fd.code||'').toUpperCase();
           const idx=friends.findIndex(f=>(f.code||'').toUpperCase()===fdCode);
           if(idx>=0){
