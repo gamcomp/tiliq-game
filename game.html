@@ -2387,7 +2387,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.12-2';
+const BUILD_VER='v2026.07.12-3';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -6283,6 +6283,13 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
       // hata dalına düşüp kullanıcıya "tekrar dene" göster.
       const _lbTimeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('LB timeout')),7000));
       const full = await Promise.race([LB.getTopScores(500,field), _lbTimeout]);   // tam sıralı liste (tiebreaker'lı)
+      // GEÇİCİ TEŞHİS: hata YOK ama liste boşsa (izin sorunu yerine gerçekten 0 kayıt
+      // ya da native sonuç şekli beklenenden farklıysa) bunu da bir kez görelim.
+      if((!full||full.length===0)&&!window._lbDebugShown){
+        window._lbDebugShown=true;
+        const hasNativeFS=!!(window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FirebaseFirestore);
+        alert('LB DEBUG: hata yok ama liste BOŞ. nativeFS='+hasNativeFS+' isIOS='+_isIOS+' len='+(full?full.length:'null'));
+      }
       const myUID = acct.uid||null;
       const myName = displayName(); // DİKKAT: playerLabel() bayrağı da içeriyor — çift bayrağa yol açardı
       let rows = full.map(p=>({n:(p.country||'🏳️')+' '+(p.name||t('guest')),s:p[field]||0,uid:p.uid,lv:calcLevel(p.xp||0),bestAt:p.bestAt||Infinity}));
@@ -6317,7 +6324,17 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
       list.innerHTML=html;
       setTimeout(()=>{const el=list.querySelector('.me');if(el)el.scrollIntoView({block:'nearest',behavior:'smooth'});},120);
       return;
-    }catch(e){console.warn('[LB render]',e);}
+    }catch(e){
+      console.warn('[LB render]',e);
+      // GEÇİCİ TEŞHİS (2026-07-12): "sıralama gözükmüyor" raporu timeout eklendikten
+      // sonra da sürüyor — gerçek hatayı (izin/native eklenti/rules) cihazda görmemiz lazım.
+      if(!window._lbDebugShown){
+        window._lbDebugShown=true;
+        const hasNativeFS=!!(window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FirebaseFirestore);
+        const msg=(e&&(e.message||e.code))?(e.code?e.code+' — ':'')+(e.message||''):JSON.stringify(e);
+        alert('LB DEBUG: nativeFS='+hasNativeFS+' isIOS='+_isIOS+' err='+msg);
+      }
+    }
   }
 
   // Firestore yoksa YA DA çağrı zaman aşımına/hataya düştüyse: dokunarak yeniden dene
