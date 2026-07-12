@@ -2387,7 +2387,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.11-5';
+const BUILD_VER='v2026.07.12-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -6182,11 +6182,15 @@ async function onPlayPressed(){
   const btn=document.querySelector('.btn-play');
   if(btn)btn.classList.add('syncing');
   try{
-    // 1) Önce "auth durumu belli oldu mu" bekle (max 2sn) — bu olmadan _cloudSyncPromise
-    //    henüz hiç set edilmemiş olabilir (initFirebaseAuth network/import gecikmesi).
-    await Promise.race([_authReadyPromise, new Promise(r=>setTimeout(r,2000))]);
-    // 2) Sonra gerçek bulut senkronu varsa onu bekle (max 2.5sn).
-    if(_cloudSyncPromise) await Promise.race([_cloudSyncPromise, new Promise(r=>setTimeout(r,2500))]);
+    // Önceden bu iki adım SIRAYLA bekleniyordu (max 2sn + max 2.5sn = 4.5sn'ye kadar
+    // donuk buton) — "Oyna'ya basınca tepki çok geç oluyor" raporu (2026-07-12).
+    // Artık TEK bir toplam bütçe (2.2sn) içinde paralel/zincirli bekleniyor; bütçe
+    // dolunca ne olursa olsun yerel veriyle devam ediliyor (cloud arka planda sürer).
+    const _chain=(async()=>{
+      await _authReadyPromise;
+      if(_cloudSyncPromise) await _cloudSyncPromise;
+    })();
+    await Promise.race([_chain, new Promise(r=>setTimeout(r,2200))]);
   }catch(e){}
   if(btn)btn.classList.remove('syncing');
   const st=loadGameState();
@@ -6261,7 +6265,12 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
   const LB = window._leaderboardManager;
   if(LB){
     try{
-      const full = await LB.getTopScores(500,field);   // tam sıralı liste (tiebreaker'lı)
+      // GÜVENLİK AĞI (2026-07-12): önceden burada timeout yoktu — Firestore çağrısı
+      // (native veya JS SDK) hiç dönmezse liste sonsuza kadar "yükleniyor" durumunda
+      // kalıyordu ("dünya sıralaması gözükmüyor" raporu). 7sn'de yanıt gelmezse
+      // hata dalına düşüp kullanıcıya "tekrar dene" göster.
+      const _lbTimeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('LB timeout')),7000));
+      const full = await Promise.race([LB.getTopScores(500,field), _lbTimeout]);   // tam sıralı liste (tiebreaker'lı)
       const myUID = acct.uid||null;
       const myName = displayName(); // DİKKAT: playerLabel() bayrağı da içeriyor — çift bayrağa yol açardı
       let rows = full.map(p=>({n:(p.country||'🏳️')+' '+(p.name||t('guest')),s:p[field]||0,uid:p.uid,lv:calcLevel(p.xp||0),bestAt:p.bestAt||Infinity}));
@@ -6299,9 +6308,10 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
     }catch(e){console.warn('[LB render]',e);}
   }
 
-  // Firestore yoksa yerel skor göster
+  // Firestore yoksa YA DA çağrı zaman aşımına/hataya düştüyse: dokunarak yeniden dene
   rankEl.textContent='#--';
-  list.innerHTML=`<div style="text-align:center;padding:24px;opacity:.5;font-size:13px">${t('loginForRank')}</div>`;
+  const _retryMsg=LB?t('lbLoadError')||'Yüklenemedi — tekrar denemek için dokun':t('loginForRank');
+  list.innerHTML=`<div style="text-align:center;padding:24px;opacity:.5;font-size:13px;cursor:pointer" onclick="renderLB(${ps},'${field}','${listId}','${rankId}','${scoreId}')">${_retryMsg}</div>`;
 }
 
 function toggleLB(){
