@@ -2387,7 +2387,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.12-1';
+const BUILD_VER='v2026.07.12-2';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2897,6 +2897,17 @@ const ADMOB_INTERSTITIAL_ID=_isIOS?'ca-app-pub-1366817286080705/2069991062':'ca-
 const ADMOB_BANNER_ID=_isIOS?'ca-app-pub-1366817286080705/7286658728':'ca-app-pub-1366817286080705/5782005360';
 let _adCb=null,_adTick=null,_admobListeners=[];
 let _interReady=false;
+// GEÇİCİ TEŞHİS (2026-07-12): ID düzeltmesine rağmen "reklamlar gelmiyor" raporu devam
+// ediyor. Önceden tüm AdMob hataları sadece console.warn'a gidiyordu (cihazda görünmüyordu).
+// Her hata türünden bir kez olmak üzere gerçek AdMob SDK hata metnini gösteriyoruz —
+// "no-fill" (yeni ad unit henüz doldurulmuyor) mu, yoksa "invalid ad unit"/config hatası
+// mı olduğunu ayırt etmek için. Kök neden netleşince bu blok kaldırılacak.
+const _admobDebugShown={};
+function _admobDebugAlert(tag,e){
+  if(_admobDebugShown[tag])return; _admobDebugShown[tag]=true;
+  const msg=(e&&(e.message||e.code))?(e.code?e.code+' — ':'')+(e.message||''):JSON.stringify(e);
+  alert('AdMob DEBUG ['+tag+']: '+msg);
+}
 // Banner artık oyun içinde de gösteriliyor (kullanıcı isteği, 2026-07-09) — önceden
 // sadece menüde açıktı ("HUD'u kapatmaz" kuralı gereği tepsi/HUD ile çakışmasın diye
 // oyun ekranında kapalı tutuluyordu). Artık çakışmayı DOM'da GERÇEK bir boşluk elemanıyla
@@ -2938,7 +2949,7 @@ async function showBanner(){
     _setBannerSpacers(BANNER_RESERVE_PX); // ilk tahmin, sizeChanged gelince güncellenecek
     // Oyun ekranındaysak tahtayı/tepsiyi de yeniden ölçekle (küçük ek güvenlik payı)
     if(document.getElementById('screen-game')?.classList.contains('active')) resizeCanvas();
-  }catch(e){ console.warn('Banner show:',e); }
+  }catch(e){ console.warn('Banner show:',e); _admobDebugAlert('banner',e); }
 }
 async function hideBanner(){
   const AdMob=_getAdMob();
@@ -2955,7 +2966,7 @@ async function _prepareInterstitial(){
   const AdMob=_getAdMob();
   if(!AdMob||isNoAds())return;
   try{ await AdMob.prepareInterstitial({adId:ADMOB_INTERSTITIAL_ID}); _interReady=true; }
-  catch(e){ console.warn('Interstitial prepare:',e); }
+  catch(e){ console.warn('Interstitial prepare:',e); _admobDebugAlert('interstitial',e); }
 }
 async function showInterstitial(){
   if(isNoAds())return;              // Reklamsız/VIP kullanıcıya gösterme
@@ -2983,7 +2994,7 @@ async function initAdMob(){
     _prepareRewardedAd();     // ilk ödüllü reklamı önden hazırla ("reklamlar geç açılıyor" raporu — önceden hiç preload yoktu, her tıklamada sıfırdan indiriliyordu)
     // Menüdeysek banner'ı göster (AdMob hazır olduktan sonra)
     if(!document.getElementById('screen-game')?.classList.contains('active')) showBanner();
-  }catch(e){console.warn('AdMob init:',e);}
+  }catch(e){console.warn('AdMob init:',e); _admobDebugAlert('init',e);}
 }
 
 // ── ÖDÜLLÜ REKLAM ÖN-YÜKLEME ─────────────────────────────────────────────────
@@ -2998,7 +3009,7 @@ async function _prepareRewardedAd(){
   if(!AdMob||_rewardReady||_rewardPreparing)return;
   _rewardPreparing=true;
   try{ await AdMob.prepareRewardVideoAd({adId:ADMOB_REWARDED_ID}); _rewardReady=true; }
-  catch(e){ console.warn('Rewarded prepare:',e); }
+  catch(e){ console.warn('Rewarded prepare:',e); _admobDebugAlert('rewarded',e); }
   finally{ _rewardPreparing=false; }
 }
 
@@ -6182,15 +6193,16 @@ async function onPlayPressed(){
   const btn=document.querySelector('.btn-play');
   if(btn)btn.classList.add('syncing');
   try{
-    // Önceden bu iki adım SIRAYLA bekleniyordu (max 2sn + max 2.5sn = 4.5sn'ye kadar
-    // donuk buton) — "Oyna'ya basınca tepki çok geç oluyor" raporu (2026-07-12).
-    // Artık TEK bir toplam bütçe (2.2sn) içinde paralel/zincirli bekleniyor; bütçe
-    // dolunca ne olursa olsun yerel veriyle devam ediliyor (cloud arka planda sürer).
+    // "Oyna basınca devam et/yeni oyun daha hemen gelsin" raporu (2026-07-12) —
+    // bütçe 2.2sn'den 300ms'ye indirildi. Bulut senkronu zaten çoğu zaman bu ana
+    // kadar tamamlanmış oluyor (giriş anında başlar); tamamlanmamışsa yerel veriyle
+    // devam edilir, senkron arka planda sürmeye devam eder ve bir sonraki
+    // yazımda/açılışta kendini düzeltir — anlık tepki, ufak gecikme riskine tercih edildi.
     const _chain=(async()=>{
       await _authReadyPromise;
       if(_cloudSyncPromise) await _cloudSyncPromise;
     })();
-    await Promise.race([_chain, new Promise(r=>setTimeout(r,2200))]);
+    await Promise.race([_chain, new Promise(r=>setTimeout(r,300))]);
   }catch(e){}
   if(btn)btn.classList.remove('syncing');
   const st=loadGameState();

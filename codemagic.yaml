@@ -43,6 +43,20 @@ workflows:
       - name: Sync Capacitor web assets into native iOS project
         script: |
           npx cap sync ios
+      - name: "KRİTİK: cap sync'in sildiği Podfile özelleştirmelerini geri ekle"
+        script: |
+          # KÖK NEDEN BULUNDU (2026-07-12): `npx cap sync ios` her çalıştığında Podfile'ın
+          # capacitor_pods bloğunu package.json'dan SIFIRDAN regenerate ediyor ve bizim
+          # elle eklediğimiz `:subspecs => ['Google']` satırını SESSİZCE siliyor. Bu satır
+          # olmadan RGCFA_INCLUDE_GOOGLE derleme bayrağı hiç tanımlanmıyor, Google Sign-In
+          # kodu tamamen derlemeden düşüyor ve native çağrı sonsuza kadar askıda kalıyor
+          # ("TIMEOUT 15sn" / şimdi RGCFA_DEBUG hatası olarak görünen buydu). Yukarıdaki
+          # "cap sync" adımından SONRA, "pod install"dan ÖNCE bu düzeltmeyi HER build'de
+          # yeniden uyguluyoruz ki commit'teki Podfile ne olursa olsun garanti olsun.
+          FILE="ios/App/Podfile"
+          perl -0777 -pi -e "s/(pod 'CapacitorFirebaseAuthentication', :path => '[^']*')(?!,)/\$1, :subspecs => ['Google']/" "$FILE"
+          echo "--- Podfile (patched) ---"
+          cat "$FILE"
       - name: Install CocoaPods dependencies
         script: |
           cd ios/App && pod install
