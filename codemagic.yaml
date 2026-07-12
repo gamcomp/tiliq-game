@@ -24,6 +24,22 @@ workflows:
     scripts:
       - name: Install npm dependencies
         script: npm install
+      - name: "TEŞHİS: Google Sign-In'in sessiz askıda kalmasını görünür hataya çevir"
+        script: |
+          # Google girişi iOS'ta 15sn timeout'a düşüyor, hiçbir hata/uyarı vermeden.
+          # @capacitor-firebase/authentication'ın Swift kodunda (GoogleAuthProviderHandler.swift)
+          # üç "guard ... else { return }" noktası var — hiçbiri call.reject() çağırmıyor,
+          # yani başarısız olurlarsa JS tarafındaki promise SONSUZA KADAR askıda kalır.
+          # Bu adım, node_modules içindeki (pod'un :path ile doğrudan işaret ettiği) dosyayı
+          # her build öncesi yamalayıp bu sessiz noktaları call.reject() ile görünür hale
+          # getiriyor — bir sonraki testte gerçek hata mesajını görüp kök nedeni kesinleştireceğiz.
+          FILE="node_modules/@capacitor-firebase/authentication/ios/Plugin/Handlers/GoogleAuthProviderHandler.swift"
+          perl -0777 -pi -e 's/guard let clientId = FirebaseApp\.app\(\)\?\.options\.clientID else \{ return \}/guard let clientId = FirebaseApp.app()?.options.clientID else { call.reject("RGCFA_DEBUG: clientId FirebaseApp.options.clientID icin nil"); return }/' "$FILE"
+          perl -0777 -pi -e 's/guard let controller = self\.pluginImplementation\.getPlugin\(\)\.bridge\?\.viewController else \{ return \}/guard let controller = self.pluginImplementation.getPlugin().bridge?.viewController else { call.reject("RGCFA_DEBUG: bridge.viewController nil"); return }/' "$FILE"
+          perl -0777 -pi -e 's/guard let user = result\?\.user,\s*let idToken = user\.idToken\?\.tokenString\s*else \{\s*return\s*\}/guard let user = result?.user,\n                      let idToken = user.idToken?.tokenString\n                else {\n                    call.reject("RGCFA_DEBUG: result.user veya idToken nil")\n                    return\n                }/' "$FILE"
+          perl -0777 -pi -e 's/        #endif\n    }\n}\n?\z/        #else\n        call.reject("RGCFA_DEBUG: RGCFA_INCLUDE_GOOGLE tanimli degil - Google subspec derlenmedi")\n        #endif\n    }\n}\n/' "$FILE"
+          echo "--- Patched file ---"
+          cat "$FILE"
       - name: Sync Capacitor web assets into native iOS project
         script: |
           npx cap sync ios
