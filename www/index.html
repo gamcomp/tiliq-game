@@ -2386,7 +2386,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.12-4';
+const BUILD_VER='v2026.07.13-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5596,6 +5596,11 @@ async function _waitForCapPlugin(getter,timeoutMs){
 }
 
 window._authSignIn = async function(provider){
+  // GEÇİCİ TEŞHİS (2026-07-13): "hiçbir şey olmuyor" raporu — bu, tıklamanın hiç
+  // algılanmadığını mı ("hiçbir şey" görünür ama 15sn sonra bir hata gelecekti,
+  // beklenmeden bakılmış olabilir) yoksa gerçekten fonksiyonun hiç çalışmadığını mı
+  // ayırt etmek için anında bir onay gösteriyoruz. Sonuç netleşince kaldırılacak.
+  alert('DEBUG: '+provider+' butonuna basıldı, işlem başlıyor...');
   const _isNative=!!window.Capacitor?.isNativePlatform?.();
   const isApple=provider==='apple';
   if(_isNative && _isIOS){
