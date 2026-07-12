@@ -43,22 +43,53 @@ workflows:
       - name: Sync Capacitor web assets into native iOS project
         script: |
           npx cap sync ios
-      - name: "KRİTİK: cap sync'in sildiği Podfile özelleştirmelerini geri ekle"
+      - name: "KRİTİK: Podfile'ı cap sync'ten sonra bilinen-doğru içerikle TAMAMEN yeniden yaz"
         script: |
-          # KÖK NEDEN BULUNDU (2026-07-12): `npx cap sync ios` her çalıştığında Podfile'ın
+          # KÖK NEDEN (2026-07-12): `npx cap sync ios` her çalıştığında Podfile'ın
           # capacitor_pods bloğunu package.json'dan SIFIRDAN regenerate ediyor ve bizim
-          # elle eklediğimiz `:subspecs => ['Google']` satırını SESSİZCE siliyor. Bu satır
-          # olmadan RGCFA_INCLUDE_GOOGLE derleme bayrağı hiç tanımlanmıyor, Google Sign-In
-          # kodu tamamen derlemeden düşüyor ve native çağrı sonsuza kadar askıda kalıyor
-          # ("TIMEOUT 15sn" / şimdi RGCFA_DEBUG hatası olarak görünen buydu). Yukarıdaki
-          # "cap sync" adımından SONRA, "pod install"dan ÖNCE bu düzeltmeyi HER build'de
-          # yeniden uyguluyoruz ki commit'teki Podfile ne olursa olsun garanti olsun.
-          FILE="ios/App/Podfile"
-          perl -0777 -pi -e "s/(pod 'CapacitorFirebaseAuthentication', :path => '[^']*')(?!,)/\$1, :subspecs => ['Google']/" "$FILE"
-          echo "--- Podfile (patched) ---"
-          cat "$FILE"
+          # elle eklediğimiz `:subspecs => ['Google']` satırını SESSİZCE siliyordu. Bunu
+          # önce regex ile geri ekliyorduk ama bir build'de HEM Apple HEM Google girişi
+          # "Auth plugin yüklü değil" hatası verdi — yani regex, CI'ın ürettiği gerçek
+          # biçimle eşleşmeyip CapacitorFirebaseAuthentication satırını bozmuş/kaybetmiş
+          # olmalı, native plugin'in TAMAMI derlenmeden düşmüş. Regex'in kırılganlığını
+          # tamamen ortadan kaldırmak için artık Podfile'ı cap sync'ten SONRA, pod
+          # install'dan ÖNCE, bilinen-doğru sabit içerikle DOĞRUDAN üzerine yazıyoruz —
+          # hiçbir regex/eşleşme riski yok, dosya her build'de bit-bit aynı.
+          cat > ios/App/Podfile <<'PODFILE_EOF'
+          require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+          platform :ios, '15.0'
+          use_frameworks!
+
+          install! 'cocoapods', :disable_input_output_paths => true
+
+          def capacitor_pods
+            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+            pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
+            pod 'CapacitorCommunityInAppReview', :path => '../../node_modules/@capacitor-community/in-app-review'
+            pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication', :subspecs => ['Google']
+            pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
+            pod 'CapacitorFirebaseFirestore', :path => '../../node_modules/@capacitor-firebase/firestore'
+            pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+            pod 'RevenuecatPurchasesCapacitor', :path => '../../node_modules/@revenuecat/purchases-capacitor'
+          end
+
+          target 'App' do
+            capacitor_pods
+          end
+
+          post_install do |installer|
+            assertDeploymentTarget(installer)
+          end
+          PODFILE_EOF
+          echo "--- Podfile (sabit icerikle yeniden yazildi) ---"
+          cat ios/App/Podfile
       - name: Install CocoaPods dependencies
         script: |
+          # Bir önceki (bozuk Podfile'lı) build'den kalan Pods/ önbelleği stale kalabilir —
+          # "Auth plugin yüklü değil" regresyonunun tekrarlanmaması için temiz kurulum.
+          rm -rf ios/App/Pods
           cd ios/App && pod install
       - name: Set up code signing
         script: |
