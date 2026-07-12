@@ -2391,7 +2391,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.13-4';
+const BUILD_VER='v2026.07.13-5';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2954,12 +2954,23 @@ async function hideBanner(){
   }catch(e){ console.warn('Banner hide:',e); }
 }
 
+// GEÇİCİ TEŞHİS (2026-07-13): "reklamlar gerçek reklam değil" raporu — showRewardedAd
+// hata alınca sessizce _showMockAd'a (5sn sahte reklam) düşüyor, kullanıcı gerçek AdMob
+// hatasını hiç görmüyordu. Gerçek SDK hata metnini (no-fill mi, config hatası mı) bir
+// kez görmek için geçici alert — kök neden netleşince kaldırılacak.
+const _admobDebugShown={};
+function _admobDebugAlert(tag,e){
+  if(_admobDebugShown[tag])return; _admobDebugShown[tag]=true;
+  const msg=(e&&(e.message||e.code))?(e.code?e.code+' — ':'')+(e.message||''):JSON.stringify(e);
+  alert('AdMob DEBUG ['+tag+']: '+msg);
+}
+
 // ── INTERSTITIAL (tam ekran, oyun bitişinde) ─────────────────────────────────
 async function _prepareInterstitial(){
   const AdMob=_getAdMob();
   if(!AdMob||isNoAds())return;
   try{ await AdMob.prepareInterstitial({adId:ADMOB_INTERSTITIAL_ID}); _interReady=true; }
-  catch(e){ console.warn('Interstitial prepare:',e); }
+  catch(e){ console.warn('Interstitial prepare:',e); _admobDebugAlert('interstitial-prepare',e); }
 }
 async function showInterstitial(){
   if(isNoAds())return;              // Reklamsız/VIP kullanıcıya gösterme
@@ -2987,7 +2998,7 @@ async function initAdMob(){
     _prepareRewardedAd();     // ilk ödüllü reklamı önden hazırla ("reklamlar geç açılıyor" raporu — önceden hiç preload yoktu, her tıklamada sıfırdan indiriliyordu)
     // Menüdeysek banner'ı göster (AdMob hazır olduktan sonra)
     if(!document.getElementById('screen-game')?.classList.contains('active')) showBanner();
-  }catch(e){console.warn('AdMob init:',e);}
+  }catch(e){console.warn('AdMob init:',e); _admobDebugAlert('init',e);}
 }
 
 // ── ÖDÜLLÜ REKLAM ÖN-YÜKLEME ─────────────────────────────────────────────────
@@ -3002,7 +3013,7 @@ async function _prepareRewardedAd(){
   if(!AdMob||_rewardReady||_rewardPreparing)return;
   _rewardPreparing=true;
   try{ await AdMob.prepareRewardVideoAd({adId:ADMOB_REWARDED_ID}); _rewardReady=true; }
-  catch(e){ console.warn('Rewarded prepare:',e); }
+  catch(e){ console.warn('Rewarded prepare:',e); _admobDebugAlert('rewarded-prepare',e); }
   finally{ _rewardPreparing=false; }
 }
 
@@ -3026,6 +3037,7 @@ async function showRewardedAd(onRewarded){
     await AdMob.showRewardVideoAd();
   }catch(e){
     console.warn('AdMob rewarded error:',e);
+    _admobDebugAlert('rewarded-show',e);
     _rewardReady=false;
     _showMockAd(onRewarded); // Hata durumunda mock'a düş
   }
@@ -5352,8 +5364,8 @@ async function initFirebaseAuth(){
     // Giriş yoksa anonim oturum aç — dünya sıralamasını okuyabilmek için
     // (Firestore kuralı: allow read if request.auth != null). Anonim oturum
     // gerçek giriş sayılmaz; arkadaş sistemi yine Google hesabı ister.
-    if(!_fbAuth.currentUser){
-      try{ await signInAnonymously(_fbAuth); }catch(e){ console.warn('Anon auth:',e); }
+    if(!_fbAuth.currentUser || _isIOS){
+      try{ await _fbAnonSignIn(); }catch(e){ console.warn('Anon auth:',e); }
     }
   }catch(e){console.warn('Firebase init:',e);}
 }
@@ -5600,6 +5612,25 @@ async function _waitForCapPlugin(getter,timeoutMs){
   return getter();
 }
 
+// Misafir/anonim oturum — dünya sıralamasını okuyabilmek için (Firestore kuralı:
+// allow read if request.auth != null). iOS'ta Firestore okumaları NATIVE eklenti
+// üzerinden gidiyor (bkz. _fsGetDoc/_fsQueryCollection) — bu da NATIVE Firebase Auth
+// oturumuna bakar, JS SDK'nın _fbAuth.currentUser'ına değil. JS SDK'nın kendi
+// signInAnonymously()'si zaten iOS'ta WKWebView ağ sorunuyla askıda kalabiliyordu
+// (bkz. _authSignIn notu), üstelik başarılı olsa bile native oturumu KURMUYORDU —
+// bu yüzden giriş duvarı kaldırıldıktan sonra (2026-07-13) misafir kullanıcılarda
+// hiç native oturum oluşmuyor, dünya sıralaması "izin yok" ile sessizce boş kalıyordu.
+// Artık iOS'ta native anonim girişi kullanıyoruz.
+async function _fbAnonSignIn(){
+  if(_isIOS && window.Capacitor?.isNativePlatform?.()){
+    const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication,5000);
+    if(FA) await FA.signInAnonymously();
+    return;
+  }
+  const {signInAnonymously}=await import('./assets/firebase/firebase-auth.js');
+  if(_fbAuth && !_fbAuth.currentUser) await signInAnonymously(_fbAuth);
+}
+
 window._authSignIn = async function(provider){
   const _isNative=!!window.Capacitor?.isNativePlatform?.();
   const isApple=provider==='apple';
@@ -5748,10 +5779,7 @@ window._authSignOut = async function(){
   }catch(e){}
   try{ const RC=_getRC(); if(RC&&_rcReady) await RC.logOut(); }catch(e){}
   // Çıkıştan sonra anonim oturuma dön — dünya sıralaması okunabilir kalsın
-  try{
-    const {signInAnonymously}=await import('./assets/firebase/firebase-auth.js');
-    if(_fbAuth&&!_fbAuth.currentUser) await signInAnonymously(_fbAuth);
-  }catch(e){}
+  try{ await _fbAnonSignIn(); }catch(e){}
 };
 
 // ── REVENUECAT IAP ───────────────────────────────────────────────────────────
