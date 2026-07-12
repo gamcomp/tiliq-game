@@ -16,7 +16,7 @@ def capacitor_pods
   # Varsayılan 'Lite' alt-paket Google Sign-In'i tamamen dışarıda bırakıyor (RGCFA_INCLUDE_GOOGLE
   # derleme bayrağı tanımlanmıyor) — GoogleAuthProviderHandler.swift'teki tüm kod sessizce atlanıyor,
   # bu yüzden Google butonu hiçbir tepki vermiyordu. 'Google' alt paketini açıkça eklemek gerekiyor.
-  pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication', :subspecs => ['Lite', 'Google']
+  pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication'
   pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
   # iOS'ta Firestore JS SDK/WKWebView güvenilmez olduğu için (bkz. auth notu) Firestore
   # okuma/yazmaları native bu eklenti üzerinden yapılıyor — Android/web JS SDK'ya dokunmuyor.

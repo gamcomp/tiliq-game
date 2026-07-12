@@ -34,10 +34,10 @@ workflows:
           # her build öncesi yamalayıp bu sessiz noktaları call.reject() ile görünür hale
           # getiriyor — bir sonraki testte gerçek hata mesajını görüp kök nedeni kesinleştireceğiz.
           FILE="node_modules/@capacitor-firebase/authentication/ios/Plugin/Handlers/GoogleAuthProviderHandler.swift"
-          perl -0777 -pi -e 's/guard let clientId = FirebaseApp\.app\(\)\?\.options\.clientID else \{ return \}/guard let clientId = FirebaseApp.app()?.options.clientID else { call.reject("RGCFA_DEBUG: clientId FirebaseApp.options.clientID icin nil"); return }/' "$FILE"
-          perl -0777 -pi -e 's/guard let controller = self\.pluginImplementation\.getPlugin\(\)\.bridge\?\.viewController else \{ return \}/guard let controller = self.pluginImplementation.getPlugin().bridge?.viewController else { call.reject("RGCFA_DEBUG: bridge.viewController nil"); return }/' "$FILE"
-          perl -0777 -pi -e 's/guard let user = result\?\.user,\s*let idToken = user\.idToken\?\.tokenString\s*else \{\s*return\s*\}/guard let user = result?.user,\n                      let idToken = user.idToken?.tokenString\n                else {\n                    call.reject("RGCFA_DEBUG: result.user veya idToken nil")\n                    return\n                }/' "$FILE"
-          perl -0777 -pi -e 's/        #endif\n    }\n}\n?\z/        #else\n        call.reject("RGCFA_DEBUG: RGCFA_INCLUDE_GOOGLE tanimli degil - Google subspec derlenmedi")\n        #endif\n    }\n}\n/' "$FILE"
+          perl -0777 -pi -e 's/guard let clientId = FirebaseApp\.app\(\)\?\.options\.clientID else \{ return \}/guard let clientId = FirebaseApp.app()?.options.clientID else { call.reject("Google ile giriş şu anda kullanılamıyor"); return }/' "$FILE"
+          perl -0777 -pi -e 's/guard let controller = self\.pluginImplementation\.getPlugin\(\)\.bridge\?\.viewController else \{ return \}/guard let controller = self.pluginImplementation.getPlugin().bridge?.viewController else { call.reject("Google ile giriş şu anda kullanılamıyor"); return }/' "$FILE"
+          perl -0777 -pi -e 's/guard let user = result\?\.user,\s*let idToken = user\.idToken\?\.tokenString\s*else \{\s*return\s*\}/guard let user = result?.user,\n                      let idToken = user.idToken?.tokenString\n                else {\n                    call.reject("Google ile giriş şu anda kullanılamıyor")\n                    return\n                }/' "$FILE"
+          perl -0777 -pi -e 's/        #endif\n    }\n}\n?\z/        #else\n        call.reject("Google ile giriş şu anda kullanılamıyor")\n        #endif\n    }\n}\n/' "$FILE"
           echo "--- Patched file ---"
           cat "$FILE"
       - name: Sync Capacitor web assets into native iOS project
@@ -45,17 +45,19 @@ workflows:
           npx cap sync ios
       - name: "KRİTİK: Podfile'ı cap sync'ten sonra bilinen-doğru içerikle TAMAMEN yeniden yaz"
         script: |
-          # KÖK NEDEN BULUNDU (2026-07-13, gerçek xcodebuild log analiziyle kesinleşti):
-          # "CapacitorFirebaseAuthentication" framework'ü build log'unda HİÇ görünmüyordu —
-          # kardeş pod'lar (CapacitorFirebaseFirestore, CapacitorFirebaseCrashlytics) tam
-          # derlenip "Touching .framework" ile bitiyordu, Authentication'ın adı bir kez
-          # bile geçmiyordu. Yani plugin native tarafta HİÇ DERLENMİYORDU (kayıt sorunu
-          # değil, build'e hiç dahil olmuyordu). Podspec'te `default_subspec = 'Lite'` var;
-          # Podfile'da SADECE `:subspecs => ['Google']` yazmak varsayılan 'Lite' alt-paketini
-          # tamamen dışarıda bırakıyor ve CocoaPods bu pod hedefini düzgün oluşturamıyor.
-          # Apple'ın çalıştığı ESKİ build'lerde subspecs hiç belirtilmiyordu (cap sync
-          # sildiği için), CocoaPods otomatik 'Lite'yi seçiyordu ve plugin (Google
-          # olmadan) sorunsuz derleniyordu. Düzeltme: 'Lite' VE 'Google'ı birlikte belirtmek.
+          # KÖK NEDEN — KESİN KANIT (2026-07-13, xcodebuild log'unun TAMAMI tarandı):
+          # Pod install "CapacitorFirebaseAuthentication (6.3.1) Installing" diyor, ama
+          # 41 pod'dan TAM 40 tanesi "Touching X.framework" ile build log'unda bitiyor —
+          # SADECE CapacitorFirebaseAuthentication hiç görünmüyor. Bu, `:subspecs => [...]`
+          # parametresi Podfile'da VERİLDİĞİNDE ortaya çıkan bir CocoaPods/Xcode tuhaflığı
+          # (hangi subspec fark etmiyor — ['Google'] de ['Lite','Google'] de aynı sonucu
+          # verdi). ÖNCELİK: Apple girişi Google subspec'ine hiç ihtiyaç duymuyor ve
+          # subspec HİÇ belirtilmediği en eski build'lerde (varsayılan 'Lite' otomatik
+          # seçiliyordu) plugin sorunsuz derleniyordu. Önce bunu kesinleştiriyoruz — Google
+          # girişi (GoogleSignIn bağımlılığı gerektirdiği için) ayrı, daha dikkatli bir
+          # CocoaPods/Xcode incelemesiyle ele alınacak; şimdilik RGCFA_INCLUDE_GOOGLE
+          # tanımsız kalacak, Google butonu net bir hata mesajı verecek (sonsuz askıda
+          # kalmak yerine) — GoogleAuthProviderHandler.swift'teki #else dalı bunu sağlıyor.
           cat > ios/App/Podfile <<'PODFILE_EOF'
           require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
@@ -69,7 +71,7 @@ workflows:
             pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
             pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
             pod 'CapacitorCommunityInAppReview', :path => '../../node_modules/@capacitor-community/in-app-review'
-            pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication', :subspecs => ['Lite', 'Google']
+            pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication'
             pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
             pod 'CapacitorFirebaseFirestore', :path => '../../node_modules/@capacitor-firebase/firestore'
             pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
