@@ -45,16 +45,17 @@ workflows:
           npx cap sync ios
       - name: "KRİTİK: Podfile'ı cap sync'ten sonra bilinen-doğru içerikle TAMAMEN yeniden yaz"
         script: |
-          # KÖK NEDEN (2026-07-12): `npx cap sync ios` her çalıştığında Podfile'ın
-          # capacitor_pods bloğunu package.json'dan SIFIRDAN regenerate ediyor ve bizim
-          # elle eklediğimiz `:subspecs => ['Google']` satırını SESSİZCE siliyordu. Bunu
-          # önce regex ile geri ekliyorduk ama bir build'de HEM Apple HEM Google girişi
-          # "Auth plugin yüklü değil" hatası verdi — yani regex, CI'ın ürettiği gerçek
-          # biçimle eşleşmeyip CapacitorFirebaseAuthentication satırını bozmuş/kaybetmiş
-          # olmalı, native plugin'in TAMAMI derlenmeden düşmüş. Regex'in kırılganlığını
-          # tamamen ortadan kaldırmak için artık Podfile'ı cap sync'ten SONRA, pod
-          # install'dan ÖNCE, bilinen-doğru sabit içerikle DOĞRUDAN üzerine yazıyoruz —
-          # hiçbir regex/eşleşme riski yok, dosya her build'de bit-bit aynı.
+          # KÖK NEDEN BULUNDU (2026-07-13, gerçek xcodebuild log analiziyle kesinleşti):
+          # "CapacitorFirebaseAuthentication" framework'ü build log'unda HİÇ görünmüyordu —
+          # kardeş pod'lar (CapacitorFirebaseFirestore, CapacitorFirebaseCrashlytics) tam
+          # derlenip "Touching .framework" ile bitiyordu, Authentication'ın adı bir kez
+          # bile geçmiyordu. Yani plugin native tarafta HİÇ DERLENMİYORDU (kayıt sorunu
+          # değil, build'e hiç dahil olmuyordu). Podspec'te `default_subspec = 'Lite'` var;
+          # Podfile'da SADECE `:subspecs => ['Google']` yazmak varsayılan 'Lite' alt-paketini
+          # tamamen dışarıda bırakıyor ve CocoaPods bu pod hedefini düzgün oluşturamıyor.
+          # Apple'ın çalıştığı ESKİ build'lerde subspecs hiç belirtilmiyordu (cap sync
+          # sildiği için), CocoaPods otomatik 'Lite'yi seçiyordu ve plugin (Google
+          # olmadan) sorunsuz derleniyordu. Düzeltme: 'Lite' VE 'Google'ı birlikte belirtmek.
           cat > ios/App/Podfile <<'PODFILE_EOF'
           require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
@@ -68,7 +69,7 @@ workflows:
             pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
             pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
             pod 'CapacitorCommunityInAppReview', :path => '../../node_modules/@capacitor-community/in-app-review'
-            pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication', :subspecs => ['Google']
+            pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication', :subspecs => ['Lite', 'Google']
             pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
             pod 'CapacitorFirebaseFirestore', :path => '../../node_modules/@capacitor-firebase/firestore'
             pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
