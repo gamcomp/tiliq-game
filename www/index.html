@@ -842,7 +842,6 @@ input[type="text"]::placeholder{color:var(--dim);}
       <svg width="16" height="16" viewBox="0 0 384 512" fill="#fff"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
       <span data-t="appleSignIn">Sign in with Apple</span>
     </button>
-    <button style="margin-top:10px;background:#333;color:#fff;border:1px solid #666;border-radius:14px;padding:10px;font-size:12px;width:100%" onclick="window._networkDiagnose && window._networkDiagnose()">🔧 AĞ TESTİ (debug)</button>
   </div>
 </div>
 
@@ -2387,7 +2386,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.12-3';
+const BUILD_VER='v2026.07.12-4';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2897,17 +2896,6 @@ const ADMOB_INTERSTITIAL_ID=_isIOS?'ca-app-pub-1366817286080705/2069991062':'ca-
 const ADMOB_BANNER_ID=_isIOS?'ca-app-pub-1366817286080705/7286658728':'ca-app-pub-1366817286080705/5782005360';
 let _adCb=null,_adTick=null,_admobListeners=[];
 let _interReady=false;
-// GEÇİCİ TEŞHİS (2026-07-12): ID düzeltmesine rağmen "reklamlar gelmiyor" raporu devam
-// ediyor. Önceden tüm AdMob hataları sadece console.warn'a gidiyordu (cihazda görünmüyordu).
-// Her hata türünden bir kez olmak üzere gerçek AdMob SDK hata metnini gösteriyoruz —
-// "no-fill" (yeni ad unit henüz doldurulmuyor) mu, yoksa "invalid ad unit"/config hatası
-// mı olduğunu ayırt etmek için. Kök neden netleşince bu blok kaldırılacak.
-const _admobDebugShown={};
-function _admobDebugAlert(tag,e){
-  if(_admobDebugShown[tag])return; _admobDebugShown[tag]=true;
-  const msg=(e&&(e.message||e.code))?(e.code?e.code+' — ':'')+(e.message||''):JSON.stringify(e);
-  alert('AdMob DEBUG ['+tag+']: '+msg);
-}
 // Banner artık oyun içinde de gösteriliyor (kullanıcı isteği, 2026-07-09) — önceden
 // sadece menüde açıktı ("HUD'u kapatmaz" kuralı gereği tepsi/HUD ile çakışmasın diye
 // oyun ekranında kapalı tutuluyordu). Artık çakışmayı DOM'da GERÇEK bir boşluk elemanıyla
@@ -2949,7 +2937,7 @@ async function showBanner(){
     _setBannerSpacers(BANNER_RESERVE_PX); // ilk tahmin, sizeChanged gelince güncellenecek
     // Oyun ekranındaysak tahtayı/tepsiyi de yeniden ölçekle (küçük ek güvenlik payı)
     if(document.getElementById('screen-game')?.classList.contains('active')) resizeCanvas();
-  }catch(e){ console.warn('Banner show:',e); _admobDebugAlert('banner',e); }
+  }catch(e){ console.warn('Banner show:',e); }
 }
 async function hideBanner(){
   const AdMob=_getAdMob();
@@ -2966,7 +2954,7 @@ async function _prepareInterstitial(){
   const AdMob=_getAdMob();
   if(!AdMob||isNoAds())return;
   try{ await AdMob.prepareInterstitial({adId:ADMOB_INTERSTITIAL_ID}); _interReady=true; }
-  catch(e){ console.warn('Interstitial prepare:',e); _admobDebugAlert('interstitial',e); }
+  catch(e){ console.warn('Interstitial prepare:',e); }
 }
 async function showInterstitial(){
   if(isNoAds())return;              // Reklamsız/VIP kullanıcıya gösterme
@@ -2994,7 +2982,7 @@ async function initAdMob(){
     _prepareRewardedAd();     // ilk ödüllü reklamı önden hazırla ("reklamlar geç açılıyor" raporu — önceden hiç preload yoktu, her tıklamada sıfırdan indiriliyordu)
     // Menüdeysek banner'ı göster (AdMob hazır olduktan sonra)
     if(!document.getElementById('screen-game')?.classList.contains('active')) showBanner();
-  }catch(e){console.warn('AdMob init:',e); _admobDebugAlert('init',e);}
+  }catch(e){console.warn('AdMob init:',e);}
 }
 
 // ── ÖDÜLLÜ REKLAM ÖN-YÜKLEME ─────────────────────────────────────────────────
@@ -3009,7 +2997,7 @@ async function _prepareRewardedAd(){
   if(!AdMob||_rewardReady||_rewardPreparing)return;
   _rewardPreparing=true;
   try{ await AdMob.prepareRewardVideoAd({adId:ADMOB_REWARDED_ID}); _rewardReady=true; }
-  catch(e){ console.warn('Rewarded prepare:',e); _admobDebugAlert('rewarded',e); }
+  catch(e){ console.warn('Rewarded prepare:',e); }
   finally{ _rewardPreparing=false; }
 }
 
@@ -5592,52 +5580,19 @@ function _onFirebaseUser(user){
   }
 }
 
-// Ağ erişilebilirlik testi — signInWithCredential VE signInAnonymously'nin ikisi de
-// aynı şekilde askıda kaldığı için sorunun OAuth kod akışında değil, bu WKWebView'den
-// Google/Firebase sunucularına genel ağ erişiminde olup olmadığını kesinleştiriyoruz.
-window._networkDiagnose = async function _networkDiagnose(){
-  alert('Ağ testi başladı, ~10-20sn sürebilir, lütfen bekle...');
-  const tests=[
-    ['google.com (genel internet)','https://www.google.com/generate_204'],
-    ['identitytoolkit (Firebase Auth)','https://identitytoolkit.googleapis.com/'],
-    ['firestore.googleapis.com','https://firestore.googleapis.com/'],
-    ['gstatic.com (CDN)','https://www.gstatic.com/generate_204'],
-  ];
-  let report='AĞ TESTİ SONUÇLARI:\n';
-  for(const[name,url]of tests){
-    const t0=performance.now();
-    try{
-      const ctrl=new AbortController();
-      const to=setTimeout(()=>ctrl.abort(),5000);
-      await fetch(url,{mode:'no-cors',signal:ctrl.signal});
-      clearTimeout(to);
-      report+=name+': OK ('+Math.round(performance.now()-t0)+'ms)\n';
-    }catch(e){
-      report+=name+': BAŞARISIZ — '+(e?.name||e?.message||e)+' ('+Math.round(performance.now()-t0)+'ms)\n';
-    }
+// Capacitor'ın native eklenti bridge'i, WebView yüklendikten hemen sonra bir anlığına
+// henüz hazır olmayabilir — bu pencerede window.Capacitor.Plugins.FirebaseAuthentication
+// geçici olarak undefined dönebilir ("Auth plugin yüklü değil" yanlış-negatifi, kullanıcı
+// raporu 2026-07-12). Eklenti gerçekten yoksa (derlenmediyse) yine hata verecek, ama
+// gerçekten sadece henüz hazır değilse birkaç yüz ms içinde kendini düzeltecek.
+async function _waitForCapPlugin(getter,timeoutMs){
+  const t0=Date.now();
+  while(Date.now()-t0<(timeoutMs||3000)){
+    const p=getter();
+    if(p) return p;
+    await new Promise(r=>setTimeout(r,100));
   }
-  // Basit GET/no-cors testleri hepsi geçti — asıl sorun Firebase SDK'sının yaptığı
-  // GERÇEK POST isteği (CORS modu açık, JSON gövdeli) olabilir. Aynı deseni taklit
-  // eden gerçek bir POST isteği deneyip sonucu (başarı/hata/timeout) net görelim.
-  report+='\n--- GERÇEK POST TESTİ (Firebase deseni) ---\n';
-  const t1=performance.now();
-  try{
-    const ctrl2=new AbortController();
-    const to2=setTimeout(()=>ctrl2.abort(),8000);
-    const resp=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key='+FB_CONFIG.apiKey,{
-      method:'POST',
-      mode:'cors',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({requestUri:'http://localhost',returnSecureToken:true}),
-      signal:ctrl2.signal
-    });
-    clearTimeout(to2);
-    const txt=await resp.text();
-    report+='POST identitytoolkit: yanıt geldi! status='+resp.status+' ('+Math.round(performance.now()-t1)+'ms)\nGövde (ilk 200kr): '+txt.slice(0,200);
-  }catch(e){
-    report+='POST identitytoolkit: BAŞARISIZ — '+(e?.name||e?.message||e)+' ('+Math.round(performance.now()-t1)+'ms)';
-  }
-  alert(report);
+  return getter();
 }
 
 window._authSignIn = async function(provider){
@@ -5653,31 +5608,27 @@ window._authSignIn = async function(provider){
     // skipNativeAuth:false (varsayılan) ile native Firebase SDK kendi native ağ katmanını
     // (URLSession, WKWebView fetch değil) kullanarak TÜM kimlik doğrulamayı kendi içinde
     // tamamlıyor, result.user doğrudan kullanılabilir geliyor.
-    const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
+    const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication);
     if(!FA){alert('Auth plugin yüklü değil');return;}
     try{
-      // Apple çalışıyor ama Google hâlâ tepki vermiyor — Google'ın native akışı
-      // (GIDSignIn, ayrı bir web/Safari oturumu açabiliyor) sessizce takılırsa fark
-      // edebilmek için geçici olarak zaman aşımlı çalıştırıyoruz.
       const _callPromise=isApple ? FA.signInWithApple() : FA.signInWithGoogle();
       const _to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT 15sn — native '+provider+' çağrısı hiç dönmedi')),15000));
       const result=await Promise.race([_callPromise,_to]);
       if(result?.user){
         _onFirebaseUser(result.user);
       } else {
-        alert('Giriş tamamlanamadı — kullanıcı bilgisi alınamadı. result='+JSON.stringify(result));
+        alert('Giriş tamamlanamadı — kullanıcı bilgisi alınamadı.');
       }
     }catch(e){
       console.warn('Native '+provider+' auth (iOS):',e);
       const code=e?.code||''; const msg=e?.message||JSON.stringify(e);
-      if(provider==='google') alert('DEBUG Google hata: code='+code+' msg='+msg);
       if(!/cancel|1000|closed/i.test(code+msg)) alert('Giriş hatası: '+(code?code+' — ':'')+msg);
     }
     return;
   }
   if(_isNative){
     // Capacitor native Google/Apple Sign-In (Android — JS SDK köprüsü burada çalışıyor)
-    const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
+    const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication);
     if(!FA){alert('Auth plugin yüklü değil');return;}
     try{
       const result=isApple ? await FA.signInWithApple({skipNativeAuth:true}) : await FA.signInWithGoogle();
@@ -6283,13 +6234,6 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
       // hata dalına düşüp kullanıcıya "tekrar dene" göster.
       const _lbTimeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('LB timeout')),7000));
       const full = await Promise.race([LB.getTopScores(500,field), _lbTimeout]);   // tam sıralı liste (tiebreaker'lı)
-      // GEÇİCİ TEŞHİS: hata YOK ama liste boşsa (izin sorunu yerine gerçekten 0 kayıt
-      // ya da native sonuç şekli beklenenden farklıysa) bunu da bir kez görelim.
-      if((!full||full.length===0)&&!window._lbDebugShown){
-        window._lbDebugShown=true;
-        const hasNativeFS=!!(window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FirebaseFirestore);
-        alert('LB DEBUG: hata yok ama liste BOŞ. nativeFS='+hasNativeFS+' isIOS='+_isIOS+' len='+(full?full.length:'null'));
-      }
       const myUID = acct.uid||null;
       const myName = displayName(); // DİKKAT: playerLabel() bayrağı da içeriyor — çift bayrağa yol açardı
       let rows = full.map(p=>({n:(p.country||'🏳️')+' '+(p.name||t('guest')),s:p[field]||0,uid:p.uid,lv:calcLevel(p.xp||0),bestAt:p.bestAt||Infinity}));
@@ -6324,17 +6268,7 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
       list.innerHTML=html;
       setTimeout(()=>{const el=list.querySelector('.me');if(el)el.scrollIntoView({block:'nearest',behavior:'smooth'});},120);
       return;
-    }catch(e){
-      console.warn('[LB render]',e);
-      // GEÇİCİ TEŞHİS (2026-07-12): "sıralama gözükmüyor" raporu timeout eklendikten
-      // sonra da sürüyor — gerçek hatayı (izin/native eklenti/rules) cihazda görmemiz lazım.
-      if(!window._lbDebugShown){
-        window._lbDebugShown=true;
-        const hasNativeFS=!!(window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.FirebaseFirestore);
-        const msg=(e&&(e.message||e.code))?(e.code?e.code+' — ':'')+(e.message||''):JSON.stringify(e);
-        alert('LB DEBUG: nativeFS='+hasNativeFS+' isIOS='+_isIOS+' err='+msg);
-      }
-    }
+    }catch(e){console.warn('[LB render]',e);}
   }
 
   // Firestore yoksa YA DA çağrı zaman aşımına/hataya düştüyse: dokunarak yeniden dene
