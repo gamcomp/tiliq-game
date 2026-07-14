@@ -1842,14 +1842,13 @@ function isLoggedIn(){return !!(acct._fbLogged&&acct.uid);}
 
 // ── GİRİŞ DUVARI: hesap açılmadan oyun açılmaz (kullanıcı şartı, 2026-07-07) ──
 // acct._fbLogged tm_acct'te kalıcı → tekrar açılışta giriş yapmış kullanıcıya duvar titremez.
-// iOS'TA KALDIRILDI (2026-07-13): native Apple/Google girişi tekrarlayan build
-// sorunları yaşadı (kullanıcı isteği: giriş şartı olmadan oynanabilsin). Android'de
-// Google girişi zaten çalışıyor (8 canlı test kullanıcısı), duvar orada aynen kalıyor.
-// Hesap gerektiren özellikler (arkadaşlar vb.) yine requireAccount() ile korunuyor.
+// iOS'TA GERİ GETİRİLDİ (2026-07-15): native Apple/Google girişi artık hem derleniyor
+// (CocoaPods subspec kök nedeni çözüldü) hem düzgün kaydediyor (isAnonymous düzeltmesi)
+// — kullanıcı isteği: sistem Android'dekiyle tamamen aynı olsun, iOS'ta da giriş
+// duvarı olsun. (2026-07-13'te geçici olarak kaldırılmıştı, o karar geri alındı.)
 function _updateLoginGate(){
   const g=document.getElementById('login-gate');
   if(!g)return;
-  if(_isIOS){ g.classList.remove('show'); return; }
   g.classList.toggle('show',!isLoggedIn());
 }
 window.addEventListener('load',_updateLoginGate);
@@ -2395,7 +2394,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.15-2';
+const BUILD_VER='v2026.07.15-3';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
