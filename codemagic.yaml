@@ -40,6 +40,21 @@ workflows:
           perl -0777 -pi -e 's/        #endif\n    }\n}\n?\z/        #else\n        call.reject("Google ile giriş şu anda kullanılamıyor")\n        #endif\n    }\n}\n/' "$FILE"
           echo "--- Patched file ---"
           cat "$FILE"
+      - name: "GOOGLE GİRİŞ ÇÖZÜMÜ: podspec'i subspec'siz üst-seviye zorunlu bağımlılık yap"
+        script: |
+          # KANIT (2026-07-13): Podfile'da `:subspecs => [...]` VERİLDİĞİNDE CocoaPods bu
+          # pod hedefini xcodebuild'e hiç dahil etmiyordu (build log'unda framework'ü hiç
+          # görünmüyordu) — subspec'i KALDIRINCA (bare `pod 'CapacitorFirebaseAuthentication'`)
+          # plugin gerçekten derlendi, Apple girişi geri geldi (doğrulandı). Google'ı da
+          # çalıştırmak için Podfile'da subspec kullanmıyoruz — bunun yerine PODSPEC'İN
+          # KENDİSİNİ yamalayıp GoogleSignIn bağımlılığını ve RGCFA_INCLUDE_GOOGLE derleme
+          # bayrağını subspec mekanizması DIŞINDA, üst-seviye/koşulsuz hale getiriyoruz.
+          # Böylece Podfile subspec'siz (kanıtlanmış çalışan) kalıyor ama Google desteği
+          # her zaman derleniyor.
+          PSFILE="node_modules/@capacitor-firebase/authentication/CapacitorFirebaseAuthentication.podspec"
+          perl -0777 -pi -e "s/(s\.static_framework = true\n)/\$1  s.xcconfig = { 'OTHER_SWIFT_FLAGS' => '\$(inherited) -DRGCFA_INCLUDE_GOOGLE' }\n  s.dependency 'GoogleSignIn', '7.1.0'\n/" "$PSFILE"
+          echo "--- Patched podspec ---"
+          cat "$PSFILE"
       - name: Sync Capacitor web assets into native iOS project
         script: |
           npx cap sync ios
