@@ -2394,7 +2394,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.15-3';
+const BUILD_VER='v2026.07.15-4';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3012,6 +3012,15 @@ async function initAdMob(){
   const AdMob=_getAdMob();
   if(!AdMob)return;
   try{
+    // iOS'a ÖZEL ZORUNLU ADIM (2026-07-15, Android'de karşılığı yok/gerekmiyor):
+    // Info.plist'te NSUserTrackingUsageDescription tanımlı ama izin isteği hiç
+    // TETİKLENMİYORDU — App Tracking Transparency izni "belirlenmemiş" kalınca
+    // Apple bunu "reddedilmiş" gibi işliyor, reklam ağlarının teklif kalitesini
+    // düşürüyor (SKAdNetworkItems eksikliğiyle birlikte etkisi büyüyordu). Android
+    // bu izin akışını hiç gerektirmiyor, bu yüzden fark sadece iOS'ta görülüyordu.
+    if(_isIOS && AdMob.requestTrackingAuthorization){
+      try{ await AdMob.requestTrackingAuthorization(); }catch(e){console.warn('ATT request:',e);}
+    }
     await AdMob.initialize({initializeForTesting:false});
     _prepareInterstitial();   // ilk interstitial'ı önden hazırla
     _prepareRewardedAd();     // ilk ödüllü reklamı önden hazırla ("reklamlar geç açılıyor" raporu — önceden hiç preload yoktu, her tıklamada sıfırdan indiriliyordu)
@@ -5634,7 +5643,7 @@ function _onFirebaseUser(user){
   // planda devam edebilir, kullanıcı takılı kalmasın diye.
   let _plsCalled=false;
   const _postLoginSetupOnce=()=>{ if(_plsCalled)return; _plsCalled=true; _postLoginSetup(); };
-  setTimeout(_postLoginSetupOnce,8000);
+  setTimeout(_postLoginSetupOnce,5000);
   // İlk gerçek giriş VE yerel ilerleme VARSA: önce cloud'a bak.
   const localBest=acct.best||0;
   if(acct._mergedUid!==user.uid && localBest>0){
@@ -5809,6 +5818,7 @@ function _resetToGuestState(){
   localStorage.removeItem('tm_owned');
   localStorage.removeItem('tm_inv_bombs');
   localStorage.removeItem('tm_inv_undos');
+  localStorage.removeItem('tm_inv_colorblast');
   localStorage.removeItem('tiliq_vip');
   localStorage.removeItem('tiliq_no_ads');
   localStorage.removeItem('tm_friends');
@@ -5818,6 +5828,13 @@ function _resetToGuestState(){
   localStorage.removeItem('tm_treasure_date'); // günlük ödül durumu hesaba ait — cihazda kalmasın
   localStorage.removeItem('tm_flame');
   localStorage.removeItem('tm_active_theme');
+  // KRİTİK EKSİK (2026-07-15): "Apple ile girince Google'da kaldığım yer aynı
+  // görünüyor" raporu — devam eden oyun kaydı (SAVE_KEY) buradan HİÇ
+  // temizlenmiyordu. Google hesabından çıkıp Apple ile girince, eski Google
+  // hesabının yarım kalan oyunu yerelde kalmaya devam edip yeni hesaba "devam et"
+  // olarak görünüyordu. clearGameState() hem yereli hem buluttaki (eski hesabın)
+  // devam kaydını temizliyor.
+  if(typeof clearGameState==='function') clearGameState();
   tmOwned=[];
   myCode=genCode();localStorage.setItem('tm_my_code',myCode);
   activeFlameId='flame_classic';
@@ -6349,13 +6366,13 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
   // Firestore'dan gerçek veri çek
   // Manager henüz oluşturulmamış olabilir (initFirebaseAuth henüz bitmedi) — kısa
   // bir süre bekle, yoksa gereksiz yere "giriş yap" mesajı gösterilir.
-  await Promise.race([_lbManagerReadyPromise, new Promise(r=>setTimeout(r,3000))]);
+  await Promise.race([_lbManagerReadyPromise, new Promise(r=>setTimeout(r,1200))]);
   const LB = window._leaderboardManager;
   if(LB){
     try{
       // iOS'ta native anonim oturum henüz kurulmamış olabilir (2026-07-14) — kısa
       // bir süre bekle, yoksa "izin yok" ile sessizce başarısız olur.
-      if(_isIOS) await Promise.race([_nativeAuthReadyPromise, new Promise(r=>setTimeout(r,2500))]);
+      if(_isIOS) await Promise.race([_nativeAuthReadyPromise, new Promise(r=>setTimeout(r,1200))]);
       // GÜVENLİK AĞI (2026-07-12): önceden burada timeout yoktu — Firestore çağrısı
       // (native veya JS SDK) hiç dönmezse liste sonsuza kadar "yükleniyor" durumunda
       // kalıyordu ("dünya sıralaması gözükmüyor" raporu). 7sn'de yanıt gelmezse
@@ -6718,12 +6735,12 @@ async function searchFriendByCode(){
 
   // Firestore'da ara — timeout eklendi (2026-07-14), önceden native çağrı askıda
   // kalırsa arama düğmesi sonsuza kadar tepkisiz kalıyordu.
-  await Promise.race([_lbManagerReadyPromise, new Promise(r=>setTimeout(r,3000))]);
+  await Promise.race([_lbManagerReadyPromise, new Promise(r=>setTimeout(r,1200))]);
   const LB=window._leaderboardManager;
   if(LB){
     try{
-      if(_isIOS) await Promise.race([_nativeAuthReadyPromise, new Promise(r=>setTimeout(r,2500))]);
-      const _searchTimeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('search timeout')),8000));
+      if(_isIOS) await Promise.race([_nativeAuthReadyPromise, new Promise(r=>setTimeout(r,1200))]);
+      const _searchTimeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('search timeout')),6000));
       const res=await Promise.race([_fsQueryCollection('users',[{type:'where',fieldPath:'code',opStr:'==',value:code.toUpperCase()}]),_searchTimeout]);
       if(res.length){
         const d=res[0];
@@ -6993,7 +7010,7 @@ async function pushMyScore(){
 }
 
 async function fetchFriendScores(){
-  await Promise.race([_lbManagerReadyPromise, new Promise(r=>setTimeout(r,3000))]);
+  await Promise.race([_lbManagerReadyPromise, new Promise(r=>setTimeout(r,1200))]);
   const LB=window._leaderboardManager;
   if(!LB)return;
   // GÜVENLİK AĞI (2026-07-14): önceden burada timeout yoktu — art arda birden fazla
@@ -7002,14 +7019,14 @@ async function fetchFriendScores(){
   // "yükleniyor" durumunda kalıyordu (dünya sıralamasındaki aynı sorun — "arkadaş
   // kısmı gözükmüyor" raporu). 10sn'de bitmezse pes edip elde ne varsa gösteriyoruz.
   try{
-    await Promise.race([_fetchFriendScoresWork(), new Promise((_,rej)=>setTimeout(()=>rej(new Error('fetchFriendScores timeout')),10000))]);
+    await Promise.race([_fetchFriendScoresWork(), new Promise((_,rej)=>setTimeout(()=>rej(new Error('fetchFriendScores timeout')),7000))]);
   }catch(e){console.warn('fetchFriendScores:',e);}
   renderFriendsLB();
 }
 async function _fetchFriendScoresWork(){
   try{
     // iOS'ta native anonim oturum henüz kurulmamış olabilir (2026-07-14).
-    if(_isIOS) await Promise.race([_nativeAuthReadyPromise, new Promise(r=>setTimeout(r,2500))]);
+    if(_isIOS) await Promise.race([_nativeAuthReadyPromise, new Promise(r=>setTimeout(r,1200))]);
     let friends=getFriends();
 
     // 0) Kendi skorumu da Firestore'dan tazele — yerel veri eskiyse düzelt
