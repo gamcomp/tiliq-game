@@ -2391,7 +2391,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.13-7';
+const BUILD_VER='v2026.07.14-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -6363,7 +6363,7 @@ function _refreshCodeDisplays(){
 // "Oyna" butonuna basılınca eski yerel veri okunuyordu çünkü _firestoreSync henüz
 // bitmemişken loadGameState() çağrılıyordu. Artık onPlayPressed bu promise'i bekliyor.
 let _cloudSyncPromise=null;
-async function _firestoreSync(uid){
+async function _firestoreSync(uid,_isRetry){
   try{
     const ref='users/'+uid;
     const d=await _fsGetDoc(ref);
@@ -6484,7 +6484,18 @@ async function _firestoreSync(uid){
     // Senkron sonrası günlük ödül kartı/seri rozeti taze veriyle yenilensin
     if(typeof renderDailyCard==='function') renderDailyCard();
     if(typeof updateStreakDisplay==='function') updateStreakDisplay();
-  }catch(e){console.warn('Firestore sync:',e);}
+  }catch(e){
+    console.warn('Firestore sync:',e);
+    // GÜVENLİK AĞI (2026-07-14): "hesabın leveli daha yüksek ama giriş sonrası eski
+    // (düşük) yerel level gösteriyor" raporu — native Firestore çağrıları iOS'ta
+    // ara sıra sessizce başarısız olabiliyor (bu oturum boyunca defalarca görüldü),
+    // önceden başarısızlıkta hiç yeniden denenmiyordu, kullanıcı eski/yerel veriyle
+    // kalıyordu. Bir kez, 1.5sn sonra otomatik yeniden dene.
+    if(!_isRetry){
+      await new Promise(r=>setTimeout(r,1500));
+      return _firestoreSync(uid,true);
+    }
+  }
 }
 
 let _pushRetried=false;
