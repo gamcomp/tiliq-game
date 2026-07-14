@@ -2391,7 +2391,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.14-1';
+const BUILD_VER='v2026.07.14-2';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5337,6 +5337,15 @@ let _fbAnalytics=null, _fbLogEventFn=null; // gerçek Firebase Analytics (2026-0
 // oluyordu → onPlayPressed hiç beklemeden eski/yerel veriyi okuyordu.
 let _authReadyResolve=null;
 const _authReadyPromise=new Promise(r=>{_authReadyResolve=r;});
+// iOS'ta native anonim oturum (dünya sıralaması/arkadaş okumaları için gerekli
+// request.auth != null şartını sağlar) initFirebaseAuth() içinde arka planda
+// kuruluyor — bu tamamlanmadan Firestore okumaları "izin yok" ile sessizce
+// başarısız olabiliyordu (2026-07-14: "sıralama gözükmüyor" raporu, kullanıcı
+// uygulamayı açar açmaz sıralamaya bakınca). Bu promise, native oturum kurulana
+// (veya zaten gerçek girişli olduğu için gerek kalmadığına) kadar bekleme
+// imkanı sağlıyor.
+let _nativeAuthReadyResolve=null;
+const _nativeAuthReadyPromise=new Promise(r=>{_nativeAuthReadyResolve=r;});
 
 async function initFirebaseAuth(){
   try{
@@ -5384,7 +5393,11 @@ async function initFirebaseAuth(){
     if((!_fbAuth.currentUser || _isIOS) && !isLoggedIn()){
       try{ await _fbAnonSignIn(); }catch(e){ console.warn('Anon auth:',e); }
     }
-  }catch(e){console.warn('Firebase init:',e);}
+    if(_nativeAuthReadyResolve){_nativeAuthReadyResolve();_nativeAuthReadyResolve=null;}
+  }catch(e){
+    console.warn('Firebase init:',e);
+    if(_nativeAuthReadyResolve){_nativeAuthReadyResolve();_nativeAuthReadyResolve=null;}
+  }
 }
 
 // ── FIRESTORE SOYUTLAMA KATMANI (2026-07-11) ─────────────────────────────────
@@ -6278,6 +6291,9 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
   const LB = window._leaderboardManager;
   if(LB){
     try{
+      // iOS'ta native anonim oturum henüz kurulmamış olabilir (2026-07-14) — kısa
+      // bir süre bekle, yoksa "izin yok" ile sessizce başarısız olur.
+      if(_isIOS) await Promise.race([_nativeAuthReadyPromise, new Promise(r=>setTimeout(r,2500))]);
       // GÜVENLİK AĞI (2026-07-12): önceden burada timeout yoktu — Firestore çağrısı
       // (native veya JS SDK) hiç dönmezse liste sonsuza kadar "yükleniyor" durumunda
       // kalıyordu ("dünya sıralaması gözükmüyor" raporu). 7sn'de yanıt gelmezse
@@ -6638,11 +6654,14 @@ async function searchFriendByCode(){
   res.classList.remove('visible');
   _friendSearchData=null;
 
-  // Firestore'da ara
+  // Firestore'da ara — timeout eklendi (2026-07-14), önceden native çağrı askıda
+  // kalırsa arama düğmesi sonsuza kadar tepkisiz kalıyordu.
   const LB=window._leaderboardManager;
   if(LB){
     try{
-      const res=await _fsQueryCollection('users',[{type:'where',fieldPath:'code',opStr:'==',value:code.toUpperCase()}]);
+      if(_isIOS) await Promise.race([_nativeAuthReadyPromise, new Promise(r=>setTimeout(r,2500))]);
+      const _searchTimeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('search timeout')),8000));
+      const res=await Promise.race([_fsQueryCollection('users',[{type:'where',fieldPath:'code',opStr:'==',value:code.toUpperCase()}]),_searchTimeout]);
       if(res.length){
         const d=res[0];
         _friendSearchData={code:code.toUpperCase(),name:d.name||t('guest'),score:d.best||0,uid:d.id};
@@ -6682,16 +6701,19 @@ async function confirmAddFriend(){
   saveFriendsList(friends);
   document.getElementById('friend-code-input').value='';
   document.getElementById('friend-search-result').classList.remove('visible');
-  // Firestore'a çift yönlü bağlantı yaz (karşı taraf da bizi görsün)
+  // Firestore'a çift yönlü bağlantı yaz (karşı taraf da bizi görsün) — timeout
+  // eklendi (2026-07-14), önceden askıda kalırsa arkadaş yerelde eklenmiş olsa
+  // bile ekran altındaki renderFriendCards()/renderFriendsLB() hiç çalışmıyordu.
   const LB=window._leaderboardManager;
   if(LB){
     try{
       const linkId=myCode+'_'+_friendSearchData.code;
-      await _fsSetDoc('friendLinks/'+linkId,{
+      const _linkTimeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('link write timeout')),8000));
+      await Promise.race([_fsSetDoc('friendLinks/'+linkId,{
         from:myCode,to:_friendSearchData.code,
         fromName:displayName(),fromScore:acct.best,fromUid:acct.uid||null,
         ts:Date.now()
-      },false);
+      },false),_linkTimeout]);
     }catch(_){}
   }
   _friendSearchData=null;
@@ -6910,7 +6932,20 @@ async function pushMyScore(){
 async function fetchFriendScores(){
   const LB=window._leaderboardManager;
   if(!LB)return;
+  // GÜVENLİK AĞI (2026-07-14): önceden burada timeout yoktu — art arda birden fazla
+  // Firestore çağrısı var (kendi skor + arkadaş batch'leri + friendLinks), biri
+  // askıda kalırsa renderFriendsLB() HİÇ çağrılmıyordu, sekme sonsuza kadar
+  // "yükleniyor" durumunda kalıyordu (dünya sıralamasındaki aynı sorun — "arkadaş
+  // kısmı gözükmüyor" raporu). 10sn'de bitmezse pes edip elde ne varsa gösteriyoruz.
   try{
+    await Promise.race([_fetchFriendScoresWork(), new Promise((_,rej)=>setTimeout(()=>rej(new Error('fetchFriendScores timeout')),10000))]);
+  }catch(e){console.warn('fetchFriendScores:',e);}
+  renderFriendsLB();
+}
+async function _fetchFriendScoresWork(){
+  try{
+    // iOS'ta native anonim oturum henüz kurulmamış olabilir (2026-07-14).
+    if(_isIOS) await Promise.race([_nativeAuthReadyPromise, new Promise(r=>setTimeout(r,2500))]);
     let friends=getFriends();
 
     // 0) Kendi skorumu da Firestore'dan tazele — yerel veri eskiyse düzelt
@@ -6989,8 +7024,7 @@ async function fetchFriendScores(){
     }
 
     saveFriendsList(friends);
-  }catch(e){console.warn('fetchFriendScores:',e);}
-  renderFriendsLB();
+  }catch(e){console.warn('fetchFriendScores work:',e);}
 }
 
 // ── MODERN TUTORIAL ──────────────────────────────────────────────────────────
