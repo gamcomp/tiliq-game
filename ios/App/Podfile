@@ -13,9 +13,11 @@ def capacitor_pods
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
   pod 'CapacitorCommunityInAppReview', :path => '../../node_modules/@capacitor-community/in-app-review'
-  # Varsayılan 'Lite' alt-paket Google Sign-In'i tamamen dışarıda bırakıyor (RGCFA_INCLUDE_GOOGLE
-  # derleme bayrağı tanımlanmıyor) — GoogleAuthProviderHandler.swift'teki tüm kod sessizce atlanıyor,
-  # bu yüzden Google butonu hiçbir tepki vermiyordu. 'Google' alt paketini açıkça eklemek gerekiyor.
+  # NOT (2026-07-13): Google Sign-In desteği artık Podfile subspec'i İLE DEĞİL, CI'ın
+  # (codemagic.yaml) node_modules'teki podspec'i yamalayıp GoogleSignIn'i üst-seviye
+  # zorunlu bağımlılık yapmasıyla sağlanıyor — Podfile'da `:subspecs => [...]` vermek
+  # CocoaPods'un bu pod hedefini xcodebuild'e hiç dahil etmemesine yol açtığı kanıtlandı
+  # (build log'unda framework hiç görünmüyordu). Bu satır KASITLI olarak subspec'siz.
   pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication'
   pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
   # iOS'ta Firestore JS SDK/WKWebView güvenilmez olduğu için (bkz. auth notu) Firestore
