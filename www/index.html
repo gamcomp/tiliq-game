@@ -2395,7 +2395,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.15-1';
+const BUILD_VER='v2026.07.15-2';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5722,6 +5722,17 @@ window._authSignIn = async function(provider){
       const _to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT 15sn — native '+provider+' çağrısı hiç dönmedi')),15000));
       const result=await Promise.race([_callPromise,_to]);
       if(result?.user){
+        // GÜVENLİK AĞI (2026-07-15): "Apple ile giriş yaptım ama skorlar/kayıt Google
+        // gibi çalışmıyor" raporu — _onFirebaseUser() user.isAnonymous true ise TÜM
+        // hesap senkron mantığını (skor yükleme, hesap eşleştirme, kayıt) atlayıp
+        // hemen çıkıyor. Apple'ın "isim/e-posta sadece ilk yetkilendirmede paylaşılır"
+        // davranışı ya da native eklentinin bu alanı doldurma şekli, ikinci+ Apple
+        // girişlerinde isAnonymous'ın yanlışlıkla true/tanımsız-truthy gelmesine yol
+        // açabiliyor — Google'da bu alan her zaman güvenilir false geliyor, bu yüzden
+        // fark sadece Apple'da görülüyor. Burada AÇIKÇA signInWithApple()/
+        // signInWithGoogle() çağırdığımızı BİLİYORUZ — bu METOTLAR ASLA anonim sonuç
+        // döndürmez, bu yüzden isAnonymous'ı burada kesin olarak false'a zorluyoruz.
+        result.user.isAnonymous=false;
         _onFirebaseUser(result.user);
       } else {
         alert('Giriş tamamlanamadı — kullanıcı bilgisi alınamadı.');
