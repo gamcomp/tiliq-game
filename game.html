@@ -2395,7 +2395,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.14-4';
+const BUILD_VER='v2026.07.14-5';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5371,6 +5371,15 @@ async function initFirebaseAuth(){
     if(!getApps().length) _fbApp=initializeApp(FB_CONFIG);
     else _fbApp=getApps()[0];
     _fbAuth=getAuth(_fbApp);
+    // KRİTİK SIRALAMA (2026-07-14): "3sn beklemesine rağmen sıralama hâlâ 'giriş yap'
+    // gösteriyor" raporu — _initLeaderboardManager() eskiden onAuthStateChanged/
+    // getRedirectResult'tan SONRA çağrılıyordu. getRedirectResult (ve genel olarak
+    // JS SDK'nın ağ dokunan çağrıları) bu oturum boyunca iOS'ta defalarca sessizce
+    // askıda kaldığı görüldü — bu, LB manager'ın hiç kurulamamasına, 3sn'lik
+    // güvenlik ağının bile yetmemesine yol açıyordu (çünkü asıl sorun "yavaş" değil
+    // "hiç bitmiyor"du). LB manager'ın SADECE _fbApp'e ihtiyacı var — riskli
+    // çağrılardan TAMAMEN bağımsız olması için hemen burada, en başta çağrılıyor.
+    _initLeaderboardManager();
     // Gerçek analytics — daha önce logEvent() sadece console.log yapıyordu, hiçbir
     // yere veri gitmiyordu (BÜYÜT/ÖLDÜR kararları CPI+elde-tutma verisine dayanıyor
     // ama bu veri hiç toplanmıyordu). isSupported() kontrolü önerilen resmi desen —
@@ -5386,13 +5395,14 @@ async function initFirebaseAuth(){
       if(user) _onFirebaseUser(user);
       if(_authReadyResolve){_authReadyResolve();_authReadyResolve=null;} // ilk callback = "auth durumu belli"
     });
-    // Redirect sonrası dönüş kontrolü
+    // Redirect sonrası dönüş kontrolü — timeout eklendi (2026-07-14), bu JS SDK
+    // çağrısı da diğerleri gibi iOS'ta sessizce askıda kalabiliyordu ve altındaki
+    // anonim giriş adımının hiç çalışmamasına yol açıyordu.
     try{
-      const result=await getRedirectResult(_fbAuth);
+      const _redirTimeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('getRedirectResult timeout')),5000));
+      const result=await Promise.race([getRedirectResult(_fbAuth),_redirTimeout]);
       if(result?.user) _onFirebaseUser(result.user);
     }catch(e){ console.warn('Redirect result:',e); }
-    // Leaderboard manager başlat
-    _initLeaderboardManager();
     // Giriş yoksa anonim oturum aç — dünya sıralamasını okuyabilmek için
     // (Firestore kuralı: allow read if request.auth != null). Anonim oturum
     // gerçek giriş sayılmaz; arkadaş sistemi yine Google hesabı ister.
