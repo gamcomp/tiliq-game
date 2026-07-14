@@ -2394,7 +2394,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.15-5';
+const BUILD_VER='v2026.07.15-6';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2937,11 +2937,7 @@ function _setBannerSpacers(px){
 // ── BANNER (alt şerit — menü VE oyun ekranında, tepsi/HUD ile çakışmaz) ──────
 async function showBanner(){
   if(!BANNER_ENABLED)return;        // Banner devre dışı
-  // GEÇİCİ TEŞHİS (2026-07-15): "reklamlar açılmıyor" raporu — isNoAds() true ise
-  // (VIP/reklamsız satın alma, ya da testler sırasında hesaba kazara işlenmiş eski
-  // bir bulut kaydı) reklamlar KASITLI olarak hiç gösterilmiyor, bu bir hata değil,
-  // ama hiçbir hata/uyarı da vermediği için "bug" gibi görünüyor. Bir kez göster.
-  if(isNoAds()){ _admobDebugAlert('banner-blocked-noads','isNoAds()=true, vip='+isVip()); return; }
+  if(isNoAds())return;              // VIP/Reklamsız sistemden kaldırıldı (2026-07-15) — artık hep false
   const AdMob=_getAdMob();
   if(!AdMob||_bannerShown)return;   // Web/test: banner yok
   try{
@@ -2996,7 +2992,7 @@ async function _prepareInterstitial(){
   catch(e){ console.warn('Interstitial prepare:',e); _admobDebugAlert('interstitial-prepare',e); }
 }
 async function showInterstitial(){
-  if(isNoAds()){ _admobDebugAlert('interstitial-blocked-noads','isNoAds()=true, vip='+isVip()); return; }
+  if(isNoAds())return;              // VIP/Reklamsız sistemden kaldırıldı (2026-07-15) — artık hep false
   const AdMob=_getAdMob();
   if(!AdMob)return;                 // Web/test: interstitial yok
   try{
@@ -5959,17 +5955,17 @@ async function _syncEntitlements(){
   }catch(e){console.warn('RC sync:',e);}
 }
 
-function _applyVip(){
-  localStorage.setItem('tiliq_vip','1');
-  localStorage.setItem('tiliq_no_ads','1');
-  if(typeof syncWallet==='function') syncWallet();
-}
-function _applyNoAds(){
-  localStorage.setItem('tiliq_no_ads','1');
-  if(typeof syncWallet==='function') syncWallet();
-}
-function isVip(){return localStorage.getItem('tiliq_vip')==='1';}
-function isNoAds(){return localStorage.getItem('tiliq_no_ads')==='1';}
+// VIP / Reklamsız SİSTEMDEN TAMAMEN KALDIRILDI (2026-07-15, kullanıcı isteği —
+// hem Android hem iOS). Mağazada zaten bu ürünleri satan bir buton yoktu, ama
+// eski test/RevenueCat sandbox kayıtlarından kalmış bir yerel/bulut değeri
+// reklamları sessizce engelleyebiliyordu ("reklamlar açılmıyor" raporunun olası
+// nedenlerinden biriydi). Fonksiyonlar artık kalıcı olarak etkisiz — hiçbir eski
+// kayıt (localStorage, RevenueCat entitlement, Firestore) reklamları bir daha
+// engelleyemez.
+function _applyVip(){}
+function _applyNoAds(){}
+function isVip(){return false;}
+function isNoAds(){return false;}
 
 async function iapBuy(id){
   const RC=_getRC();
