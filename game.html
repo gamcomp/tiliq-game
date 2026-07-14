@@ -2395,7 +2395,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.14-5';
+const BUILD_VER='v2026.07.15-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5818,6 +5818,14 @@ function _resetToGuestState(){
   _refreshCodeDisplays();
   updateStoreCoinBal();
   _updateLoginGate(); // çıkış → giriş duvarı geri gelir (hesap şartı)
+  // KRİTİK EKSİK (2026-07-15): _onFirebaseUser() girişte auth-signout-area'yı
+  // gösterip auth-native-area/auth-web-area'yı gizliyordu ("Çıkış Yap" görünümü),
+  // ama çıkışta bu HİÇ geri alınmıyordu — isim "Player"a dönse bile Hesap paneli
+  // hâlâ "giriş yapılmış" düzeninde (Çıkış Yap butonuyla) kalıyordu, giriş
+  // butonlarına dönmüyordu ("çıkış yapınca ekran hesap bilgileriyle görünüyor"
+  // raporu). initAuthUI() bu üç alanı acct durumuna göre doğru ayarlayan mevcut
+  // fonksiyon — çıkışta da çağırıyoruz.
+  if(typeof initAuthUI==='function') initAuthUI();
 }
 window._authSignOut = async function(){
   // KRİTİK: sıfırlamadan ÖNCE mevcut ilerlemeyi buluta KESİN olarak gönder.
