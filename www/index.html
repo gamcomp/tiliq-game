@@ -2394,7 +2394,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.15-6';
+const BUILD_VER='v2026.07.15-7';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3062,6 +3062,12 @@ async function showRewardedAd(onRewarded){
     });
     _admobListeners=[l1,l2];
     if(!_rewardReady) await _prepareRewardedAd(); // hazır değilse (nadir) burada bekle
+    // KOD BOŞLUĞU (2026-07-15, "reklam hazır değil" hatası raporu): prepare
+    // başarısız olsa bile (ör. no-fill) kod yine de showRewardVideoAd()'ı
+    // çağırıyordu — native SDK "ad not ready" hatası fırlatıyordu, kullanıcı
+    // bunu görüyordu. Artık prepare gerçekten başarısız kaldıysa direkt sahte
+    // reklama düşülüyor, native SDK'ya hiç sorulmuyor.
+    if(!_rewardReady){ _showMockAd(onRewarded); return; }
     await AdMob.showRewardVideoAd();
   }catch(e){
     console.warn('AdMob rewarded error:',e);
@@ -5626,6 +5632,16 @@ function _onFirebaseUser(user){
   acct._fbLogged = true;
   localStorage.setItem('tm_acct', JSON.stringify(acct));
   _updateLoginGate(); // giriş duvarını kaldır
+  // ANLIK YENİLEME (2026-07-15, "başka oturum açıldığında eski skorlar hemen
+  // güncellenmiyor" raporu): eskiden ekran SADECE bulut senkronu (ağ turu) bittikten
+  // sonra yenileniyordu — bu birkaç saniye sürebiliyordu, kullanıcı bu sürede eski
+  // hesabın verisini görmeye devam ediyordu. Artık _resetToGuestState() zaten
+  // uygulanmış olan (misafir/temiz) yerel veriyle EKRAN HEMEN yenileniyor, gerçek
+  // bulut verisi gelince _firestoreSync/_doMerge zaten ikinci kez yenileyecek.
+  if(typeof updateMenuAvatar==='function') updateMenuAvatar();
+  if(typeof renderDailyCard==='function') renderDailyCard();
+  if(typeof updateStreakDisplay==='function') updateStreakDisplay();
+  if(typeof _refreshAllNameDisplays==='function') _refreshAllNameDisplays();
   _rcLogIn(user.uid);   // RevenueCat'i bu hesaba bağla (entitlement taşınsın)
   _getCrashlytics()?.setUserId({userId:user.uid}).catch(()=>{}); // crash raporlarında "kimdi" bilgisi
   const si=document.getElementById('auth-signout-area');
@@ -6642,6 +6658,7 @@ function syncWallet(){
   if(_walletSyncTimer) clearTimeout(_walletSyncTimer);
   _walletSyncTimer=setTimeout(_syncWalletToFirestore,800);
 }
+let _walletPushRetried=false;
 async function _syncWalletToFirestore(){
   if(!acct.uid||!_fbApp) return;
   const _flushed=_coinPending(); // yazım öncesi bekleyen delta — başarıda onaylanır
@@ -6669,7 +6686,15 @@ async function _syncWalletToFirestore(){
     await _fsSetDoc(ref,payload,true);
     // Yazım BAŞARILI → yazılan delta onaylandı (bu sırada eklenen yeni delta korunur)
     _coinPend(-_flushed);
-  }catch(e){console.warn('wallet sync:',e);}
+    _walletPushRetried=false;
+  }catch(e){
+    console.warn('wallet sync:',e);
+    // GÜVENLİK AĞI (2026-07-15): "profil emojisi/maskot vs kaydedilmiyor gibi" raporu
+    // — bu fonksiyon (mascot/tema/ayarlar burada gönderiliyor) _firestorePushScore()'un
+    // aksine hiç yeniden denemiyordu, geçici bir native yazma hatası sessizce veriyi
+    // kaybettiriyordu. Bir kez, 2sn sonra otomatik yeniden dene.
+    if(!_walletPushRetried){_walletPushRetried=true;setTimeout(()=>{_syncWalletToFirestore();_walletPushRetried=false;},2000);}
+  }
 }
 // Sekme/uygulama kapanırken bekleyen cüzdan yazımını hemen gönder (800ms debounce kaybını önler)
 function _flushWalletNow(){
