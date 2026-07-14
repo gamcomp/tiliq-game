@@ -385,7 +385,11 @@ body::after{
 .btn-wide{flex:none;width:100%;max-width:320px;}
 
 /* ── GAME SCREEN ── */
-#screen-game{padding:0;overflow:hidden;}
+/* "Oyun ekranında kaydırma olmasın, her şey ekrana sığsın" (2026-07-14) — .screen'den
+   miras kalan -webkit-overflow-scrolling:touch, overflow:hidden ile birlikte bile
+   WebKit'te kalıntı bir dokunma-kaydırma/bounce artığına yol açabiliyor; burada
+   açıkça kapatılıyor. Asıl taşma nedeni calcCell()'de düzeltildi (bkz. o fonksiyon). */
+#screen-game{padding:0;overflow:hidden;-webkit-overflow-scrolling:auto;overscroll-behavior:none;touch-action:none;}
 #header{width:100%;max-width:480px;flex-shrink:0;display:flex;align-items:center;gap:4px;padding:max(8px,env(safe-area-inset-top,8px)) 8px 4px;}
 #title{font-size:14px;font-weight:900;flex:1;letter-spacing:-.3px;background:linear-gradient(135deg,#5B8DB8,#C4714A,#D4A843);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .chip{background:linear-gradient(180deg,rgba(255,225,180,.09),rgba(255,210,160,.035));border:1px solid var(--gb);border-radius:16px;padding:2px 8px;display:flex;flex-direction:column;align-items:center;min-width:44px;backdrop-filter:blur(10px);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 3px 10px rgba(0,0,0,.25);}
@@ -2391,7 +2395,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.14-2';
+const BUILD_VER='v2026.07.14-3';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2406,7 +2410,20 @@ let _bannerSizeListenerAdded=false;
 const BANNER_RESERVE_PX=64; // adaptif banner için ayrılan güvenli alt boşluk (tepsi asla kapanmaz)
 function calcCell(){
   const vw=Math.min(window.innerWidth,480);
-  const vh=window.innerHeight-110-(_bannerShown?BANNER_RESERVE_PX:0);
+  // "Oyun ekranında kaydırma olmasın, her şey sığsın" (2026-07-14) — eskiden sabit
+  // "110" tahmini kullanılıyordu, bu #header'ın env(safe-area-inset-top) ile
+  // BÜYÜYEBİLEN gerçek yüksekliğini hesaba katmıyordu (çentikli/Dynamic Island'lı
+  // iPhone'larda üst boşluk 8px yerine 47-59px olabiliyor) — tahta, gerçekte kalan
+  // alandan büyük hesaplanıp ekranın altından taşıyordu. Artık gerçek DOM
+  // yüksekliklerini ölçüyoruz, hangi cihazda ne kadar güvenli alan olursa olsun
+  // doğru sonuç verir.
+  const header=document.getElementById('header');
+  const boosterRow=document.getElementById('booster-row');
+  const bannerSpacer=document.getElementById('banner-spacer-game');
+  const chrome=(header?header.getBoundingClientRect().height:56)
+             + (boosterRow?boosterRow.getBoundingClientRect().height:44)
+             + (bannerSpacer?bannerSpacer.getBoundingClientRect().height:(_bannerShown?BANNER_RESERVE_PX:0));
+  const vh=window.innerHeight-chrome-8; // 8px: tahta ile alt güvenli alan arası pay
   return Math.min(Math.floor((vw-10)/GRID),Math.floor(vh/(GRID+3.6)),50);
 }
 let CELL=calcCell();
