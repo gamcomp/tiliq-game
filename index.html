@@ -2391,7 +2391,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.13-5';
+const BUILD_VER='v2026.07.13-6';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5364,7 +5364,18 @@ async function initFirebaseAuth(){
     // Giriş yoksa anonim oturum aç — dünya sıralamasını okuyabilmek için
     // (Firestore kuralı: allow read if request.auth != null). Anonim oturum
     // gerçek giriş sayılmaz; arkadaş sistemi yine Google hesabı ister.
-    if(!_fbAuth.currentUser || _isIOS){
+    // KRİTİK DÜZELTME (2026-07-13): Firebase'in signInAnonymously()'si, ZATEN
+    // gerçek bir sağlayıcıyla (Apple/Google) oturum açık olsa bile KOŞULSUZ çalışır
+    // ve mevcut oturumun yerine YENİ bir anonim oturum kurar — "giriş yoksa" kontrolü
+    // olmadan bu, her uygulama açılışında (initFirebaseAuth her başlangıçta çalışır)
+    // Apple/Google ile açılmış NATIVE oturumu sessizce anonim oturuma çeviriyordu.
+    // Sonuç: acct.uid (yerelde kayıtlı gerçek UID) ile native oturumun UID'si
+    // uyuşmuyordu, Firestore kuralı (request.auth.uid == uid) TÜM bulut yazmalarını
+    // reddediyordu — "Apple ile giriş yaptıktan sonra hiçbir şey kaydetmiyor" raporu
+    // buradan geliyordu. Artık SADECE gerçekten giriş yapılmamışsa (isLoggedIn()
+    // false) anonim oturum açılıyor; zaten gerçek girişi olan kullanıcının native
+    // oturumuna hiç dokunulmuyor.
+    if((!_fbAuth.currentUser || _isIOS) && !isLoggedIn()){
       try{ await _fbAnonSignIn(); }catch(e){ console.warn('Anon auth:',e); }
     }
   }catch(e){console.warn('Firebase init:',e);}
