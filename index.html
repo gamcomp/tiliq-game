@@ -2405,7 +2405,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.15-8';
+const BUILD_VER='v2026.07.15-9';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5133,7 +5133,12 @@ function rotateSelected(){rotatePiece(selPiece);}
 // ── DRAG STATE ────────────────────────────────────────────────────────────────
 let drag=null; // {pi, startX, startY, x, y, moved}
 const DRAG_PX=9;
-const DRAG_LIFT=1.5; // parmağın kaç CELL üzerinde çizilsin
+// "iOS'ta sürüklerken şekil Android'deki kadar yukarı gitmiyor" raporu (2026-07-15) —
+// DRAG_LIFT kare (CELL) birimiyle ölçülüyor; bir önceki turda calcCell()'i gerçek
+// güvenli alana göre ölçmeye başladık, bu da iOS'ta CELL'i (ve dolayısıyla aynı 1.5
+// kat'lık kaldırmanın piksel karşılığını) küçültmüş olabilir. Android'in zaten doğru
+// kabul edilen hissini bozmamak için SADECE iOS'ta artırıyoruz.
+const DRAG_LIFT=_isIOS?2.2:1.5; // parmağın kaç CELL üzerinde çizilsin
 
 function _inGrid(x,y){const gx=GOX(),gy=GOY;return x>=gx&&x<gx+CELL*GRID&&y>=gy&&y<gy+CELL*GRID;}
 
