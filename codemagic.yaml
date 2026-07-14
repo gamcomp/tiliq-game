@@ -47,12 +47,36 @@ workflows:
           # görünmüyordu) — subspec'i KALDIRINCA (bare `pod 'CapacitorFirebaseAuthentication'`)
           # plugin gerçekten derlendi, Apple girişi geri geldi (doğrulandı). Google'ı da
           # çalıştırmak için Podfile'da subspec kullanmıyoruz — bunun yerine PODSPEC'İN
-          # KENDİSİNİ yamalayıp GoogleSignIn bağımlılığını ve RGCFA_INCLUDE_GOOGLE derleme
-          # bayrağını subspec mekanizması DIŞINDA, üst-seviye/koşulsuz hale getiriyoruz.
-          # Böylece Podfile subspec'siz (kanıtlanmış çalışan) kalıyor ama Google desteği
-          # her zaman derleniyor.
+          # KENDİSİNİ değiştirip GoogleSignIn bağımlılığını üst-seviye/koşulsuz hale
+          # getiriyoruz. İLK DENEMEDE perl regex + bash escaping kullanıldı ve
+          # "$(inherited)" ifadesi bozuldu ("Unexpected input file: .../701inherited)"
+          # derleme hatası) — regex/escaping kırılganlığını TAMAMEN ortadan kaldırmak
+          # için artık dosyanın TAMAMI (Podfile'daki gibi) tırnaklı heredoc ile
+          # DOĞRUDAN üzerine yazılıyor, hiçbir shell yorumlama riski yok.
           PSFILE="node_modules/@capacitor-firebase/authentication/CapacitorFirebaseAuthentication.podspec"
-          perl -0777 -pi -e "s/(s\.static_framework = true\n)/\$1  s.xcconfig = { 'OTHER_SWIFT_FLAGS' => '\$(inherited) -DRGCFA_INCLUDE_GOOGLE' }\n  s.dependency 'GoogleSignIn', '7.1.0'\n/" "$PSFILE"
+          cat > "$PSFILE" <<'PODSPEC_EOF'
+          require 'json'
+
+          package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
+
+          Pod::Spec.new do |s|
+            s.name = 'CapacitorFirebaseAuthentication'
+            s.version = package['version']
+            s.summary = package['description']
+            s.license = package['license']
+            s.homepage = package['repository']['url']
+            s.author = package['author']
+            s.source = { :git => package['repository']['url'], :tag => s.version.to_s }
+            s.source_files = 'ios/Plugin/**/*.{swift,h,m,c,cc,mm,cpp}'
+            s.ios.deployment_target  = '13.0'
+            s.dependency 'Capacitor'
+            s.dependency 'FirebaseAuth', '~> 11.0'
+            s.swift_version = '5.1'
+            s.static_framework = true
+            s.xcconfig = { 'OTHER_SWIFT_FLAGS' => '$(inherited) -DRGCFA_INCLUDE_GOOGLE' }
+            s.dependency 'GoogleSignIn', '7.1.0'
+          end
+          PODSPEC_EOF
           echo "--- Patched podspec ---"
           cat "$PSFILE"
       - name: Sync Capacitor web assets into native iOS project
