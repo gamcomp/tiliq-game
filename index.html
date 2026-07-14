@@ -2394,7 +2394,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.15-4';
+const BUILD_VER='v2026.07.15-5';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2937,7 +2937,11 @@ function _setBannerSpacers(px){
 // ── BANNER (alt şerit — menü VE oyun ekranında, tepsi/HUD ile çakışmaz) ──────
 async function showBanner(){
   if(!BANNER_ENABLED)return;        // Banner devre dışı
-  if(isNoAds())return;              // Reklamsız/VIP kullanıcıya gösterme
+  // GEÇİCİ TEŞHİS (2026-07-15): "reklamlar açılmıyor" raporu — isNoAds() true ise
+  // (VIP/reklamsız satın alma, ya da testler sırasında hesaba kazara işlenmiş eski
+  // bir bulut kaydı) reklamlar KASITLI olarak hiç gösterilmiyor, bu bir hata değil,
+  // ama hiçbir hata/uyarı da vermediği için "bug" gibi görünüyor. Bir kez göster.
+  if(isNoAds()){ _admobDebugAlert('banner-blocked-noads','isNoAds()=true, vip='+isVip()); return; }
   const AdMob=_getAdMob();
   if(!AdMob||_bannerShown)return;   // Web/test: banner yok
   try{
@@ -2992,7 +2996,7 @@ async function _prepareInterstitial(){
   catch(e){ console.warn('Interstitial prepare:',e); _admobDebugAlert('interstitial-prepare',e); }
 }
 async function showInterstitial(){
-  if(isNoAds())return;              // Reklamsız/VIP kullanıcıya gösterme
+  if(isNoAds()){ _admobDebugAlert('interstitial-blocked-noads','isNoAds()=true, vip='+isVip()); return; }
   const AdMob=_getAdMob();
   if(!AdMob)return;                 // Web/test: interstitial yok
   try{
