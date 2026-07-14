@@ -2395,7 +2395,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.14-3';
+const BUILD_VER='v2026.07.14-4';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5475,8 +5475,21 @@ async function _fsQueryCollection(path,constraints){
   return snap.docs.map(d=>({id:d.id,...d.data()}));
 }
 
+// GERÇEK KÖK NEDEN (2026-07-14, "sıralama için giriş yap yazıyor ama giriş yaptık"
+// raporu): _initLeaderboardManager() initFirebaseAuth() içinde büyük vendored Firebase
+// dosyalarının (firebase-app.js + firebase-auth.js, ~250KB) dinamik import'unun
+// tamamlanmasını bekledikten SONRA çalışıyor — bu, uygulama açılışında hemen değil,
+// biraz zaman alabiliyor. renderLB()/fetchFriendScores()/searchFriendByCode() bunu
+// HİÇ beklemiyordu; kullanıcı uygulamayı açar açmaz sıralamaya bakarsa
+// window._leaderboardManager henüz hiç oluşturulmamış oluyordu — kod bunu "giriş
+// yapılmamış" sanıp o mesajı gösteriyordu (native girişin kendisi ayrı, native
+// plugin üzerinden çalıştığı için bu gecikmeden hiç etkilenmiyor, "giriş yaptık"
+// ile çelişkili görünüyordu ama aslında iki ayrı sistemdi). Bu promise, LB
+// manager'ın gerçekten hazır olmasını beklemeyi sağlıyor.
+let _lbManagerReadyResolve=null;
+const _lbManagerReadyPromise=new Promise(r=>{_lbManagerReadyResolve=r;});
 async function _initLeaderboardManager(){
-  if(!_fbApp) return;
+  if(!_fbApp){ if(_lbManagerReadyResolve){_lbManagerReadyResolve();_lbManagerReadyResolve=null;} return; }
   try{
     window._leaderboardManager={
       async getTopScores(n=500,field='best'){
@@ -5490,6 +5503,7 @@ async function _initLeaderboardManager(){
       async getMyRank(){return null;}
     };
   }catch(e){console.warn('LB init:',e);}
+  if(_lbManagerReadyResolve){_lbManagerReadyResolve();_lbManagerReadyResolve=null;}
 }
 
 // ── HESAP AKTARIMI (yerel ilerleme → hesap) ──────────────────────────────────
@@ -6305,6 +6319,9 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
   list.innerHTML=`<div style="text-align:center;padding:24px;opacity:.5;font-size:13px">${t('loading')}</div>`;
 
   // Firestore'dan gerçek veri çek
+  // Manager henüz oluşturulmamış olabilir (initFirebaseAuth henüz bitmedi) — kısa
+  // bir süre bekle, yoksa gereksiz yere "giriş yap" mesajı gösterilir.
+  await Promise.race([_lbManagerReadyPromise, new Promise(r=>setTimeout(r,3000))]);
   const LB = window._leaderboardManager;
   if(LB){
     try{
@@ -6673,6 +6690,7 @@ async function searchFriendByCode(){
 
   // Firestore'da ara — timeout eklendi (2026-07-14), önceden native çağrı askıda
   // kalırsa arama düğmesi sonsuza kadar tepkisiz kalıyordu.
+  await Promise.race([_lbManagerReadyPromise, new Promise(r=>setTimeout(r,3000))]);
   const LB=window._leaderboardManager;
   if(LB){
     try{
@@ -6947,6 +6965,7 @@ async function pushMyScore(){
 }
 
 async function fetchFriendScores(){
+  await Promise.race([_lbManagerReadyPromise, new Promise(r=>setTimeout(r,3000))]);
   const LB=window._leaderboardManager;
   if(!LB)return;
   // GÜVENLİK AĞI (2026-07-14): önceden burada timeout yoktu — art arda birden fazla
