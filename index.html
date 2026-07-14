@@ -2391,7 +2391,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.13-6';
+const BUILD_VER='v2026.07.13-7';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2619,7 +2619,10 @@ function drawMenuArt(now){
     const cx=x+_MA_TILE/2,cy=y+_MA_TILE/2;
     mctx.save();
     mctx.translate(cx,cy);mctx.rotate(a);
-    mctx.shadowColor='rgba(0,0,0,.45)';mctx.shadowBlur=8;mctx.shadowOffsetY=4;
+    // "Oyun telefonu çok ısıtıyor" raporu (2026-07-13) — bu döngü ana menüde SÜREKLİ
+    // çalışıyor (durdurma yok, sadece ekrandan ayrılınca duruyor) ve şeritteki her
+    // karo için shadowBlur uyguluyordu; _LOW_FX ile aynı kısıtlamaya tabi tutuldu.
+    if(!_LOW_FX){mctx.shadowColor='rgba(0,0,0,.45)';mctx.shadowBlur=8;mctx.shadowOffsetY=4;}
     mctx.drawImage(tex,-_MA_TILE/2,-_MA_TILE/2,_MA_TILE,_MA_TILE);
     mctx.restore();
   }
@@ -3870,9 +3873,12 @@ const _FIRE_MOBILE = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent)
 // Düşük donanımlı Android cihazlarda ctx.shadowBlur, tahtadaki her dolu karede (64'e
 // kadar) her frame'de tekrar tekrar uygulanınca ciddi kasmaya yol açıyor ("oyun çok
 // kasıyor" raporu, canlı Android testçileri). navigator.deviceMemory sadece Chrome/
-// WebView'de var (iOS Safari'de undefined — bu yüzden iOS'u etkilemiyor, sorun zaten
-// Android'e özgüydü). <=4GB RAM'de kart gölgesi tamamen atlanır.
-const _LOW_FX = (navigator.deviceMemory && navigator.deviceMemory<=4);
+// WebView'de var (iOS Safari'de undefined). ESKİDEN bu yüzden _LOW_FX iOS'u hiç
+// kapsamıyordu — ama Canvas2D shadowBlur, WebKit/Safari'de Chromium'a göre BİLİNEN
+// şekilde çok daha CPU-yoğun (GPU hızlandırmalı değil) çalışıyor; "oyun telefonu çok
+// ısıtıyor" raporu (2026-07-13, iOS) bu yüzden muhtemelen daha da belirgin. Artık
+// TÜM iOS cihazlarında da gölge efekti atlanıyor, cihaz gücünden bağımsız.
+const _LOW_FX = _isIOS || (navigator.deviceMemory && navigator.deviceMemory<=4);
 
 // Particle pool — ölü alev objeleri yeniden kullanılır (yeni obje yaratılmaz)
 const _flamePool=[];
