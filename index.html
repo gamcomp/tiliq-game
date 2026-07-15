@@ -4085,8 +4085,11 @@ let _fireGLOK=false,_fireGL=null,_fireProg=null,_fireU={},_fireCv=null;
 function _initFireGL(){
   try{
     _fireCv=document.getElementById('fireCanvas'); if(!_fireCv)return;
-    const gl=_fireCv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false})
-          || _fireCv.getContext('experimental-webgl',{alpha:true,premultipliedAlpha:true});
+    // powerPreference:'low-power' — bu basit 2D bulmaca oyununun yüksek performans GPU
+    // çekirdeğine ihtiyacı yok; destekleyen cihazlarda (iOS/Metal dahil) sürücüye
+    // verimlilik çekirdeğini tercih etmesini işaret ediyor (termal/pil için).
+    const gl=_fireCv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false,powerPreference:'low-power'})
+          || _fireCv.getContext('experimental-webgl',{alpha:true,premultipliedAlpha:true,powerPreference:'low-power'});
     if(!gl)return;
     const OCT=_FIRE_MOBILE?4:5;
     const r=_compileFireProgram(gl,OCT);
@@ -5120,6 +5123,19 @@ function draw(){
 }
 
 let _rafId=null;
+// KÖK NEDEN (2026-07-16, "iOS telefonları aşırı ısıtıyor" raporu): requestAnimationFrame
+// hiçbir üst sınır olmadan cihazın kendi ekran yenileme hızında tetiklenir — bu, sabit
+// 60Hz ekranlarda 60fps demekken, ProMotion'lı iPhone'larda (13 Pro ve sonrası çoğu Pro/
+// bazı standart modeller) 120Hz'e kadar çıkabiliyor. Yani AYNI kod, aynı tahta + WebGL
+// ateş shader'ını saniyede 120 KEZ yeniden çiziyordu — CLAUDE.md'nin kendi hedefi olan
+// "60 FPS sabit"in TAM İKİ KATI CPU/GPU yükü. Android test cihazı muhtemelen 60Hz olduğu
+// için bu fark hiç görünmüyordu, ama termal olarak en çok combo/ateş efekti aktifken
+// (en GPU-yoğun an) ısınmaya yol açıyordu. Artık son çizimden bu yana geçen süre
+// ~16.6ms'nin (60fps karşılığı) altındaysa frame atlanıyor — 120Hz ekranlarda GERÇEK
+// çizim hızı yine 60fps'te kilitleniyor, girdi responsiveness'ı (touchmove/pos hesabı
+// loop'tan bağımsız, event bazlı) etkilenmiyor.
+let _lastDrawAt=0;
+const _FRAME_MIN_MS=1000/60-1; // küçük tolerans: tam 16.667 yerine hafif erken tetiklenebilsin
 function loop(){
   // stopLoop() hiçbir yerden çağrılmıyordu — oyun ekranından menüye/ayarlara/mağazaya
   // dönüldüğünde bile canvas+WebGL ateş katmanı arka planda sonsuza dek 60fps çizilmeye
@@ -5127,7 +5143,11 @@ function loop(){
   // kaynaklarından biriydi. Artık sadece oyun ekranı gerçekten aktifken çalışıyor.
   const gameActive=document.getElementById('screen-game')?.classList.contains('active');
   if(!gameActive){stopLoop();return;}
-  if(grid.length&&pieces.length)draw();
+  const now=performance.now();
+  if(now-_lastDrawAt>=_FRAME_MIN_MS){
+    _lastDrawAt=now;
+    if(grid.length&&pieces.length)draw();
+  }
   _rafId=requestAnimationFrame(loop);
 }
 function stopLoop(){if(_rafId){cancelAnimationFrame(_rafId);_rafId=null;}}
@@ -6267,8 +6287,8 @@ function _initFlamePreviewGL(){
   try{
     const cv=document.createElement('canvas');
     cv.width=224;cv.height=256; // büyük önizleme modalında da net görünsün diye yüksek çözünürlük
-    const gl=cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false})
-          || cv.getContext('experimental-webgl',{alpha:true,premultipliedAlpha:true});
+    const gl=cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false,powerPreference:'low-power'})
+          || cv.getContext('experimental-webgl',{alpha:true,premultipliedAlpha:true,powerPreference:'low-power'});
     if(!gl){_fpGL=false;return;}
     const r=_compileFireProgram(gl,_FIRE_MOBILE?4:5);
     if(!r){_fpGL=false;return;}
