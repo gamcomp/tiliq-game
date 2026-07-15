@@ -5474,7 +5474,22 @@ async function initFirebaseAuth(){
       try{
         const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication,4000);
         const cur=await FA?.getCurrentUser?.();
-        if(cur?.user && !cur.user.isAnonymous) _onFirebaseUser(cur.user);
+        // DÜZELTME (2026-07-15, üçüncü tur — "Apple oturumlarının hafızası yok gibi"
+        // raporu): yukarıdaki `!cur.user.isAnonymous` kontrolü tam olarak _authSignIn'de
+        // belgelenen aynı kusura takılıyordu — Google'da isAnonymous her zaman güvenilir
+        // false gelirken, Apple'da native eklenti bu alanı bazen yanlışlıkla
+        // true/tanımsız-truthy dolduruyor. Sonuç: bu restore bloğu Apple hesapları için
+        // SESSİZCE hiç çalışmıyordu — Google ile giriş yapan kullanıcıda soğuk açılışta
+        // senkron oluyordu, Apple ile girende hiç olmuyordu ("hafızası yok" hissi).
+        // isAnonymous'a güvenmek yerine: acct.uid zaten localStorage'dan GERÇEK (isLoggedIn()
+        // true) bir hesabı gösteriyor — dönen native oturumun uid'si bununla eşleşiyorsa
+        // bu kesinlikle gerçek hesabın kendisidir, isAnonymous ne derse desin.
+        if(cur?.user && cur.user.uid===acct.uid){
+          cur.user.isAnonymous=false;
+          _onFirebaseUser(cur.user);
+        } else if(cur?.user && !cur.user.isAnonymous){
+          _onFirebaseUser(cur.user);
+        }
       }catch(e){ console.warn('iOS native currentUser restore:',e); }
     }
     if(_nativeAuthReadyResolve){_nativeAuthReadyResolve();_nativeAuthReadyResolve=null;}
