@@ -5133,12 +5133,16 @@ function rotateSelected(){rotatePiece(selPiece);}
 // ── DRAG STATE ────────────────────────────────────────────────────────────────
 let drag=null; // {pi, startX, startY, x, y, moved}
 const DRAG_PX=9;
-// "iOS'ta sürüklerken şekil Android'deki kadar yukarı gitmiyor" raporu (2026-07-15) —
-// DRAG_LIFT kare (CELL) birimiyle ölçülüyor; bir önceki turda calcCell()'i gerçek
-// güvenli alana göre ölçmeye başladık, bu da iOS'ta CELL'i (ve dolayısıyla aynı 1.5
-// kat'lık kaldırmanın piksel karşılığını) küçültmüş olabilir. Android'in zaten doğru
-// kabul edilen hissini bozmamak için SADECE iOS'ta artırıyoruz.
-const DRAG_LIFT=_isIOS?2.2:1.5; // parmağın kaç CELL üzerinde çizilsin
+// iOS'a özel DRAG_LIFT çarpanı (2.2) bugün erken saatlerde "iOS'ta yeterince
+// yukarı gitmiyor" raporuna karşı denendi, ama kullanıcı yeni build'de TERSİNİ
+// bildirdi: "iOS'ta şekil Android'e göre fazla yukarıda duruyor". Cihaza göre
+// ayrı ayrı büyülü sabitlerle tutturmaya çalışmak iki turdur ıskalıyor — asıl
+// sorun muhtemelen DRAG_LIFT'in kendisinde değil, CELL'i belirleyen calcCell()
+// güvenli-alan ölçümünün platformlar arası tutarsız olmasında. Kullanıcının
+// açık isteği üzerine (2026-07-15): iki platform da AYNI sabiti kullanıyor —
+// tekrar sapma raporu gelirse calcCell()/contentInset tarafına bakılmalı,
+// bu sabite değil.
+const DRAG_LIFT=1.5; // parmağın kaç CELL üzerinde çizilsin (Android ve iOS ortak)
 
 function _inGrid(x,y){const gx=GOX(),gy=GOY;return x>=gx&&x<gx+CELL*GRID&&y>=gy&&y<gy+CELL*GRID;}
 
@@ -5449,6 +5453,29 @@ async function initFirebaseAuth(){
     // oturumuna hiç dokunulmuyor.
     if((!_fbAuth.currentUser || _isIOS) && !isLoggedIn()){
       try{ await _fbAnonSignIn(); }catch(e){ console.warn('Anon auth:',e); }
+    }
+    // KÖK NEDEN (2026-07-15, ikinci tur — "hesap değiştirirken/başka cihazda oynanan
+    // ilerleme çok geç yansıyor" raporu): yukarıdaki yorum "zaten gerçek girişi olan
+    // kullanıcının native oturumuna hiç dokunulmuyor" diyordu — bu SADECE anonim girişin
+    // üzerine yazmasını engellemek içindi, ama bunun yan etkisi olarak iOS'ta gerçek
+    // girişli bir kullanıcı için _onFirebaseUser() SOĞUK AÇILIŞTA BİR DAHA HİÇ
+    // ÇAĞRILMIYORDU. onAuthStateChanged(_fbAuth,...) sadece JS SDK oturumlarını dinliyor
+    // (satır 5428) — ama iOS'ta gerçek Apple/Google girişi JS SDK'ya hiç bağlanmıyor
+    // (bkz. _authSignIn), sadece native FirebaseAuthentication SDK'sında tutuluyor.
+    // Sonuç: uygulama kapatılıp açıldığında (ya da başka cihazda/Android'de/webde
+    // ilerleme kaydedildikten sonra iOS'ta yeniden açıldığında) tm_acct'teki ESKİ
+    // yerel önbellek hiç tazelenmiyordu — kullanıcı sadece elle çıkış yapıp tekrar
+    // giriş yaparsa güncelleniyordu, bu da "çok geç yansıma" hissi yaratıyordu.
+    // Düzeltme: iOS'ta zaten "girişli" (localStorage'dan) görünüyorsak, native
+    // oturumu FA.getCurrentUser() ile soruyoruz ve gerçek/anonim-olmayan bir
+    // kullanıcı dönerse _onFirebaseUser() ile TAM bulut senkronunu (max-merge,
+    // veri kaybı riski yok) yeniden tetikliyoruz — tıpkı taze bir giriş gibi.
+    if(_isIOS && isLoggedIn()){
+      try{
+        const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication,4000);
+        const cur=await FA?.getCurrentUser?.();
+        if(cur?.user && !cur.user.isAnonymous) _onFirebaseUser(cur.user);
+      }catch(e){ console.warn('iOS native currentUser restore:',e); }
     }
     if(_nativeAuthReadyResolve){_nativeAuthReadyResolve();_nativeAuthReadyResolve=null;}
   }catch(e){
