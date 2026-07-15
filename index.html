@@ -1895,7 +1895,7 @@ function _refreshAllNameDisplays(){
   if(avBig){avBig.textContent='';avBig.style.backgroundImage=`url(${avatarImg(acct.mascot)})`;}
 }
 
-function saveProfileSetup(){
+async function saveProfileSetup(){
   const ni=document.getElementById('setup-nickname');
   const name=(ni?ni.value:'').trim();
   if(!name||name.length<2){
@@ -1907,7 +1907,20 @@ function saveProfileSetup(){
   acct._setupDone=true; // Bir daha gösterme
   localStorage.setItem('tm_acct',JSON.stringify(acct));
   _refreshAllNameDisplays();
-  _firestorePushScore();
+  // KÖK NEDEN (2026-07-15, "Apple ile girince hâlâ profili tamamla çıkıyor" raporu):
+  // "profil tamamlandı" bilgisi buluta HİÇ ayrı bir alan olarak yazılmıyordu — sadece
+  // country alanı doluysa tamamlanmış SAYILIYORDU (_firestoreSync: if(d.country)
+  // acct._setupDone=true). Kullanıcı ülke seçmeden sadece takma ad girip kaydederse
+  // country boş kalıyor, çıkışta yerel _setupDone silindiği için (bkz. _resetToGuestState)
+  // her yeni girişte (platform fark etmez) bu ekran sonsuza kadar tekrar çıkıyordu.
+  // Artık setupDone açık bir boolean alan olarak buluta yazılıyor — firestore.rules'a
+  // eklenmesi ŞART, yoksa _validUser hasOnly() bu alanı içeren TÜM yazmayı reddeder.
+  // ÖNCE _firestorePushScore() BEKLENİYOR: bu, name/code/best alanlarıyla dökümanı
+  // oluşturuyor/güncelliyor. İlk hiç giriş yapılmamış hesapta setupDone yazması bundan
+  // ÖNCE (race) yetişirse, döküman henüz yokken SADECE setupDone içeren bir create
+  // denemesi olur — _validUser create'te name/code/best'i ZORUNLU kıldığı için reddedilir.
+  await _firestorePushScore();
+  _fsSetDoc('users/'+acct.uid,{setupDone:true},true).catch(()=>{});
   document.getElementById('modal-profile-setup').classList.remove('active');
 }
 
@@ -5609,7 +5622,9 @@ async function _pullCloudOverwrite(uid){
       if(d.code){myCode=d.code;localStorage.setItem('tm_my_code',d.code);}
       if(d.name) acct.nickname=d.name;      // hesabın adı
       if(d.country) acct.country=d.country; // hesabın ülkesi
-      if(d.country) acct._setupDone=true;   // profil kurulmuş → sorma
+      // setupDone artık açık bir bulut alanı (bkz. saveProfileSetup notu); d.country
+      // eski dökümanlar için geriye dönük uyumluluk amacıyla hâlâ kontrol ediliyor.
+      if(d.setupDone||d.country) acct._setupDone=true;
       localStorage.setItem('tm_xp',String(d.xp||0));
       localStorage.setItem('tiliq_best',String(d.best||0));
     } else {
@@ -6569,7 +6584,9 @@ async function _firestoreSync(uid,_isRetry){
       // bir sonraki girişte eski bulut değeri yereli eziyordu (kullanıcı raporu, 2026-07-04).
       if(d.name && !acct.nickname) acct.nickname=d.name;
       if(d.country && !acct.country) acct.country=d.country;
-      if(d.country) acct._setupDone=true;  // ülke set edilmişse profil kurulmuş → sorma
+      // setupDone artık açık bir bulut alanı (bkz. saveProfileSetup notu); d.country
+      // eski dökümanlar için geriye dönük uyumluluk amacıyla hâlâ kontrol ediliyor.
+      if(d.setupDone||d.country) acct._setupDone=true;
       if(d.bestAt) localStorage.setItem('tm_bestAt',String(d.bestAt)); // tiebreaker zamanı
       if((d.best||0)>acct.best) acct.best=d.best;
       if((d.games||0)>acct.games) acct.games=d.games;
