@@ -5432,6 +5432,16 @@ let _nativeAuthReadyResolve=null;
 const _nativeAuthReadyPromise=new Promise(r=>{_nativeAuthReadyResolve=r;});
 
 async function initFirebaseAuth(){
+  // GEÇİCİ TEŞHİS (2026-07-17, "iOS oturumlarının hafızası yok, hiçbir şekilde
+  // kaydetmiyor" raporu): en baştan, hiçbir async işlem çalışmadan ÖNCE localStorage'daki
+  // ham durumu gösteriyoruz — eğer isLoggedIn() burada zaten false ise sorun native
+  // oturum geri yüklemede değil, tm_acct'in kendisinin hiç kalıcı olmamasında demektir.
+  if(_isIOS){
+    try{
+      const raw=localStorage.getItem('tm_acct');
+      alert('DEBUG başlangıç: tm_acct='+(raw?raw.slice(0,200):'YOK')+' isLoggedIn='+isLoggedIn());
+    }catch(e){}
+  }
   try{
     const {initializeApp,getApps}=await import('./assets/firebase/firebase-app.js');
     const {getAuth,onAuthStateChanged,getRedirectResult,signInAnonymously}=await import('./assets/firebase/firebase-auth.js');
@@ -5507,6 +5517,12 @@ async function initFirebaseAuth(){
       try{
         const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication,4000);
         const cur=await FA?.getCurrentUser?.();
+        // GEÇİCİ TEŞHİS (2026-07-17, "iOS oturumlarının hafızası yok, hiçbir şekilde
+        // kaydetmiyor" raporu — bir önceki iki düzeltme turu yetersiz kaldı): cihazda
+        // gerçekte ne olduğunu göremediğimiz için kör tahmin yerine tek seferlik bir
+        // alert ile gerçek durumu gösteriyoruz. Bu SADECE teşhis amaçlı, kalıcı
+        // değil — sonuç öğrenilince kaldırılacak.
+        alert('DEBUG oturum: FA_bulundu='+(!!FA)+' cur.user='+(cur&&cur.user?('uid='+cur.user.uid+' isAnon='+cur.user.isAnonymous):'YOK')+' acct.uid='+(acct.uid||'YOK')+' isLoggedIn='+isLoggedIn());
         // DÜZELTME (2026-07-15, üçüncü tur — "Apple oturumlarının hafızası yok gibi"
         // raporu): yukarıdaki `!cur.user.isAnonymous` kontrolü tam olarak _authSignIn'de
         // belgelenen aynı kusura takılıyordu — Google'da isAnonymous her zaman güvenilir
