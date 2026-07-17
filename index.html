@@ -6779,10 +6779,13 @@ let _pushRetried=false;
 function _dlog0(step,extra,uidOverride){
   try{
     const uid=uidOverride||acct.uid||'NO_UID';
-    const N=_fsNative();
+    // DÜZELTME (2026-07-18): addDocument (otomatik ID) hiç doğrulanmamış bir native
+    // metottu — koleksiyon defalarca boş çıktı. setDocument (açık path'li) TEK
+    // kanıtlanmış çalışan yöntem (Google kullanıcısının gerçek verisi bununla
+    // yazılmış) — aynı yönteme geçildi, path elle üretiliyor.
+    const docId=Date.now()+'_'+Math.random().toString(36).slice(2,8);
     const payload={step,uid,ts:Date.now(),extra:String(extra||'')};
-    if(N){ N.addDocument({reference:'debugLogs',data:payload}).catch(e=>console.warn('dlog fail',e)); }
-    else{ import('./assets/firebase/firebase-firestore.js').then(({getFirestore,collection,addDoc})=>{ addDoc(collection(getFirestore(_fbApp),'debugLogs'),payload).catch(()=>{}); }); }
+    _fsSetDoc('debugLogs/'+docId,payload,false).catch(e=>console.warn('dlog fail',e));
   }catch(e){}
 }
 function _dlog(step,extra){ _dlog0(step,extra); }
