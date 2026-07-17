@@ -5534,8 +5534,16 @@ async function initFirebaseAuth(){
 // çağrıları için de geçerli olabilir). Bu yüzden iOS'ta native @capacitor-firebase/
 // firestore eklentisini (native URLSession, WKWebView fetch değil) kullanıyoruz;
 // Android ve web'de mevcut, çalışan JS SDK yoluna dokunmuyoruz.
+// DENEY (2026-07-18, "Apple ile Firestore yazması hiçbir zaman sunucuya ulaşmıyor"
+// bulgusu — Auth kesinlikle çalışıyor/stabil UID, rules doğru, Google için AYNI
+// kod native ile sorunsuz çalışıyor, ama Apple oturumlarında native Firestore
+// eklentisi yazmayı asla iletmiyor gibi görünüyor): SADECE Apple ile giriş yapan
+// oturumlarda, native yerine JS SDK Firestore'a geçiyoruz — Android'in zaten
+// çalışan yöntemiyle aynı (native credential'ı JS SDK'ya köprüleme). Google/genel
+// iOS akışına DOKUNMUYORUZ, native eklenti orada aynen kullanılmaya devam ediyor.
+let _forceJsFirestoreForApple=false;
 function _fsNative(){
-  return (_isIOS && window.Capacitor?.isNativePlatform?.()) ? (window.Capacitor?.Plugins?.FirebaseFirestore||null) : null;
+  return (_isIOS && window.Capacitor?.isNativePlatform?.() && !_forceJsFirestoreForApple) ? (window.Capacitor?.Plugins?.FirebaseFirestore||null) : null;
 }
 async function _fsGetDoc(path){
   const N=_fsNative();
@@ -5882,6 +5890,22 @@ window._authSignIn = async function(provider){
         // signInWithGoogle() çağırdığımızı BİLİYORUZ — bu METOTLAR ASLA anonim sonuç
         // döndürmez, bu yüzden isAnonymous'ı burada kesin olarak false'a zorluyoruz.
         result.user.isAnonymous=false;
+        // DENEY (2026-07-18): SADECE Apple için — native Firestore eklentisi bu
+        // oturumlarda yazmayı hiç sunucuya iletmiyor gibi görünüyor (Auth kesinlikle
+        // çalışıyor, Google için aynı kod native ile sorunsuz). Android'in zaten
+        // çalışan yöntemiyle aynı şekilde, native credential'ı JS SDK'ya köprülüyoruz;
+        // başarılı olursa BU oturum için Firestore işlemleri native yerine JS SDK'dan
+        // gidecek (_fsNative() bunu kontrol ediyor). 8sn üst sınır — asılırsa native'e
+        // geri düşülür (mevcut, zaten bozuk davranıştan öte bir kayıp olmaz).
+        if(isApple && result?.credential?.idToken){
+          try{
+            const {OAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
+            const cred=new OAuthProvider('apple.com').credential({idToken:result.credential.idToken,rawNonce:result.credential.nonce});
+            const _bridgeTo=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Apple JS SDK köprü zaman aşımı')),8000));
+            await Promise.race([signInWithCredential(_fbAuth,cred),_bridgeTo]);
+            _forceJsFirestoreForApple=true;
+          }catch(e){ console.warn('Apple JS SDK köprüsü başarısız, native ile devam:',e); }
+        }
         _onFirebaseUser(result.user);
       } else {
         alert('Giriş tamamlanamadı — kullanıcı bilgisi alınamadı.');
