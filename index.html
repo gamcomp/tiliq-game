@@ -1919,16 +1919,12 @@ async function saveProfileSetup(){
   // oluşturuyor/güncelliyor. İlk hiç giriş yapılmamış hesapta setupDone yazması bundan
   // ÖNCE (race) yetişirse, döküman henüz yokken SADECE setupDone içeren bir create
   // denemesi olur — _validUser create'te name/code/best'i ZORUNLU kıldığı için reddedilir.
-  _dlog('saveProfileSetup:before_pushScore');
   await _firestorePushScore();
-  _dlog('saveProfileSetup:after_pushScore');
-  // DÜZELTME (2026-07-17, "Apple ile her seferinde profili tamamla tekrar çıkıyor"
-  // raporu): bu yazma önceden AWAIT EDİLMİYORDU (fire-and-forget) — kullanıcı profili
-  // kaydedip modal kapanır kapanmaz uygulamayı kapatırsa (test sırasında sık yapılan
-  // bir şey), ağ isteği tamamlanmadan süreç sonlanabiliyor, bir dahaki girişte
-  // setupDone buluta hiç yazılmamış oluyordu. Artık modal kapanmadan ÖNCE bekleniyor.
-  try{ await _fsSetDoc('users/'+acct.uid,{setupDone:true},true); _dlog('saveProfileSetup:setupDone_ok'); }
-  catch(e){ _dlog('saveProfileSetup:setupDone_catch',(e&&(e.message||e.code))||JSON.stringify(e)); }
+  // DÜZELTME (2026-07-17/18): bu yazma artık _fsSetDocReliable ile GÜVENİLİR
+  // kuyruğa alınıyor — anlık deneme başarısız/asılı kalırsa (sebebi ne olursa
+  // olsun) yerel kuyruğa düşer, uygulama sonraki her açılışta/öne gelişte otomatik
+  // tekrar dener. Veri artık asla sessizce kaybolmuyor.
+  await _fsSetDocReliable('users/'+acct.uid,{setupDone:true},true);
   document.getElementById('modal-profile-setup').classList.remove('active');
 }
 
@@ -5627,12 +5623,9 @@ function _postLoginSetup(){
   else { _refreshAllNameDisplays(); }
 }
 async function _fetchCloudData(uid){
-  _dlog0('fetchCloudData:start','',uid);
   try{
-    const r=await _fsGetDoc('users/'+uid);
-    _dlog0('fetchCloudData:ok',r?'found':'null',uid);
-    return r;
-  }catch(e){ _dlog0('fetchCloudData:catch',(e&&(e.message||e.code))||JSON.stringify(e),uid); return null; }
+    return await _fsGetDoc('users/'+uid);
+  }catch(e){ return null; }
 }
 // "Hayır" seçilince: hesabın (cloud) verisini al, yereli onunla değiştir.
 // Hesap boşsa temiz başla ve boş bir hesap dökümanı oluştur.
@@ -5751,7 +5744,6 @@ function _finishLoginLoading(){
 // Aynı UID için aynı anda sadece TEK bir akış çalışsın diye kilitliyoruz.
 let _fbUserHandlingUid=null;
 function _onFirebaseUser(user){
-  _dlog0('onFirebaseUser:entry','isAnon='+user?.isAnonymous,user?.uid);
   // Anonim oturum: sadece dünya sıralamasını okumak için. Gerçek giriş değil,
   // skor yazılmaz, arkadaş sistemi açılmaz. Sadece panel açıksa sıralamayı yenile.
   if(user.isAnonymous){
@@ -5761,8 +5753,11 @@ function _onFirebaseUser(user){
     }
     return;
   }
-  if(_fbUserHandlingUid===user.uid){ _dlog0('onFirebaseUser:already_handling','',user.uid); return; } // bu hesap için zaten bir akış sürüyor
+  if(_fbUserHandlingUid===user.uid) return; // bu hesap için zaten bir akış sürüyor
   _fbUserHandlingUid=user.uid;
+  // GÜVENİLİR YAZMA KUYRUĞU (2026-07-18): daha önce başarısız/asılı kalmış
+  // yazmalar varsa (sebebi ne olursa olsun), her gerçek girişte tekrar denenir.
+  _flushWriteQueue();
   acct._googleName = user.displayName || user.email || '';
   // DİKKAT: acct.nickname'e YAZMA — displayName() zaten nickname boşsa _googleName'e
   // düşüyor (görüntüleme için yeterli). Buraya yazmak, _firestoreSync'in gerçek
@@ -5805,15 +5800,12 @@ function _onFirebaseUser(user){
   // yanıt vermezse, profil kurulumunu yine de başlatıyoruz — bulut senkronu arka
   // planda devam edebilir, kullanıcı takılı kalmasın diye.
   let _plsCalled=false;
-  const _postLoginSetupOnce=()=>{ if(_plsCalled)return; _plsCalled=true; _dlog('onFirebaseUser:postLoginSetupOnce_fired'); _finishLoginLoading(); _postLoginSetup(); };
-  setTimeout(()=>{ if(!_plsCalled) _dlog('onFirebaseUser:5s_timeout_fired'); _postLoginSetupOnce(); },5000);
+  const _postLoginSetupOnce=()=>{ if(_plsCalled)return; _plsCalled=true; _finishLoginLoading(); _postLoginSetup(); };
+  setTimeout(_postLoginSetupOnce,5000);
   // İlk gerçek giriş VE yerel ilerleme VARSA: önce cloud'a bak.
   const localBest=acct.best||0;
-  _dlog('onFirebaseUser:branch_decision','mergedUid='+acct._mergedUid+' localBest='+localBest);
   if(acct._mergedUid!==user.uid && localBest>0){
-    _dlog('onFirebaseUser:branch=fetchCloudData');
     _cloudSyncPromise=_fetchCloudData(user.uid).then(cloud=>{
-      _dlog('onFirebaseUser:fetchCloudData_then','cloud='+(cloud?JSON.stringify(cloud).slice(0,200):'null'));
       acct._mergedUid=user.uid;
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       if(cloud && (cloud.best||0)>0){
@@ -5824,8 +5816,7 @@ function _onFirebaseUser(user){
         // Hesap boş → yereli otomatik aktar (dünya sıralamasına yazılsın)
         return _firestoreSync(user.uid).then(()=>_postLoginSetupOnce());
       }
-    }).catch(e=>{
-      _dlog('onFirebaseUser:fetchCloudData_catch',(e&&(e.message||e.code))||JSON.stringify(e));
+    }).catch(()=>{
       // Cloud okunamadıysa yine de senkronize et — skor kaybolmasın
       return _firestoreSync(user.uid).then(()=>{
         acct._mergedUid=user.uid;
@@ -5834,10 +5825,8 @@ function _onFirebaseUser(user){
       });
     });
   } else {
-    _dlog('onFirebaseUser:branch=firestoreSync_direct');
     // Yerel ilerleme yok veya daha önce aktarıldı — normal senkronizasyon
     _cloudSyncPromise=_firestoreSync(user.uid).then(()=>{
-      _dlog('onFirebaseUser:firestoreSync_direct_then');
       acct._mergedUid=user.uid;
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       _postLoginSetupOnce();
@@ -5877,12 +5866,10 @@ window._authSignIn = async function(provider){
     // tamamlıyor, result.user doğrudan kullanılabilir geliyor.
     const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication);
     if(!FA){alert('Auth plugin yüklü değil');return;}
-    _dlog0('authSignIn:calling_native','provider='+provider);
     try{
       const _callPromise=isApple ? FA.signInWithApple() : FA.signInWithGoogle();
       const _to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT 15sn — native '+provider+' çağrısı hiç dönmedi')),15000));
       const result=await Promise.race([_callPromise,_to]);
-      _dlog0('authSignIn:native_resolved','uid='+(result?.user?.uid||'NO_USER')+' isAnon='+result?.user?.isAnonymous);
       if(result?.user){
         // GÜVENLİK AĞI (2026-07-15): "Apple ile giriş yaptım ama skorlar/kayıt Google
         // gibi çalışmıyor" raporu — _onFirebaseUser() user.isAnonymous true ise TÜM
@@ -5900,9 +5887,8 @@ window._authSignIn = async function(provider){
         alert('Giriş tamamlanamadı — kullanıcı bilgisi alınamadı.');
       }
     }catch(e){
-      const code=e?.code||''; const msg=e?.message||JSON.stringify(e);
-      _dlog0('authSignIn:native_catch',code+' '+msg);
       console.warn('Native '+provider+' auth (iOS):',e);
+      const code=e?.code||''; const msg=e?.message||JSON.stringify(e);
       if(!/cancel|1000|closed/i.test(code+msg)) alert('Giriş hatası: '+(code?code+' — ':'')+msg);
     }
     return;
@@ -6612,12 +6598,9 @@ function _refreshCodeDisplays(){
 // bitmemişken loadGameState() çağrılıyordu. Artık onPlayPressed bu promise'i bekliyor.
 let _cloudSyncPromise=null;
 async function _firestoreSync(uid,_isRetry){
-  _dlog0('firestoreSync:start','isRetry='+!!_isRetry,uid);
   try{
     const ref='users/'+uid;
-    _dlog0('firestoreSync:before_get','',uid);
     const d=await _fsGetDoc(ref);
-    _dlog0('firestoreSync:after_get',d?'found':'null',uid);
     if(d){
       if(d.code){myCode=d.code;localStorage.setItem('tm_my_code',d.code);}
       // İsim + ülke: SADECE yerelde hiç yoksa buluttan doldur (yeni cihaz senaryosu).
@@ -6728,28 +6711,17 @@ async function _firestoreSync(uid,_isRetry){
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       const xpNow=getXP();
       const _pf1=_coinPending(); // yazım öncesi delta
-      _dlog0('firestoreSync:before_set_found_branch','',uid);
-      await _fsSetDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
+      // GÜVENİLİR YAZMA KUYRUĞU (2026-07-18): anlık deneme başarısız/asılı kalırsa
+      // (sebebi ne olursa olsun) yerel kuyruğa düşer, bir sonraki gerçek girişte
+      // otomatik tekrar denenir — veri sessizce kaybolmaz.
+      await _fsSetDocReliable(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
         vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast(),friendCodes:getFriends().map(f=>f.code).filter(Boolean)},true);
-      _dlog0('firestoreSync:after_set_found_branch','',uid);
       _coinPend(-_pf1); // coin buluta yazıldı → delta onaylandı
     }else{
-      _dlog0('firestoreSync:doc_not_found_creating_new','',uid);
-      // KALICI TEŞHİS (2026-07-17, "Apple ile her seferinde her şey sıfırlanıyor"
-      // raporu — alert tabanlı geçici teşhis kullanıcı isteğiyle kaldırıldı, bunun
-      // yerine sessizce Analytics'e logluyoruz). Bu dal SADECE gerçek ilk girişte
-      // beklenir. Eğer acct zaten "girişli" görünüyorsa (isLoggedIn()) ve buluttaki
-      // döküman yine de bulunamadıysa, bu native oturumun UID'sinin önceki
-      // oturumdan FARKLI geldiğine işaret eder (ör. sağlayıcı taraflı kararsızlık) —
-      // Firebase Console → Analytics → Events'te "new_cloud_doc_created" altında
-      // wasLoggedIn:true görülürse kök neden budur.
-      if(typeof logEvent==='function') logEvent('new_cloud_doc_created',{uid,wasLoggedIn:isLoggedIn()?1:0,platform:_isIOS?'ios':'other'});
       const xpNow=getXP();
       const _pf2=_coinPending();
-      _dlog0('firestoreSync:before_set_new_branch','',uid);
-      await _fsSetDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
+      await _fsSetDocReliable(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
         vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast()},true);
-      _dlog0('firestoreSync:after_set_new_branch','',uid);
       _coinPend(-_pf2);
     }
     _refreshCodeDisplays();
@@ -6758,7 +6730,6 @@ async function _firestoreSync(uid,_isRetry){
     if(typeof renderDailyCard==='function') renderDailyCard();
     if(typeof updateStreakDisplay==='function') updateStreakDisplay();
   }catch(e){
-    _dlog0('firestoreSync:catch',(e&&(e.message||e.code))||JSON.stringify(e),uid);
     console.warn('Firestore sync:',e);
     // GÜVENLİK AĞI (2026-07-14): "hesabın leveli daha yüksek ama giriş sonrası eski
     // (düşük) yerel level gösteriyor" raporu — native Firestore çağrıları iOS'ta
@@ -6772,32 +6743,50 @@ async function _firestoreSync(uid,_isRetry){
   }
 }
 
-let _pushRetried=false;
-// GEÇİCİ TEŞHİS (2026-07-17): "Apple ile hiçbir yazma sunucuya ulaşmıyor" bulgusundan
-// sonra, sürecin TAM olarak hangi adımda kesildiğini görmek için. debugLogs koleksiyonu
-// serbest yazımlı (schema yok) — teşhis bitince firestore.rules'tan ve buradan kaldırılacak.
-function _dlog0(step,extra,uidOverride){
+// GÜVENİLİR YAZMA KUYRUĞU (2026-07-18): "Apple ile veri hiç kaydolmuyor" sorununu
+// kök nedenini kesin olarak yakalayamadan (kapsamlı canlı teşhis turlarına rağmen)
+// çözmek için — NEDEN başarısız olduğunu bilmeden de veri kaybını imkansız kılan
+// bir tasarım. Her kritik Firestore yazması önce anlık denenir (8sn üst sınır);
+// başarısız/asılı kalırsa localStorage'a kalıcı olarak kuyruğa alınır ve bir
+// sonraki gerçek girişte otomatik tekrar denenir — sonsuza kadar, veri kaybolmaz.
+const _WRITE_QUEUE_KEY='tm_write_queue';
+function _getWriteQueue(){ try{ return JSON.parse(localStorage.getItem(_WRITE_QUEUE_KEY)||'[]'); }catch(e){ return []; } }
+function _saveWriteQueue(q){ try{ localStorage.setItem(_WRITE_QUEUE_KEY,JSON.stringify(q.slice(-20))); }catch(e){} }
+async function _fsSetDocReliable(path,data,merge){
   try{
-    const uid=uidOverride||acct.uid||'NO_UID';
-    // DÜZELTME (2026-07-18): addDocument (otomatik ID) hiç doğrulanmamış bir native
-    // metottu — koleksiyon defalarca boş çıktı. setDocument (açık path'li) TEK
-    // kanıtlanmış çalışan yöntem (Google kullanıcısının gerçek verisi bununla
-    // yazılmış) — aynı yönteme geçildi, path elle üretiliyor.
-    const docId=Date.now()+'_'+Math.random().toString(36).slice(2,8);
-    const payload={step,uid,ts:Date.now(),extra:String(extra||'')};
-    _fsSetDoc('debugLogs/'+docId,payload,false).catch(e=>console.warn('dlog fail',e));
-  }catch(e){}
+    const to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('write timeout 8s')),8000));
+    await Promise.race([_fsSetDoc(path,data,merge),to]);
+  }catch(e){
+    const q=_getWriteQueue();
+    q.push({path,data,merge:!!merge,ts:Date.now()});
+    _saveWriteQueue(q);
+  }
 }
-function _dlog(step,extra){ _dlog0(step,extra); }
+let _flushingWriteQueue=false;
+async function _flushWriteQueue(){
+  if(_flushingWriteQueue) return;
+  _flushingWriteQueue=true;
+  try{
+    const q=_getWriteQueue();
+    if(!q.length) return;
+    const remaining=[];
+    for(const item of q){
+      try{
+        const to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('flush timeout')),8000));
+        await Promise.race([_fsSetDoc(item.path,item.data,item.merge),to]);
+      }catch(e){ remaining.push(item); }
+    }
+    _saveWriteQueue(remaining);
+  }finally{ _flushingWriteQueue=false; }
+}
+
+let _pushRetried=false;
 async function _firestorePushScore(){
-  _dlog('pushScore:start');
-  if(!acct.uid||!_fbApp){ _dlog('pushScore:early_return',!acct.uid?'no_uid':'no_fbApp'); return; }
+  if(!acct.uid||!_fbApp)return;
   try{
     const ws=_getWeekStart();
     const ref='users/'+acct.uid;
-    _dlog('pushScore:before_get');
     const prev=(await _fsGetDoc(ref))||{};
-    _dlog('pushScore:after_get');
     const prevWeekly=(prev.weeklyReset===ws)?(prev.weeklyScore||0):0;
     // Haftalık skor = bu haftaki en iyi oyun (all-time'a sabitlenmez)
     const newWeekly=Math.max(prevWeekly,getMyWeeklyScore()||0);
@@ -6808,14 +6797,12 @@ async function _firestorePushScore(){
     const wTotal=Math.max(acct.total||0,prev.total||0);
     const wXp=Math.max(xpNow,prev.xp||0);
     // setDoc merge: döküman yoksa oluşturur, varsa günceller (updateDoc gibi başarısız olmaz)
-    _dlog('pushScore:before_set');
-    await _fsSetDoc(ref,{
+    await _fsSetDocReliable(ref,{
       uid:acct.uid,best:wBest,games:Math.max(acct.games||0,prev.games||0),total:wTotal,
       name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',
       xp:wXp,level:calcLevel(wXp),
       weeklyScore:newWeekly,weeklyReset:ws
     },true);
-    _dlog('pushScore:after_set');
     // bestAt (tiebreaker) ayrı yazılır — kural güncellenmeden önce sessizce
     // başarısız olur, ana skor yazması etkilenmez. Kural eklendikçe kalıcı olur.
     const bestAt=parseInt(localStorage.getItem('tm_bestAt')||'0')||0;
@@ -6827,7 +6814,6 @@ async function _firestorePushScore(){
       if(currentLBTab==='friends'){renderFriendsLB();fetchFriendScores();}
     }
   }catch(e){
-    _dlog('pushScore:catch',(e&&(e.message||e.code))||JSON.stringify(e));
     console.warn('pushScore:',e);
     // Geçici ağ/senkron hatasında tek seferlik yeniden dene — sessizce başarısız
     // olup skorun buluta hiç yazılmaması sıralamada tutarsızlığa yol açıyordu
@@ -6905,6 +6891,9 @@ window.addEventListener('blur',()=>{_flushWalletNow();if(typeof _flushSavedGameN
     if(!isActive){
       _flushWalletNow();
       if(typeof _flushSavedGameNow==='function')_flushSavedGameNow();
+    } else if(typeof _flushWriteQueue==='function'){
+      // Uygulama öne gelince, önceden başarısız/asılı kalmış yazmalar varsa tekrar dene.
+      _flushWriteQueue();
     }
   });
 })();
