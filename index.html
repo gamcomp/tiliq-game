@@ -5439,7 +5439,7 @@ const _nativeAuthReadyPromise=new Promise(r=>{_nativeAuthReadyResolve=r;});
 async function initFirebaseAuth(){
   try{
     const {initializeApp,getApps}=await import('./assets/firebase/firebase-app.js');
-    const {getAuth,onAuthStateChanged,getRedirectResult,signInAnonymously}=await import('./assets/firebase/firebase-auth.js');
+    const {getAuth,onAuthStateChanged,getRedirectResult}=await import('./assets/firebase/firebase-auth.js');
     if(!getApps().length) _fbApp=initializeApp(FB_CONFIG);
     else _fbApp=getApps()[0];
     _fbAuth=getAuth(_fbApp);
@@ -5475,23 +5475,15 @@ async function initFirebaseAuth(){
       const result=await Promise.race([getRedirectResult(_fbAuth),_redirTimeout]);
       if(result?.user) _onFirebaseUser(result.user);
     }catch(e){ console.warn('Redirect result:',e); }
-    // Giriş yoksa anonim oturum aç — dünya sıralamasını okuyabilmek için
-    // (Firestore kuralı: allow read if request.auth != null). Anonim oturum
-    // gerçek giriş sayılmaz; arkadaş sistemi yine Google hesabı ister.
-    // KRİTİK DÜZELTME (2026-07-13): Firebase'in signInAnonymously()'si, ZATEN
-    // gerçek bir sağlayıcıyla (Apple/Google) oturum açık olsa bile KOŞULSUZ çalışır
-    // ve mevcut oturumun yerine YENİ bir anonim oturum kurar — "giriş yoksa" kontrolü
-    // olmadan bu, her uygulama açılışında (initFirebaseAuth her başlangıçta çalışır)
-    // Apple/Google ile açılmış NATIVE oturumu sessizce anonim oturuma çeviriyordu.
-    // Sonuç: acct.uid (yerelde kayıtlı gerçek UID) ile native oturumun UID'si
-    // uyuşmuyordu, Firestore kuralı (request.auth.uid == uid) TÜM bulut yazmalarını
-    // reddediyordu — "Apple ile giriş yaptıktan sonra hiçbir şey kaydetmiyor" raporu
-    // buradan geliyordu. Artık SADECE gerçekten giriş yapılmamışsa (isLoggedIn()
-    // false) anonim oturum açılıyor; zaten gerçek girişi olan kullanıcının native
-    // oturumuna hiç dokunulmuyor.
-    if((!_fbAuth.currentUser || _isIOS) && !isLoggedIn()){
-      try{ await _fbAnonSignIn(); }catch(e){ console.warn('Anon auth:',e); }
-    }
+    // ANONİM OTURUM TAMAMEN KALDIRILDI (2026-07-17, kullanıcı isteği): Giriş duvarı
+    // zaten TÜM ekranı kaplayan bir overlay (#login-gate, z-index:400) — gerçek girişi
+    // olmayan kullanıcı hiçbir şeye (sıralama dahil) dokunamıyor, yani anonim oturumun
+    // "dünya sıralamasını okuyabilme" amacı bugün hiç kullanılmıyor. Bunun yanında
+    // anonim girişin, henüz tamamlanmamış bir interaktif Apple/Google girişiyle aynı
+    // native Auth.auth() oturumu ve plugin'in TEK PAYLAŞILAN savedCall referansı
+    // üzerinde YARIŞMASI ("Apple ile giriş yaptıktan sonra hiçbir şey kaydetmiyor" /
+    // "Apple oturumlarının hafızası yok" raporlarının en olası ortak kök nedeni) artık
+    // mümkün değil — bu çağrı sınıfı tamamen kaldırıldı.
     // KÖK NEDEN (2026-07-15, ikinci tur — "hesap değiştirirken/başka cihazda oynanan
     // ilerleme çok geç yansıyor" raporu): yukarıdaki yorum "zaten gerçek girişi olan
     // kullanıcının native oturumuna hiç dokunulmuyor" diyordu — bu SADECE anonim girişin
@@ -5855,24 +5847,7 @@ async function _waitForCapPlugin(getter,timeoutMs){
   return getter();
 }
 
-// Misafir/anonim oturum — dünya sıralamasını okuyabilmek için (Firestore kuralı:
-// allow read if request.auth != null). iOS'ta Firestore okumaları NATIVE eklenti
-// üzerinden gidiyor (bkz. _fsGetDoc/_fsQueryCollection) — bu da NATIVE Firebase Auth
-// oturumuna bakar, JS SDK'nın _fbAuth.currentUser'ına değil. JS SDK'nın kendi
-// signInAnonymously()'si zaten iOS'ta WKWebView ağ sorunuyla askıda kalabiliyordu
-// (bkz. _authSignIn notu), üstelik başarılı olsa bile native oturumu KURMUYORDU —
-// bu yüzden giriş duvarı kaldırıldıktan sonra (2026-07-13) misafir kullanıcılarda
-// hiç native oturum oluşmuyor, dünya sıralaması "izin yok" ile sessizce boş kalıyordu.
-// Artık iOS'ta native anonim girişi kullanıyoruz.
-async function _fbAnonSignIn(){
-  if(_isIOS && window.Capacitor?.isNativePlatform?.()){
-    const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication,5000);
-    if(FA) await FA.signInAnonymously();
-    return;
-  }
-  const {signInAnonymously}=await import('./assets/firebase/firebase-auth.js');
-  if(_fbAuth && !_fbAuth.currentUser) await signInAnonymously(_fbAuth);
-}
+// _fbAnonSignIn() TAMAMEN KALDIRILDI (2026-07-17) — bkz. initFirebaseAuth'taki not.
 
 window._authSignIn = async function(provider){
   const _isNative=!!window.Capacitor?.isNativePlatform?.();
@@ -6048,8 +6023,6 @@ window._authSignOut = async function(){
     if(FA) await FA.signOut();
   }catch(e){}
   try{ const RC=_getRC(); if(RC&&_rcReady) await RC.logOut(); }catch(e){}
-  // Çıkıştan sonra anonim oturuma dön — dünya sıralaması okunabilir kalsın
-  try{ await _fbAnonSignIn(); }catch(e){}
 };
 
 // ── REVENUECAT IAP ───────────────────────────────────────────────────────────
