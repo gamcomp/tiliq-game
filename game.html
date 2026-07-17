@@ -1919,13 +1919,16 @@ async function saveProfileSetup(){
   // oluşturuyor/güncelliyor. İlk hiç giriş yapılmamış hesapta setupDone yazması bundan
   // ÖNCE (race) yetişirse, döküman henüz yokken SADECE setupDone içeren bir create
   // denemesi olur — _validUser create'te name/code/best'i ZORUNLU kıldığı için reddedilir.
+  _dlog('saveProfileSetup:before_pushScore');
   await _firestorePushScore();
+  _dlog('saveProfileSetup:after_pushScore');
   // DÜZELTME (2026-07-17, "Apple ile her seferinde profili tamamla tekrar çıkıyor"
   // raporu): bu yazma önceden AWAIT EDİLMİYORDU (fire-and-forget) — kullanıcı profili
   // kaydedip modal kapanır kapanmaz uygulamayı kapatırsa (test sırasında sık yapılan
   // bir şey), ağ isteği tamamlanmadan süreç sonlanabiliyor, bir dahaki girişte
   // setupDone buluta hiç yazılmamış oluyordu. Artık modal kapanmadan ÖNCE bekleniyor.
-  try{ await _fsSetDoc('users/'+acct.uid,{setupDone:true},true); }catch(e){}
+  try{ await _fsSetDoc('users/'+acct.uid,{setupDone:true},true); _dlog('saveProfileSetup:setupDone_ok'); }
+  catch(e){ _dlog('saveProfileSetup:setupDone_catch',(e&&(e.message||e.code))||JSON.stringify(e)); }
   document.getElementById('modal-profile-setup').classList.remove('active');
 }
 
@@ -6748,12 +6751,27 @@ async function _firestoreSync(uid,_isRetry){
 }
 
 let _pushRetried=false;
+// GEÇİCİ TEŞHİS (2026-07-17): "Apple ile hiçbir yazma sunucuya ulaşmıyor" bulgusundan
+// sonra, sürecin TAM olarak hangi adımda kesildiğini görmek için. debugLogs koleksiyonu
+// serbest yazımlı (schema yok) — teşhis bitince firestore.rules'tan ve buradan kaldırılacak.
+function _dlog(step,extra){
+  try{
+    const uid=acct.uid||'NO_UID';
+    const N=_fsNative();
+    const payload={step,uid,ts:Date.now(),extra:String(extra||'')};
+    if(N){ N.addDocument({reference:'debugLogs',data:payload}).catch(e=>console.warn('dlog fail',e)); }
+    else{ import('./assets/firebase/firebase-firestore.js').then(({getFirestore,collection,addDoc})=>{ addDoc(collection(getFirestore(_fbApp),'debugLogs'),payload).catch(()=>{}); }); }
+  }catch(e){}
+}
 async function _firestorePushScore(){
-  if(!acct.uid||!_fbApp)return;
+  _dlog('pushScore:start');
+  if(!acct.uid||!_fbApp){ _dlog('pushScore:early_return',!acct.uid?'no_uid':'no_fbApp'); return; }
   try{
     const ws=_getWeekStart();
     const ref='users/'+acct.uid;
+    _dlog('pushScore:before_get');
     const prev=(await _fsGetDoc(ref))||{};
+    _dlog('pushScore:after_get');
     const prevWeekly=(prev.weeklyReset===ws)?(prev.weeklyScore||0):0;
     // Haftalık skor = bu haftaki en iyi oyun (all-time'a sabitlenmez)
     const newWeekly=Math.max(prevWeekly,getMyWeeklyScore()||0);
@@ -6764,12 +6782,14 @@ async function _firestorePushScore(){
     const wTotal=Math.max(acct.total||0,prev.total||0);
     const wXp=Math.max(xpNow,prev.xp||0);
     // setDoc merge: döküman yoksa oluşturur, varsa günceller (updateDoc gibi başarısız olmaz)
+    _dlog('pushScore:before_set');
     await _fsSetDoc(ref,{
       uid:acct.uid,best:wBest,games:Math.max(acct.games||0,prev.games||0),total:wTotal,
       name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',
       xp:wXp,level:calcLevel(wXp),
       weeklyScore:newWeekly,weeklyReset:ws
     },true);
+    _dlog('pushScore:after_set');
     // bestAt (tiebreaker) ayrı yazılır — kural güncellenmeden önce sessizce
     // başarısız olur, ana skor yazması etkilenmez. Kural eklendikçe kalıcı olur.
     const bestAt=parseInt(localStorage.getItem('tm_bestAt')||'0')||0;
@@ -6781,6 +6801,7 @@ async function _firestorePushScore(){
       if(currentLBTab==='friends'){renderFriendsLB();fetchFriendScores();}
     }
   }catch(e){
+    _dlog('pushScore:catch',(e&&(e.message||e.code))||JSON.stringify(e));
     console.warn('pushScore:',e);
     // Geçici ağ/senkron hatasında tek seferlik yeniden dene — sessizce başarısız
     // olup skorun buluta hiç yazılmaması sıralamada tutarsızlığa yol açıyordu
