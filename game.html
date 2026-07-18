@@ -859,7 +859,7 @@ input[type="text"]::placeholder{color:var(--dim);}
     </div>
     <div id="gate-error" style="display:none">
       <p class="gate-msg" style="margin-top:14px;color:#FF8A65" data-t="gateSyncError">Hesap yüklenemedi. Bağlantını kontrol edip tekrar dene.</p>
-      <button class="auth-btn" style="margin-top:10px" onclick="window._retryAccountSync()"><span data-t="gateRetry">Tekrar Dene</span></button>
+      <button class="auth-btn auth-btn-signout" style="margin-top:10px" onclick="window._retryAccountSync()"><span data-t="gateRetry">Tekrar Dene</span></button>
     </div>
   </div>
 </div>
@@ -6062,6 +6062,15 @@ function _resetToGuestState(){
   if(typeof initAuthUI==='function') initAuthUI();
 }
 window._authSignOut = async function(){
+  // HIZLI GEÇİŞ (2026-07-18, "çıkınca giriş ekranına daha hızlı geç" isteği): buluta
+  // gönderme (özellikle artık 8sn'ye kadar sürebilen güvenilir yazma kuyruğuyla)
+  // ekranın değişmesini BLOKLUYORDU — kullanıcı birkaç saniye boyunca hiçbir tepki
+  // görmüyordu. Giriş duvarı artık en başta, veri gönderimi beklenmeden "çıkış
+  // yapılıyor" durumuyla HEMEN gösteriliyor; asıl veri güvenliği sırası (önce buluta
+  // gönder, SONRA yerel sıfırla) değişmedi, sadece kullanıcı bunu artık beklemiyor.
+  const g=document.getElementById('login-gate');
+  if(g) g.classList.add('show');
+  _showGateSyncing();
   // KRİTİK: sıfırlamadan ÖNCE mevcut ilerlemeyi buluta KESİN olarak gönder.
   // Önceden sıfırlama önce yapılıyordu; buluttaki veri (senkron gecikmesi
   // yüzünden) yerelden eskiyse, yereli sıfırlayıp sonra buluttaki eski veriyi
@@ -6079,6 +6088,7 @@ window._authSignOut = async function(){
   // sıfırlanmamış oluyordu — "çıkış yapmıyor" raporu buradan geliyordu. Artık
   // yerel sıfırlama garanti; SDK temizliği en iyi çaba olarak arkada kalabilir.
   _resetToGuestState();
+  _finishLoginLoading(); // "çıkış yapılıyor" durumundan gerçek giriş butonlarına dön
   try{
     if(_fbAuth) await _fbAuth.signOut();
   }catch(e){}
