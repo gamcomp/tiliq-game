@@ -91,6 +91,13 @@ body::after{
 @keyframes splashIn{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:none;}}
 @keyframes splashBounce{from{transform:translateY(0) scale(1);}to{transform:translateY(-10px) scale(1.06);}}
 @keyframes splashLoad{0%{width:0%;}70%{width:80%;}100%{width:100%;}}
+/* Süresi belirsiz senkron göstergesi (hesap yükleniyor) — gerçek ilerlemeyi
+   bilmediğimiz için sahte bir yüzde göstermek yerine sürekli kayan bir
+   bant kullanılıyor (standart "indeterminate" desen). */
+.splash-bar-indeterminate{height:100%;width:40%;border-radius:4px;
+  background:linear-gradient(90deg,#5B8DB8,#D4A843);
+  animation:splashIndeterminate 1.3s ease-in-out infinite;}
+@keyframes splashIndeterminate{0%{transform:translateX(-100%);}100%{transform:translateX(250%);}}
 
 /* ── LANG SELECT ── */
 #screen-lang{background:var(--bg);justify-content:center;align-items:center;padding:32px 24px;gap:0;}
@@ -447,8 +454,6 @@ body::after{
 #bomb-btn.ready #bomb-icon{border-color:rgba(255,159,67,.7);box-shadow:inset 0 1px 2px rgba(255,255,255,.1),0 0 10px rgba(255,159,67,.55);animation:bombReadyBreathe 1.8s ease-in-out infinite;}
 @keyframes bombReadyBreathe{0%,100%{box-shadow:inset 0 1px 2px rgba(255,255,255,.1),0 0 8px rgba(255,159,67,.4);}50%{box-shadow:inset 0 1px 2px rgba(255,255,255,.1),0 0 16px rgba(255,159,67,.75);}}
 #bomb-cnt{background:rgba(255,159,67,.22);border-radius:8px;padding:0 5px;font-weight:900;}
-#undo-btn{border-color:rgba(86,207,225,.4);}
-#undo-btn:not(:disabled){background:rgba(86,207,225,.1);}
 
 #game-container{position:relative;flex-shrink:0;}
 #gameCanvas{display:block;cursor:pointer;transition:box-shadow .35s ease;}
@@ -854,8 +859,12 @@ input[type="text"]::placeholder{color:var(--dim);}
          ekranı açılsın, dolunca oyun açılsın" (eski hesabın verisiyle bir anlığına
          bile olsa menü görünmesin). -->
     <div id="gate-syncing" style="display:none">
-      <div class="splash-bar-wrap" style="margin-top:18px"><div class="splash-bar" style="animation:none;width:70%"></div></div>
+      <div class="splash-bar-wrap" style="margin-top:18px"><div class="splash-bar-indeterminate"></div></div>
       <p class="gate-msg" style="margin-top:14px" data-t="gateSyncing">Hesap yükleniyor…</p>
+    </div>
+    <div id="gate-error" style="display:none">
+      <p class="gate-msg" style="margin-top:14px;color:#FF8A65" data-t="gateSyncError">Hesap yüklenemedi. Bağlantını kontrol edip tekrar dene.</p>
+      <button class="auth-btn auth-btn-signout" style="margin-top:10px" onclick="window._retryAccountSync()"><span data-t="gateRetry">Tekrar Dene</span></button>
     </div>
   </div>
 </div>
@@ -1414,18 +1423,18 @@ input[type="text"]::placeholder{color:var(--dim);}
 <script>
 // ── TRANSLATIONS ─────────────────────────────────────────────────────────────
 const T={
-TR:{gateMsg:'Oturum aç',gateSyncing:'Hesap yükleniyor…',appName:'Tiliq',play:'Oyna',timeAttack:'⏱ Zaman Yarışı',time:'Süre',timeUp:'Süre Doldu!',settings:'Ayarlar',account:'Hesap',leaderboard:'Sıralama',score:'Skor',best:'En İyi',combo:'Kombo',sound:'Ses',volume:'Ses Seviyesi',haptic:'Titreşim',theme:'Tema',dark:'Koyu',light:'Açık',language:'Dil',save:'Kaydet',close:'Kapat',back:'Geri',gameOver:'Oyun Bitti!',playAgain:'Tekrar Oyna',mainMenu:'Ana Menü',yourScore:'Skorun',worldRank:'Dünya Sıralaması',newRecord:'🎉 Yeni Rekor!',profile:'Profil',username:'Kullanıcı Adı',highScore:'En Yüksek',gamesPlayed:'Oyun',totalPoints:'Toplam',worldBoard:'🌍 Dünya Sıralaması',yourRank:'Sıran',yourScoreLb:'Skorun',guest:'Misafir',days:'Gün',undo:'Geri Al',bomb:'Bomba',rescue:'Kurtarma',
+TR:{gateMsg:'Oturum aç',gateSyncing:'Hesap yükleniyor…',gateSyncError:'Hesap yüklenemedi. Bağlantını kontrol edip tekrar dene.',gateRetry:'Tekrar Dene',appName:'Tiliq',play:'Oyna',timeAttack:'⏱ Zaman Yarışı',time:'Süre',timeUp:'Süre Doldu!',settings:'Ayarlar',account:'Hesap',leaderboard:'Sıralama',score:'Skor',best:'En İyi',combo:'Kombo',sound:'Ses',volume:'Ses Seviyesi',haptic:'Titreşim',theme:'Tema',dark:'Koyu',light:'Açık',language:'Dil',save:'Kaydet',close:'Kapat',back:'Geri',gameOver:'Oyun Bitti!',playAgain:'Tekrar Oyna',mainMenu:'Ana Menü',yourScore:'Skorun',worldRank:'Dünya Sıralaması',newRecord:'🎉 Yeni Rekor!',profile:'Profil',username:'Kullanıcı Adı',highScore:'En Yüksek',gamesPlayed:'Oyun',totalPoints:'Toplam',worldBoard:'🌍 Dünya Sıralaması',yourRank:'Sıran',yourScoreLb:'Skorun',guest:'Misafir',days:'Gün',undo:'Geri Al',bomb:'Bomba',rescue:'Kurtarma',
 m_combos:'5 Kombo Al',m_rows:'5 Satır Temizle',m_score:'500 Puan Kazan',dailyMissions:'Günlük Görevler',
-store:'Mağaza',continueGame:'Devam Et',editProfile:'Profili Düzenle →',comboExpired:'Kombo Bitti',dailyClaimed:'BUGÜN TOPLANDΙ',dailyRefresh:'Yarın yenilenir',dailyCollect:'Topla!',iapSoon:'Satın alma yakında aktif olacak!',iapSuccess:'Satın alma başarılı!',restored:'Satın almalar geri yüklendi.',copyCode:'Kopyala',codeCopied:'Kopyalandı!',yourCode:'Oyuncu Kodun',codeShare:'Bu kodu arkadaşlarına ver',friendsTitle:'Arkadaşlarım',addFriend:'Arkadaş Ekle',enterName:'Sıralamada görünmek için adın ne?',namePh:'Takma adın...',rescue2ad:'2 kısa reklam izle, devam et',superBomb:'Süper Bomba',tileTheme:'Karo Teması',loginForRank:'Sıralama için giriş yap',loginForFriends:'Arkadaşların için Google ile giriş yap',friendCodePh:'ABC123',friendCodeLbl:'Oyuncu Kodun',friendCodeSub:'Bu kodu arkadaşlarına ver 👇',rankTitle:'🏆 Sıralama',
-tabThemes:'🎨 Temalar',tabPower:'⚡ Güçler',tabVip:'👑 VIP',comboSection:'🔥 Combo Temaları',flameClassic:'Klasik Ateş',flameClassicD:'Sıcak turuncu alev',flameIce:'Buz Alevi',flameIceD:'Soğuk mavi ateş',flameEmerald:'Zümrüt Alevi',flameEmeraldD:'Yeşil büyü ateşi',flameMystic:'Mistik Alev',flameMysticD:'Mor-pembe sihir',flameGold:'Altın Alev',flameGoldD:'Kraliyet ateşi',rowsShort:'SATIR',selectCountry:'Seç...',
+store:'Mağaza',continueGame:'Devam Et',editProfile:'Profili Düzenle →',comboExpired:'Kombo Bitti',dailyClaimed:'BUGÜN TOPLANDΙ',dailyRefresh:'Yarın yenilenir',dailyCollect:'Topla!',restored:'Satın almalar geri yüklendi.',copyCode:'Kopyala',codeCopied:'Kopyalandı!',yourCode:'Oyuncu Kodun',codeShare:'Bu kodu arkadaşlarına ver',friendsTitle:'Arkadaşlarım',addFriend:'Arkadaş Ekle',enterName:'Sıralamada görünmek için adın ne?',namePh:'Takma adın...',rescue2ad:'2 kısa reklam izle, devam et',superBomb:'Süper Bomba',tileTheme:'Karo Teması',loginForRank:'Sıralama için giriş yap',loginForFriends:'Arkadaşların için Google ile giriş yap',friendCodePh:'ABC123',friendCodeLbl:'Oyuncu Kodun',friendCodeSub:'Bu kodu arkadaşlarına ver 👇',rankTitle:'🏆 Sıralama',
+tabThemes:'🎨 Temalar',tabPower:'⚡ Güçler',comboSection:'🔥 Combo Temaları',flameClassic:'Klasik Ateş',flameClassicD:'Sıcak turuncu alev',flameIce:'Buz Alevi',flameIceD:'Soğuk mavi ateş',flameEmerald:'Zümrüt Alevi',flameEmeraldD:'Yeşil büyü ateşi',flameMystic:'Mistik Alev',flameMysticD:'Mor-pembe sihir',flameGold:'Altın Alev',flameGoldD:'Kraliyet ateşi',rowsShort:'SATIR',selectCountry:'Seç...',
 tabGlobal:'🌍 Dünya',tabTimeAttack:'⏱ Süre',tabFriends:'👥 Arkadaşlar',lbShare:'Paylaş',lbMyCode:'Kodun',lbAmongFriends:'Arkadaşlar Arasında',
 statLast:'Son Skor',statGames:'Oyun',statBest:'En İyi',statStreak:'Seri',dailyBonus:'GÜNLÜK BONUS',tomorrow:'Yarın',dailyRewardsTitle:'Günlük Ödüller',dailyView:'Gör',dailyDay:'Gün',dailyNote:'Her gün gir, ödülünü topla! Bir günü kaçırırsan seri sıfırlanır.',dailyClaimedToday:'Bugün Toplandı ✓',mergeTitle:'İlerlemeni Aktar?',mergeDesc:'Bu cihazdaki ilerlemeyi hesabına aktaralım mı? Hayır dersen hesabındaki mevcut veriler kullanılır.',mergeYes:'Evet, Aktar',mergeNo:'Hayır, Hesabı Kullan',inventory:'Envanter',invCoins:'Coin',invBombs:'Bomba',invUndos:'Geri Al',invThemes:'Tema',invBoost:'XP',
 storeTitle:'🛍️ Mağaza',syncDesc:'Skorunu buluta kaydet, her cihazdan eriş',accountConn:'✅ Hesabına bağlısın',maxLevel:'👑 Maksimum seviye!',
 freeSection:'Ücretsiz',premiumSection:'Premium Temalar',powerSection:'Güçlendiriciler',coinSection:'Coin Paketleri',
 badgeActive:'AKTİF',badgeOwned:'SAHİPSİN',badgeFree:'ÜCRETSİZ',btnActive:'✓ Aktif',btnApply:'Uygula',btnUnlock:'Aç',
-vipTitle:'VIP Üyelik',vipMonthly:'$8 / ay',vipPerk1:'🚫 Tamamen reklamsız deneyim',vipPerk2:'🪙 Her hafta 200 ücretsiz coin',vipPerk3:'⚡ Her oyun 2× XP kazanırsın',vipPerk4:'🏆 Altın çerçeve + özel rozet',vipPerk5:'💣 Her gün 1 ücretsiz bomba',vipPerk6:'🎨 Tüm temalar açık',vipStart:'Şimdi Başla',noAdsTitle:'🚫 Reklamsız',noAdsDesc:'Tek seferlik satın al, sonsuza dek reklam görmezsin',noAdsBuy:'$20 — Reklamları Kaldır',restoreBtn:'↺ Satın Almaları Geri Yükle',
+
 thClassic:'Klasik',thClassicD:'Sıcak Akdeniz',thWooden:'Ahşap',thWoodenD:'Doğal doku',thMarble:'Mermer',thMarbleD:'Zarif ve serin',thOcean:'Okyanus',thOceanD:'Derin mavi tonlar',thSunset:'Gün Batımı',thSunsetD:'Sıcak alev renkleri',thForest:'Orman',thForestD:'Derin yeşil huzur',thCandy:'Şeker',thCandyD:'Tatlı pastel renkler',thGalaxy:'Galaksi',thGalaxyD:'Kozmos renkleri',thNeon:'Neon',thNeonD:'Parlak neon renkler',thRetro:'Retro',thRetroD:'8-bit oyun salonu',
-pwBomb3:'3 Bomba',pwBomb3D:'Sıkışınca işe yarar',pwBomb10:'10 Bomba',pwBomb10D:'Büyük stok — %25 indirim',pwUndo5:'5 Geri Al',pwUndo5D:'Yanlış hamleleri sil',pwXp2:'2× XP (1 Oyun)',pwXp2D:'Sonraki oyunda çift XP',pwCoins100D:'Anlık coin yükle',pwCoins300D:'Popüler paket — %22 bonus',pwCoins750D:'Büyük paket — %43 bonus',
+pwBomb3:'3 Bomba',pwBomb3D:'Sıkışınca işe yarar',pwBomb10:'10 Bomba',pwBomb10D:'Büyük stok — %25 indirim',pwXp2:'2× XP (1 Oyun)',pwXp2D:'Sonraki oyunda çift XP',pwCoins100D:'Anlık coin yükle',pwCoins300D:'Popüler paket — %22 bonus',pwCoins750D:'Büyük paket — %43 bonus',
 lvUp:'SEVİYE {n}! 🎉',coinGiven:'verildi',superBombAct:'💥 Süper Bomba!',bombModeAct:'💣 Bomba Modu',useBombHint:'Bomba kullan, devam et!',bombChain:'⛓️ Zincir Reaksiyonu!',rescueAct:'🛟 KURTARMA!',continueAct:'DEVAM! 🎉',ad1of2:'1. reklam bitti! 2. için tekrar bas.',pwAdded:'eklendi!',xpBoostAct:'⚡ 2× XP Aktif!',notEnoughCoins:'Yeterli coin yok!',loading:'Yükleniyor…',
 noFriendsYet:'Henüz arkadaş yok',shareOrEnter:'Kodunu paylaş ya da arkadaşının kodunu girerek yarış',alreadyFriend:'Zaten listende!',playerNotFound:'Oyuncu bulunamadı.',
 tutPlay:'Oynamaya Başla! 🎮',tutNext:'Sonraki →',addBtn:'Ekle',removeLabel:'Kaldır',pts:'puan',rescue2adSub:'2 kısa reklam izle, kaldığın yerden devam et',
@@ -1436,21 +1445,21 @@ tut2T:'Parçayı Seç 👆',tut2D:'Alttaki 3 parçadan birine dokunup basılı t
 tut3T:'Izgaraya Sürükle 🎯',tut3D:'Parçayı ızgaranın üstüne sürükle. Yeşil = sığar · Kırmızı = sığmaz',
 tut4T:'Satırı Doldur = Temizle! ✨',tut4D:'Yatay veya dikey bir satır tamamen dolunca otomatik temizlenir ve puan kazanırsın!',tut4sub:'↓ Son hücreyi doldur → PATLAT! ↓',
 tut5T:'Kombo = Çarpan! 🔥',tut5D:'Aynı hamlede birden fazla satır temizlersen kombo çarpanı devreye girer! ×2 · ×3 · ×5',tut5row1:'1 satır',tut5row2:'2 satır',tut5row3:'3+ satır',tut5strat:'Strateji: birden fazla satırı tek hamlede temizle',
-tut6T:'Güçlendiriciler 💣',tut6D:'Sıkıştığında yardım al!<br><strong>💣 Bomba</strong> — bir alanı temizler<br><strong>🎨 Renk Patlat</strong> — bir rengi tahtadan siler<br><strong>🛟 Kurtarma</strong> — oyuna devam et',tut6bomb:'Bomba',tut6bombD:'3×3 alanı temizler',tut6undo:'Geri Al',tut6undoD:'Son hamleyi geri al',tut6rescue:'Kurtarma',tut6rescueD:'Oyuna devam et',tut6color:'Renk Patlat',tut6colorD:'Seçtiğin rengi tamamen siler',
+tut6T:'Güçlendiriciler 💣',tut6D:'Sıkıştığında yardım al!<br><strong>💣 Bomba</strong> — bir alanı temizler<br><strong>🎨 Renk Patlat</strong> — bir rengi tahtadan siler<br><strong>🛟 Kurtarma</strong> — oyuna devam et',tut6bomb:'Bomba',tut6bombD:'3×3 alanı temizler',tut6rescue:'Kurtarma',tut6rescueD:'Oyuna devam et',tut6color:'Renk Patlat',tut6colorD:'Seçtiğin rengi tamamen siler',
 ad:'REKLAM',adLoading:'Reklam yükleniyor…',adWatching:'Reklam izleniyor…',adReward:'Ödülünüz hazırlanıyor',
 setupTitle:'🎮 Profili Tamamla',setupDesc:'Dünya sıralamasında görünmek için bilgilerini gir',setupNickLbl:'Takma Ad',setupNickPh:'Adın…',setupCountryLbl:'🌍 Ülken',setupStart:'Başla 🚀',weeklyRanking:'HAFTALIK SIRALAMA',weeklyShort:'📅 Haftalık',weeklyScore:'Bu Hafta',continueOrNew:'Devam mı, Yeni mi?',newGame:'Yeni Oyun',tutRT:'Parçayı Döndür 🔄',tutRD:'Seçili parçaya tekrar dokun — saat yönünde döner! 4 farklı yönü dene.',tutRsub:'TEKRAR DOKUN → DÖNER',colorBlast:'Renk Patlat',colorBlastAct:'🎨 Renk Patlat Modu!',colorBlastGet:'İzle, Kazan',goScoreReward:'Skor Ödülü',goClaim:'İzle & Al',goClaimed:'Alındı ✓',pwColorBlastD:'Herhangi bir rengi tahtadan komple siler',colorBlastFull:'Dolu ✓',continueAsk:'Devam etmek istiyor musun?',cpYes:'Evet',cpNo:'Hayır',waShareBtn:"WhatsApp'ta Paylaş"},
-EN:{gateMsg:'Sign in',gateSyncing:'Loading account…',appName:'Tiliq',play:'Play',timeAttack:'⏱ Time Attack',time:'Time',timeUp:'Time\'s Up!',settings:'Settings',account:'Account',leaderboard:'Rankings',score:'Score',best:'Best',combo:'Combo',sound:'Sound',volume:'Volume',haptic:'Haptic',theme:'Theme',dark:'Dark',light:'Light',language:'Language',save:'Save',close:'Close',back:'Back',gameOver:'Game Over!',playAgain:'Play Again',mainMenu:'Main Menu',yourScore:'Your Score',worldRank:'World Ranking',newRecord:'🎉 New Record!',profile:'Profile',username:'Username',highScore:'Best',gamesPlayed:'Games',totalPoints:'Total',worldBoard:'🌍 World Rankings',yourRank:'Your Rank',yourScoreLb:'Your Score',guest:'Guest',days:'Days',undo:'Undo',bomb:'Bomb',rescue:'Rescue',
+EN:{gateMsg:'Sign in',gateSyncing:'Loading account…',gateSyncError:'Could not load account. Check your connection and try again.',gateRetry:'Retry',appName:'Tiliq',play:'Play',timeAttack:'⏱ Time Attack',time:'Time',timeUp:'Time\'s Up!',settings:'Settings',account:'Account',leaderboard:'Rankings',score:'Score',best:'Best',combo:'Combo',sound:'Sound',volume:'Volume',haptic:'Haptic',theme:'Theme',dark:'Dark',light:'Light',language:'Language',save:'Save',close:'Close',back:'Back',gameOver:'Game Over!',playAgain:'Play Again',mainMenu:'Main Menu',yourScore:'Your Score',worldRank:'World Ranking',newRecord:'🎉 New Record!',profile:'Profile',username:'Username',highScore:'Best',gamesPlayed:'Games',totalPoints:'Total',worldBoard:'🌍 World Rankings',yourRank:'Your Rank',yourScoreLb:'Your Score',guest:'Guest',days:'Days',undo:'Undo',bomb:'Bomb',rescue:'Rescue',
 m_combos:'Get 5 Combos',m_rows:'Clear 5 Rows',m_score:'Score 500 pts',dailyMissions:'Daily Missions',
-store:'Store',continueGame:'Continue',editProfile:'Edit Profile →',comboExpired:'Combo Ended',dailyClaimed:'CLAIMED TODAY',dailyRefresh:'Refreshes tomorrow',dailyCollect:'Collect!',iapSoon:'Purchase coming soon!',iapSuccess:'Purchase successful!',restored:'Purchases restored.',copyCode:'Copy',codeCopied:'Copied!',yourCode:'Your Code',codeShare:'Share this code with friends',friendsTitle:'Friends',addFriend:'Add Friend',enterName:"What's your name?",namePh:'Your nickname...',rescue2ad:'Watch 2 short ads to continue',superBomb:'Super Bomb',tileTheme:'Tile Theme',loginForRank:'Sign in for rankings',loginForFriends:'Sign in with Google to add friends',friendCodePh:'ABC123',friendCodeLbl:'Your Code',friendCodeSub:'Share this code with friends 👇',rankTitle:'🏆 Rankings',
-tabThemes:'🎨 Themes',tabPower:'⚡ Power',tabVip:'👑 VIP',comboSection:'🔥 Combo Themes',flameClassic:'Classic Fire',flameClassicD:'Warm orange flame',flameIce:'Ice Flame',flameIceD:'Cold blue fire',flameEmerald:'Emerald Flame',flameEmeraldD:'Green magic fire',flameMystic:'Mystic Flame',flameMysticD:'Purple-pink magic',flameGold:'Gold Flame',flameGoldD:'Royal fire',rowsShort:'ROWS',selectCountry:'Select...',
+store:'Store',continueGame:'Continue',editProfile:'Edit Profile →',comboExpired:'Combo Ended',dailyClaimed:'CLAIMED TODAY',dailyRefresh:'Refreshes tomorrow',dailyCollect:'Collect!',restored:'Purchases restored.',copyCode:'Copy',codeCopied:'Copied!',yourCode:'Your Code',codeShare:'Share this code with friends',friendsTitle:'Friends',addFriend:'Add Friend',enterName:"What's your name?",namePh:'Your nickname...',rescue2ad:'Watch 2 short ads to continue',superBomb:'Super Bomb',tileTheme:'Tile Theme',loginForRank:'Sign in for rankings',loginForFriends:'Sign in with Google to add friends',friendCodePh:'ABC123',friendCodeLbl:'Your Code',friendCodeSub:'Share this code with friends 👇',rankTitle:'🏆 Rankings',
+tabThemes:'🎨 Themes',tabPower:'⚡ Power',comboSection:'🔥 Combo Themes',flameClassic:'Classic Fire',flameClassicD:'Warm orange flame',flameIce:'Ice Flame',flameIceD:'Cold blue fire',flameEmerald:'Emerald Flame',flameEmeraldD:'Green magic fire',flameMystic:'Mystic Flame',flameMysticD:'Purple-pink magic',flameGold:'Gold Flame',flameGoldD:'Royal fire',rowsShort:'ROWS',selectCountry:'Select...',
 tabGlobal:'🌍 World',tabTimeAttack:'⏱ Time',tabFriends:'👥 Friends',lbShare:'Share',lbMyCode:'Your Code',lbAmongFriends:'Among Friends',
 statLast:'Last',statGames:'Games',statBest:'Best',statStreak:'Streak',dailyBonus:'DAILY BONUS',tomorrow:'Tomorrow',dailyRewardsTitle:'Daily Rewards',dailyView:'View',dailyDay:'Day',dailyNote:'Come back every day to keep your streak alive!',dailyClaimedToday:'Claimed Today ✓',mergeTitle:'Transfer Progress?',mergeDesc:'Move your progress on this device to your account? If no, your account\'s existing data is used.',mergeYes:'Yes, Transfer',mergeNo:'No, Use Account',inventory:'Inventory',invCoins:'Coins',invBombs:'Bombs',invUndos:'Undos',invThemes:'Themes',invBoost:'XP',
 storeTitle:'🛍️ Store',syncDesc:'Save your score to the cloud, access from any device',accountConn:'✅ Connected to your account',maxLevel:'👑 Maximum level!',
 freeSection:'Free',premiumSection:'Premium Themes',powerSection:'Power-Ups',coinSection:'Coin Packs',
 badgeActive:'ACTIVE',badgeOwned:'OWNED',badgeFree:'FREE',btnActive:'✓ Active',btnApply:'Apply',btnUnlock:'Unlock',
-vipTitle:'VIP Membership',vipMonthly:'$8 / month',vipPerk1:'🚫 100% ad-free experience',vipPerk2:'🪙 200 free coins every week',vipPerk3:'⚡ 2× XP every game',vipPerk4:'🏆 Gold frame + special badge',vipPerk5:'💣 1 free bomb every day',vipPerk6:'🎨 All themes unlocked',vipStart:'Start Now',noAdsTitle:'🚫 Ad-Free',noAdsDesc:'One-time purchase, never see ads again',noAdsBuy:'$20 — Remove Ads',restoreBtn:'↺ Restore Purchases',
+
 thClassic:'Classic',thClassicD:'Warm Mediterranean',thWooden:'Wooden',thWoodenD:'Natural texture',thMarble:'Marble',thMarbleD:'Elegant and cool',thOcean:'Ocean',thOceanD:'Deep blue tones',thSunset:'Sunset',thSunsetD:'Warm fire colors',thForest:'Forest',thForestD:'Deep green serenity',thCandy:'Candy',thCandyD:'Sweet pastel colors',thGalaxy:'Galaxy',thGalaxyD:'Cosmic colors',thNeon:'Neon',thNeonD:'Bright neon colors',thRetro:'Retro',thRetroD:'8-bit arcade',
-pwBomb3:'3 Bombs',pwBomb3D:'Handy when stuck',pwBomb10:'10 Bombs',pwBomb10D:'Big stock — 25% discount',pwUndo5:'5 Undos',pwUndo5D:'Erase wrong moves',pwXp2:'2× XP (1 Game)',pwXp2D:'Double XP next game',pwCoins100D:'Instant coin top-up',pwCoins300D:'Popular pack — 22% bonus',pwCoins750D:'Big pack — 43% bonus',
+pwBomb3:'3 Bombs',pwBomb3D:'Handy when stuck',pwBomb10:'10 Bombs',pwBomb10D:'Big stock — 25% discount',pwXp2:'2× XP (1 Game)',pwXp2D:'Double XP next game',pwCoins100D:'Instant coin top-up',pwCoins300D:'Popular pack — 22% bonus',pwCoins750D:'Big pack — 43% bonus',
 lvUp:'LEVEL {n}! 🎉',coinGiven:'received',superBombAct:'💥 Super Bomb!',bombModeAct:'💣 Bomb Mode',useBombHint:'Use your bomb to continue!',bombChain:'⛓️ Chain Reaction!',rescueAct:'🛟 RESCUE!',continueAct:'CONTINUE! 🎉',ad1of2:'Ad 1 done! Tap for ad 2.',pwAdded:'added!',xpBoostAct:'⚡ 2× XP Active!',notEnoughCoins:'Not enough coins!',loading:'Loading…',
 noFriendsYet:'No friends yet',shareOrEnter:'Share your code or enter a friend\'s to compete',alreadyFriend:'Already in your list!',playerNotFound:'Player not found.',
 tutPlay:'Let\'s Play! 🎮',tutNext:'Next →',addBtn:'Add',removeLabel:'Remove',pts:'pts',rescue2adSub:'Watch 2 short ads to continue',
@@ -1461,140 +1470,140 @@ tut2T:'Select a Piece 👆',tut2D:'Tap and hold one of the 3 pieces below. The p
 tut3T:'Drag to Grid 🎯',tut3D:'Drag the piece over the grid. Green = fits · Red = does not fit',
 tut4T:'Fill a Row = Clear! ✨',tut4D:'When a row is fully filled it clears automatically and you score points!',tut4sub:'↓ Fill last cell → BLAST! ↓',
 tut5T:'Combo = Multiplier! 🔥',tut5D:'Clear multiple rows in one move to activate the combo multiplier! ×2 · ×3 · ×5',tut5row1:'1 row',tut5row2:'2 rows',tut5row3:'3+ rows',tut5strat:'Strategy: clear multiple rows in one move',
-tut6T:'Power-Ups 💣',tut6D:'Get help when stuck!<br><strong>💣 Bomb</strong> — clears an area<br><strong>🎨 Color Blast</strong> — wipes one color off the board<br><strong>🛟 Rescue</strong> — continue playing',tut6bomb:'Bomb',tut6bombD:'Clears 3×3 area',tut6undo:'Undo',tut6undoD:'Undo last move',tut6rescue:'Rescue',tut6rescueD:'Continue playing',tut6color:'Color Blast',tut6colorD:'Wipes your chosen color completely',
+tut6T:'Power-Ups 💣',tut6D:'Get help when stuck!<br><strong>💣 Bomb</strong> — clears an area<br><strong>🎨 Color Blast</strong> — wipes one color off the board<br><strong>🛟 Rescue</strong> — continue playing',tut6bomb:'Bomb',tut6bombD:'Clears 3×3 area',tut6rescue:'Rescue',tut6rescueD:'Continue playing',tut6color:'Color Blast',tut6colorD:'Wipes your chosen color completely',
 ad:'AD',adLoading:'Loading ad…',adWatching:'Watching ad…',adReward:'Preparing your reward',
 setupTitle:'🎮 Complete Profile',setupDesc:'Enter your info to appear in world rankings',setupNickLbl:'Nickname',setupNickPh:'Your name…',setupCountryLbl:'🌍 Your Country',setupStart:'Let\'s Go 🚀',weeklyRanking:'WEEKLY RANKING',weeklyShort:'📅 Weekly',weeklyScore:'This Week',continueOrNew:'Continue or New?',newGame:'New Game',tutRT:'Rotate Pieces 🔄',tutRD:'Tap a selected piece again — it rotates clockwise! Try all 4 directions.',tutRsub:'TAP AGAIN → ROTATES',colorBlast:'Color Blast',colorBlastAct:'🎨 Color Blast Mode!',colorBlastGet:'Watch & Earn',goScoreReward:'Score Reward',goClaim:'Watch & Claim',goClaimed:'Claimed ✓',pwColorBlastD:'Wipes any one color off the board completely',colorBlastFull:'Full ✓',continueAsk:'Do you want to continue?',cpYes:'Yes',cpNo:'No',waShareBtn:'Share on WhatsApp'},
-JA:{gateMsg:'ログイン',gateSyncing:'アカウントを読み込み中…',appName:'Tiliq',play:'プレイ',settings:'設定',account:'アカウント',leaderboard:'ランキング',score:'スコア',best:'ベスト',combo:'コンボ',sound:'サウンド',volume:'音量',haptic:'振動',theme:'テーマ',dark:'ダーク',light:'ライト',language:'言語',save:'保存',close:'閉じる',back:'戻る',gameOver:'ゲームオーバー！',playAgain:'もう一度',mainMenu:'メニュー',yourScore:'スコア',worldRank:'世界ランキング',newRecord:'🎉 新記録！',profile:'プロフィール',username:'ユーザー名',highScore:'ベスト',gamesPlayed:'ゲーム数',totalPoints:'合計',worldBoard:'🌍 世界ランキング',yourRank:'順位',yourScoreLb:'スコア',guest:'ゲスト',days:'日',undo:'元に戻す',bomb:'ボム',rescue:'救出',
+JA:{gateMsg:'ログイン',gateSyncing:'アカウントを読み込み中…',gateSyncError:'アカウントを読み込めませんでした。接続を確認してもう一度お試しください。',gateRetry:'再試行',appName:'Tiliq',play:'プレイ',settings:'設定',account:'アカウント',leaderboard:'ランキング',score:'スコア',best:'ベスト',combo:'コンボ',sound:'サウンド',volume:'音量',haptic:'振動',theme:'テーマ',dark:'ダーク',light:'ライト',language:'言語',save:'保存',close:'閉じる',back:'戻る',gameOver:'ゲームオーバー！',playAgain:'もう一度',mainMenu:'メニュー',yourScore:'スコア',worldRank:'世界ランキング',newRecord:'🎉 新記録！',profile:'プロフィール',username:'ユーザー名',highScore:'ベスト',gamesPlayed:'ゲーム数',totalPoints:'合計',worldBoard:'🌍 世界ランキング',yourRank:'順位',yourScoreLb:'スコア',guest:'ゲスト',days:'日',undo:'元に戻す',bomb:'ボム',rescue:'救出',
 m_combos:'コンボ5回',m_rows:'5列消す',m_score:'500点獲得',dailyMissions:'デイリーミッション',
-store:'ストア',continueGame:'続ける',editProfile:'プロフィール編集 →',comboExpired:'コンボ終了',dailyClaimed:'本日獲得済み',dailyRefresh:'明日リセット',dailyCollect:'受け取る！',iapSoon:'近日公開予定！',iapSuccess:'購入完了！',restored:'購入を復元しました。',copyCode:'コピー',codeCopied:'コピー済み！',yourCode:'あなたのコード',codeShare:'このコードを友達に送ろう',friendsTitle:'フレンド',addFriend:'フレンド追加',enterName:'あなたの名前は？',namePh:'ニックネーム...',rescue2ad:'広告2本見て続ける',superBomb:'スーパーボム',tileTheme:'タイルテーマ',loginForRank:'ランキングにはログインが必要',loginForFriends:'フレンド機能にはGoogleログインが必要',friendCodePh:'ABC123',friendCodeLbl:'あなたのコード',friendCodeSub:'このコードを友達に送ろう 👇',rankTitle:'🏆 ランキング',
-tabThemes:'🎨 テーマ',tabPower:'⚡ パワー',tabVip:'👑 VIP',tabGlobal:'🌍 世界',tabFriends:'👥 フレンド',lbShare:'シェア',lbMyCode:'あなたのコード',lbAmongFriends:'フレンドの中で',comboSection:'🔥 コンボテーマ',flameClassic:'クラシックファイア',flameClassicD:'温かいオレンジの炎',flameIce:'氷炎',flameIceD:'冷たい青い炎',flameEmerald:'エメラルドの炎',flameEmeraldD:'緑の魔法の炎',flameMystic:'神秘の炎',flameMysticD:'紫とピンクの魔法',flameGold:'黄金の炎',flameGoldD:'王家の炎',rowsShort:'列',selectCountry:'選択...',
+store:'ストア',continueGame:'続ける',editProfile:'プロフィール編集 →',comboExpired:'コンボ終了',dailyClaimed:'本日獲得済み',dailyRefresh:'明日リセット',dailyCollect:'受け取る！',restored:'購入を復元しました。',copyCode:'コピー',codeCopied:'コピー済み！',yourCode:'あなたのコード',codeShare:'このコードを友達に送ろう',friendsTitle:'フレンド',addFriend:'フレンド追加',enterName:'あなたの名前は？',namePh:'ニックネーム...',rescue2ad:'広告2本見て続ける',superBomb:'スーパーボム',tileTheme:'タイルテーマ',loginForRank:'ランキングにはログインが必要',loginForFriends:'フレンド機能にはGoogleログインが必要',friendCodePh:'ABC123',friendCodeLbl:'あなたのコード',friendCodeSub:'このコードを友達に送ろう 👇',rankTitle:'🏆 ランキング',
+tabThemes:'🎨 テーマ',tabPower:'⚡ パワー',tabGlobal:'🌍 世界',tabFriends:'👥 フレンド',lbShare:'シェア',lbMyCode:'あなたのコード',lbAmongFriends:'フレンドの中で',comboSection:'🔥 コンボテーマ',flameClassic:'クラシックファイア',flameClassicD:'温かいオレンジの炎',flameIce:'氷炎',flameIceD:'冷たい青い炎',flameEmerald:'エメラルドの炎',flameEmeraldD:'緑の魔法の炎',flameMystic:'神秘の炎',flameMysticD:'紫とピンクの魔法',flameGold:'黄金の炎',flameGoldD:'王家の炎',rowsShort:'列',selectCountry:'選択...',
 statLast:'直前',statGames:'ゲーム',statBest:'ベスト',statStreak:'連続',dailyBonus:'デイリーボーナス',tomorrow:'明日',dailyRewardsTitle:'デイリー報酬',dailyView:'表示',dailyDay:'日',dailyNote:'毎日ログインしてストリークを維持しよう！',dailyClaimedToday:'本日受け取り済み ✓',mergeTitle:'進行状況を移行？',mergeDesc:'この端末の進行状況をアカウントに移行しますか？いいえの場合はアカウントの既存データを使用します。',mergeYes:'はい、移行',mergeNo:'いいえ',inventory:'インベントリ',invCoins:'コイン',invBombs:'爆弾',invUndos:'戻す',invThemes:'テーマ',invBoost:'XP',storeTitle:'🛍️ ストア',syncDesc:'スコアをクラウドに保存する',accountConn:'✅ アカウントに接続済み',maxLevel:'👑 最大レベル！',
 freeSection:'無料',premiumSection:'プレミアムテーマ',powerSection:'パワーアップ',coinSection:'コインパック',
 badgeActive:'使用中',badgeOwned:'所持',badgeFree:'無料',btnActive:'✓ 使用中',btnApply:'適用',btnUnlock:'開放',
-vipTitle:'VIPメンバーシップ',vipMonthly:'$8 / 月',vipPerk1:'🚫 完全広告なし',vipPerk2:'🪙 毎週200コイン無料',vipPerk3:'⚡ 毎回2倍XP',vipPerk4:'🏆 ゴールドフレーム+バッジ',vipPerk5:'💣 毎日爆弾1個無料',vipPerk6:'🎨 全テーマ解放',vipStart:'今すぐ始める',noAdsTitle:'🚫 広告なし',noAdsDesc:'一回購入で永久に広告なし',noAdsBuy:'$20 — 広告を削除',restoreBtn:'↺ 購入を復元',
+
 thClassic:'クラシック',thClassicD:'暖かい地中海',thWooden:'ウッド',thWoodenD:'自然な質感',thMarble:'マーブル',thMarbleD:'エレガントで涼しい',thOcean:'オーシャン',thOceanD:'深い青のトーン',thSunset:'サンセット',thSunsetD:'暖かい炎の色',thForest:'フォレスト',thForestD:'深い緑の安らぎ',thCandy:'キャンディ',thCandyD:'甘いパステルカラー',thGalaxy:'ギャラクシー',thGalaxyD:'宇宙の色',thNeon:'ネオン',thNeonD:'明るいネオンカラー',thRetro:'レトロ',thRetroD:'8ビットアーケード',
-pwBomb3:'爆弾3個',pwBomb3D:'詰まったときに便利',pwBomb10:'爆弾10個',pwBomb10D:'大量在庫 — 25%割引',pwUndo5:'元に戻す5回',pwUndo5D:'間違えた手を消す',pwXp2:'2倍XP (1ゲーム)',pwXp2D:'次のゲームで2倍XP',pwCoins100D:'即時コイン補充',pwCoins300D:'人気パック — 22%ボーナス',pwCoins750D:'大きいパック — 43%ボーナス',
+pwBomb3:'爆弾3個',pwBomb3D:'詰まったときに便利',pwBomb10:'爆弾10個',pwBomb10D:'大量在庫 — 25%割引',pwXp2:'2倍XP (1ゲーム)',pwXp2D:'次のゲームで2倍XP',pwCoins100D:'即時コイン補充',pwCoins300D:'人気パック — 22%ボーナス',pwCoins750D:'大きいパック — 43%ボーナス',
 setupTitle:'🎮 プロフィール設定',setupDesc:'世界ランキングに表示されるために情報を入力してください',setupNickLbl:'ニックネーム',setupNickPh:'あなたの名前…',setupCountryLbl:'🌍 あなたの国',setupStart:'はじめる 🚀',weeklyRanking:'週間ランキング',weeklyScore:'今週',continueOrNew:'続ける？新しい？',newGame:'新しいゲーム',tutRT:'ピースを回転 🔄',tutRD:'選んだピースをもう一度タップ — 時計回りに回転！4方向を試そう。',tutRsub:'もう一度タップ → 回転',colorBlast:'カラーブラスト',colorBlastAct:'🎨 カラーブラストモード!',colorBlastGet:'視聴して獲得',goScoreReward:'スコア報酬',goClaim:'視聴して受取',goClaimed:'受取済み ✓',pwColorBlastD:'選んだ色のブロックを盤面から全て消す',colorBlastFull:'満タン ✓',continueAsk:'続けますか？',cpYes:'はい',cpNo:'いいえ',waShareBtn:'WhatsAppでシェア',appleSignIn:'Appleでサインイン'},
-KO:{gateMsg:'로그인',gateSyncing:'계정 불러오는 중…',appName:'Tiliq',play:'플레이',settings:'설정',account:'계정',leaderboard:'순위',score:'점수',best:'최고',combo:'콤보',sound:'소리',volume:'볼륨',haptic:'진동',theme:'테마',dark:'어둡게',light:'밝게',language:'언어',save:'저장',close:'닫기',back:'뒤로',gameOver:'게임 종료!',playAgain:'다시 하기',mainMenu:'메인 메뉴',yourScore:'내 점수',worldRank:'세계 순위',newRecord:'🎉 신기록!',profile:'프로필',username:'사용자 이름',highScore:'최고',gamesPlayed:'게임',totalPoints:'총점',worldBoard:'🌍 세계 순위',yourRank:'내 순위',yourScoreLb:'점수',guest:'게스트',days:'일',undo:'실행 취소',bomb:'폭탄',rescue:'구출',
+KO:{gateMsg:'로그인',gateSyncing:'계정 불러오는 중…',gateSyncError:'계정을 불러올 수 없습니다. 연결을 확인하고 다시 시도하세요.',gateRetry:'다시 시도',appName:'Tiliq',play:'플레이',settings:'설정',account:'계정',leaderboard:'순위',score:'점수',best:'최고',combo:'콤보',sound:'소리',volume:'볼륨',haptic:'진동',theme:'테마',dark:'어둡게',light:'밝게',language:'언어',save:'저장',close:'닫기',back:'뒤로',gameOver:'게임 종료!',playAgain:'다시 하기',mainMenu:'메인 메뉴',yourScore:'내 점수',worldRank:'세계 순위',newRecord:'🎉 신기록!',profile:'프로필',username:'사용자 이름',highScore:'최고',gamesPlayed:'게임',totalPoints:'총점',worldBoard:'🌍 세계 순위',yourRank:'내 순위',yourScoreLb:'점수',guest:'게스트',days:'일',undo:'실행 취소',bomb:'폭탄',rescue:'구출',
 m_combos:'콤보 5회',m_rows:'줄 5개 지우기',m_score:'500점 획득',dailyMissions:'일일 미션',
-store:'스토어',continueGame:'계속하기',editProfile:'프로필 편집 →',comboExpired:'콤보 종료',dailyClaimed:'오늘 수령 완료',dailyRefresh:'내일 갱신',dailyCollect:'받기!',iapSoon:'곧 출시 예정!',iapSuccess:'구매 완료!',restored:'구매가 복원되었습니다.',copyCode:'복사',codeCopied:'복사됨!',yourCode:'내 코드',codeShare:'이 코드를 친구에게 공유하세요',friendsTitle:'친구',addFriend:'친구 추가',enterName:'당신의 이름은?',namePh:'닉네임...',rescue2ad:'광고 2개 보고 계속하기',superBomb:'슈퍼 폭탄',tileTheme:'타일 테마',loginForRank:'순위를 보려면 로그인하세요',loginForFriends:'친구 기능은 Google 로그인이 필요해요',friendCodePh:'ABC123',friendCodeLbl:'내 코드',friendCodeSub:'이 코드를 친구에게 공유하세요 👇',rankTitle:'🏆 순위',
-tabThemes:'🎨 테마',tabPower:'⚡ 파워',tabVip:'👑 VIP',tabGlobal:'🌍 세계',tabFriends:'👥 친구',lbShare:'공유',lbMyCode:'내 코드',lbAmongFriends:'친구들 사이에서',comboSection:'🔥 콤보 테마',flameClassic:'클래식 파이어',flameClassicD:'따뜻한 주황빛 불꽃',flameIce:'얼음 불꽃',flameIceD:'차가운 파란 불',flameEmerald:'에메랄드 불꽃',flameEmeraldD:'초록 마법 불',flameMystic:'신비한 불꽃',flameMysticD:'보라-핑크 마법',flameGold:'황금 불꽃',flameGoldD:'왕실의 불',rowsShort:'줄',selectCountry:'선택...',
+store:'스토어',continueGame:'계속하기',editProfile:'프로필 편집 →',comboExpired:'콤보 종료',dailyClaimed:'오늘 수령 완료',dailyRefresh:'내일 갱신',dailyCollect:'받기!',restored:'구매가 복원되었습니다.',copyCode:'복사',codeCopied:'복사됨!',yourCode:'내 코드',codeShare:'이 코드를 친구에게 공유하세요',friendsTitle:'친구',addFriend:'친구 추가',enterName:'당신의 이름은?',namePh:'닉네임...',rescue2ad:'광고 2개 보고 계속하기',superBomb:'슈퍼 폭탄',tileTheme:'타일 테마',loginForRank:'순위를 보려면 로그인하세요',loginForFriends:'친구 기능은 Google 로그인이 필요해요',friendCodePh:'ABC123',friendCodeLbl:'내 코드',friendCodeSub:'이 코드를 친구에게 공유하세요 👇',rankTitle:'🏆 순위',
+tabThemes:'🎨 테마',tabPower:'⚡ 파워',tabGlobal:'🌍 세계',tabFriends:'👥 친구',lbShare:'공유',lbMyCode:'내 코드',lbAmongFriends:'친구들 사이에서',comboSection:'🔥 콤보 테마',flameClassic:'클래식 파이어',flameClassicD:'따뜻한 주황빛 불꽃',flameIce:'얼음 불꽃',flameIceD:'차가운 파란 불',flameEmerald:'에메랄드 불꽃',flameEmeraldD:'초록 마법 불',flameMystic:'신비한 불꽃',flameMysticD:'보라-핑크 마법',flameGold:'황금 불꽃',flameGoldD:'왕실의 불',rowsShort:'줄',selectCountry:'선택...',
 statLast:'최근',statGames:'게임',statBest:'최고',statStreak:'연속',dailyBonus:'일일 보너스',tomorrow:'내일',dailyRewardsTitle:'일일 보상',dailyView:'보기',dailyDay:'일',dailyNote:'매일 접속해서 연속 기록을 유지하세요!',dailyClaimedToday:'오늘 수령 완료 ✓',mergeTitle:'진행 상황 이전?',mergeDesc:'이 기기의 진행 상황을 계정으로 옮길까요? 아니오를 선택하면 계정의 기존 데이터가 사용됩니다.',mergeYes:'예, 이전',mergeNo:'아니오',inventory:'인벤토리',invCoins:'코인',invBombs:'폭탄',invUndos:'되돌리기',invThemes:'테마',invBoost:'XP',storeTitle:'🛍️ 스토어',syncDesc:'점수를 클라우드에 저장하세요',accountConn:'✅ 계정에 연결됨',maxLevel:'👑 최대 레벨!',
 freeSection:'무료',premiumSection:'프리미엄 테마',powerSection:'파워업',coinSection:'코인 패키지',
 badgeActive:'활성',badgeOwned:'보유',badgeFree:'무료',btnActive:'✓ 활성',btnApply:'적용',btnUnlock:'열기',
-vipTitle:'VIP 멤버십',vipMonthly:'$8 / 월',vipPerk1:'🚫 완전 광고 없음',vipPerk2:'🪙 매주 200 무료 코인',vipPerk3:'⚡ 매 게임 2배 XP',vipPerk4:'🏆 골드 프레임 + 특별 배지',vipPerk5:'💣 매일 무료 폭탄 1개',vipPerk6:'🎨 모든 테마 잠금 해제',vipStart:'지금 시작',noAdsTitle:'🚫 광고 없음',noAdsDesc:'일회성 구매, 영원히 광고 없음',noAdsBuy:'$20 — 광고 제거',restoreBtn:'↺ 구매 복원',
+
 thClassic:'클래식',thClassicD:'따뜻한 지중해',thWooden:'우드',thWoodenD:'자연 질감',thMarble:'마블',thMarbleD:'우아하고 시원한',thOcean:'오션',thOceanD:'깊은 파란 톤',thSunset:'선셋',thSunsetD:'따뜻한 불꽃 색',thForest:'포레스트',thForestD:'깊은 초록 평온',thCandy:'캔디',thCandyD:'달콤한 파스텔',thGalaxy:'갤럭시',thGalaxyD:'우주 색깔',thNeon:'네온',thNeonD:'밝은 네온 컬러',thRetro:'레트로',thRetroD:'8비트 오락실',
-pwBomb3:'폭탄 3개',pwBomb3D:'막힐 때 유용',pwBomb10:'폭탄 10개',pwBomb10D:'대량 재고 — 25% 할인',pwUndo5:'5번 실행 취소',pwUndo5D:'잘못된 수 지우기',pwXp2:'2배 XP (1게임)',pwXp2D:'다음 게임 XP 두 배',pwCoins100D:'즉시 코인 충전',pwCoins300D:'인기 패키지 — 22% 보너스',pwCoins750D:'대형 패키지 — 43% 보너스',
+pwBomb3:'폭탄 3개',pwBomb3D:'막힐 때 유용',pwBomb10:'폭탄 10개',pwBomb10D:'대량 재고 — 25% 할인',pwXp2:'2배 XP (1게임)',pwXp2D:'다음 게임 XP 두 배',pwCoins100D:'즉시 코인 충전',pwCoins300D:'인기 패키지 — 22% 보너스',pwCoins750D:'대형 패키지 — 43% 보너스',
 setupTitle:'🎮 프로필 설정',setupDesc:'세계 순위에 표시되려면 정보를 입력하세요',setupNickLbl:'닉네임',setupNickPh:'이름을 입력하세요…',setupCountryLbl:'🌍 국가',setupStart:'시작 🚀',weeklyRanking:'주간 순위',weeklyScore:'이번 주',continueOrNew:'계속 또는 새 게임?',newGame:'새 게임',tutRT:'조각 회전 🔄',tutRD:'선택한 조각을 다시 탭하면 시계 방향으로 회전합니다! 4방향을 모두 시도하세요.',tutRsub:'다시 탭 → 회전',colorBlast:'컬러 블라스트',colorBlastAct:'🎨 컬러 블라스트 모드!',colorBlastGet:'시청하고 획득',goScoreReward:'점수 보상',goClaim:'시청하고 받기',goClaimed:'받음 ✓',pwColorBlastD:'선택한 색상의 블록을 보드에서 모두 제거',colorBlastFull:'가득참 ✓',continueAsk:'계속하시겠습니까?',cpYes:'예',cpNo:'아니요',waShareBtn:'WhatsApp에서 공유',appleSignIn:'Apple로 로그인'},
-DE:{gateMsg:'Anmelden',gateSyncing:'Konto wird geladen…',appName:'Tiliq',play:'Spielen',settings:'Einstellungen',account:'Konto',leaderboard:'Rangliste',score:'Punkte',best:'Bestw.',combo:'Kombo',sound:'Ton',volume:'Lautstärke',haptic:'Vibration',theme:'Design',dark:'Dunkel',light:'Hell',language:'Sprache',save:'Speichern',close:'Schließen',back:'Zurück',gameOver:'Spiel Vorbei!',playAgain:'Nochmal',mainMenu:'Hauptmenü',yourScore:'Dein Score',worldRank:'Weltrangliste',newRecord:'🎉 Neuer Rekord!',profile:'Profil',username:'Benutzername',highScore:'Best',gamesPlayed:'Spiele',totalPoints:'Gesamt',worldBoard:'🌍 Weltrangliste',yourRank:'Dein Rang',yourScoreLb:'Punkte',guest:'Gast',days:'Tage',undo:'Rückgängig',bomb:'Bombe',rescue:'Rettung',
+DE:{gateMsg:'Anmelden',gateSyncing:'Konto wird geladen…',gateSyncError:'Konto konnte nicht geladen werden. Verbindung prüfen und erneut versuchen.',gateRetry:'Erneut versuchen',appName:'Tiliq',play:'Spielen',settings:'Einstellungen',account:'Konto',leaderboard:'Rangliste',score:'Punkte',best:'Bestw.',combo:'Kombo',sound:'Ton',volume:'Lautstärke',haptic:'Vibration',theme:'Design',dark:'Dunkel',light:'Hell',language:'Sprache',save:'Speichern',close:'Schließen',back:'Zurück',gameOver:'Spiel Vorbei!',playAgain:'Nochmal',mainMenu:'Hauptmenü',yourScore:'Dein Score',worldRank:'Weltrangliste',newRecord:'🎉 Neuer Rekord!',profile:'Profil',username:'Benutzername',highScore:'Best',gamesPlayed:'Spiele',totalPoints:'Gesamt',worldBoard:'🌍 Weltrangliste',yourRank:'Dein Rang',yourScoreLb:'Punkte',guest:'Gast',days:'Tage',undo:'Rückgängig',bomb:'Bombe',rescue:'Rettung',
 m_combos:'5 Kombos',m_rows:'5 Reihen',m_score:'500 Punkte',dailyMissions:'Tagesaufgaben',
-store:'Shop',continueGame:'Weiterspielen',editProfile:'Profil bearbeiten →',comboExpired:'Kombo vorbei',dailyClaimed:'HEUTE ERHALTEN',dailyRefresh:'Morgen neu',dailyCollect:'Sammeln!',iapSoon:'Kauf bald verfügbar!',iapSuccess:'Kauf erfolgreich!',restored:'Käufe wiederhergestellt.',copyCode:'Kopieren',codeCopied:'Kopiert!',yourCode:'Dein Code',codeShare:'Teile diesen Code mit Freunden',friendsTitle:'Freunde',addFriend:'Freund hinzufügen',enterName:'Wie heißt du?',namePh:'Dein Spitzname...',rescue2ad:'2 kurze Werbungen ansehen',superBomb:'Superbombe',tileTheme:'Kachel-Design',loginForRank:'Anmelden für Rangliste',loginForFriends:'Mit Google anmelden für Freunde',friendCodePh:'ABC123',friendCodeLbl:'Dein Code',friendCodeSub:'Teile diesen Code mit Freunden 👇',rankTitle:'🏆 Rangliste',
-tabThemes:'🎨 Designs',tabPower:'⚡ Kräfte',tabVip:'👑 VIP',tabGlobal:'🌍 Welt',tabFriends:'👥 Freunde',lbShare:'Teilen',lbMyCode:'Dein Code',lbAmongFriends:'Unter Freunden',comboSection:'🔥 Combo-Themen',flameClassic:'Klassisches Feuer',flameClassicD:'Warme orange Flamme',flameIce:'Eisflamme',flameIceD:'Kaltes blaues Feuer',flameEmerald:'Smaragdflamme',flameEmeraldD:'Grünes Zauberfeuer',flameMystic:'Mystische Flamme',flameMysticD:'Lila-rosa Magie',flameGold:'Goldflamme',flameGoldD:'Königliches Feuer',rowsShort:'REIHEN',selectCountry:'Auswählen...',
+store:'Shop',continueGame:'Weiterspielen',editProfile:'Profil bearbeiten →',comboExpired:'Kombo vorbei',dailyClaimed:'HEUTE ERHALTEN',dailyRefresh:'Morgen neu',dailyCollect:'Sammeln!',restored:'Käufe wiederhergestellt.',copyCode:'Kopieren',codeCopied:'Kopiert!',yourCode:'Dein Code',codeShare:'Teile diesen Code mit Freunden',friendsTitle:'Freunde',addFriend:'Freund hinzufügen',enterName:'Wie heißt du?',namePh:'Dein Spitzname...',rescue2ad:'2 kurze Werbungen ansehen',superBomb:'Superbombe',tileTheme:'Kachel-Design',loginForRank:'Anmelden für Rangliste',loginForFriends:'Mit Google anmelden für Freunde',friendCodePh:'ABC123',friendCodeLbl:'Dein Code',friendCodeSub:'Teile diesen Code mit Freunden 👇',rankTitle:'🏆 Rangliste',
+tabThemes:'🎨 Designs',tabPower:'⚡ Kräfte',tabGlobal:'🌍 Welt',tabFriends:'👥 Freunde',lbShare:'Teilen',lbMyCode:'Dein Code',lbAmongFriends:'Unter Freunden',comboSection:'🔥 Combo-Themen',flameClassic:'Klassisches Feuer',flameClassicD:'Warme orange Flamme',flameIce:'Eisflamme',flameIceD:'Kaltes blaues Feuer',flameEmerald:'Smaragdflamme',flameEmeraldD:'Grünes Zauberfeuer',flameMystic:'Mystische Flamme',flameMysticD:'Lila-rosa Magie',flameGold:'Goldflamme',flameGoldD:'Königliches Feuer',rowsShort:'REIHEN',selectCountry:'Auswählen...',
 statLast:'Letzte',statGames:'Spiele',statBest:'Bestes',statStreak:'Serie',dailyBonus:'TAGESBONUS',tomorrow:'Morgen',dailyRewardsTitle:'Tägliche Belohnungen',dailyView:'Ansehen',dailyDay:'Tag',dailyNote:'Komm jeden Tag zurück, um deine Serie zu halten!',dailyClaimedToday:'Heute abgeholt ✓',mergeTitle:'Fortschritt übertragen?',mergeDesc:'Deinen Fortschritt auf diesem Gerät auf dein Konto übertragen? Bei Nein werden die vorhandenen Kontodaten verwendet.',mergeYes:'Ja, übertragen',mergeNo:'Nein, Konto nutzen',inventory:'Inventar',invCoins:'Münzen',invBombs:'Bomben',invUndos:'Zurück',invThemes:'Themen',invBoost:'XP',storeTitle:'🛍️ Shop',syncDesc:'Speichere deinen Score in der Cloud',accountConn:'✅ Mit deinem Konto verbunden',maxLevel:'👑 Maximales Level!',
 freeSection:'Kostenlos',premiumSection:'Premium-Designs',powerSection:'Verstärker',coinSection:'Coin-Pakete',
 badgeActive:'AKTIV',badgeOwned:'BESESSEN',badgeFree:'KOSTENLOS',btnActive:'✓ Aktiv',btnApply:'Anwenden',btnUnlock:'Freischalten',
-vipTitle:'VIP-Mitgliedschaft',vipMonthly:'8 $ / Monat',vipPerk1:'🚫 Komplett werbefrei',vipPerk2:'🪙 200 Münzen jede Woche',vipPerk3:'⚡ 2× XP pro Spiel',vipPerk4:'🏆 Goldrahmen + Abzeichen',vipPerk5:'💣 1 Bombe täglich',vipPerk6:'🎨 Alle Designs freigeschaltet',vipStart:'Jetzt starten',noAdsTitle:'🚫 Werbefrei',noAdsDesc:'Einmaliger Kauf, keine Werbung mehr',noAdsBuy:'20 $ — Werbung entfernen',restoreBtn:'↺ Käufe wiederherstellen',
+
 thClassic:'Klassisch',thClassicD:'Warmes Mittelmeer',thWooden:'Holz',thWoodenD:'Natürliche Textur',thMarble:'Marmor',thMarbleD:'Elegant und kühl',thOcean:'Ozean',thOceanD:'Tiefblaue Töne',thSunset:'Sonnenuntergang',thSunsetD:'Warme Feuerfarben',thForest:'Wald',thForestD:'Tiefe grüne Ruhe',thCandy:'Süßigkeit',thCandyD:'Süße Pastellfarben',thGalaxy:'Galaxie',thGalaxyD:'Kosmische Farben',thNeon:'Neon',thNeonD:'Leuchtende Neonfarben',thRetro:'Retro',thRetroD:'8-Bit-Spielhalle',
-pwBomb3:'3 Bomben',pwBomb3D:'Nützlich bei Blockaden',pwBomb10:'10 Bomben',pwBomb10D:'Großvorrat — 25% Rabatt',pwUndo5:'5 Rückgängig',pwUndo5D:'Falsche Züge löschen',pwXp2:'2× XP (1 Spiel)',pwXp2D:'Doppelte XP nächstes Spiel',pwCoins100D:'Sofortige Münzen',pwCoins300D:'Beliebtes Paket — 22% Bonus',pwCoins750D:'Großes Paket — 43% Bonus',
+pwBomb3:'3 Bomben',pwBomb3D:'Nützlich bei Blockaden',pwBomb10:'10 Bomben',pwBomb10D:'Großvorrat — 25% Rabatt',pwXp2:'2× XP (1 Spiel)',pwXp2D:'Doppelte XP nächstes Spiel',pwCoins100D:'Sofortige Münzen',pwCoins300D:'Beliebtes Paket — 22% Bonus',pwCoins750D:'Großes Paket — 43% Bonus',
 setupTitle:'🎮 Profil einrichten',setupDesc:'Gib deine Infos ein, um in der Weltrangliste zu erscheinen',setupNickLbl:'Spitzname',setupNickPh:'Dein Name…',setupCountryLbl:'🌍 Dein Land',setupStart:'Los geht\'s 🚀',weeklyRanking:'WOCHENRANGLISTE',weeklyScore:'Diese Woche',continueOrNew:'Weitermachen oder neu?',newGame:'Neues Spiel',tutRT:'Teile drehen 🔄',tutRD:'Tippe nochmal auf ein gewähltes Teil — es dreht sich im Uhrzeigersinn! Alle 4 Richtungen probieren.',tutRsub:'NOCHMAL TIPPEN → DREHT',colorBlast:'Farbknall',colorBlastAct:'🎨 Farbknall-Modus!',colorBlastGet:'Ansehen & Erhalten',goScoreReward:'Punktebelohnung',goClaim:'Ansehen & Abholen',goClaimed:'Abgeholt ✓',pwColorBlastD:'Entfernt eine beliebige Farbe komplett vom Spielfeld',colorBlastFull:'Voll ✓',continueAsk:'Möchtest du weiterspielen?',cpYes:'Ja',cpNo:'Nein',waShareBtn:'Auf WhatsApp teilen',appleSignIn:'Mit Apple anmelden'},
-FR:{gateMsg:'Se connecter',gateSyncing:'Chargement du compte…',appName:'Tiliq',play:'Jouer',settings:'Paramètres',account:'Compte',leaderboard:'Classement',score:'Score',best:'Meilleur',combo:'Combo',sound:'Son',volume:'Volume',haptic:'Vibration',theme:'Thème',dark:'Sombre',light:'Clair',language:'Langue',save:'Sauvegarder',close:'Fermer',back:'Retour',gameOver:'Partie Terminée !',playAgain:'Rejouer',mainMenu:'Menu Principal',yourScore:'Ton Score',worldRank:'Classement Mondial',newRecord:'🎉 Nouveau Record !',profile:'Profil',username:"Nom d'utilisateur",highScore:'Meilleur',gamesPlayed:'Parties',totalPoints:'Total',worldBoard:'🌍 Classement Mondial',yourRank:'Ton Rang',yourScoreLb:'Score',guest:'Invité',days:'Jours',undo:'Annuler',bomb:'Bombe',rescue:'Sauvetage',
+FR:{gateMsg:'Se connecter',gateSyncing:'Chargement du compte…',gateSyncError:'Impossible de charger le compte. Vérifiez votre connexion et réessayez.',gateRetry:'Réessayer',appName:'Tiliq',play:'Jouer',settings:'Paramètres',account:'Compte',leaderboard:'Classement',score:'Score',best:'Meilleur',combo:'Combo',sound:'Son',volume:'Volume',haptic:'Vibration',theme:'Thème',dark:'Sombre',light:'Clair',language:'Langue',save:'Sauvegarder',close:'Fermer',back:'Retour',gameOver:'Partie Terminée !',playAgain:'Rejouer',mainMenu:'Menu Principal',yourScore:'Ton Score',worldRank:'Classement Mondial',newRecord:'🎉 Nouveau Record !',profile:'Profil',username:"Nom d'utilisateur",highScore:'Meilleur',gamesPlayed:'Parties',totalPoints:'Total',worldBoard:'🌍 Classement Mondial',yourRank:'Ton Rang',yourScoreLb:'Score',guest:'Invité',days:'Jours',undo:'Annuler',bomb:'Bombe',rescue:'Sauvetage',
 m_combos:'5 Combos',m_rows:'5 Lignes',m_score:'500 Points',dailyMissions:'Missions du Jour',
-store:'Boutique',continueGame:'Continuer',editProfile:'Modifier le profil →',comboExpired:'Combo terminé',dailyClaimed:"RÉCLAMÉ AUJOURD'HUI",dailyRefresh:'Renouvellement demain',dailyCollect:'Récupérer !',iapSoon:'Achat bientôt disponible !',iapSuccess:'Achat réussi !',restored:'Achats restaurés.',copyCode:'Copier',codeCopied:'Copié !',yourCode:'Ton Code',codeShare:'Partage ce code avec tes amis',friendsTitle:'Amis',addFriend:'Ajouter un ami',enterName:'Quel est ton nom ?',namePh:'Ton pseudo...',rescue2ad:'Regarder 2 pubs pour continuer',superBomb:'Super Bombe',tileTheme:'Thème de tuiles',loginForRank:'Connecte-toi pour le classement',loginForFriends:'Connecte-toi avec Google pour les amis',friendCodePh:'ABC123',friendCodeLbl:'Ton Code',friendCodeSub:'Partage ce code avec tes amis 👇',rankTitle:'🏆 Classement',
-tabThemes:'🎨 Thèmes',tabPower:'⚡ Pouvoirs',tabVip:'👑 VIP',tabGlobal:'🌍 Monde',tabFriends:'👥 Amis',lbShare:'Partager',lbMyCode:'Ton Code',lbAmongFriends:'Parmi les amis',comboSection:'🔥 Thèmes de Combo',flameClassic:'Feu Classique',flameClassicD:'Flamme orange chaleureuse',flameIce:'Flamme de Glace',flameIceD:'Feu bleu froid',flameEmerald:'Flamme Émeraude',flameEmeraldD:'Feu magique vert',flameMystic:'Flamme Mystique',flameMysticD:'Magie violette-rose',flameGold:'Flamme Dorée',flameGoldD:'Feu royal',rowsShort:'LIGNES',selectCountry:'Choisir...',
+store:'Boutique',continueGame:'Continuer',editProfile:'Modifier le profil →',comboExpired:'Combo terminé',dailyClaimed:"RÉCLAMÉ AUJOURD'HUI",dailyRefresh:'Renouvellement demain',dailyCollect:'Récupérer !',restored:'Achats restaurés.',copyCode:'Copier',codeCopied:'Copié !',yourCode:'Ton Code',codeShare:'Partage ce code avec tes amis',friendsTitle:'Amis',addFriend:'Ajouter un ami',enterName:'Quel est ton nom ?',namePh:'Ton pseudo...',rescue2ad:'Regarder 2 pubs pour continuer',superBomb:'Super Bombe',tileTheme:'Thème de tuiles',loginForRank:'Connecte-toi pour le classement',loginForFriends:'Connecte-toi avec Google pour les amis',friendCodePh:'ABC123',friendCodeLbl:'Ton Code',friendCodeSub:'Partage ce code avec tes amis 👇',rankTitle:'🏆 Classement',
+tabThemes:'🎨 Thèmes',tabPower:'⚡ Pouvoirs',tabGlobal:'🌍 Monde',tabFriends:'👥 Amis',lbShare:'Partager',lbMyCode:'Ton Code',lbAmongFriends:'Parmi les amis',comboSection:'🔥 Thèmes de Combo',flameClassic:'Feu Classique',flameClassicD:'Flamme orange chaleureuse',flameIce:'Flamme de Glace',flameIceD:'Feu bleu froid',flameEmerald:'Flamme Émeraude',flameEmeraldD:'Feu magique vert',flameMystic:'Flamme Mystique',flameMysticD:'Magie violette-rose',flameGold:'Flamme Dorée',flameGoldD:'Feu royal',rowsShort:'LIGNES',selectCountry:'Choisir...',
 statLast:'Dernier',statGames:'Parties',statBest:'Meilleur',statStreak:'Série',dailyBonus:'BONUS QUOTIDIEN',tomorrow:'Demain',dailyRewardsTitle:'Récompenses quotidiennes',dailyView:'Voir',dailyDay:'Jour',dailyNote:'Reviens chaque jour pour garder ta série !',dailyClaimedToday:'Récupéré aujourd\'hui ✓',mergeTitle:'Transférer la progression ?',mergeDesc:'Transférer ta progression de cet appareil vers ton compte ? Si non, les données existantes du compte sont utilisées.',mergeYes:'Oui, transférer',mergeNo:'Non, utiliser le compte',inventory:'Inventaire',invCoins:'Pièces',invBombs:'Bombes',invUndos:'Annuler',invThemes:'Thèmes',invBoost:'XP',storeTitle:'🛍️ Boutique',syncDesc:'Sauvegarde ton score dans le cloud',accountConn:'✅ Connecté à ton compte',maxLevel:'👑 Niveau maximum !',
 freeSection:'Gratuit',premiumSection:'Thèmes Premium',powerSection:'Améliorations',coinSection:'Packs de coins',
 badgeActive:'ACTIF',badgeOwned:'ACQUIS',badgeFree:'GRATUIT',btnActive:'✓ Actif',btnApply:'Appliquer',btnUnlock:'Débloquer',
-vipTitle:'Abonnement VIP',vipMonthly:'8 $ / mois',vipPerk1:'🚫 Sans pub à 100 %',vipPerk2:'🪙 200 coins gratuits par semaine',vipPerk3:'⚡ 2× XP par partie',vipPerk4:'🏆 Cadre doré + badge spécial',vipPerk5:'💣 1 bombe gratuite par jour',vipPerk6:'🎨 Tous les thèmes débloqués',vipStart:'Commencer',noAdsTitle:'🚫 Sans publicité',noAdsDesc:'Achat unique, plus jamais de pub',noAdsBuy:'20 $ — Supprimer les pubs',restoreBtn:'↺ Restaurer les achats',
+
 thClassic:'Classique',thClassicD:'Méditerranée chaleureuse',thWooden:'Bois',thWoodenD:'Texture naturelle',thMarble:'Marbre',thMarbleD:'Élégant et frais',thOcean:'Océan',thOceanD:'Tons bleus profonds',thSunset:'Coucher de soleil',thSunsetD:'Couleurs de feu',thForest:'Forêt',thForestD:'Sérénité verte',thCandy:'Bonbon',thCandyD:'Couleurs pastel douces',thGalaxy:'Galaxie',thGalaxyD:'Couleurs cosmiques',thNeon:'Néon',thNeonD:'Couleurs néon vives',thRetro:'Rétro',thRetroD:"Salle d'arcade 8-bit",
-pwBomb3:'3 Bombes',pwBomb3D:'Utile en cas de blocage',pwBomb10:'10 Bombes',pwBomb10D:'Grand stock — 25% remise',pwUndo5:'5 Annulations',pwUndo5D:'Effacer les mauvais coups',pwXp2:'2× XP (1 Partie)',pwXp2D:'Double XP prochain jeu',pwCoins100D:'Recharge instantanée',pwCoins300D:'Pack populaire — 22% bonus',pwCoins750D:'Grand pack — 43% bonus',
+pwBomb3:'3 Bombes',pwBomb3D:'Utile en cas de blocage',pwBomb10:'10 Bombes',pwBomb10D:'Grand stock — 25% remise',pwXp2:'2× XP (1 Partie)',pwXp2D:'Double XP prochain jeu',pwCoins100D:'Recharge instantanée',pwCoins300D:'Pack populaire — 22% bonus',pwCoins750D:'Grand pack — 43% bonus',
 setupTitle:'🎮 Configurer le profil',setupDesc:'Entre tes infos pour apparaître dans le classement mondial',setupNickLbl:'Pseudo',setupNickPh:'Ton nom…',setupCountryLbl:'🌍 Ton Pays',setupStart:'C\'est parti 🚀',weeklyRanking:'CLASSEMENT HEBDO',weeklyScore:'Cette Semaine',continueOrNew:'Continuer ou nouveau?',newGame:'Nouvelle partie',tutRT:'Faire pivoter 🔄',tutRD:'Appuie à nouveau sur la pièce choisie — elle pivote dans le sens horaire ! Essaie les 4 directions.',tutRsub:'RE-APPUYER → PIVOTE',colorBlast:'Explosion Couleur',colorBlastAct:'🎨 Mode Explosion Couleur!',colorBlastGet:'Regarder & Gagner',goScoreReward:'Récompense Score',goClaim:'Regarder & Recevoir',goClaimed:'Reçu ✓',pwColorBlastD:'Efface entièrement une couleur du plateau',colorBlastFull:'Plein ✓',continueAsk:'Veux-tu continuer ?',cpYes:'Oui',cpNo:'Non',waShareBtn:'Partager sur WhatsApp',appleSignIn:'Se connecter avec Apple'},
-ES:{gateMsg:'Iniciar sesión',gateSyncing:'Cargando cuenta…',appName:'Tiliq',play:'Jugar',settings:'Ajustes',account:'Cuenta',leaderboard:'Clasificación',score:'Puntos',best:'Mejor',combo:'Combo',sound:'Sonido',volume:'Volumen',haptic:'Vibración',theme:'Tema',dark:'Oscuro',light:'Claro',language:'Idioma',save:'Guardar',close:'Cerrar',back:'Volver',gameOver:'¡Juego Terminado!',playAgain:'Otra Vez',mainMenu:'Menú Principal',yourScore:'Tu Puntuación',worldRank:'Clasificación Mundial',newRecord:'🎉 ¡Nuevo Récord!',profile:'Perfil',username:'Nombre de usuario',highScore:'Mejor',gamesPlayed:'Partidas',totalPoints:'Total',worldBoard:'🌍 Clasificación Mundial',yourRank:'Tu Posición',yourScoreLb:'Puntos',guest:'Invitado',days:'Días',undo:'Deshacer',bomb:'Bomba',rescue:'Rescate',
+ES:{gateMsg:'Iniciar sesión',gateSyncing:'Cargando cuenta…',gateSyncError:'No se pudo cargar la cuenta. Comprueba tu conexión e inténtalo de nuevo.',gateRetry:'Reintentar',appName:'Tiliq',play:'Jugar',settings:'Ajustes',account:'Cuenta',leaderboard:'Clasificación',score:'Puntos',best:'Mejor',combo:'Combo',sound:'Sonido',volume:'Volumen',haptic:'Vibración',theme:'Tema',dark:'Oscuro',light:'Claro',language:'Idioma',save:'Guardar',close:'Cerrar',back:'Volver',gameOver:'¡Juego Terminado!',playAgain:'Otra Vez',mainMenu:'Menú Principal',yourScore:'Tu Puntuación',worldRank:'Clasificación Mundial',newRecord:'🎉 ¡Nuevo Récord!',profile:'Perfil',username:'Nombre de usuario',highScore:'Mejor',gamesPlayed:'Partidas',totalPoints:'Total',worldBoard:'🌍 Clasificación Mundial',yourRank:'Tu Posición',yourScoreLb:'Puntos',guest:'Invitado',days:'Días',undo:'Deshacer',bomb:'Bomba',rescue:'Rescate',
 m_combos:'5 Combos',m_rows:'5 Filas',m_score:'500 Puntos',dailyMissions:'Misiones Diarias',
-store:'Tienda',continueGame:'Continuar',editProfile:'Editar perfil →',comboExpired:'Combo terminado',dailyClaimed:'RECLAMADO HOY',dailyRefresh:'Se renueva mañana',dailyCollect:'¡Recoger!',iapSoon:'¡Compra próximamente!',iapSuccess:'¡Compra exitosa!',restored:'Compras restauradas.',copyCode:'Copiar',codeCopied:'¡Copiado!',yourCode:'Tu Código',codeShare:'Comparte este código con tus amigos',friendsTitle:'Amigos',addFriend:'Añadir amigo',enterName:'¿Cuál es tu nombre?',namePh:'Tu apodo...',rescue2ad:'Ver 2 anuncios para continuar',superBomb:'Super Bomba',tileTheme:'Tema de mosaico',loginForRank:'Inicia sesión para el ranking',loginForFriends:'Inicia sesión con Google para amigos',friendCodePh:'ABC123',friendCodeLbl:'Tu Código',friendCodeSub:'Comparte este código con tus amigos 👇',rankTitle:'🏆 Clasificación',
-tabThemes:'🎨 Temas',tabPower:'⚡ Poderes',tabVip:'👑 VIP',tabGlobal:'🌍 Mundo',tabFriends:'👥 Amigos',lbShare:'Compartir',lbMyCode:'Tu Código',lbAmongFriends:'Entre amigos',comboSection:'🔥 Temas de Combo',flameClassic:'Fuego Clásico',flameClassicD:'Llama naranja cálida',flameIce:'Llama de Hielo',flameIceD:'Fuego azul frío',flameEmerald:'Llama Esmeralda',flameEmeraldD:'Fuego mágico verde',flameMystic:'Llama Mística',flameMysticD:'Magia púrpura-rosa',flameGold:'Llama Dorada',flameGoldD:'Fuego real',rowsShort:'FILAS',selectCountry:'Elegir...',
+store:'Tienda',continueGame:'Continuar',editProfile:'Editar perfil →',comboExpired:'Combo terminado',dailyClaimed:'RECLAMADO HOY',dailyRefresh:'Se renueva mañana',dailyCollect:'¡Recoger!',restored:'Compras restauradas.',copyCode:'Copiar',codeCopied:'¡Copiado!',yourCode:'Tu Código',codeShare:'Comparte este código con tus amigos',friendsTitle:'Amigos',addFriend:'Añadir amigo',enterName:'¿Cuál es tu nombre?',namePh:'Tu apodo...',rescue2ad:'Ver 2 anuncios para continuar',superBomb:'Super Bomba',tileTheme:'Tema de mosaico',loginForRank:'Inicia sesión para el ranking',loginForFriends:'Inicia sesión con Google para amigos',friendCodePh:'ABC123',friendCodeLbl:'Tu Código',friendCodeSub:'Comparte este código con tus amigos 👇',rankTitle:'🏆 Clasificación',
+tabThemes:'🎨 Temas',tabPower:'⚡ Poderes',tabGlobal:'🌍 Mundo',tabFriends:'👥 Amigos',lbShare:'Compartir',lbMyCode:'Tu Código',lbAmongFriends:'Entre amigos',comboSection:'🔥 Temas de Combo',flameClassic:'Fuego Clásico',flameClassicD:'Llama naranja cálida',flameIce:'Llama de Hielo',flameIceD:'Fuego azul frío',flameEmerald:'Llama Esmeralda',flameEmeraldD:'Fuego mágico verde',flameMystic:'Llama Mística',flameMysticD:'Magia púrpura-rosa',flameGold:'Llama Dorada',flameGoldD:'Fuego real',rowsShort:'FILAS',selectCountry:'Elegir...',
 statLast:'Última',statGames:'Partidas',statBest:'Mejor',statStreak:'Racha',dailyBonus:'BONO DIARIO',tomorrow:'Mañana',dailyRewardsTitle:'Recompensas diarias',dailyView:'Ver',dailyDay:'Día',dailyNote:'¡Vuelve cada día para mantener tu racha!',dailyClaimedToday:'Reclamado hoy ✓',mergeTitle:'¿Transferir progreso?',mergeDesc:'¿Mover tu progreso de este dispositivo a tu cuenta? Si no, se usan los datos existentes de la cuenta.',mergeYes:'Sí, transferir',mergeNo:'No, usar la cuenta',inventory:'Inventario',invCoins:'Monedas',invBombs:'Bombas',invUndos:'Deshacer',invThemes:'Temas',invBoost:'XP',storeTitle:'🛍️ Tienda',syncDesc:'Guarda tu puntuación en la nube',accountConn:'✅ Conectado a tu cuenta',maxLevel:'👑 ¡Nivel máximo!',
 freeSection:'Gratis',premiumSection:'Temas Premium',powerSection:'Mejoras',coinSection:'Paquetes de monedas',
 badgeActive:'ACTIVO',badgeOwned:'TUYO',badgeFree:'GRATIS',btnActive:'✓ Activo',btnApply:'Aplicar',btnUnlock:'Abrir',
-vipTitle:'Membresía VIP',vipMonthly:'$8 / mes',vipPerk1:'🚫 Sin anuncios',vipPerk2:'🪙 200 monedas gratis cada semana',vipPerk3:'⚡ 2× XP por partida',vipPerk4:'🏆 Marco dorado + insignia',vipPerk5:'💣 1 bomba gratis al día',vipPerk6:'🎨 Todos los temas disponibles',vipStart:'Empezar ahora',noAdsTitle:'🚫 Sin anuncios',noAdsDesc:'Compra única, sin anuncios para siempre',noAdsBuy:'$20 — Quitar anuncios',restoreBtn:'↺ Restaurar compras',
+
 thClassic:'Clásico',thClassicD:'Mediterráneo cálido',thWooden:'Madera',thWoodenD:'Textura natural',thMarble:'Mármol',thMarbleD:'Elegante y fresco',thOcean:'Océano',thOceanD:'Tonos azul profundo',thSunset:'Atardecer',thSunsetD:'Colores de fuego',thForest:'Bosque',thForestD:'Serenidad verde',thCandy:'Caramelo',thCandyD:'Colores pastel dulces',thGalaxy:'Galaxia',thGalaxyD:'Colores cósmicos',thNeon:'Neón',thNeonD:'Colores neón brillantes',thRetro:'Retro',thRetroD:'Salón arcade de 8 bits',
-pwBomb3:'3 Bombas',pwBomb3D:'Útil cuando te atascas',pwBomb10:'10 Bombas',pwBomb10D:'Gran stock — 25% descuento',pwUndo5:'5 Deshacer',pwUndo5D:'Borra movimientos erróneos',pwXp2:'2× XP (1 Partida)',pwXp2D:'Doble XP próximo juego',pwCoins100D:'Recarga instantánea',pwCoins300D:'Paquete popular — 22% bonus',pwCoins750D:'Gran paquete — 43% bonus',
+pwBomb3:'3 Bombas',pwBomb3D:'Útil cuando te atascas',pwBomb10:'10 Bombas',pwBomb10D:'Gran stock — 25% descuento',pwXp2:'2× XP (1 Partida)',pwXp2D:'Doble XP próximo juego',pwCoins100D:'Recarga instantánea',pwCoins300D:'Paquete popular — 22% bonus',pwCoins750D:'Gran paquete — 43% bonus',
 setupTitle:'🎮 Configurar perfil',setupDesc:'Ingresa tu información para aparecer en el ranking mundial',setupNickLbl:'Apodo',setupNickPh:'Tu nombre…',setupCountryLbl:'🌍 Tu País',setupStart:'¡Empezar 🚀',weeklyRanking:'RANKING SEMANAL',weeklyScore:'Esta Semana',continueOrNew:'¿Continuar o nuevo?',newGame:'Nueva partida',tutRT:'Rotar Piezas 🔄',tutRD:'Toca de nuevo la pieza seleccionada — ¡gira en sentido horario! Prueba las 4 direcciones.',tutRsub:'TOCAR DE NUEVO → GIRA',colorBlast:'Explosión de Color',colorBlastAct:'🎨 ¡Modo Explosión de Color!',colorBlastGet:'Ver y Ganar',goScoreReward:'Recompensa de Puntos',goClaim:'Ver y Reclamar',goClaimed:'Reclamado ✓',pwColorBlastD:'Elimina por completo un color del tablero',colorBlastFull:'Lleno ✓',continueAsk:'¿Quieres continuar?',cpYes:'Sí',cpNo:'No',waShareBtn:'Compartir en WhatsApp',appleSignIn:'Iniciar sesión con Apple'},
-IT:{gateMsg:'Accedi',gateSyncing:'Caricamento account…',appName:'Tiliq',play:'Gioca',settings:'Impostazioni',account:'Account',leaderboard:'Classifica',score:'Punteggio',best:'Migliore',combo:'Combo',sound:'Suono',volume:'Volume',haptic:'Vibrazione',theme:'Tema',dark:'Scuro',light:'Chiaro',language:'Lingua',save:'Salva',close:'Chiudi',back:'Indietro',gameOver:'Fine Partita!',playAgain:'Rigioca',mainMenu:'Menu Principale',yourScore:'Il tuo Punteggio',worldRank:'Classifica Mondiale',newRecord:'🎉 Nuovo Record!',profile:'Profilo',username:'Nome utente',highScore:'Migliore',gamesPlayed:'Partite',totalPoints:'Totale',worldBoard:'🌍 Classifica Mondiale',yourRank:'Tua Posizione',yourScoreLb:'Punteggio',guest:'Ospite',days:'Giorni',undo:'Annulla',bomb:'Bomba',rescue:'Salvataggio',
+IT:{gateMsg:'Accedi',gateSyncing:'Caricamento account…',gateSyncError:'Impossibile caricare l\'account. Controlla la connessione e riprova.',gateRetry:'Riprova',appName:'Tiliq',play:'Gioca',settings:'Impostazioni',account:'Account',leaderboard:'Classifica',score:'Punteggio',best:'Migliore',combo:'Combo',sound:'Suono',volume:'Volume',haptic:'Vibrazione',theme:'Tema',dark:'Scuro',light:'Chiaro',language:'Lingua',save:'Salva',close:'Chiudi',back:'Indietro',gameOver:'Fine Partita!',playAgain:'Rigioca',mainMenu:'Menu Principale',yourScore:'Il tuo Punteggio',worldRank:'Classifica Mondiale',newRecord:'🎉 Nuovo Record!',profile:'Profilo',username:'Nome utente',highScore:'Migliore',gamesPlayed:'Partite',totalPoints:'Totale',worldBoard:'🌍 Classifica Mondiale',yourRank:'Tua Posizione',yourScoreLb:'Punteggio',guest:'Ospite',days:'Giorni',undo:'Annulla',bomb:'Bomba',rescue:'Salvataggio',
 m_combos:'5 Combo',m_rows:'5 Righe',m_score:'500 Punti',dailyMissions:'Missioni Giornaliere',
-store:'Negozio',continueGame:'Continua',editProfile:'Modifica profilo →',comboExpired:'Combo terminata',dailyClaimed:'RISCOSSO OGGI',dailyRefresh:'Si rinnova domani',dailyCollect:'Raccogli!',iapSoon:'Acquisto prossimamente!',iapSuccess:'Acquisto riuscito!',restored:'Acquisti ripristinati.',copyCode:'Copia',codeCopied:'Copiato!',yourCode:'Il tuo Codice',codeShare:'Condividi questo codice con gli amici',friendsTitle:'Amici',addFriend:'Aggiungi amico',enterName:'Qual è il tuo nome?',namePh:'Il tuo soprannome...',rescue2ad:'Guarda 2 annunci per continuare',superBomb:'Super Bomba',tileTheme:'Tema tessere',loginForRank:'Accedi per la classifica',loginForFriends:'Accedi con Google per gli amici',friendCodePh:'ABC123',friendCodeLbl:'Il tuo Codice',friendCodeSub:'Condividi questo codice con gli amici 👇',rankTitle:'🏆 Classifica',
-tabThemes:'🎨 Temi',tabPower:'⚡ Poteri',tabVip:'👑 VIP',tabGlobal:'🌍 Mondo',tabFriends:'👥 Amici',lbShare:'Condividi',lbMyCode:'Il tuo Codice',lbAmongFriends:'Tra amici',comboSection:'🔥 Temi Combo',flameClassic:'Fuoco Classico',flameClassicD:'Fiamma arancione calda',flameIce:'Fiamma di Ghiaccio',flameIceD:'Fuoco blu freddo',flameEmerald:'Fiamma Smeraldo',flameEmeraldD:'Fuoco magico verde',flameMystic:'Fiamma Mistica',flameMysticD:'Magia viola-rosa',flameGold:'Fiamma Dorata',flameGoldD:'Fuoco reale',rowsShort:'RIGHE',selectCountry:'Scegli...',
+store:'Negozio',continueGame:'Continua',editProfile:'Modifica profilo →',comboExpired:'Combo terminata',dailyClaimed:'RISCOSSO OGGI',dailyRefresh:'Si rinnova domani',dailyCollect:'Raccogli!',restored:'Acquisti ripristinati.',copyCode:'Copia',codeCopied:'Copiato!',yourCode:'Il tuo Codice',codeShare:'Condividi questo codice con gli amici',friendsTitle:'Amici',addFriend:'Aggiungi amico',enterName:'Qual è il tuo nome?',namePh:'Il tuo soprannome...',rescue2ad:'Guarda 2 annunci per continuare',superBomb:'Super Bomba',tileTheme:'Tema tessere',loginForRank:'Accedi per la classifica',loginForFriends:'Accedi con Google per gli amici',friendCodePh:'ABC123',friendCodeLbl:'Il tuo Codice',friendCodeSub:'Condividi questo codice con gli amici 👇',rankTitle:'🏆 Classifica',
+tabThemes:'🎨 Temi',tabPower:'⚡ Poteri',tabGlobal:'🌍 Mondo',tabFriends:'👥 Amici',lbShare:'Condividi',lbMyCode:'Il tuo Codice',lbAmongFriends:'Tra amici',comboSection:'🔥 Temi Combo',flameClassic:'Fuoco Classico',flameClassicD:'Fiamma arancione calda',flameIce:'Fiamma di Ghiaccio',flameIceD:'Fuoco blu freddo',flameEmerald:'Fiamma Smeraldo',flameEmeraldD:'Fuoco magico verde',flameMystic:'Fiamma Mistica',flameMysticD:'Magia viola-rosa',flameGold:'Fiamma Dorata',flameGoldD:'Fuoco reale',rowsShort:'RIGHE',selectCountry:'Scegli...',
 statLast:'Ultimo',statGames:'Partite',statBest:'Migliore',statStreak:'Serie',dailyBonus:'BONUS GIORNALIERO',tomorrow:'Domani',dailyRewardsTitle:'Ricompense giornaliere',dailyView:'Vedi',dailyDay:'Giorno',dailyNote:'Torna ogni giorno per mantenere la tua serie!',dailyClaimedToday:'Riscattato oggi ✓',mergeTitle:'Trasferire i progressi?',mergeDesc:'Spostare i progressi di questo dispositivo sul tuo account? Se no, vengono usati i dati esistenti dell\'account.',mergeYes:'Sì, trasferisci',mergeNo:'No, usa l\'account',inventory:'Inventario',invCoins:'Monete',invBombs:'Bombe',invUndos:'Annulla',invThemes:'Temi',invBoost:'XP',storeTitle:'🛍️ Negozio',syncDesc:'Salva il punteggio nel cloud',accountConn:'✅ Connesso al tuo account',maxLevel:'👑 Livello massimo!',
 freeSection:'Gratuito',premiumSection:'Temi Premium',powerSection:'Potenziamenti',coinSection:'Pacchetti monete',
 badgeActive:'ATTIVO',badgeOwned:'POSSEDUTO',badgeFree:'GRATUITO',btnActive:'✓ Attivo',btnApply:'Applica',btnUnlock:'Sblocca',
-vipTitle:'Abbonamento VIP',vipMonthly:'$8 / mese',vipPerk1:'🚫 Senza pubblicità',vipPerk2:'🪙 200 monete gratuite a settimana',vipPerk3:'⚡ 2× XP per partita',vipPerk4:'🏆 Cornice dorata + badge',vipPerk5:'💣 1 bomba gratuita al giorno',vipPerk6:'🎨 Tutti i temi sbloccati',vipStart:'Inizia ora',noAdsTitle:'🚫 Senza pubblicità',noAdsDesc:'Acquisto unico, niente più pubblicità',noAdsBuy:'$20 — Rimuovi pubblicità',restoreBtn:'↺ Ripristina acquisti',
+
 thClassic:'Classico',thClassicD:'Mediterraneo caldo',thWooden:'Legno',thWoodenD:'Texture naturale',thMarble:'Marmo',thMarbleD:'Elegante e fresco',thOcean:'Oceano',thOceanD:'Toni blu profondi',thSunset:'Tramonto',thSunsetD:'Colori di fuoco',thForest:'Foresta',thForestD:'Serenità verde',thCandy:'Caramella',thCandyD:'Colori pastello dolci',thGalaxy:'Galassia',thGalaxyD:'Colori cosmici',thNeon:'Neon',thNeonD:'Colori neon vivaci',thRetro:'Retro',thRetroD:'Sala giochi 8-bit',
-pwBomb3:'3 Bombe',pwBomb3D:'Utile quando sei bloccato',pwBomb10:'10 Bombe',pwBomb10D:'Grande scorta — 25% sconto',pwUndo5:'5 Annulla',pwUndo5D:'Cancella mosse sbagliate',pwXp2:'2× XP (1 Partita)',pwXp2D:'Doppio XP prossimo gioco',pwCoins100D:'Ricarica istantanea',pwCoins300D:'Pacchetto popolare — 22% bonus',pwCoins750D:'Grande pacchetto — 43% bonus',
+pwBomb3:'3 Bombe',pwBomb3D:'Utile quando sei bloccato',pwBomb10:'10 Bombe',pwBomb10D:'Grande scorta — 25% sconto',pwXp2:'2× XP (1 Partita)',pwXp2D:'Doppio XP prossimo gioco',pwCoins100D:'Ricarica istantanea',pwCoins300D:'Pacchetto popolare — 22% bonus',pwCoins750D:'Grande pacchetto — 43% bonus',
 setupTitle:'🎮 Completa il profilo',setupDesc:'Inserisci le tue info per apparire nella classifica mondiale',setupNickLbl:'Soprannome',setupNickPh:'Il tuo nome…',setupCountryLbl:'🌍 Il tuo Paese',setupStart:'Iniziamo 🚀',weeklyRanking:'CLASSIFICA SETTIMANALE',weeklyScore:'Questa Settimana',continueOrNew:'Continuare o nuovo?',newGame:'Nuova partita',tutRT:'Ruota i Pezzi 🔄',tutRD:'Tocca di nuovo il pezzo selezionato — ruota in senso orario! Prova tutte le 4 direzioni.',tutRsub:'TOCCA DI NUOVO → RUOTA',colorBlast:'Esplosione Colore',colorBlastAct:'🎨 Modalità Esplosione Colore!',colorBlastGet:'Guarda e Ottieni',goScoreReward:'Premio Punteggio',goClaim:'Guarda e Riscuoti',goClaimed:'Riscosso ✓',pwColorBlastD:'Rimuove completamente un colore dalla plancia',colorBlastFull:'Pieno ✓',continueAsk:'Vuoi continuare?',cpYes:'Sì',cpNo:'No',waShareBtn:'Condividi su WhatsApp',appleSignIn:'Accedi con Apple'},
-PT:{gateMsg:'Entrar',gateSyncing:'Carregando conta…',appName:'Tiliq',play:'Jogar',settings:'Configurações',account:'Conta',leaderboard:'Classificação',score:'Pontos',best:'Melhor',combo:'Combo',sound:'Som',volume:'Volume',haptic:'Vibração',theme:'Tema',dark:'Escuro',light:'Claro',language:'Idioma',save:'Salvar',close:'Fechar',back:'Voltar',gameOver:'Fim de Jogo!',playAgain:'Jogar Novamente',mainMenu:'Menu Principal',yourScore:'Sua Pontuação',worldRank:'Classificação Mundial',newRecord:'🎉 Novo Recorde!',profile:'Perfil',username:'Nome de usuário',highScore:'Melhor',gamesPlayed:'Jogos',totalPoints:'Total',worldBoard:'🌍 Classificação Mundial',yourRank:'Sua Posição',yourScoreLb:'Pontuação',guest:'Convidado',days:'Dias',undo:'Desfazer',bomb:'Bomba',rescue:'Resgate',
+PT:{gateMsg:'Entrar',gateSyncing:'Carregando conta…',gateSyncError:'Não foi possível carregar a conta. Verifique sua conexão e tente novamente.',gateRetry:'Tentar novamente',appName:'Tiliq',play:'Jogar',settings:'Configurações',account:'Conta',leaderboard:'Classificação',score:'Pontos',best:'Melhor',combo:'Combo',sound:'Som',volume:'Volume',haptic:'Vibração',theme:'Tema',dark:'Escuro',light:'Claro',language:'Idioma',save:'Salvar',close:'Fechar',back:'Voltar',gameOver:'Fim de Jogo!',playAgain:'Jogar Novamente',mainMenu:'Menu Principal',yourScore:'Sua Pontuação',worldRank:'Classificação Mundial',newRecord:'🎉 Novo Recorde!',profile:'Perfil',username:'Nome de usuário',highScore:'Melhor',gamesPlayed:'Jogos',totalPoints:'Total',worldBoard:'🌍 Classificação Mundial',yourRank:'Sua Posição',yourScoreLb:'Pontuação',guest:'Convidado',days:'Dias',undo:'Desfazer',bomb:'Bomba',rescue:'Resgate',
 m_combos:'5 Combos',m_rows:'5 Linhas',m_score:'500 Pontos',dailyMissions:'Missões Diárias',
-store:'Loja',continueGame:'Continuar',editProfile:'Editar perfil →',comboExpired:'Combo encerrado',dailyClaimed:'COLETADO HOJE',dailyRefresh:'Renova amanhã',dailyCollect:'Coletar!',iapSoon:'Compra em breve!',iapSuccess:'Compra concluída!',restored:'Compras restauradas.',copyCode:'Copiar',codeCopied:'Copiado!',yourCode:'Seu Código',codeShare:'Compartilhe este código com seus amigos',friendsTitle:'Amigos',addFriend:'Adicionar amigo',enterName:'Qual é o seu nome?',namePh:'Seu apelido...',rescue2ad:'Assistir 2 anúncios para continuar',superBomb:'Super Bomba',tileTheme:'Tema de azulejo',loginForRank:'Entre para ver o ranking',loginForFriends:'Entre com Google para ter amigos',friendCodePh:'ABC123',friendCodeLbl:'Seu Código',friendCodeSub:'Compartilhe este código com seus amigos 👇',rankTitle:'🏆 Classificação',
-tabThemes:'🎨 Temas',tabPower:'⚡ Poderes',tabVip:'👑 VIP',tabGlobal:'🌍 Mundo',tabFriends:'👥 Amigos',lbShare:'Compartilhar',lbMyCode:'Seu Código',lbAmongFriends:'Entre amigos',comboSection:'🔥 Temas de Combo',flameClassic:'Fogo Clássico',flameClassicD:'Chama laranja quente',flameIce:'Chama de Gelo',flameIceD:'Fogo azul frio',flameEmerald:'Chama Esmeralda',flameEmeraldD:'Fogo mágico verde',flameMystic:'Chama Mística',flameMysticD:'Magia roxo-rosa',flameGold:'Chama Dourada',flameGoldD:'Fogo real',rowsShort:'LINHAS',selectCountry:'Selecionar...',
+store:'Loja',continueGame:'Continuar',editProfile:'Editar perfil →',comboExpired:'Combo encerrado',dailyClaimed:'COLETADO HOJE',dailyRefresh:'Renova amanhã',dailyCollect:'Coletar!',restored:'Compras restauradas.',copyCode:'Copiar',codeCopied:'Copiado!',yourCode:'Seu Código',codeShare:'Compartilhe este código com seus amigos',friendsTitle:'Amigos',addFriend:'Adicionar amigo',enterName:'Qual é o seu nome?',namePh:'Seu apelido...',rescue2ad:'Assistir 2 anúncios para continuar',superBomb:'Super Bomba',tileTheme:'Tema de azulejo',loginForRank:'Entre para ver o ranking',loginForFriends:'Entre com Google para ter amigos',friendCodePh:'ABC123',friendCodeLbl:'Seu Código',friendCodeSub:'Compartilhe este código com seus amigos 👇',rankTitle:'🏆 Classificação',
+tabThemes:'🎨 Temas',tabPower:'⚡ Poderes',tabGlobal:'🌍 Mundo',tabFriends:'👥 Amigos',lbShare:'Compartilhar',lbMyCode:'Seu Código',lbAmongFriends:'Entre amigos',comboSection:'🔥 Temas de Combo',flameClassic:'Fogo Clássico',flameClassicD:'Chama laranja quente',flameIce:'Chama de Gelo',flameIceD:'Fogo azul frio',flameEmerald:'Chama Esmeralda',flameEmeraldD:'Fogo mágico verde',flameMystic:'Chama Mística',flameMysticD:'Magia roxo-rosa',flameGold:'Chama Dourada',flameGoldD:'Fogo real',rowsShort:'LINHAS',selectCountry:'Selecionar...',
 statLast:'Última',statGames:'Jogos',statBest:'Melhor',statStreak:'Série',dailyBonus:'BÔNUS DIÁRIO',tomorrow:'Amanhã',dailyRewardsTitle:'Recompensas diárias',dailyView:'Ver',dailyDay:'Dia',dailyNote:'Volte todo dia para manter sua sequência!',dailyClaimedToday:'Resgatado hoje ✓',mergeTitle:'Transferir progresso?',mergeDesc:'Mover seu progresso deste dispositivo para sua conta? Se não, os dados existentes da conta serão usados.',mergeYes:'Sim, transferir',mergeNo:'Não, usar conta',inventory:'Inventário',invCoins:'Moedas',invBombs:'Bombas',invUndos:'Desfazer',invThemes:'Temas',invBoost:'XP',storeTitle:'🛍️ Loja',syncDesc:'Salve sua pontuação na nuvem',accountConn:'✅ Conectado à sua conta',maxLevel:'👑 Nível máximo!',
 freeSection:'Grátis',premiumSection:'Temas Premium',powerSection:'Melhorias',coinSection:'Pacotes de moedas',
 badgeActive:'ATIVO',badgeOwned:'POSSUI',badgeFree:'GRÁTIS',btnActive:'✓ Ativo',btnApply:'Aplicar',btnUnlock:'Desbloquear',
-vipTitle:'Assinatura VIP',vipMonthly:'$8 / mês',vipPerk1:'🚫 100% sem anúncios',vipPerk2:'🪙 200 moedas grátis por semana',vipPerk3:'⚡ 2× XP por jogo',vipPerk4:'🏆 Moldura dourada + insígnia',vipPerk5:'💣 1 bomba grátis por dia',vipPerk6:'🎨 Todos os temas desbloqueados',vipStart:'Começar agora',noAdsTitle:'🚫 Sem anúncios',noAdsDesc:'Compra única, sem anúncios para sempre',noAdsBuy:'$20 — Remover anúncios',restoreBtn:'↺ Restaurar compras',
+
 thClassic:'Clássico',thClassicD:'Mediterrâneo quente',thWooden:'Madeira',thWoodenD:'Textura natural',thMarble:'Mármore',thMarbleD:'Elegante e fresco',thOcean:'Oceano',thOceanD:'Tons de azul profundo',thSunset:'Pôr do sol',thSunsetD:'Cores de fogo',thForest:'Floresta',thForestD:'Serenidade verde',thCandy:'Doce',thCandyD:'Cores pastel doces',thGalaxy:'Galáxia',thGalaxyD:'Cores cósmicas',thNeon:'Neon',thNeonD:'Cores neon vibrantes',thRetro:'Retrô',thRetroD:'Fliperama 8-bit',
-pwBomb3:'3 Bombas',pwBomb3D:'Útil quando travado',pwBomb10:'10 Bombas',pwBomb10D:'Grande estoque — 25% desconto',pwUndo5:'5 Desfazer',pwUndo5D:'Apagar movimentos errados',pwXp2:'2× XP (1 Jogo)',pwXp2D:'XP duplo próximo jogo',pwCoins100D:'Recarga instantânea',pwCoins300D:'Pacote popular — 22% bônus',pwCoins750D:'Pacote grande — 43% bônus',
+pwBomb3:'3 Bombas',pwBomb3D:'Útil quando travado',pwBomb10:'10 Bombas',pwBomb10D:'Grande estoque — 25% desconto',pwXp2:'2× XP (1 Jogo)',pwXp2D:'XP duplo próximo jogo',pwCoins100D:'Recarga instantânea',pwCoins300D:'Pacote popular — 22% bônus',pwCoins750D:'Pacote grande — 43% bônus',
 setupTitle:'🎮 Configurar perfil',setupDesc:'Insira suas informações para aparecer no ranking mundial',setupNickLbl:'Apelido',setupNickPh:'Seu nome…',setupCountryLbl:'🌍 Seu País',setupStart:'Vamos lá 🚀',weeklyRanking:'RANKING SEMANAL',weeklyScore:'Esta Semana',continueOrNew:'Continuar ou novo?',newGame:'Novo jogo',tutRT:'Girar Peças 🔄',tutRD:'Toque novamente na peça selecionada — ela gira no sentido horário! Experimente as 4 direções.',tutRsub:'TOQUE DE NOVO → GIRA',colorBlast:'Explosão de Cor',colorBlastAct:'🎨 Modo Explosão de Cor!',colorBlastGet:'Assistir e Ganhar',goScoreReward:'Recompensa de Pontos',goClaim:'Assistir e Resgatar',goClaimed:'Resgatado ✓',pwColorBlastD:'Remove completamente uma cor do tabuleiro',colorBlastFull:'Cheio ✓',continueAsk:'Quer continuar?',cpYes:'Sim',cpNo:'Não',waShareBtn:'Compartilhar no WhatsApp',appleSignIn:'Entrar com a Apple'},
-RU:{gateMsg:'Войти',gateSyncing:'Загрузка аккаунта…',appName:'Tiliq',play:'Играть',settings:'Настройки',account:'Аккаунт',leaderboard:'Рейтинг',score:'Очки',best:'Лучший',combo:'Комбо',sound:'Звук',volume:'Громкость',haptic:'Вибрация',theme:'Тема',dark:'Тёмный',light:'Светлый',language:'Язык',save:'Сохранить',close:'Закрыть',back:'Назад',gameOver:'Игра Окончена!',playAgain:'Снова',mainMenu:'Главное меню',yourScore:'Твой счёт',worldRank:'Мировой рейтинг',newRecord:'🎉 Новый рекорд!',profile:'Профиль',username:'Имя пользователя',highScore:'Лучший',gamesPlayed:'Игры',totalPoints:'Итого',worldBoard:'🌍 Мировой рейтинг',yourRank:'Твой ранг',yourScoreLb:'Очки',guest:'Гость',days:'Дней',undo:'Отмена',bomb:'Бомба',rescue:'Спасение',
+RU:{gateMsg:'Войти',gateSyncing:'Загрузка аккаунта…',gateSyncError:'Не удалось загрузить аккаунт. Проверьте подключение и попробуйте снова.',gateRetry:'Повторить',appName:'Tiliq',play:'Играть',settings:'Настройки',account:'Аккаунт',leaderboard:'Рейтинг',score:'Очки',best:'Лучший',combo:'Комбо',sound:'Звук',volume:'Громкость',haptic:'Вибрация',theme:'Тема',dark:'Тёмный',light:'Светлый',language:'Язык',save:'Сохранить',close:'Закрыть',back:'Назад',gameOver:'Игра Окончена!',playAgain:'Снова',mainMenu:'Главное меню',yourScore:'Твой счёт',worldRank:'Мировой рейтинг',newRecord:'🎉 Новый рекорд!',profile:'Профиль',username:'Имя пользователя',highScore:'Лучший',gamesPlayed:'Игры',totalPoints:'Итого',worldBoard:'🌍 Мировой рейтинг',yourRank:'Твой ранг',yourScoreLb:'Очки',guest:'Гость',days:'Дней',undo:'Отмена',bomb:'Бомба',rescue:'Спасение',
 m_combos:'5 комбо',m_rows:'5 рядов',m_score:'500 очков',dailyMissions:'Ежедневные задания',
-store:'Магазин',continueGame:'Продолжить',editProfile:'Изменить профиль →',comboExpired:'Комбо закончилось',dailyClaimed:'УЖЕ ПОЛУЧЕНО',dailyRefresh:'Обновится завтра',dailyCollect:'Получить!',iapSoon:'Покупки скоро будут доступны!',iapSuccess:'Покупка успешна!',restored:'Покупки восстановлены.',copyCode:'Копировать',codeCopied:'Скопировано!',yourCode:'Ваш код',codeShare:'Поделитесь кодом с друзьями',friendsTitle:'Друзья',addFriend:'Добавить друга',enterName:'Как тебя зовут?',namePh:'Твой никнейм...',rescue2ad:'Смотреть 2 рекламы для продолжения',superBomb:'Супер бомба',tileTheme:'Тема плиток',loginForRank:'Войдите для рейтинга',loginForFriends:'Войдите через Google для друзей',friendCodePh:'ABC123',friendCodeLbl:'Ваш код',friendCodeSub:'Поделитесь кодом с друзьями 👇',rankTitle:'🏆 Рейтинг',
-tabThemes:'🎨 Темы',tabPower:'⚡ Силы',tabVip:'👑 VIP',tabGlobal:'🌍 Мир',tabFriends:'👥 Друзья',lbShare:'Поделиться',lbMyCode:'Ваш код',lbAmongFriends:'Среди друзей',comboSection:'🔥 Темы Комбо',flameClassic:'Классический Огонь',flameClassicD:'Тёплое оранжевое пламя',flameIce:'Ледяное Пламя',flameIceD:'Холодный синий огонь',flameEmerald:'Изумрудное Пламя',flameEmeraldD:'Зелёный магический огонь',flameMystic:'Мистическое Пламя',flameMysticD:'Фиолетово-розовая магия',flameGold:'Золотое Пламя',flameGoldD:'Королевский огонь',rowsShort:'РЯДОВ',selectCountry:'Выбрать...',
+store:'Магазин',continueGame:'Продолжить',editProfile:'Изменить профиль →',comboExpired:'Комбо закончилось',dailyClaimed:'УЖЕ ПОЛУЧЕНО',dailyRefresh:'Обновится завтра',dailyCollect:'Получить!',restored:'Покупки восстановлены.',copyCode:'Копировать',codeCopied:'Скопировано!',yourCode:'Ваш код',codeShare:'Поделитесь кодом с друзьями',friendsTitle:'Друзья',addFriend:'Добавить друга',enterName:'Как тебя зовут?',namePh:'Твой никнейм...',rescue2ad:'Смотреть 2 рекламы для продолжения',superBomb:'Супер бомба',tileTheme:'Тема плиток',loginForRank:'Войдите для рейтинга',loginForFriends:'Войдите через Google для друзей',friendCodePh:'ABC123',friendCodeLbl:'Ваш код',friendCodeSub:'Поделитесь кодом с друзьями 👇',rankTitle:'🏆 Рейтинг',
+tabThemes:'🎨 Темы',tabPower:'⚡ Силы',tabGlobal:'🌍 Мир',tabFriends:'👥 Друзья',lbShare:'Поделиться',lbMyCode:'Ваш код',lbAmongFriends:'Среди друзей',comboSection:'🔥 Темы Комбо',flameClassic:'Классический Огонь',flameClassicD:'Тёплое оранжевое пламя',flameIce:'Ледяное Пламя',flameIceD:'Холодный синий огонь',flameEmerald:'Изумрудное Пламя',flameEmeraldD:'Зелёный магический огонь',flameMystic:'Мистическое Пламя',flameMysticD:'Фиолетово-розовая магия',flameGold:'Золотое Пламя',flameGoldD:'Королевский огонь',rowsShort:'РЯДОВ',selectCountry:'Выбрать...',
 statLast:'Посл.',statGames:'Игры',statBest:'Лучший',statStreak:'Серия',dailyBonus:'ЕЖЕДНЕВНЫЙ БОНУС',tomorrow:'Завтра',dailyRewardsTitle:'Ежедневные награды',dailyView:'Смотреть',dailyDay:'День',dailyNote:'Заходи каждый день, чтобы не терять серию!',dailyClaimedToday:'Получено сегодня ✓',mergeTitle:'Перенести прогресс?',mergeDesc:'Перенести прогресс с этого устройства в аккаунт? Если нет, будут использованы данные аккаунта.',mergeYes:'Да, перенести',mergeNo:'Нет, аккаунт',inventory:'Инвентарь',invCoins:'Монеты',invBombs:'Бомбы',invUndos:'Отмена',invThemes:'Темы',invBoost:'XP',storeTitle:'🛍️ Магазин',syncDesc:'Сохрани счёт в облаке',accountConn:'✅ Подключено к аккаунту',maxLevel:'👑 Максимальный уровень!',
 freeSection:'Бесплатно',premiumSection:'Премиум темы',powerSection:'Усилители',coinSection:'Пакеты монет',
 badgeActive:'АКТИВНЫЙ',badgeOwned:'КУПЛЕНО',badgeFree:'БЕСПЛАТНО',btnActive:'✓ Активно',btnApply:'Применить',btnUnlock:'Открыть',
-vipTitle:'VIP-подписка',vipMonthly:'$8 / месяц',vipPerk1:'🚫 Полностью без рекламы',vipPerk2:'🪙 200 монет каждую неделю',vipPerk3:'⚡ 2× XP за каждую игру',vipPerk4:'🏆 Золотая рамка + значок',vipPerk5:'💣 1 бесплатная бомба в день',vipPerk6:'🎨 Все темы открыты',vipStart:'Начать',noAdsTitle:'🚫 Без рекламы',noAdsDesc:'Разовая покупка, больше никакой рекламы',noAdsBuy:'$20 — Убрать рекламу',restoreBtn:'↺ Восстановить покупки',
+
 thClassic:'Классика',thClassicD:'Тёплое Средиземноморье',thWooden:'Дерево',thWoodenD:'Природная текстура',thMarble:'Мрамор',thMarbleD:'Элегантный и свежий',thOcean:'Океан',thOceanD:'Глубокие синие тона',thSunset:'Закат',thSunsetD:'Тёплые огненные цвета',thForest:'Лес',thForestD:'Зелёное спокойствие',thCandy:'Конфета',thCandyD:'Нежные пастельные цвета',thGalaxy:'Галактика',thGalaxyD:'Космические цвета',thNeon:'Неон',thNeonD:'Яркие неоновые цвета',thRetro:'Ретро',thRetroD:'8-битная аркада',
-pwBomb3:'3 Бомбы',pwBomb3D:'Пригодится при блокировке',pwBomb10:'10 Бомб',pwBomb10D:'Большой запас — скидка 25%',pwUndo5:'5 Отмен',pwUndo5D:'Отменить неверные ходы',pwXp2:'2× XP (1 Игра)',pwXp2D:'Двойной XP в следующей игре',pwCoins100D:'Мгновенное пополнение',pwCoins300D:'Популярный пакет — бонус 22%',pwCoins750D:'Большой пакет — бонус 43%',
+pwBomb3:'3 Бомбы',pwBomb3D:'Пригодится при блокировке',pwBomb10:'10 Бомб',pwBomb10D:'Большой запас — скидка 25%',pwXp2:'2× XP (1 Игра)',pwXp2D:'Двойной XP в следующей игре',pwCoins100D:'Мгновенное пополнение',pwCoins300D:'Популярный пакет — бонус 22%',pwCoins750D:'Большой пакет — бонус 43%',
 setupTitle:'🎮 Настройка профиля',setupDesc:'Введи данные для отображения в мировом рейтинге',setupNickLbl:'Никнейм',setupNickPh:'Твоё имя…',setupCountryLbl:'🌍 Твоя страна',setupStart:'Начать 🚀',weeklyRanking:'НЕДЕЛЬНЫЙ РЕЙТИНГ',weeklyScore:'Эта неделя',continueOrNew:'Продолжить или новая?',newGame:'Новая игра',tutRT:'Повернуть фигуры 🔄',tutRD:'Нажми на выбранную фигуру ещё раз — она повернётся по часовой стрелке! Попробуй все 4 стороны.',tutRsub:'ЕЩЁ РАЗ → ПОВОРОТ',colorBlast:'Цветовой Взрыв',colorBlastAct:'🎨 Режим Цветового Взрыва!',colorBlastGet:'Смотреть и Получить',goScoreReward:'Награда за Очки',goClaim:'Смотреть и Забрать',goClaimed:'Получено ✓',pwColorBlastD:'Полностью убирает один цвет с поля',colorBlastFull:'Заполнено ✓',continueAsk:'Хотите продолжить?',cpYes:'Да',cpNo:'Нет',waShareBtn:'Поделиться в WhatsApp',appleSignIn:'Войти через Apple'},
-HI:{gateMsg:'साइन इन करें',gateSyncing:'खाता लोड हो रहा है…',appName:'Tiliq',play:'खेलें',settings:'सेटिंग्स',account:'खाता',leaderboard:'रैंकिंग',score:'स्कोर',best:'सर्वश्रेष्ठ',combo:'कॉम्बो',sound:'आवाज़',volume:'वॉल्यूम',haptic:'कंपन',theme:'थीम',dark:'डार्क',light:'लाइट',language:'भाषा',save:'सेव',close:'बंद',back:'वापस',gameOver:'गेम ओवर!',playAgain:'फिर खेलें',mainMenu:'मुख्य मेनू',yourScore:'आपका स्कोर',worldRank:'विश्व रैंकिंग',newRecord:'🎉 नया रिकॉर्ड!',profile:'प्रोफाइल',username:'उपयोगकर्ता नाम',highScore:'सर्वश्रेष्ठ',gamesPlayed:'खेल',totalPoints:'कुल',worldBoard:'🌍 विश्व रैंकिंग',yourRank:'आपकी रैंक',yourScoreLb:'स्कोर',guest:'अतिथि',days:'दिन',undo:'पूर्ववत',bomb:'बम',rescue:'बचाव',
+HI:{gateMsg:'साइन इन करें',gateSyncing:'खाता लोड हो रहा है…',gateSyncError:'खाता लोड नहीं हो सका। कनेक्शन जांचें और फिर से प्रयास करें।',gateRetry:'पुनः प्रयास करें',appName:'Tiliq',play:'खेलें',settings:'सेटिंग्स',account:'खाता',leaderboard:'रैंकिंग',score:'स्कोर',best:'सर्वश्रेष्ठ',combo:'कॉम्बो',sound:'आवाज़',volume:'वॉल्यूम',haptic:'कंपन',theme:'थीम',dark:'डार्क',light:'लाइट',language:'भाषा',save:'सेव',close:'बंद',back:'वापस',gameOver:'गेम ओवर!',playAgain:'फिर खेलें',mainMenu:'मुख्य मेनू',yourScore:'आपका स्कोर',worldRank:'विश्व रैंकिंग',newRecord:'🎉 नया रिकॉर्ड!',profile:'प्रोफाइल',username:'उपयोगकर्ता नाम',highScore:'सर्वश्रेष्ठ',gamesPlayed:'खेल',totalPoints:'कुल',worldBoard:'🌍 विश्व रैंकिंग',yourRank:'आपकी रैंक',yourScoreLb:'स्कोर',guest:'अतिथि',days:'दिन',undo:'पूर्ववत',bomb:'बम',rescue:'बचाव',
 m_combos:'5 कॉम्बो',m_rows:'5 पंक्तियाँ',m_score:'500 अंक',dailyMissions:'दैनिक मिशन',
-store:'स्टोर',continueGame:'जारी रखें',editProfile:'प्रोफाइल संपादित करें →',comboExpired:'कॉम्बो समाप्त',dailyClaimed:'आज प्राप्त किया',dailyRefresh:'कल रीसेट होगा',dailyCollect:'एकत्र करें!',iapSoon:'खरीदारी जल्द आ रही है!',iapSuccess:'खरीदारी सफल!',restored:'खरीदारी पुनर्स्थापित।',copyCode:'कॉपी',codeCopied:'कॉपी हो गया!',yourCode:'आपका कोड',codeShare:'यह कोड मित्रों के साथ साझा करें',friendsTitle:'मित्र',addFriend:'मित्र जोड़ें',enterName:'आपका नाम क्या है?',namePh:'आपका उपनाम...',rescue2ad:'जारी रखने के लिए 2 विज्ञापन देखें',superBomb:'सुपर बम',tileTheme:'टाइल थीम',loginForRank:'रैंकिंग के लिए लॉगिन करें',loginForFriends:'दोस्तों के लिए Google से लॉगिन करें',friendCodePh:'ABC123',friendCodeLbl:'आपका कोड',friendCodeSub:'यह कोड मित्रों के साथ साझा करें 👇',rankTitle:'🏆 रैंकिंग',
-tabThemes:'🎨 थीम',tabPower:'⚡ शक्तियाँ',tabVip:'👑 VIP',tabGlobal:'🌍 दुनिया',tabFriends:'👥 मित्र',lbShare:'साझा करें',lbMyCode:'आपका कोड',lbAmongFriends:'मित्रों में',comboSection:'🔥 कॉम्बो थीम',flameClassic:'क्लासिक फायर',flameClassicD:'गर्म नारंगी लौ',flameIce:'बर्फ की लौ',flameIceD:'ठंडी नीली आग',flameEmerald:'पन्ना लौ',flameEmeraldD:'हरी जादुई आग',flameMystic:'रहस्यमय लौ',flameMysticD:'बैंगनी-गुलाबी जादू',flameGold:'सुनहरी लौ',flameGoldD:'शाही आग',rowsShort:'पंक्तियाँ',selectCountry:'चुनें...',
+store:'स्टोर',continueGame:'जारी रखें',editProfile:'प्रोफाइल संपादित करें →',comboExpired:'कॉम्बो समाप्त',dailyClaimed:'आज प्राप्त किया',dailyRefresh:'कल रीसेट होगा',dailyCollect:'एकत्र करें!',restored:'खरीदारी पुनर्स्थापित।',copyCode:'कॉपी',codeCopied:'कॉपी हो गया!',yourCode:'आपका कोड',codeShare:'यह कोड मित्रों के साथ साझा करें',friendsTitle:'मित्र',addFriend:'मित्र जोड़ें',enterName:'आपका नाम क्या है?',namePh:'आपका उपनाम...',rescue2ad:'जारी रखने के लिए 2 विज्ञापन देखें',superBomb:'सुपर बम',tileTheme:'टाइल थीम',loginForRank:'रैंकिंग के लिए लॉगिन करें',loginForFriends:'दोस्तों के लिए Google से लॉगिन करें',friendCodePh:'ABC123',friendCodeLbl:'आपका कोड',friendCodeSub:'यह कोड मित्रों के साथ साझा करें 👇',rankTitle:'🏆 रैंकिंग',
+tabThemes:'🎨 थीम',tabPower:'⚡ शक्तियाँ',tabGlobal:'🌍 दुनिया',tabFriends:'👥 मित्र',lbShare:'साझा करें',lbMyCode:'आपका कोड',lbAmongFriends:'मित्रों में',comboSection:'🔥 कॉम्बो थीम',flameClassic:'क्लासिक फायर',flameClassicD:'गर्म नारंगी लौ',flameIce:'बर्फ की लौ',flameIceD:'ठंडी नीली आग',flameEmerald:'पन्ना लौ',flameEmeraldD:'हरी जादुई आग',flameMystic:'रहस्यमय लौ',flameMysticD:'बैंगनी-गुलाबी जादू',flameGold:'सुनहरी लौ',flameGoldD:'शाही आग',rowsShort:'पंक्तियाँ',selectCountry:'चुनें...',
 statLast:'पिछला',statGames:'खेल',statBest:'सर्वश्रेष्ठ',statStreak:'सिलसिला',dailyBonus:'दैनिक बोनस',tomorrow:'कल',dailyRewardsTitle:'दैनिक इनाम',dailyView:'देखें',dailyDay:'दिन',dailyNote:'रोज़ आओ और अपनी लकीर बनाए रखो!',dailyClaimedToday:'आज लिया गया ✓',mergeTitle:'प्रगति स्थानांतरित करें?',mergeDesc:'इस डिवाइस की प्रगति को अपने खाते में ले जाएं? नहीं तो खाते का मौजूदा डेटा उपयोग होगा।',mergeYes:'हां, स्थानांतरित करें',mergeNo:'नहीं, खाता उपयोग करें',inventory:'इन्वेंटरी',invCoins:'सिक्के',invBombs:'बम',invUndos:'पूर्ववत',invThemes:'थीम',invBoost:'XP',storeTitle:'🛍️ स्टोर',syncDesc:'अपना स्कोर क्लाउड में सेव करें',accountConn:'✅ खाते से जुड़ा हुआ',maxLevel:'👑 अधिकतम स्तर!',
 freeSection:'निःशुल्क',premiumSection:'प्रीमियम थीम',powerSection:'पॉवर-अप',coinSection:'कॉइन पैक',
 badgeActive:'सक्रिय',badgeOwned:'आपका',badgeFree:'मुफ्त',btnActive:'✓ सक्रिय',btnApply:'लागू करें',btnUnlock:'खोलें',
-vipTitle:'VIP सदस्यता',vipMonthly:'$8 / माह',vipPerk1:'🚫 बिल्कुल विज्ञापन-मुक्त',vipPerk2:'🪙 हर हफ्ते 200 मुफ्त कॉइन',vipPerk3:'⚡ हर गेम 2× XP',vipPerk4:'🏆 गोल्ड फ्रेम + विशेष बैज',vipPerk5:'💣 हर दिन 1 मुफ्त बम',vipPerk6:'🎨 सभी थीम अनलॉक',vipStart:'अभी शुरू करें',noAdsTitle:'🚫 विज्ञापन-मुक्त',noAdsDesc:'एक बार खरीदें, हमेशा विज्ञापन-मुक्त',noAdsBuy:'$20 — विज्ञापन हटाएं',restoreBtn:'↺ खरीदारी पुनर्स्थापित करें',
+
 thClassic:'क्लासिक',thClassicD:'गर्म भूमध्यसागरीय',thWooden:'लकड़ी',thWoodenD:'प्राकृतिक बनावट',thMarble:'संगमरमर',thMarbleD:'शानदार और शांत',thOcean:'सागर',thOceanD:'गहरे नीले स्वर',thSunset:'सूर्यास्त',thSunsetD:'गर्म अग्नि रंग',thForest:'वन',thForestD:'गहरी हरी शांति',thCandy:'कैंडी',thCandyD:'मीठे पेस्टल रंग',thGalaxy:'आकाशगंगा',thGalaxyD:'ब्रह्मांडीय रंग',thNeon:'नियॉन',thNeonD:'चमकीले नियॉन रंग',thRetro:'रेट्रो',thRetroD:'8-बिट आर्केड',
-pwBomb3:'3 बम',pwBomb3D:'अटकने पर काम आता है',pwBomb10:'10 बम',pwBomb10D:'बड़ा स्टॉक — 25% छूट',pwUndo5:'5 पूर्ववत',pwUndo5D:'गलत चालें हटाएं',pwXp2:'2× XP (1 खेल)',pwXp2D:'अगले गेम में दोगुना XP',pwCoins100D:'तुरंत कॉइन टॉप-अप',pwCoins300D:'लोकप्रिय पैक — 22% बोनस',pwCoins750D:'बड़ा पैक — 43% बोनस',
+pwBomb3:'3 बम',pwBomb3D:'अटकने पर काम आता है',pwBomb10:'10 बम',pwBomb10D:'बड़ा स्टॉक — 25% छूट',pwXp2:'2× XP (1 खेल)',pwXp2D:'अगले गेम में दोगुना XP',pwCoins100D:'तुरंत कॉइन टॉप-अप',pwCoins300D:'लोकप्रिय पैक — 22% बोनस',pwCoins750D:'बड़ा पैक — 43% बोनस',
 setupTitle:'🎮 प्रोफ़ाइल सेटअप',setupDesc:'विश्व रैंकिंग में दिखने के लिए अपनी जानकारी दर्ज करें',setupNickLbl:'उपनाम',setupNickPh:'आपका नाम…',setupCountryLbl:'🌍 आपका देश',setupStart:'शुरू करें 🚀',weeklyRanking:'साप्ताहिक रैंकिंग',weeklyScore:'इस सप्ताह',continueOrNew:'जारी रखें या नया?',newGame:'नया खेल',tutRT:'टुकड़े घुमाएं 🔄',tutRD:'चुने हुए टुकड़े पर फिर से टैप करें — यह दक्षिणावर्त घूमता है! सभी 4 दिशाएं आज़माएं।',tutRsub:'फिर टैप → घूमे',colorBlast:'कलर ब्लास्ट',colorBlastAct:'🎨 कलर ब्लास्ट मोड!',colorBlastGet:'देखें और पाएं',goScoreReward:'स्कोर इनाम',goClaim:'देखें और प्राप्त करें',goClaimed:'प्राप्त ✓',pwColorBlastD:'बोर्ड से किसी भी एक रंग को पूरी तरह मिटा देता है',colorBlastFull:'पूर्ण ✓',continueAsk:'क्या आप जारी रखना चाहते हैं?',cpYes:'हाँ',cpNo:'नहीं',waShareBtn:'WhatsApp पर शेयर करें',appleSignIn:'Apple से साइन इन करें'},
-NL:{gateMsg:'Inloggen',gateSyncing:'Account laden…',appName:'Tiliq',play:'Spelen',settings:'Instellingen',account:'Account',leaderboard:'Ranglijst',score:'Score',best:'Beste',combo:'Combo',sound:'Geluid',volume:'Volume',haptic:'Trillen',theme:'Thema',dark:'Donker',light:'Licht',language:'Taal',save:'Opslaan',close:'Sluiten',back:'Terug',gameOver:'Game Over!',playAgain:'Opnieuw',mainMenu:'Hoofdmenu',yourScore:'Jouw Score',worldRank:'Wereldranglijst',newRecord:'🎉 Nieuw Record!',profile:'Profiel',username:'Gebruikersnaam',highScore:'Beste',gamesPlayed:'Spellen',totalPoints:'Totaal',worldBoard:'🌍 Wereldranglijst',yourRank:'Jouw Rang',yourScoreLb:'Score',guest:'Gast',days:'Dagen',undo:'Ongedaan',bomb:'Bom',rescue:'Redding',
+NL:{gateMsg:'Inloggen',gateSyncing:'Account laden…',gateSyncError:'Account kon niet worden geladen. Controleer je verbinding en probeer opnieuw.',gateRetry:'Opnieuw proberen',appName:'Tiliq',play:'Spelen',settings:'Instellingen',account:'Account',leaderboard:'Ranglijst',score:'Score',best:'Beste',combo:'Combo',sound:'Geluid',volume:'Volume',haptic:'Trillen',theme:'Thema',dark:'Donker',light:'Licht',language:'Taal',save:'Opslaan',close:'Sluiten',back:'Terug',gameOver:'Game Over!',playAgain:'Opnieuw',mainMenu:'Hoofdmenu',yourScore:'Jouw Score',worldRank:'Wereldranglijst',newRecord:'🎉 Nieuw Record!',profile:'Profiel',username:'Gebruikersnaam',highScore:'Beste',gamesPlayed:'Spellen',totalPoints:'Totaal',worldBoard:'🌍 Wereldranglijst',yourRank:'Jouw Rang',yourScoreLb:'Score',guest:'Gast',days:'Dagen',undo:'Ongedaan',bomb:'Bom',rescue:'Redding',
 m_combos:'5 Combo\'s',m_rows:'5 Rijen',m_score:'500 Punten',dailyMissions:'Dagelijkse Missies',
-store:'Winkel',continueGame:'Doorgaan',editProfile:'Profiel bewerken →',comboExpired:'Combo voorbij',dailyClaimed:'VANDAAG VERDIEND',dailyRefresh:'Morgen vernieuwd',dailyCollect:'Verzamelen!',iapSoon:'Aankoop binnenkort beschikbaar!',iapSuccess:'Aankoop geslaagd!',restored:'Aankopen hersteld.',copyCode:'Kopiëren',codeCopied:'Gekopieerd!',yourCode:'Jouw Code',codeShare:'Deel deze code met vrienden',friendsTitle:'Vrienden',addFriend:'Vriend toevoegen',enterName:'Wat is jouw naam?',namePh:'Jouw bijnaam...',rescue2ad:'2 advertenties bekijken om door te gaan',superBomb:'Super Bom',tileTheme:'Tegel Thema',loginForRank:'Log in voor ranglijst',loginForFriends:'Log in met Google voor vrienden',friendCodePh:'ABC123',friendCodeLbl:'Jouw Code',friendCodeSub:'Deel deze code met vrienden 👇',rankTitle:'🏆 Ranglijst',
-tabThemes:'🎨 Thema\'s',tabPower:'⚡ Krachten',tabVip:'👑 VIP',tabGlobal:'🌍 Wereld',tabFriends:'👥 Vrienden',lbShare:'Delen',lbMyCode:'Jouw Code',lbAmongFriends:'Onder vrienden',comboSection:'🔥 Combo-thema\'s',flameClassic:'Klassiek Vuur',flameClassicD:'Warme oranje vlam',flameIce:'IJsvlam',flameIceD:'Koud blauw vuur',flameEmerald:'Smaragdvlam',flameEmeraldD:'Groen magisch vuur',flameMystic:'Mystieke Vlam',flameMysticD:'Paars-roze magie',flameGold:'Gouden Vlam',flameGoldD:'Koninklijk vuur',rowsShort:'RIJEN',selectCountry:'Kiezen...',
+store:'Winkel',continueGame:'Doorgaan',editProfile:'Profiel bewerken →',comboExpired:'Combo voorbij',dailyClaimed:'VANDAAG VERDIEND',dailyRefresh:'Morgen vernieuwd',dailyCollect:'Verzamelen!',restored:'Aankopen hersteld.',copyCode:'Kopiëren',codeCopied:'Gekopieerd!',yourCode:'Jouw Code',codeShare:'Deel deze code met vrienden',friendsTitle:'Vrienden',addFriend:'Vriend toevoegen',enterName:'Wat is jouw naam?',namePh:'Jouw bijnaam...',rescue2ad:'2 advertenties bekijken om door te gaan',superBomb:'Super Bom',tileTheme:'Tegel Thema',loginForRank:'Log in voor ranglijst',loginForFriends:'Log in met Google voor vrienden',friendCodePh:'ABC123',friendCodeLbl:'Jouw Code',friendCodeSub:'Deel deze code met vrienden 👇',rankTitle:'🏆 Ranglijst',
+tabThemes:'🎨 Thema\'s',tabPower:'⚡ Krachten',tabGlobal:'🌍 Wereld',tabFriends:'👥 Vrienden',lbShare:'Delen',lbMyCode:'Jouw Code',lbAmongFriends:'Onder vrienden',comboSection:'🔥 Combo-thema\'s',flameClassic:'Klassiek Vuur',flameClassicD:'Warme oranje vlam',flameIce:'IJsvlam',flameIceD:'Koud blauw vuur',flameEmerald:'Smaragdvlam',flameEmeraldD:'Groen magisch vuur',flameMystic:'Mystieke Vlam',flameMysticD:'Paars-roze magie',flameGold:'Gouden Vlam',flameGoldD:'Koninklijk vuur',rowsShort:'RIJEN',selectCountry:'Kiezen...',
 statLast:'Laatste',statGames:'Spellen',statBest:'Beste',statStreak:'Reeks',dailyBonus:'DAGELIJKS BONUS',tomorrow:'Morgen',dailyRewardsTitle:'Dagelijkse beloningen',dailyView:'Bekijk',dailyDay:'Dag',dailyNote:'Kom elke dag terug om je reeks vol te houden!',dailyClaimedToday:'Vandaag opgehaald ✓',mergeTitle:'Voortgang overzetten?',mergeDesc:'Je voortgang op dit apparaat naar je account overzetten? Zo niet, dan worden de bestaande accountgegevens gebruikt.',mergeYes:'Ja, overzetten',mergeNo:'Nee, account gebruiken',inventory:'Inventaris',invCoins:'Munten',invBombs:'Bommen',invUndos:'Ongedaan',invThemes:'Thema\'s',invBoost:'XP',storeTitle:'🛍️ Winkel',syncDesc:'Sla je score op in de cloud',accountConn:'✅ Verbonden met je account',maxLevel:'👑 Maximaal niveau!',
 freeSection:'Gratis',premiumSection:'Premium thema\'s',powerSection:'Boosts',coinSection:'Coin-pakketten',
 badgeActive:'ACTIEF',badgeOwned:'BEZIT',badgeFree:'GRATIS',btnActive:'✓ Actief',btnApply:'Toepassen',btnUnlock:'Ontgrendelen',
-vipTitle:'VIP-lidmaatschap',vipMonthly:'$8 / maand',vipPerk1:'🚫 100% advertentievrij',vipPerk2:'🪙 200 gratis munten per week',vipPerk3:'⚡ 2× XP per spel',vipPerk4:'🏆 Gouden rand + badge',vipPerk5:'💣 1 gratis bom per dag',vipPerk6:'🎨 Alle thema\'s ontgrendeld',vipStart:'Nu beginnen',noAdsTitle:'🚫 Advertentievrij',noAdsDesc:'Eenmalige aankoop, nooit meer advertenties',noAdsBuy:'$20 — Advertenties verwijderen',restoreBtn:'↺ Aankopen herstellen',
+
 thClassic:'Klassiek',thClassicD:'Warm Middellandse Zee',thWooden:'Hout',thWoodenD:'Natuurlijke textuur',thMarble:'Marmer',thMarbleD:'Elegant en koel',thOcean:'Oceaan',thOceanD:'Diepe blauwe tinten',thSunset:'Zonsondergang',thSunsetD:'Warme vuurkleuren',thForest:'Bos',thForestD:'Diepe groene rust',thCandy:'Snoep',thCandyD:'Zoete pastelkleuren',thGalaxy:'Melkweg',thGalaxyD:'Kosmische kleuren',thNeon:'Neon',thNeonD:'Felle neonkleuren',thRetro:'Retro',thRetroD:'8-bit speelhal',
-pwBomb3:'3 Bommen',pwBomb3D:'Handig als je vastzit',pwBomb10:'10 Bommen',pwBomb10D:'Grote voorraad — 25% korting',pwUndo5:'5 Ongedaan',pwUndo5D:'Verwijder foute zetten',pwXp2:'2× XP (1 Spel)',pwXp2D:'Dubbel XP volgend spel',pwCoins100D:'Direct aanvullen',pwCoins300D:'Populair pakket — 22% bonus',pwCoins750D:'Groot pakket — 43% bonus',
+pwBomb3:'3 Bommen',pwBomb3D:'Handig als je vastzit',pwBomb10:'10 Bommen',pwBomb10D:'Grote voorraad — 25% korting',pwXp2:'2× XP (1 Spel)',pwXp2D:'Dubbel XP volgend spel',pwCoins100D:'Direct aanvullen',pwCoins300D:'Populair pakket — 22% bonus',pwCoins750D:'Groot pakket — 43% bonus',
 setupTitle:'🎮 Profiel instellen',setupDesc:'Voer je gegevens in om in de wereldranglijst te verschijnen',setupNickLbl:'Bijnaam',setupNickPh:'Jouw naam…',setupCountryLbl:'🌍 Jouw Land',setupStart:'Aan de slag 🚀',weeklyRanking:'WEEKRANGLIJST',weeklyScore:'Deze Week',continueOrNew:'Doorgaan of nieuw?',newGame:'Nieuw spel',tutRT:'Stukken draaien 🔄',tutRD:'Tik opnieuw op een gekozen stuk — het draait met de klok mee! Probeer alle 4 richtingen.',tutRsub:'OPNIEUW TIKKEN → DRAAIT',colorBlast:'Kleurexplosie',colorBlastAct:'🎨 Kleurexplosie-modus!',colorBlastGet:'Bekijk & Verdien',goScoreReward:'Scorebeloning',goClaim:'Bekijk & Claim',goClaimed:'Geclaimd ✓',pwColorBlastD:'Verwijdert een kleur volledig van het bord',colorBlastFull:'Vol ✓',continueAsk:'Wil je doorgaan?',cpYes:'Ja',cpNo:'Nee',waShareBtn:'Delen op WhatsApp',appleSignIn:'Inloggen met Apple'},
-AR:{gateMsg:'تسجيل الدخول',gateSyncing:'جاري تحميل الحساب…',appName:'Tiliq',play:'العب',settings:'الإعدادات',account:'الحساب',leaderboard:'الترتيب',score:'النقاط',best:'الأفضل',combo:'تتالي',sound:'الصوت',volume:'مستوى الصوت',haptic:'اهتزاز',theme:'المظهر',dark:'داكن',light:'فاتح',language:'اللغة',save:'حفظ',close:'إغلاق',back:'رجوع',gameOver:'انتهت اللعبة!',playAgain:'العب مرة أخرى',mainMenu:'القائمة الرئيسية',yourScore:'نقاطك',worldRank:'الترتيب العالمي',newRecord:'🎉 رقم قياسي!',profile:'الملف',username:'اسم المستخدم',highScore:'أعلى نقاط',gamesPlayed:'الألعاب',totalPoints:'المجموع',worldBoard:'🌍 الترتيب العالمي',yourRank:'ترتيبك',yourScoreLb:'نقاطك',guest:'ضيف',days:'يوم',undo:'تراجع',bomb:'قنبلة',rescue:'إنقاذ',
+AR:{gateMsg:'تسجيل الدخول',gateSyncing:'جاري تحميل الحساب…',gateSyncError:'تعذّر تحميل الحساب. تحقق من الاتصال وحاول مرة أخرى.',gateRetry:'إعادة المحاولة',appName:'Tiliq',play:'العب',settings:'الإعدادات',account:'الحساب',leaderboard:'الترتيب',score:'النقاط',best:'الأفضل',combo:'تتالي',sound:'الصوت',volume:'مستوى الصوت',haptic:'اهتزاز',theme:'المظهر',dark:'داكن',light:'فاتح',language:'اللغة',save:'حفظ',close:'إغلاق',back:'رجوع',gameOver:'انتهت اللعبة!',playAgain:'العب مرة أخرى',mainMenu:'القائمة الرئيسية',yourScore:'نقاطك',worldRank:'الترتيب العالمي',newRecord:'🎉 رقم قياسي!',profile:'الملف',username:'اسم المستخدم',highScore:'أعلى نقاط',gamesPlayed:'الألعاب',totalPoints:'المجموع',worldBoard:'🌍 الترتيب العالمي',yourRank:'ترتيبك',yourScoreLb:'نقاطك',guest:'ضيف',days:'يوم',undo:'تراجع',bomb:'قنبلة',rescue:'إنقاذ',
 m_combos:'5 تتاليات',m_rows:'5 صفوف',m_score:'500 نقطة',dailyMissions:'مهام اليوم',
-store:'المتجر',continueGame:'متابعة',editProfile:'تعديل الملف →',comboExpired:'انتهى التتالي',dailyClaimed:'تم الاستلام اليوم',dailyRefresh:'يتجدد غداً',dailyCollect:'اجمع!',iapSoon:'الشراء قريباً!',iapSuccess:'تم الشراء بنجاح!',restored:'تمت استعادة المشتريات.',copyCode:'نسخ',codeCopied:'تم النسخ!',yourCode:'كودك',codeShare:'شارك هذا الكود مع أصدقائك',friendsTitle:'الأصدقاء',addFriend:'إضافة صديق',enterName:'ما اسمك؟',namePh:'لقبك...',rescue2ad:'شاهد إعلانين للمتابعة',superBomb:'قنبلة خارقة',tileTheme:'مظهر البلاط',loginForRank:'سجّل الدخول للترتيب',loginForFriends:'سجّل الدخول بحساب Google للأصدقاء',friendCodePh:'ABC123',friendCodeLbl:'كودك',friendCodeSub:'شارك هذا الكود مع أصدقائك 👇',rankTitle:'🏆 الترتيب',
-tabThemes:'🎨 المظاهر',tabPower:'⚡ القوى',tabVip:'👑 VIP',tabGlobal:'🌍 العالم',tabFriends:'👥 الأصدقاء',lbShare:'مشاركة',lbMyCode:'كودك',lbAmongFriends:'بين الأصدقاء',comboSection:'🔥 سمات الكومبو',flameClassic:'النار الكلاسيكية',flameClassicD:'لهب برتقالي دافئ',flameIce:'لهب الجليد',flameIceD:'نار زرقاء باردة',flameEmerald:'اللهب الزمردي',flameEmeraldD:'نار سحرية خضراء',flameMystic:'اللهب الغامض',flameMysticD:'سحر بنفسجي وردي',flameGold:'اللهب الذهبي',flameGoldD:'نار ملكية',rowsShort:'صفوف',selectCountry:'اختر...',
+store:'المتجر',continueGame:'متابعة',editProfile:'تعديل الملف →',comboExpired:'انتهى التتالي',dailyClaimed:'تم الاستلام اليوم',dailyRefresh:'يتجدد غداً',dailyCollect:'اجمع!',restored:'تمت استعادة المشتريات.',copyCode:'نسخ',codeCopied:'تم النسخ!',yourCode:'كودك',codeShare:'شارك هذا الكود مع أصدقائك',friendsTitle:'الأصدقاء',addFriend:'إضافة صديق',enterName:'ما اسمك؟',namePh:'لقبك...',rescue2ad:'شاهد إعلانين للمتابعة',superBomb:'قنبلة خارقة',tileTheme:'مظهر البلاط',loginForRank:'سجّل الدخول للترتيب',loginForFriends:'سجّل الدخول بحساب Google للأصدقاء',friendCodePh:'ABC123',friendCodeLbl:'كودك',friendCodeSub:'شارك هذا الكود مع أصدقائك 👇',rankTitle:'🏆 الترتيب',
+tabThemes:'🎨 المظاهر',tabPower:'⚡ القوى',tabGlobal:'🌍 العالم',tabFriends:'👥 الأصدقاء',lbShare:'مشاركة',lbMyCode:'كودك',lbAmongFriends:'بين الأصدقاء',comboSection:'🔥 سمات الكومبو',flameClassic:'النار الكلاسيكية',flameClassicD:'لهب برتقالي دافئ',flameIce:'لهب الجليد',flameIceD:'نار زرقاء باردة',flameEmerald:'اللهب الزمردي',flameEmeraldD:'نار سحرية خضراء',flameMystic:'اللهب الغامض',flameMysticD:'سحر بنفسجي وردي',flameGold:'اللهب الذهبي',flameGoldD:'نار ملكية',rowsShort:'صفوف',selectCountry:'اختر...',
 statLast:'الأخير',statGames:'الألعاب',statBest:'الأفضل',statStreak:'سلسلة',dailyBonus:'مكافأة يومية',tomorrow:'غداً',dailyRewardsTitle:'المكافآت اليومية',dailyView:'عرض',dailyDay:'يوم',dailyNote:'عد كل يوم للحفاظ على سلسلتك!',dailyClaimedToday:'تم الاستلام اليوم ✓',mergeTitle:'نقل التقدم؟',mergeDesc:'هل تريد نقل تقدمك على هذا الجهاز إلى حسابك؟ إذا لا، سيتم استخدام بيانات الحساب الحالية.',mergeYes:'نعم، انقل',mergeNo:'لا، استخدم الحساب',inventory:'المخزون',invCoins:'عملات',invBombs:'قنابل',invUndos:'تراجع',invThemes:'سمات',invBoost:'XP',storeTitle:'🛍️ المتجر',syncDesc:'احفظ نقاطك في السحابة',accountConn:'✅ متصل بحسابك',maxLevel:'👑 أعلى مستوى!',
 freeSection:'مجاني',premiumSection:'مظاهر مميزة',powerSection:'تحسينات',coinSection:'حزم العملات',
 badgeActive:'نشط',badgeOwned:'مملوك',badgeFree:'مجاني',btnActive:'✓ نشط',btnApply:'تطبيق',btnUnlock:'فتح',
-vipTitle:'عضوية VIP',vipMonthly:'$8 / شهر',vipPerk1:'🚫 بدون إعلانات تماماً',vipPerk2:'🪙 200 عملة مجانية أسبوعياً',vipPerk3:'⚡ 2× XP لكل لعبة',vipPerk4:'🏆 إطار ذهبي + شارة خاصة',vipPerk5:'💣 قنبلة مجانية يومياً',vipPerk6:'🎨 جميع المظاهر متاحة',vipStart:'ابدأ الآن',noAdsTitle:'🚫 بدون إعلانات',noAdsDesc:'شراء مرة واحدة، لا إعلانات للأبد',noAdsBuy:'$20 — إزالة الإعلانات',restoreBtn:'↺ استعادة المشتريات',
+
 thClassic:'كلاسيكي',thClassicD:'البحر الأبيض الدافئ',thWooden:'خشبي',thWoodenD:'نسيج طبيعي',thMarble:'رخامي',thMarbleD:'أنيق وبارد',thOcean:'المحيط',thOceanD:'ألوان زرقاء عميقة',thSunset:'غروب الشمس',thSunsetD:'ألوان النار الدافئة',thForest:'الغابة',thForestD:'هدوء أخضر',thCandy:'حلوى',thCandyD:'ألوان باستيل حلوة',thGalaxy:'المجرة',thGalaxyD:'ألوان كونية',thNeon:'نيون',thNeonD:'ألوان نيون زاهية',thRetro:'ريترو',thRetroD:'صالة ألعاب 8 بت',
-pwBomb3:'3 قنابل',pwBomb3D:'مفيدة عند الانسداد',pwBomb10:'10 قنابل',pwBomb10D:'مخزون كبير — خصم 25%',pwUndo5:'5 تراجع',pwUndo5D:'حذف الحركات الخاطئة',pwXp2:'2× XP (لعبة واحدة)',pwXp2D:'ضعف XP في اللعبة التالية',pwCoins100D:'شحن فوري',pwCoins300D:'حزمة شائعة — مكافأة 22%',pwCoins750D:'حزمة كبيرة — مكافأة 43%',
+pwBomb3:'3 قنابل',pwBomb3D:'مفيدة عند الانسداد',pwBomb10:'10 قنابل',pwBomb10D:'مخزون كبير — خصم 25%',pwXp2:'2× XP (لعبة واحدة)',pwXp2D:'ضعف XP في اللعبة التالية',pwCoins100D:'شحن فوري',pwCoins300D:'حزمة شائعة — مكافأة 22%',pwCoins750D:'حزمة كبيرة — مكافأة 43%',
 setupTitle:'🎮 إعداد الملف الشخصي',setupDesc:'أدخل معلوماتك للظهور في الترتيب العالمي',setupNickLbl:'اللقب',setupNickPh:'اسمك…',setupCountryLbl:'🌍 بلدك',setupStart:'ابدأ 🚀',weeklyRanking:'الترتيب الأسبوعي',weeklyScore:'هذا الأسبوع',continueOrNew:'متابعة أم جديد؟',newGame:'لعبة جديدة',tutRT:'تدوير القطع 🔄',tutRD:'اضغط مرة أخرى على القطعة المحددة — تدور في اتجاه عقارب الساعة! جرّب الاتجاهات الأربعة.',tutRsub:'اضغط مجدداً ← يدور',colorBlast:'انفجار الألوان',colorBlastAct:'🎨 وضع انفجار الألوان!',colorBlastGet:'شاهد واربح',goScoreReward:'مكافأة النقاط',goClaim:'شاهد واحصل',goClaimed:'تم الاستلام ✓',pwColorBlastD:'يمسح لونًا واحدًا بالكامل من اللوحة',colorBlastFull:'ممتلئ ✓',continueAsk:'هل تريد المتابعة؟',cpYes:'نعم',cpNo:'لا',waShareBtn:'مشاركة على واتساب',appleSignIn:'تسجيل الدخول باستخدام Apple'},
-ZH:{gateMsg:'登录',gateSyncing:'正在加载账户…',appName:'Tiliq',play:'开始',settings:'设置',account:'账户',leaderboard:'排行榜',score:'分数',best:'最高',combo:'连击',sound:'声音',volume:'音量',haptic:'震动',theme:'主题',dark:'深色',light:'浅色',language:'语言',save:'保存',close:'关闭',back:'返回',gameOver:'游戏结束！',playAgain:'再来一局',mainMenu:'主菜单',yourScore:'你的分数',worldRank:'世界排名',newRecord:'🎉 新纪录！',profile:'个人资料',username:'用户名',highScore:'最高分',gamesPlayed:'游戏次数',totalPoints:'总分',worldBoard:'🌍 世界排名',yourRank:'你的排名',yourScoreLb:'分数',guest:'访客',days:'天',undo:'撤销',bomb:'炸弹',rescue:'救援',
+ZH:{gateMsg:'登录',gateSyncing:'正在加载账户…',gateSyncError:'无法加载账户。请检查网络连接后重试。',gateRetry:'重试',appName:'Tiliq',play:'开始',settings:'设置',account:'账户',leaderboard:'排行榜',score:'分数',best:'最高',combo:'连击',sound:'声音',volume:'音量',haptic:'震动',theme:'主题',dark:'深色',light:'浅色',language:'语言',save:'保存',close:'关闭',back:'返回',gameOver:'游戏结束！',playAgain:'再来一局',mainMenu:'主菜单',yourScore:'你的分数',worldRank:'世界排名',newRecord:'🎉 新纪录！',profile:'个人资料',username:'用户名',highScore:'最高分',gamesPlayed:'游戏次数',totalPoints:'总分',worldBoard:'🌍 世界排名',yourRank:'你的排名',yourScoreLb:'分数',guest:'访客',days:'天',undo:'撤销',bomb:'炸弹',rescue:'救援',
 m_combos:'获得5连击',m_rows:'消除5行',m_score:'获得500分',dailyMissions:'每日任务',
-store:'商店',continueGame:'继续',editProfile:'编辑资料 →',comboExpired:'连击结束',dailyClaimed:'今日已领取',dailyRefresh:'明日刷新',dailyCollect:'领取！',iapSoon:'购买功能即将上线！',iapSuccess:'购买成功！',restored:'购买已恢复。',copyCode:'复制',codeCopied:'已复制！',yourCode:'你的代码',codeShare:'把这个代码分享给朋友',friendsTitle:'好友',addFriend:'添加好友',enterName:'你叫什么名字？',namePh:'你的昵称...',rescue2ad:'看2个广告继续游戏',superBomb:'超级炸弹',tileTheme:'方块主题',loginForRank:'登录查看排名',loginForFriends:'使用 Google 登录以添加好友',friendCodePh:'ABC123',friendCodeLbl:'你的代码',friendCodeSub:'把这个代码分享给朋友 👇',rankTitle:'🏆 排行榜',
-tabThemes:'🎨 主题',tabPower:'⚡ 能力',tabVip:'👑 VIP',tabGlobal:'🌍 全球',tabFriends:'👥 好友',lbShare:'分享',lbMyCode:'你的代码',lbAmongFriends:'好友排名',comboSection:'🔥 连击主题',flameClassic:'经典火焰',flameClassicD:'温暖的橙色火焰',flameIce:'冰焰',flameIceD:'冰冷的蓝色火焰',flameEmerald:'翡翠火焰',flameEmeraldD:'绿色魔法火焰',flameMystic:'神秘火焰',flameMysticD:'紫粉魔法',flameGold:'黄金火焰',flameGoldD:'皇家之火',rowsShort:'行',selectCountry:'选择...',
+store:'商店',continueGame:'继续',editProfile:'编辑资料 →',comboExpired:'连击结束',dailyClaimed:'今日已领取',dailyRefresh:'明日刷新',dailyCollect:'领取！',restored:'购买已恢复。',copyCode:'复制',codeCopied:'已复制！',yourCode:'你的代码',codeShare:'把这个代码分享给朋友',friendsTitle:'好友',addFriend:'添加好友',enterName:'你叫什么名字？',namePh:'你的昵称...',rescue2ad:'看2个广告继续游戏',superBomb:'超级炸弹',tileTheme:'方块主题',loginForRank:'登录查看排名',loginForFriends:'使用 Google 登录以添加好友',friendCodePh:'ABC123',friendCodeLbl:'你的代码',friendCodeSub:'把这个代码分享给朋友 👇',rankTitle:'🏆 排行榜',
+tabThemes:'🎨 主题',tabPower:'⚡ 能力',tabGlobal:'🌍 全球',tabFriends:'👥 好友',lbShare:'分享',lbMyCode:'你的代码',lbAmongFriends:'好友排名',comboSection:'🔥 连击主题',flameClassic:'经典火焰',flameClassicD:'温暖的橙色火焰',flameIce:'冰焰',flameIceD:'冰冷的蓝色火焰',flameEmerald:'翡翠火焰',flameEmeraldD:'绿色魔法火焰',flameMystic:'神秘火焰',flameMysticD:'紫粉魔法',flameGold:'黄金火焰',flameGoldD:'皇家之火',rowsShort:'行',selectCountry:'选择...',
 statLast:'上次',statGames:'游戏',statBest:'最高',statStreak:'连胜',dailyBonus:'每日奖励',tomorrow:'明天',dailyRewardsTitle:'每日奖励',dailyView:'查看',dailyDay:'天',dailyNote:'每天回来领取，保持连续记录！',dailyClaimedToday:'今日已领取 ✓',mergeTitle:'转移进度？',mergeDesc:'将此设备上的进度转移到您的账户？如果否，将使用账户中的现有数据。',mergeYes:'是，转移',mergeNo:'否，使用账户',inventory:'物品栏',invCoins:'金币',invBombs:'炸弹',invUndos:'撤销',invThemes:'主题',invBoost:'XP',storeTitle:'🛍️ 商店',syncDesc:'将分数保存到云端',accountConn:'✅ 已连接到您的账户',maxLevel:'👑 最高等级！',
 freeSection:'免费',premiumSection:'高级主题',powerSection:'强化道具',coinSection:'金币包',
 badgeActive:'已激活',badgeOwned:'已拥有',badgeFree:'免费',btnActive:'✓ 已激活',btnApply:'应用',btnUnlock:'解锁',
-vipTitle:'VIP会员',vipMonthly:'$8 / 月',vipPerk1:'🚫 完全无广告',vipPerk2:'🪙 每周200免费金币',vipPerk3:'⚡ 每局2倍XP',vipPerk4:'🏆 金色边框+特殊徽章',vipPerk5:'💣 每天1个免费炸弹',vipPerk6:'🎨 所有主题已解锁',vipStart:'立即开始',noAdsTitle:'🚫 无广告',noAdsDesc:'一次性购买，永久无广告',noAdsBuy:'$20 — 移除广告',restoreBtn:'↺ 恢复购买',
+
 thClassic:'经典',thClassicD:'温暖地中海',thWooden:'木质',thWoodenD:'天然纹理',thMarble:'大理石',thMarbleD:'优雅清爽',thOcean:'海洋',thOceanD:'深蓝色调',thSunset:'日落',thSunsetD:'温暖火焰色',thForest:'森林',thForestD:'深绿宁静',thCandy:'糖果',thCandyD:'甜美粉彩',thGalaxy:'银河',thGalaxyD:'宇宙色彩',thNeon:'霓虹',thNeonD:'明亮的霓虹色彩',thRetro:'复古',thRetroD:'8位街机',
-pwBomb3:'3个炸弹',pwBomb3D:'卡关时很有用',pwBomb10:'10个炸弹',pwBomb10D:'大量储备 — 75折',pwUndo5:'5次撤销',pwUndo5D:'撤销错误操作',pwXp2:'2倍XP (1场)',pwXp2D:'下一局双倍XP',pwCoins100D:'即时充值',pwCoins300D:'热门包 — 22%奖励',pwCoins750D:'大包 — 43%奖励',
+pwBomb3:'3个炸弹',pwBomb3D:'卡关时很有用',pwBomb10:'10个炸弹',pwBomb10D:'大量储备 — 75折',pwXp2:'2倍XP (1场)',pwXp2D:'下一局双倍XP',pwCoins100D:'即时充值',pwCoins300D:'热门包 — 22%奖励',pwCoins750D:'大包 — 43%奖励',
 setupTitle:'🎮 完善个人资料',setupDesc:'输入信息以出现在世界排行榜上',setupNickLbl:'昵称',setupNickPh:'你的名字…',setupCountryLbl:'🌍 你的国家',setupStart:'开始 🚀',weeklyRanking:'每周排行',weeklyScore:'本周',continueOrNew:'继续还是新游戏？',newGame:'新游戏',tutRT:'旋转方块 🔄',tutRD:'再次点击已选中的方块 — 它会顺时针旋转！试试全部4个方向。',tutRsub:'再次点击 → 旋转',colorBlast:'色彩爆破',colorBlastAct:'🎨 色彩爆破模式!',colorBlastGet:'观看获取',goScoreReward:'分数奖励',goClaim:'观看领取',goClaimed:'已领取 ✓',pwColorBlastD:'完全清除棋盘上的任意一种颜色',colorBlastFull:'已满 ✓',continueAsk:'要继续吗？',cpYes:'是',cpNo:'否',waShareBtn:'在WhatsApp上分享',appleSignIn:'使用 Apple 登录'},
 };
 
@@ -1755,17 +1764,6 @@ function playBomb(){
 }
 // Menü/UI dokunuşu: hafif tık (CLAUDE.md 8.5 — Buton dokunuşu → Light)
 function playTapLight(){tone(700,.05,.045,'sine');}
-// Satın alma onayı: yükselen 3'lü çan (CLAUDE.md 8.6/8.5 — Satın alma → Medium + ses)
-function playPurchase(){
-  tone(660,.12,.09,'sine');
-  setTimeout(()=>tone(880,.14,.11,'sine'),90);
-  setTimeout(()=>tone(1320,.22,.13,'sine'),190);
-}
-// Geri al: tersine "çıtır"
-function playUndo(){
-  tone(900,.1,.06,'sine');
-  setTimeout(()=>tone(1100,.1,.06,'sine'),60);
-}
 
 // ── HAPTIC ───────────────────────────────────────────────────────────────────
 function vibrate(pattern){
@@ -1895,7 +1893,7 @@ function _refreshAllNameDisplays(){
   if(avBig){avBig.textContent='';avBig.style.backgroundImage=`url(${avatarImg(acct.mascot)})`;}
 }
 
-function saveProfileSetup(){
+async function saveProfileSetup(){
   const ni=document.getElementById('setup-nickname');
   const name=(ni?ni.value:'').trim();
   if(!name||name.length<2){
@@ -1907,7 +1905,24 @@ function saveProfileSetup(){
   acct._setupDone=true; // Bir daha gösterme
   localStorage.setItem('tm_acct',JSON.stringify(acct));
   _refreshAllNameDisplays();
-  _firestorePushScore();
+  // KÖK NEDEN (2026-07-15, "Apple ile girince hâlâ profili tamamla çıkıyor" raporu):
+  // "profil tamamlandı" bilgisi buluta HİÇ ayrı bir alan olarak yazılmıyordu — sadece
+  // country alanı doluysa tamamlanmış SAYILIYORDU (_firestoreSync: if(d.country)
+  // acct._setupDone=true). Kullanıcı ülke seçmeden sadece takma ad girip kaydederse
+  // country boş kalıyor, çıkışta yerel _setupDone silindiği için (bkz. _resetToGuestState)
+  // her yeni girişte (platform fark etmez) bu ekran sonsuza kadar tekrar çıkıyordu.
+  // Artık setupDone açık bir boolean alan olarak buluta yazılıyor — firestore.rules'a
+  // eklenmesi ŞART, yoksa _validUser hasOnly() bu alanı içeren TÜM yazmayı reddeder.
+  // ÖNCE _firestorePushScore() BEKLENİYOR: bu, name/code/best alanlarıyla dökümanı
+  // oluşturuyor/güncelliyor. İlk hiç giriş yapılmamış hesapta setupDone yazması bundan
+  // ÖNCE (race) yetişirse, döküman henüz yokken SADECE setupDone içeren bir create
+  // denemesi olur — _validUser create'te name/code/best'i ZORUNLU kıldığı için reddedilir.
+  await _firestorePushScore();
+  // DÜZELTME (2026-07-17/18): bu yazma artık _fsSetDocReliable ile GÜVENİLİR
+  // kuyruğa alınıyor — anlık deneme başarısız/asılı kalırsa (sebebi ne olursa
+  // olsun) yerel kuyruğa düşer, uygulama sonraki her açılışta/öne gelişte otomatik
+  // tekrar dener. Veri artık asla sessizce kaybolmuyor.
+  await _fsSetDocReliable('users/'+acct.uid,{setupDone:true},true);
   document.getElementById('modal-profile-setup').classList.remove('active');
 }
 
@@ -1951,28 +1966,7 @@ function initAuthUI(){
     if(native) native.style.display='none';
     if(web) web.style.display='flex';
     out.style.display='none';
-    // Önceden kaydedilmiş isim varsa prefill et
-    const inp=document.getElementById('auth-web-name');
-    if(inp&&(acct.nickname||acct.name)) inp.value=acct.nickname||acct.name;
   }
-}
-
-function webGuestLogin(){
-  const inp=document.getElementById('auth-web-name');
-  const name=(inp?inp.value:'').trim();
-  if(!name||name.length<2){
-    if(inp){inp.style.borderColor='#FF6B6B';setTimeout(()=>{inp.style.borderColor='';},800);}
-    return;
-  }
-  acct.nickname=name;acct._webLogged=true;
-  localStorage.setItem('tm_acct',JSON.stringify(acct));
-  updateMenuAvatar();
-  document.getElementById('auth-web-area').style.display='none';
-  document.getElementById('auth-signout-area').style.display='block';
-  document.getElementById('auth-user-info').textContent=name;
-  // username input da güncelle
-  const ui=document.getElementById('username-input');
-  if(ui) ui.value=name;
 }
 
 function webGuestLogout(){
@@ -3110,55 +3104,6 @@ function closeAd(rewarded){
   _adCb=null;
 }
 
-// ── UNDO ─────────────────────────────────────────────────────────────────────
-let undoState=null;
-let freeUndos=0;   // envanterden gelen bedava geri alma hakkı (reklamsız)
-function saveUndo(){
-  undoState={
-    grid:grid.map(r=>[...r]),
-    score,combo,comboTimeLeft,
-    pieces:pieces.map(p=>({...p,shape:{cells:p.shape.cells}})),
-  };
-  updateUndoBtn();
-}
-function _applyUndo(){
-  playUndo();vibrate(30);
-  grid=undoState.grid;score=undoState.score;combo=undoState.combo;
-  comboTimeLeft=undoState.comboTimeLeft||0;
-  pieces=undoState.pieces;undoState=null;selPiece=null;
-  document.getElementById('scoreDisplay').textContent=score.toLocaleString();
-  document.getElementById('comboDisplay').textContent='×'+Math.max(1,Math.min(combo,8));
-  if(comboTimeLeft<=0){combo=0;document.getElementById('comboDisplay').textContent='×1';}
-  document.getElementById('bestDisplay').textContent=best.toLocaleString();
-  updateUndoBtn();
-}
-function doUndo(){
-  if(!undoState)return;
-  // Bonus geri alma hakkı varsa bedava (reklamsız) kullan, envanterden düş
-  if(freeUndos>0){
-    freeUndos--;
-    setInvUndos(getInvUndos()-1);
-    _applyUndo();
-    return;
-  }
-  showRewardedAd(()=>{ _applyUndo(); });
-}
-function updateUndoBtn(){
-  const btn=document.getElementById('undo-btn');
-  if(!btn)return;
-  btn.disabled=!undoState;
-  // Bedava undo hakkı varsa rozet göster, reklam ikonunu gizle
-  const badge=document.getElementById('undo-badge');
-  const adIcon=document.getElementById('undo-ad-icon');
-  if(freeUndos>0){
-    if(badge){badge.textContent='×'+freeUndos;badge.style.display='';}
-    if(adIcon) adIcon.style.display='none';
-  } else {
-    if(badge) badge.style.display='none';
-    if(adIcon) adIcon.style.display='';
-  }
-}
-
 // ── BOMB ─────────────────────────────────────────────────────────────────────
 let bombCount=0,bombMode=false,bombType='normal',bombXP=0;
 let colorBlastMode=false;
@@ -3504,7 +3449,7 @@ function doRescue(){
     document.getElementById('rescue-btn').style.display='none';
     // Kalan parçaları sığan ve farklı parçalarla değiştir
     {const pool=buildPool(),used=new Set();for(let i=0;i<3;i++){let s,tt=0;do{s=pool[Math.floor(Math.random()*pool.length)];tt++;}while(tt<80&&(used.has(_shapeKey(s))||!anyFits(s)));used.add(_shapeKey(s));pieces[i]={shape:s,ci:Math.floor(Math.random()*CLR.length),placed:false,rotFlash:0,rotT:0};}}
-    selPiece=null;undoState=null;updateUndoBtn();
+    selPiece=null;
     vibrate([30,20,60,20,80]);
     flashScreen('combo',600);
     showCelebration(t('rescueAct'),'#6BCB77');
@@ -3573,7 +3518,7 @@ function genPieces(){
   }
   pieces=[pick(true),pick(),pick()];
   if(!pieces.some(p=>anyFits(p.shape)))pieces[0]=rndPiece(true);
-  selPiece=null;undoState=null;updateUndoBtn();
+  selPiece=null;
 }
 
 // ── GAME CONTROL ──────────────────────────────────────────────────────────────
@@ -3650,13 +3595,12 @@ function continueGame(){
   bombCount=Math.min(BOMB_MAX_TOTAL,getInvBombs()); bombXP=0;
   _invBombsInPlay=bombCount;
   colorBlastXP=0;
-  freeUndos=getInvUndos();
   pieces=st.pieces.map(p=>({
     shape:{cells:p.cells},ci:p.ci,placed:p.placed,rotFlash:0,rotT:0
   }));
   dead=false; rescueUsed=false;
   floats=[];flashes=[];bounce=null;sparks=[];shockwaves=[];celebs=[];
-  selPiece=null; undoState=null;
+  selPiece=null;
 
   best=parseInt(localStorage.getItem('tiliq_best')||'0');
   document.getElementById('scoreDisplay').textContent=score.toLocaleString();
@@ -3666,7 +3610,7 @@ function continueGame(){
   document.getElementById('bomb-btn').classList.remove('lit-normal','lit-super');
   document.getElementById('colorblast-btn')?.classList.remove('lit-color');
   colorBlastMode=false;
-  updateBombBar(); updateColorBlastBtn(); updateUndoBtn();
+  updateBombBar(); updateColorBlastBtn();
   if(!_rafId) requestAnimationFrame(loop);
   onGameStart();
 }
@@ -3696,7 +3640,7 @@ function resume2Ad(){
   document.getElementById('rescue-btn').style.display='none';
   // Tüm parçaları sığan ve farklı parçalarla yenile
   {const pool=buildPool(),used=new Set();for(let i=0;i<3;i++){let s,tt=0;do{s=pool[Math.floor(Math.random()*pool.length)];tt++;}while(tt<80&&(used.has(_shapeKey(s))||!anyFits(s)));used.add(_shapeKey(s));pieces[i]={shape:s,ci:Math.floor(Math.random()*CLR.length),placed:false,rotFlash:0,rotT:0};}}
-  selPiece=null;undoState=null;updateUndoBtn();
+  selPiece=null;
   flashScreen('combo',600);
   showCelebration(t('continueAct'),'#6BCB77');
   vibrate([30,20,60,20,80]);
@@ -3712,7 +3656,7 @@ function startGame(){
   score=0;combo=0;dead=false;
   floats=[];flashes=[];bounce=null;sparks=[];shockwaves=[];celebs=[];flames=[];
   _fire.count=0;_fire.speed=0;_fire.scale=0;_applyBoardGlow(0); // alev/glow sıfırla
-  selPiece=null;undoState=null;
+  selPiece=null;
   rescueUsed=false;
   _r2adWatched=0;_r2adUsedThisGame=false;_rescueShownThisGame=false;
   comboTimeLeft=0;
@@ -3725,13 +3669,10 @@ function startGame(){
   _invBombsInPlay=bombCount;
   bombMode=false;bombXP=0;
   colorBlastMode=false;colorBlastXP=0;
-  // Bonus geri alma haklarını yükle (bedava undo)
-  freeUndos=getInvUndos();
   document.getElementById('bomb-btn').classList.remove('lit-normal','lit-super');
   document.getElementById('colorblast-btn')?.classList.remove('lit-color');
   updateBombBar();
   updateColorBlastBtn();
-  updateUndoBtn();
   best=parseInt(localStorage.getItem('tiliq_best')||'0');
   document.getElementById('scoreDisplay').textContent='0';
   document.getElementById('bestDisplay').textContent=best;
@@ -3750,7 +3691,6 @@ function restartGame(){
 function place(pi,row,col){
   const p=pieces[pi];
   if(!fits(p.shape,row,col))return false;
-  saveUndo();
   const cells=[];
   for(const[dr,dc]of p.shape.cells){grid[row+dr][col+dc]=p.ci+1;cells.push([row+dr,col+dc]);}
   p.placed=true;playTick();vibrate(12);
@@ -3822,8 +3762,6 @@ function place(pi,row,col){
     if(tot>=2)floats.push({x:fx-30,y:fy+20,txt:tot+' '+t('rowsShort'),a:1,vy:-1.2,c:'#FF9F43',big:false,scale:1.3});
     spawnExplosion(fx,fy,CLR[p.ci],tot>=2);
   } // sıra patlamadıysa combo timer devam eder — hamleyle değil süreyle sıfırlanır
-
-  updateUndoBtn();
 
   // checkDead satır silme animasyonundan SONRA çalışmalı (260ms gecikme var)
   // Aksi halde henüz silinmemiş satırlar varmış gibi yanlış game over verir
@@ -4072,8 +4010,11 @@ let _fireGLOK=false,_fireGL=null,_fireProg=null,_fireU={},_fireCv=null;
 function _initFireGL(){
   try{
     _fireCv=document.getElementById('fireCanvas'); if(!_fireCv)return;
-    const gl=_fireCv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false})
-          || _fireCv.getContext('experimental-webgl',{alpha:true,premultipliedAlpha:true});
+    // powerPreference:'low-power' — bu basit 2D bulmaca oyununun yüksek performans GPU
+    // çekirdeğine ihtiyacı yok; destekleyen cihazlarda (iOS/Metal dahil) sürücüye
+    // verimlilik çekirdeğini tercih etmesini işaret ediyor (termal/pil için).
+    const gl=_fireCv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false,powerPreference:'low-power'})
+          || _fireCv.getContext('experimental-webgl',{alpha:true,premultipliedAlpha:true,powerPreference:'low-power'});
     if(!gl)return;
     const OCT=_FIRE_MOBILE?4:5;
     const r=_compileFireProgram(gl,OCT);
@@ -4661,10 +4602,6 @@ function boardDesign(i){
           l:16+step*1.3,           // zemin parlaklığı kademeyle artar
           acc:0.28+step*0.05};     // aksan gücü kademeyle artar (biraz daha zengin başlangıç)
 }
-// Eşik eğrisi: ilk tablalar hızlı gelir (oyuncu sistemi keşfeder), sonrası kilometre taşı.
-// i. tabla eşiği ≈ 120×i^1.45 → #2=120, #10≈3.3K, #30≈17K, #108≈107K puan
-const BOARD_THRESH=(()=>{const a=[0];for(let i=1;i<BOARD_COUNT;i++)a.push(Math.round(120*Math.pow(i,1.45)));return a;})();
-function boardIndexForScore(sc){let i=0;while(i+1<BOARD_COUNT&&sc>=BOARD_THRESH[i+1])i++;return i;}
 let _boardIdxCur=0;
 
 // ── PREMIUM BOARD KATMANI — çerçeve + 64 çökük mücevher yuvası + vinyet.
@@ -5107,6 +5044,19 @@ function draw(){
 }
 
 let _rafId=null;
+// KÖK NEDEN (2026-07-16, "iOS telefonları aşırı ısıtıyor" raporu): requestAnimationFrame
+// hiçbir üst sınır olmadan cihazın kendi ekran yenileme hızında tetiklenir — bu, sabit
+// 60Hz ekranlarda 60fps demekken, ProMotion'lı iPhone'larda (13 Pro ve sonrası çoğu Pro/
+// bazı standart modeller) 120Hz'e kadar çıkabiliyor. Yani AYNI kod, aynı tahta + WebGL
+// ateş shader'ını saniyede 120 KEZ yeniden çiziyordu — CLAUDE.md'nin kendi hedefi olan
+// "60 FPS sabit"in TAM İKİ KATI CPU/GPU yükü. Android test cihazı muhtemelen 60Hz olduğu
+// için bu fark hiç görünmüyordu, ama termal olarak en çok combo/ateş efekti aktifken
+// (en GPU-yoğun an) ısınmaya yol açıyordu. Artık son çizimden bu yana geçen süre
+// ~16.6ms'nin (60fps karşılığı) altındaysa frame atlanıyor — 120Hz ekranlarda GERÇEK
+// çizim hızı yine 60fps'te kilitleniyor, girdi responsiveness'ı (touchmove/pos hesabı
+// loop'tan bağımsız, event bazlı) etkilenmiyor.
+let _lastDrawAt=0;
+const _FRAME_MIN_MS=1000/60-1; // küçük tolerans: tam 16.667 yerine hafif erken tetiklenebilsin
 function loop(){
   // stopLoop() hiçbir yerden çağrılmıyordu — oyun ekranından menüye/ayarlara/mağazaya
   // dönüldüğünde bile canvas+WebGL ateş katmanı arka planda sonsuza dek 60fps çizilmeye
@@ -5114,7 +5064,11 @@ function loop(){
   // kaynaklarından biriydi. Artık sadece oyun ekranı gerçekten aktifken çalışıyor.
   const gameActive=document.getElementById('screen-game')?.classList.contains('active');
   if(!gameActive){stopLoop();return;}
-  if(grid.length&&pieces.length)draw();
+  const now=performance.now();
+  if(now-_lastDrawAt>=_FRAME_MIN_MS){
+    _lastDrawAt=now;
+    if(grid.length&&pieces.length)draw();
+  }
   _rafId=requestAnimationFrame(loop);
 }
 function stopLoop(){if(_rafId){cancelAnimationFrame(_rafId);_rafId=null;}}
@@ -5128,17 +5082,20 @@ function pos(e){
   return{x:(src.clientX-r.left)*(canvas.width/r.width),y:(src.clientY-r.top)*(canvas.height/r.height)};
 }
 
-function rotateSelected(){rotatePiece(selPiece);}
 
 // ── DRAG STATE ────────────────────────────────────────────────────────────────
 let drag=null; // {pi, startX, startY, x, y, moved}
 const DRAG_PX=9;
-// "iOS'ta sürüklerken şekil Android'deki kadar yukarı gitmiyor" raporu (2026-07-15) —
-// DRAG_LIFT kare (CELL) birimiyle ölçülüyor; bir önceki turda calcCell()'i gerçek
-// güvenli alana göre ölçmeye başladık, bu da iOS'ta CELL'i (ve dolayısıyla aynı 1.5
-// kat'lık kaldırmanın piksel karşılığını) küçültmüş olabilir. Android'in zaten doğru
-// kabul edilen hissini bozmamak için SADECE iOS'ta artırıyoruz.
-const DRAG_LIFT=_isIOS?2.2:1.5; // parmağın kaç CELL üzerinde çizilsin
+// iOS'a özel DRAG_LIFT çarpanı (2.2) bugün erken saatlerde "iOS'ta yeterince
+// yukarı gitmiyor" raporuna karşı denendi, ama kullanıcı yeni build'de TERSİNİ
+// bildirdi: "iOS'ta şekil Android'e göre fazla yukarıda duruyor". Cihaza göre
+// ayrı ayrı büyülü sabitlerle tutturmaya çalışmak iki turdur ıskalıyor — asıl
+// sorun muhtemelen DRAG_LIFT'in kendisinde değil, CELL'i belirleyen calcCell()
+// güvenli-alan ölçümünün platformlar arası tutarsız olmasında. Kullanıcının
+// açık isteği üzerine (2026-07-15): iki platform da AYNI sabiti kullanıyor —
+// tekrar sapma raporu gelirse calcCell()/contentInset tarafına bakılmalı,
+// bu sabite değil.
+const DRAG_LIFT=1.5; // parmağın kaç CELL üzerinde çizilsin (Android ve iOS ortak)
 
 function _inGrid(x,y){const gx=GOX(),gy=GOY;return x>=gx&&x<gx+CELL*GRID&&y>=gy&&y<gy+CELL*GRID;}
 
@@ -5266,8 +5223,8 @@ function bgClick(e){if(e.target===document.getElementById('lb-panel'))toggleLB()
 const STORE_THEMES=[
   {id:'classic', name:'Klasik',    emoji:'🏺', coins:0,    desc:'Sıcak Akdeniz'},
   {id:'wooden',  name:'Ahşap',     emoji:'🪵', coins:0,    desc:'Doğal doku'},
-  {id:'neon',    name:'Neon',      emoji:'💡', coins:0,    desc:'Parlak neon renkler'},
-  {id:'retro',   name:'Retro',     emoji:'🕹️', coins:0,    desc:'8-bit oyun salonu'},
+  {id:'neon',    name:'Neon',      emoji:'💡', coins:700,  desc:'Parlak neon renkler'},
+  {id:'retro',   name:'Retro',     emoji:'🕹️', coins:700,  desc:'8-bit oyun salonu'},
   {id:'marble',  name:'Mermer',    emoji:'🏛️', coins:700,  desc:'Zarif ve serin'},
   {id:'ocean',   name:'Okyanus',   emoji:'🌊', coins:700,  desc:'Derin mavi tonlar'},
   {id:'sunset',  name:'Gün Batımı',emoji:'🌅', coins:850,  desc:'Sıcak alev renkleri'},
@@ -5397,7 +5354,7 @@ const _nativeAuthReadyPromise=new Promise(r=>{_nativeAuthReadyResolve=r;});
 async function initFirebaseAuth(){
   try{
     const {initializeApp,getApps}=await import('./assets/firebase/firebase-app.js');
-    const {getAuth,onAuthStateChanged,getRedirectResult,signInAnonymously}=await import('./assets/firebase/firebase-auth.js');
+    const {getAuth,onAuthStateChanged,getRedirectResult}=await import('./assets/firebase/firebase-auth.js');
     if(!getApps().length) _fbApp=initializeApp(FB_CONFIG);
     else _fbApp=getApps()[0];
     _fbAuth=getAuth(_fbApp);
@@ -5422,7 +5379,17 @@ async function initFirebaseAuth(){
       }
     }catch(e){console.warn('Analytics init:',e);}
     onAuthStateChanged(_fbAuth, user=>{
-      if(user) _onFirebaseUser(user);
+      if(user){
+        // DÜZELTME (2026-07-18): interaktif Apple girişinde signInWithCredential(_fbAuth,...)
+        // ile JS SDK'ya köprülenen oturum, JS SDK'nın KENDİ kalıcılık katmanında saklanır —
+        // yani uygulama kapatılıp açıldığında bu listener'ın BURADA otomatik tetiklenmesi
+        // beklenir. Önceki soğuk-açılış geri yükleme bloğu (native FA.getCurrentUser() ile)
+        // bu köprüyü kurmuyordu — bu yüzden taze giriş düzelse bile bir sonraki soğuk
+        // açılışta Apple oturumu yine (bozuk) native Firestore'a düşüyordu. Burada, JS
+        // SDK'nın kendi kalıcı oturumu Apple sağlayıcılıysa bayrağı da set ediyoruz.
+        if(user.providerData?.some(p=>p.providerId==='apple.com')) _forceJsFirestoreForApple=true;
+        _onFirebaseUser(user);
+      }
       if(_authReadyResolve){_authReadyResolve();_authReadyResolve=null;} // ilk callback = "auth durumu belli"
     });
     // Redirect sonrası dönüş kontrolü — timeout eklendi (2026-07-14), bu JS SDK
@@ -5433,22 +5400,52 @@ async function initFirebaseAuth(){
       const result=await Promise.race([getRedirectResult(_fbAuth),_redirTimeout]);
       if(result?.user) _onFirebaseUser(result.user);
     }catch(e){ console.warn('Redirect result:',e); }
-    // Giriş yoksa anonim oturum aç — dünya sıralamasını okuyabilmek için
-    // (Firestore kuralı: allow read if request.auth != null). Anonim oturum
-    // gerçek giriş sayılmaz; arkadaş sistemi yine Google hesabı ister.
-    // KRİTİK DÜZELTME (2026-07-13): Firebase'in signInAnonymously()'si, ZATEN
-    // gerçek bir sağlayıcıyla (Apple/Google) oturum açık olsa bile KOŞULSUZ çalışır
-    // ve mevcut oturumun yerine YENİ bir anonim oturum kurar — "giriş yoksa" kontrolü
-    // olmadan bu, her uygulama açılışında (initFirebaseAuth her başlangıçta çalışır)
-    // Apple/Google ile açılmış NATIVE oturumu sessizce anonim oturuma çeviriyordu.
-    // Sonuç: acct.uid (yerelde kayıtlı gerçek UID) ile native oturumun UID'si
-    // uyuşmuyordu, Firestore kuralı (request.auth.uid == uid) TÜM bulut yazmalarını
-    // reddediyordu — "Apple ile giriş yaptıktan sonra hiçbir şey kaydetmiyor" raporu
-    // buradan geliyordu. Artık SADECE gerçekten giriş yapılmamışsa (isLoggedIn()
-    // false) anonim oturum açılıyor; zaten gerçek girişi olan kullanıcının native
-    // oturumuna hiç dokunulmuyor.
-    if((!_fbAuth.currentUser || _isIOS) && !isLoggedIn()){
-      try{ await _fbAnonSignIn(); }catch(e){ console.warn('Anon auth:',e); }
+    // ANONİM OTURUM TAMAMEN KALDIRILDI (2026-07-17, kullanıcı isteği): Giriş duvarı
+    // zaten TÜM ekranı kaplayan bir overlay (#login-gate, z-index:400) — gerçek girişi
+    // olmayan kullanıcı hiçbir şeye (sıralama dahil) dokunamıyor, yani anonim oturumun
+    // "dünya sıralamasını okuyabilme" amacı bugün hiç kullanılmıyor. Bunun yanında
+    // anonim girişin, henüz tamamlanmamış bir interaktif Apple/Google girişiyle aynı
+    // native Auth.auth() oturumu ve plugin'in TEK PAYLAŞILAN savedCall referansı
+    // üzerinde YARIŞMASI ("Apple ile giriş yaptıktan sonra hiçbir şey kaydetmiyor" /
+    // "Apple oturumlarının hafızası yok" raporlarının en olası ortak kök nedeni) artık
+    // mümkün değil — bu çağrı sınıfı tamamen kaldırıldı.
+    // KÖK NEDEN (2026-07-15, ikinci tur — "hesap değiştirirken/başka cihazda oynanan
+    // ilerleme çok geç yansıyor" raporu): yukarıdaki yorum "zaten gerçek girişi olan
+    // kullanıcının native oturumuna hiç dokunulmuyor" diyordu — bu SADECE anonim girişin
+    // üzerine yazmasını engellemek içindi, ama bunun yan etkisi olarak iOS'ta gerçek
+    // girişli bir kullanıcı için _onFirebaseUser() SOĞUK AÇILIŞTA BİR DAHA HİÇ
+    // ÇAĞRILMIYORDU. onAuthStateChanged(_fbAuth,...) sadece JS SDK oturumlarını dinliyor
+    // (satır 5428) — ama iOS'ta gerçek Apple/Google girişi JS SDK'ya hiç bağlanmıyor
+    // (bkz. _authSignIn), sadece native FirebaseAuthentication SDK'sında tutuluyor.
+    // Sonuç: uygulama kapatılıp açıldığında (ya da başka cihazda/Android'de/webde
+    // ilerleme kaydedildikten sonra iOS'ta yeniden açıldığında) tm_acct'teki ESKİ
+    // yerel önbellek hiç tazelenmiyordu — kullanıcı sadece elle çıkış yapıp tekrar
+    // giriş yaparsa güncelleniyordu, bu da "çok geç yansıma" hissi yaratıyordu.
+    // Düzeltme: iOS'ta zaten "girişli" (localStorage'dan) görünüyorsak, native
+    // oturumu FA.getCurrentUser() ile soruyoruz ve gerçek/anonim-olmayan bir
+    // kullanıcı dönerse _onFirebaseUser() ile TAM bulut senkronunu (max-merge,
+    // veri kaybı riski yok) yeniden tetikliyoruz — tıpkı taze bir giriş gibi.
+    if(_isIOS && isLoggedIn()){
+      try{
+        const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication,4000);
+        const cur=await FA?.getCurrentUser?.();
+        // DÜZELTME (2026-07-15, üçüncü tur — "Apple oturumlarının hafızası yok gibi"
+        // raporu): yukarıdaki `!cur.user.isAnonymous` kontrolü tam olarak _authSignIn'de
+        // belgelenen aynı kusura takılıyordu — Google'da isAnonymous her zaman güvenilir
+        // false gelirken, Apple'da native eklenti bu alanı bazen yanlışlıkla
+        // true/tanımsız-truthy dolduruyor. Sonuç: bu restore bloğu Apple hesapları için
+        // SESSİZCE hiç çalışmıyordu — Google ile giriş yapan kullanıcıda soğuk açılışta
+        // senkron oluyordu, Apple ile girende hiç olmuyordu ("hafızası yok" hissi).
+        // isAnonymous'a güvenmek yerine: acct.uid zaten localStorage'dan GERÇEK (isLoggedIn()
+        // true) bir hesabı gösteriyor — dönen native oturumun uid'si bununla eşleşiyorsa
+        // bu kesinlikle gerçek hesabın kendisidir, isAnonymous ne derse desin.
+        if(cur?.user && cur.user.uid===acct.uid){
+          cur.user.isAnonymous=false;
+          _onFirebaseUser(cur.user);
+        } else if(cur?.user && !cur.user.isAnonymous){
+          _onFirebaseUser(cur.user);
+        }
+      }catch(e){ console.warn('iOS native currentUser restore:',e); }
     }
     if(_nativeAuthReadyResolve){_nativeAuthReadyResolve();_nativeAuthReadyResolve=null;}
   }catch(e){
@@ -5463,8 +5460,16 @@ async function initFirebaseAuth(){
 // çağrıları için de geçerli olabilir). Bu yüzden iOS'ta native @capacitor-firebase/
 // firestore eklentisini (native URLSession, WKWebView fetch değil) kullanıyoruz;
 // Android ve web'de mevcut, çalışan JS SDK yoluna dokunmuyoruz.
+// DENEY (2026-07-18, "Apple ile Firestore yazması hiçbir zaman sunucuya ulaşmıyor"
+// bulgusu — Auth kesinlikle çalışıyor/stabil UID, rules doğru, Google için AYNI
+// kod native ile sorunsuz çalışıyor, ama Apple oturumlarında native Firestore
+// eklentisi yazmayı asla iletmiyor gibi görünüyor): SADECE Apple ile giriş yapan
+// oturumlarda, native yerine JS SDK Firestore'a geçiyoruz — Android'in zaten
+// çalışan yöntemiyle aynı (native credential'ı JS SDK'ya köprüleme). Google/genel
+// iOS akışına DOKUNMUYORUZ, native eklenti orada aynen kullanılmaya devam ediyor.
+let _forceJsFirestoreForApple=false;
 function _fsNative(){
-  return (_isIOS && window.Capacitor?.isNativePlatform?.()) ? (window.Capacitor?.Plugins?.FirebaseFirestore||null) : null;
+  return (_isIOS && window.Capacitor?.isNativePlatform?.() && !_forceJsFirestoreForApple) ? (window.Capacitor?.Plugins?.FirebaseFirestore||null) : null;
 }
 async function _fsGetDoc(path){
   const N=_fsNative();
@@ -5554,7 +5559,7 @@ function _postLoginSetup(){
 async function _fetchCloudData(uid){
   try{
     return await _fsGetDoc('users/'+uid);
-  }catch(e){return null;}
+  }catch(e){ return null; }
 }
 // "Hayır" seçilince: hesabın (cloud) verisini al, yereli onunla değiştir.
 // Hesap boşsa temiz başla ve boş bir hesap dökümanı oluştur.
@@ -5567,7 +5572,15 @@ async function _pullCloudOverwrite(uid){
       if(d.code){myCode=d.code;localStorage.setItem('tm_my_code',d.code);}
       if(d.name) acct.nickname=d.name;      // hesabın adı
       if(d.country) acct.country=d.country; // hesabın ülkesi
-      if(d.country) acct._setupDone=true;   // profil kurulmuş → sorma
+      // setupDone artık açık bir bulut alanı (bkz. saveProfileSetup notu); d.country
+      // eski dökümanlar için geriye dönük uyumluluk amacıyla hâlâ kontrol ediliyor.
+      // SAVUNMA KATMANI (2026-07-17, "her Apple girişinde profili tamamla tekrar
+      // çıkıyor" raporu): setupDone yazması bir ağ isteğine bağlı olduğu için (kısa
+      // bir pencerede) kaybolabilir/gecikebilir. Buluttaki dökümanda GERÇEK ilerleme
+      // (best veya games > 0) varsa, bu zaten "yeni/boş bir hesap değil" demektir —
+      // setupDone bayrağı her ne sebeple eksik olursa olsun profil ekranı tekrar
+      // sorulmasın.
+      if(d.setupDone||d.country||(d.best||0)>0||(d.games||0)>0) acct._setupDone=true;
       localStorage.setItem('tm_xp',String(d.xp||0));
       localStorage.setItem('tiliq_best',String(d.best||0));
     } else {
@@ -5638,7 +5651,12 @@ function _showGateSyncing(){
   const btns=document.getElementById('gate-buttons');
   const sync=document.getElementById('gate-syncing');
   if(btns) btns.style.display='none';
-  if(sync) sync.style.display='block';
+  // DÜZELTME (2026-07-19, "yükleme baremi tam ortada değil" raporu): 'block'
+  // CSS'teki #gate-syncing{display:flex;align-items:center} kuralını inline
+  // stille eziyordu, bar flex ortalamasını kaybedip sola yaslanıyordu.
+  if(sync) sync.style.display='flex';
+  const err=document.getElementById('gate-error');
+  if(err) err.style.display='none';
 }
 function _finishLoginLoading(){
   const btns=document.getElementById('gate-buttons');
@@ -5646,8 +5664,24 @@ function _finishLoginLoading(){
   if(btns) btns.style.display='';
   if(sync) sync.style.display='none';
   _updateLoginGate();
+  // Bu hesap için giriş/senkron akışı tamamlandı — bir sonraki _onFirebaseUser
+  // çağrısı (ör. gerçek bir yeniden giriş) artık tekrar akışı başlatabilsin.
+  _fbUserHandlingUid=null;
 }
 
+// KÖK NEDEN (2026-07-16, "Apple ile her girişte profili tamamla tekrar çıkıyor" raporu):
+// initFirebaseAuth()'un soğuk-açılış geri yükleme bloğu (FA.getCurrentUser() ile) ve
+// AKTİF bir interaktif giriş (_authSignIn) aynı anda çalışabiliyordu — initFirebaseAuth()
+// birkaç saniye süren bir zincir (dinamik import'lar + getRedirectResult'un 5sn'lik
+// bekleyişi), bu sürede kullanıcı Apple ile girişi TAMAMLAYABİLİYORDU. Sonuç: aynı
+// gerçek kullanıcı için _onFirebaseUser() NEREDEYSE AYNI ANDA İKİ KEZ çağrılıyordu —
+// her çağrının kendi bağımsız profil-kurulumu zamanlayıcısı/senkronu vardı, kullanıcı
+// formu doldurup kaydettikten hemen sonra geç biten ikinci çağrı eski (henüz
+// kaydedilmemiş) durumu görüp showProfileSetup()'ı TEKRAR açıyordu. Google'da bu daha
+// az görülüyordu çünkü Google girişi genelde Apple'ın Face ID onay adımından daha hızlı
+// tamamlanıp çakışma penceresini kaçırıyordu — ama kök neden platforma özel değildi.
+// Aynı UID için aynı anda sadece TEK bir akış çalışsın diye kilitliyoruz.
+let _fbUserHandlingUid=null;
 function _onFirebaseUser(user){
   // Anonim oturum: sadece dünya sıralamasını okumak için. Gerçek giriş değil,
   // skor yazılmaz, arkadaş sistemi açılmaz. Sadece panel açıksa sıralamayı yenile.
@@ -5658,6 +5692,12 @@ function _onFirebaseUser(user){
     }
     return;
   }
+  if(_fbUserHandlingUid===user.uid) return; // bu hesap için zaten bir akış sürüyor
+  _fbUserHandlingUid=user.uid;
+  _lastRealUser=user; // "Tekrar Dene" butonu bunu kullanır
+  // GÜVENİLİR YAZMA KUYRUĞU (2026-07-18): daha önce başarısız/asılı kalmış
+  // yazmalar varsa (sebebi ne olursa olsun), her gerçek girişte tekrar denenir.
+  _flushWriteQueue();
   acct._googleName = user.displayName || user.email || '';
   // DİKKAT: acct.nickname'e YAZMA — displayName() zaten nickname boşsa _googleName'e
   // düşüyor (görüntüleme için yeterli). Buraya yazmak, _firestoreSync'in gerçek
@@ -5692,16 +5732,17 @@ function _onFirebaseUser(user){
   if(si) si.style.display='block';
   if(na) na.style.display='none';
   if(wa) wa.style.display='none';
-  // GÜVENLİK AĞI (2026-07-11): profil kurulumu (showProfileSetup) daha önce SADECE
-  // _firestoreSync()'in tamamlanmasına bağlıydı — bu bir Firestore JS SDK çağrısı,
-  // ve iOS'ta bazı JS SDK ağ çağrılarının sessizce askıda kaldığını doğruladık. Eğer
-  // bu zincir hiç bitmezse kullanıcı profil kurulumuna ASLA ulaşamıyordu ("dil
-  // soruyor ama profil düzenlemesine ilerletmiyor" raporu). 8sn içinde Firestore
-  // yanıt vermezse, profil kurulumunu yine de başlatıyoruz — bulut senkronu arka
-  // planda devam edebilir, kullanıcı takılı kalmasın diye.
+  // DÜZELTME (2026-07-18, "hesap tam anlamıyla yüklenmeden ekran oyunu açmasın"
+  // isteği): önceden 5sn'lik bir zamanlayıcı SENKRON GERÇEKTEN BİTMEMİŞ OLSA BİLE
+  // profil/oyun ekranına geçiyordu ("güvenlik ağı") — bu, kullanıcının yanlış/boş
+  // veriyle karşılaşmasının bir nedeniydi. Artık ekran SADECE gerçek senkron
+  // BAŞARIYLA bitince açılıyor; başarısız olursa (iki denemeden sonra) hata +
+  // "Tekrar Dene" gösteriliyor, kullanıcı yanlış veriyle asla oyuna sokulmuyor.
+  // 25sn'lik üst sınır sadece "sonsuza kadar asılı kalma" durumuna karşı — o an
+  // bile normal profil ekranına DEĞİL, hata ekranına düşülüyor.
   let _plsCalled=false;
-  const _postLoginSetupOnce=()=>{ if(_plsCalled)return; _plsCalled=true; _finishLoginLoading(); _postLoginSetup(); };
-  setTimeout(_postLoginSetupOnce,5000);
+  const _postLoginSetupOnce=()=>{ if(_plsCalled)return; _plsCalled=true; clearTimeout(_syncTimeoutId); _hideGateError(); _finishLoginLoading(); _postLoginSetup(); };
+  const _syncTimeoutId=setTimeout(()=>{ if(!_plsCalled) _showGateError(); },25000);
   // İlk gerçek giriş VE yerel ilerleme VARSA: önce cloud'a bak.
   const localBest=acct.best||0;
   if(acct._mergedUid!==user.uid && localBest>0){
@@ -5710,15 +5751,16 @@ function _onFirebaseUser(user){
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       if(cloud && (cloud.best||0)>0){
         // Hesapta zaten veri var → çakışma, kullanıcıya sor
-        _plsCalled=true; // merge dialog kendi akışını yönetir, timeout'u iptal et
+        _plsCalled=true; clearTimeout(_syncTimeoutId); // merge dialog kendi akışını yönetir
         _showMergeDialog(user.uid, cloud);
       } else {
         // Hesap boş → yereli otomatik aktar (dünya sıralamasına yazılsın)
-        return _firestoreSync(user.uid).then(()=>_postLoginSetupOnce());
+        return _firestoreSync(user.uid).then(ok=>ok?_postLoginSetupOnce():_showGateError());
       }
     }).catch(()=>{
       // Cloud okunamadıysa yine de senkronize et — skor kaybolmasın
-      return _firestoreSync(user.uid).then(()=>{
+      return _firestoreSync(user.uid).then(ok=>{
+        if(!ok){ _showGateError(); return; }
         acct._mergedUid=user.uid;
         localStorage.setItem('tm_acct',JSON.stringify(acct));
         _postLoginSetupOnce();
@@ -5726,12 +5768,35 @@ function _onFirebaseUser(user){
     });
   } else {
     // Yerel ilerleme yok veya daha önce aktarıldı — normal senkronizasyon
-    _cloudSyncPromise=_firestoreSync(user.uid).then(()=>{
+    _cloudSyncPromise=_firestoreSync(user.uid).then(ok=>{
+      if(!ok){ _showGateError(); return; }
       acct._mergedUid=user.uid;
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       _postLoginSetupOnce();
     });
   }
+}
+// Yeniden dene: son gerçek kullanıcıyla senkronu baştan başlatır.
+let _lastRealUser=null;
+window._retryAccountSync=function(){
+  if(!_lastRealUser)return;
+  _fbUserHandlingUid=null; // kilidi aç, _onFirebaseUser tekrar çalışabilsin
+  _hideGateError();
+  _onFirebaseUser(_lastRealUser);
+};
+function _showGateError(){
+  const g=document.getElementById('login-gate');
+  if(!g||!g.classList.contains('show'))return;
+  const btns=document.getElementById('gate-buttons');
+  const sync=document.getElementById('gate-syncing');
+  const err=document.getElementById('gate-error');
+  if(btns) btns.style.display='none';
+  if(sync) sync.style.display='none';
+  if(err) err.style.display='block';
+}
+function _hideGateError(){
+  const err=document.getElementById('gate-error');
+  if(err) err.style.display='none';
 }
 
 // Capacitor'ın native eklenti bridge'i, WebView yüklendikten hemen sonra bir anlığına
@@ -5749,24 +5814,7 @@ async function _waitForCapPlugin(getter,timeoutMs){
   return getter();
 }
 
-// Misafir/anonim oturum — dünya sıralamasını okuyabilmek için (Firestore kuralı:
-// allow read if request.auth != null). iOS'ta Firestore okumaları NATIVE eklenti
-// üzerinden gidiyor (bkz. _fsGetDoc/_fsQueryCollection) — bu da NATIVE Firebase Auth
-// oturumuna bakar, JS SDK'nın _fbAuth.currentUser'ına değil. JS SDK'nın kendi
-// signInAnonymously()'si zaten iOS'ta WKWebView ağ sorunuyla askıda kalabiliyordu
-// (bkz. _authSignIn notu), üstelik başarılı olsa bile native oturumu KURMUYORDU —
-// bu yüzden giriş duvarı kaldırıldıktan sonra (2026-07-13) misafir kullanıcılarda
-// hiç native oturum oluşmuyor, dünya sıralaması "izin yok" ile sessizce boş kalıyordu.
-// Artık iOS'ta native anonim girişi kullanıyoruz.
-async function _fbAnonSignIn(){
-  if(_isIOS && window.Capacitor?.isNativePlatform?.()){
-    const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication,5000);
-    if(FA) await FA.signInAnonymously();
-    return;
-  }
-  const {signInAnonymously}=await import('./assets/firebase/firebase-auth.js');
-  if(_fbAuth && !_fbAuth.currentUser) await signInAnonymously(_fbAuth);
-}
+// _fbAnonSignIn() TAMAMEN KALDIRILDI (2026-07-17) — bkz. initFirebaseAuth'taki not.
 
 window._authSignIn = async function(provider){
   const _isNative=!!window.Capacitor?.isNativePlatform?.();
@@ -5799,6 +5847,22 @@ window._authSignIn = async function(provider){
         // signInWithGoogle() çağırdığımızı BİLİYORUZ — bu METOTLAR ASLA anonim sonuç
         // döndürmez, bu yüzden isAnonymous'ı burada kesin olarak false'a zorluyoruz.
         result.user.isAnonymous=false;
+        // DENEY (2026-07-18): SADECE Apple için — native Firestore eklentisi bu
+        // oturumlarda yazmayı hiç sunucuya iletmiyor gibi görünüyor (Auth kesinlikle
+        // çalışıyor, Google için aynı kod native ile sorunsuz). Android'in zaten
+        // çalışan yöntemiyle aynı şekilde, native credential'ı JS SDK'ya köprülüyoruz;
+        // başarılı olursa BU oturum için Firestore işlemleri native yerine JS SDK'dan
+        // gidecek (_fsNative() bunu kontrol ediyor). 8sn üst sınır — asılırsa native'e
+        // geri düşülür (mevcut, zaten bozuk davranıştan öte bir kayıp olmaz).
+        if(isApple && result?.credential?.idToken){
+          try{
+            const {OAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
+            const cred=new OAuthProvider('apple.com').credential({idToken:result.credential.idToken,rawNonce:result.credential.nonce});
+            const _bridgeTo=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Apple JS SDK köprü zaman aşımı')),8000));
+            await Promise.race([signInWithCredential(_fbAuth,cred),_bridgeTo]);
+            _forceJsFirestoreForApple=true;
+          }catch(e){ console.warn('Apple JS SDK köprüsü başarısız, native ile devam:',e); }
+        }
         _onFirebaseUser(result.user);
       } else {
         alert('Giriş tamamlanamadı — kullanıcı bilgisi alınamadı.');
@@ -5913,6 +5977,15 @@ function _resetToGuestState(){
   if(typeof initAuthUI==='function') initAuthUI();
 }
 window._authSignOut = async function(){
+  // HIZLI GEÇİŞ (2026-07-18, "çıkınca giriş ekranına daha hızlı geç" isteği): buluta
+  // gönderme (özellikle artık 8sn'ye kadar sürebilen güvenilir yazma kuyruğuyla)
+  // ekranın değişmesini BLOKLUYORDU — kullanıcı birkaç saniye boyunca hiçbir tepki
+  // görmüyordu. Giriş duvarı artık en başta, veri gönderimi beklenmeden "çıkış
+  // yapılıyor" durumuyla HEMEN gösteriliyor; asıl veri güvenliği sırası (önce buluta
+  // gönder, SONRA yerel sıfırla) değişmedi, sadece kullanıcı bunu artık beklemiyor.
+  const g=document.getElementById('login-gate');
+  if(g) g.classList.add('show');
+  _showGateSyncing();
   // KRİTİK: sıfırlamadan ÖNCE mevcut ilerlemeyi buluta KESİN olarak gönder.
   // Önceden sıfırlama önce yapılıyordu; buluttaki veri (senkron gecikmesi
   // yüzünden) yerelden eskiyse, yereli sıfırlayıp sonra buluttaki eski veriyi
@@ -5930,6 +6003,7 @@ window._authSignOut = async function(){
   // sıfırlanmamış oluyordu — "çıkış yapmıyor" raporu buradan geliyordu. Artık
   // yerel sıfırlama garanti; SDK temizliği en iyi çaba olarak arkada kalabilir.
   _resetToGuestState();
+  _finishLoginLoading(); // "çıkış yapılıyor" durumundan gerçek giriş butonlarına dön
   try{
     if(_fbAuth) await _fbAuth.signOut();
   }catch(e){}
@@ -5942,42 +6016,13 @@ window._authSignOut = async function(){
     if(FA) await FA.signOut();
   }catch(e){}
   try{ const RC=_getRC(); if(RC&&_rcReady) await RC.logOut(); }catch(e){}
-  // Çıkıştan sonra anonim oturuma dön — dünya sıralaması okunabilir kalsın
-  try{ await _fbAnonSignIn(); }catch(e){}
 };
 
 // ── REVENUECAT IAP ───────────────────────────────────────────────────────────
 const RC_API_KEY='goog_VKytUieATEEzpTPAetzPtCYwkCa';
 const RC_ENTITLEMENT_VIP='vip';
 const RC_ENTITLEMENT_NO_ADS='no_ads';
-// Play Console'da OLUŞTURULACAK ürün ID'leri (birebir aynı olmalı):
-const RC_PRODUCTS={
-  tiliq_vip_monthly:'tiliq_vip_monthly',   // abonelik
-  tiliq_no_ads:     'tiliq_no_ads',        // tek seferlik
-  coins100:         'tiliq_coins_100',     // tüketilebilir
-  coins300:         'tiliq_coins_300',     // tüketilebilir
-  coins750:         'tiliq_coins_750',     // tüketilebilir
-};
-// Coin paketi → verilecek coin miktarı
-const RC_COIN_AMOUNTS={coins100:100,coins300:300,coins750:750};
 let _rcReady=false;
-
-// Bir ürün ID'sine karşılık gelen RevenueCat paketini tüm offering'lerde ara.
-// Tire/alt çizgi farkını yok sayar (Play: ürün=alt çizgi, satın alma seçeneği=tire).
-function _rcNormId(s){return String(s||'').replace(/[-_]/g,'').toLowerCase();}
-function _rcFindPackage(offerings,productId){
-  const want=_rcNormId(productId);
-  const lists=[];
-  if(offerings.current?.availablePackages) lists.push(offerings.current.availablePackages);
-  for(const off of Object.values(offerings.all||{})) if(off.availablePackages) lists.push(off.availablePackages);
-  for(const pkgs of lists){
-    for(const p of pkgs){
-      const pid=_rcNormId(p.storeProduct?.identifier||p.product?.identifier);
-      if(pid===want||pid.startsWith(want)) return p;
-    }
-  }
-  return null;
-}
 
 function _getRC(){return window.Capacitor?.Plugins?.PurchasesPlugin||null;}
 
@@ -6025,64 +6070,6 @@ function _applyNoAds(){}
 function isVip(){return false;}
 function isNoAds(){return false;}
 
-async function iapBuy(id){
-  const RC=_getRC();
-  if(!RC||!_rcReady){alert(t('iapSoon'));return;}
-  const productId=RC_PRODUCTS[id]||id;
-  try{
-    const offerings=await RC.getOfferings();
-    // Önce paket tipine göre dene (abonelik/lifetime), sonra ürün ID'sine göre
-    let pkg=null;
-    if(id==='tiliq_vip_monthly') pkg=offerings.current?.monthly;
-    else if(id==='tiliq_no_ads') pkg=offerings.current?.lifetime;
-    if(!pkg) pkg=_rcFindPackage(offerings,productId);
-    if(!pkg){alert(t('iapSoon'));return;}
-    const result=await RC.purchasePackage({aPackage:pkg});
-    const active=result.customerInfo?.entitlements?.active||{};
-    // Coin paketi (tüketilebilir) → coin ekle
-    if(RC_COIN_AMOUNTS[id]!==undefined){
-      const amount=RC_COIN_AMOUNTS[id];
-      tmAddCoins(amount); // bekleyen-delta defteri — satın alınan coin senkronda kaybolmaz
-      showCelebration(`+${amount} 🪙 ${t('iapSuccess')}`,'#D4A843');
-      playPurchase();vibrate([20,10,40]);
-    } else if(active[RC_ENTITLEMENT_VIP]||active[RC_ENTITLEMENT_NO_ADS]){
-      if(id==='tiliq_vip_monthly')_applyVip(); else _applyNoAds();
-      showCelebration('✅ '+t('iapSuccess'),'#6BCB77');
-      playPurchase();vibrate([20,10,40,10,60]);
-    }
-    // Gerçek para geliri — CPI/ROAS hesapları için değer+para birimi dahil
-    logEvent('purchase',{
-      transaction_id:result.transaction?.transactionIdentifier||'',
-      value:pkg.product?.price,
-      currency:pkg.product?.currencyCode||'USD',
-      items:[{item_id:productId}],
-    });
-    syncWallet();   // satın almayı hesaba işle
-    renderStoreBody();
-  }catch(e){
-    if(e.userCancelled||e.code==='PURCHASE_CANCELLED')return;
-    console.warn('RC purchase error:',e);
-    alert(t('iapSoon'));
-  }
-}
-
-async function iapRestore(){
-  const RC=_getRC();
-  if(!RC||!_rcReady){alert(t('iapSoon'));return;}
-  try{
-    const info=await RC.restorePurchases();
-    const active=info.customerInfo?.entitlements?.active||{};
-    if(Object.keys(active).length>0){
-      if(active[RC_ENTITLEMENT_VIP])_applyVip();
-      if(active[RC_ENTITLEMENT_NO_ADS])_applyNoAds();
-      syncWallet();
-      showCelebration('✅ Satın Almalar Geri Yüklendi!','#6BCB77');
-      renderStoreBody();
-    }else{
-      alert('Geri yüklenecek satın alma bulunamadı.');
-    }
-  }catch(e){console.warn('RC restore:',e);}
-}
 function updateStoreCoinBal(){
   const el=document.getElementById('store-coin-bal');
   if(el) el.textContent='🪙 '+tmGetCoins().toLocaleString();
@@ -6192,8 +6179,8 @@ function _initFlamePreviewGL(){
   try{
     const cv=document.createElement('canvas');
     cv.width=224;cv.height=256; // büyük önizleme modalında da net görünsün diye yüksek çözünürlük
-    const gl=cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false})
-          || cv.getContext('experimental-webgl',{alpha:true,premultipliedAlpha:true});
+    const gl=cv.getContext('webgl',{alpha:true,premultipliedAlpha:true,antialias:false,depth:false,powerPreference:'low-power'})
+          || cv.getContext('experimental-webgl',{alpha:true,premultipliedAlpha:true,powerPreference:'low-power'});
     if(!gl){_fpGL=false;return;}
     const r=_compileFireProgram(gl,_FIRE_MOBILE?4:5);
     if(!r){_fpGL=false;return;}
@@ -6269,8 +6256,8 @@ function storeFlameClick(id){
   vibrate([20,10,40]);
 }
 
-const _PW_KEYS={bomb3:'pwBomb3',bomb10:'pwBomb10',undo5:'pwUndo5',xp2:'pwXp2',colorblast1:'colorBlast'};
-const _PW_DESC_KEYS={bomb3:'pwBomb3D',bomb10:'pwBomb10D',undo5:'pwUndo5D',xp2:'pwXp2D',colorblast1:'pwColorBlastD'};
+const _PW_KEYS={bomb3:'pwBomb3',bomb10:'pwBomb10',xp2:'pwXp2',colorblast1:'colorBlast'};
+const _PW_DESC_KEYS={bomb3:'pwBomb3D',bomb10:'pwBomb10D',xp2:'pwXp2D',colorblast1:'pwColorBlastD'};
 function powerCard(p){
   const full=p.canBuy&&!p.canBuy();
   const priceLabel=full?t('colorBlastFull'):(p.price?p.price:`🪙 ${p.coins}`);
@@ -6323,7 +6310,6 @@ function storePowerBuy(id){
   renderStoreBody(); // dolu/boş durumunu ve bakiyeyi anında yansıt
 }
 
-function renderTmStore(){renderStoreBody();}
 function showTmStoreModal(){
   playTapLight();vibrate(10);
   storeTab='themes';
@@ -6373,9 +6359,6 @@ function startNewGame(){
   showTutorial();
 }
 
-function startScreen(){
-  startNewGame();
-}
 function backToMenu(){
   // Oyun devam ediyorsa kaydet
   if(!dead && grid.length && score>0) saveGameState();
@@ -6527,7 +6510,15 @@ async function _firestoreSync(uid,_isRetry){
       // bir sonraki girişte eski bulut değeri yereli eziyordu (kullanıcı raporu, 2026-07-04).
       if(d.name && !acct.nickname) acct.nickname=d.name;
       if(d.country && !acct.country) acct.country=d.country;
-      if(d.country) acct._setupDone=true;  // ülke set edilmişse profil kurulmuş → sorma
+      // setupDone artık açık bir bulut alanı (bkz. saveProfileSetup notu); d.country
+      // eski dökümanlar için geriye dönük uyumluluk amacıyla hâlâ kontrol ediliyor.
+      // SAVUNMA KATMANI (2026-07-17, "her Apple girişinde profili tamamla tekrar
+      // çıkıyor" raporu): setupDone yazması bir ağ isteğine bağlı olduğu için (kısa
+      // bir pencerede) kaybolabilir/gecikebilir. Buluttaki dökümanda GERÇEK ilerleme
+      // (best veya games > 0) varsa, bu zaten "yeni/boş bir hesap değil" demektir —
+      // setupDone bayrağı her ne sebeple eksik olursa olsun profil ekranı tekrar
+      // sorulmasın.
+      if(d.setupDone||d.country||(d.best||0)>0||(d.games||0)>0) acct._setupDone=true;
       if(d.bestAt) localStorage.setItem('tm_bestAt',String(d.bestAt)); // tiebreaker zamanı
       if((d.best||0)>acct.best) acct.best=d.best;
       if((d.games||0)>acct.games) acct.games=d.games;
@@ -6622,13 +6613,16 @@ async function _firestoreSync(uid,_isRetry){
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       const xpNow=getXP();
       const _pf1=_coinPending(); // yazım öncesi delta
-      await _fsSetDoc(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
+      // GÜVENİLİR YAZMA KUYRUĞU (2026-07-18): anlık deneme başarısız/asılı kalırsa
+      // (sebebi ne olursa olsun) yerel kuyruğa düşer, bir sonraki gerçek girişte
+      // otomatik tekrar denenir — veri sessizce kaybolmaz.
+      await _fsSetDocReliable(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
         vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast(),friendCodes:getFriends().map(f=>f.code).filter(Boolean)},true);
       _coinPend(-_pf1); // coin buluta yazıldı → delta onaylandı
     }else{
       const xpNow=getXP();
       const _pf2=_coinPending();
-      await _fsSetDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
+      await _fsSetDocReliable(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
         vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast()},true);
       _coinPend(-_pf2);
     }
@@ -6637,6 +6631,7 @@ async function _firestoreSync(uid,_isRetry){
     // Senkron sonrası günlük ödül kartı/seri rozeti taze veriyle yenilensin
     if(typeof renderDailyCard==='function') renderDailyCard();
     if(typeof updateStreakDisplay==='function') updateStreakDisplay();
+    return true;
   }catch(e){
     console.warn('Firestore sync:',e);
     // GÜVENLİK AĞI (2026-07-14): "hesabın leveli daha yüksek ama giriş sonrası eski
@@ -6648,7 +6643,48 @@ async function _firestoreSync(uid,_isRetry){
       await new Promise(r=>setTimeout(r,1500));
       return _firestoreSync(uid,true);
     }
+    // DÜZELTME (2026-07-18, "hesap tam yüklenmeden oyunu açma" isteği): iki deneme de
+    // başarısız olduysa artık SESSİZCE yerel (eksik/eski) veriyle devam edilmiyor —
+    // çağırana açıkça false dönüyor, o da hata+tekrar dene ekranını gösteriyor.
+    return false;
   }
+}
+
+// GÜVENİLİR YAZMA KUYRUĞU (2026-07-18): "Apple ile veri hiç kaydolmuyor" sorununu
+// kök nedenini kesin olarak yakalayamadan (kapsamlı canlı teşhis turlarına rağmen)
+// çözmek için — NEDEN başarısız olduğunu bilmeden de veri kaybını imkansız kılan
+// bir tasarım. Her kritik Firestore yazması önce anlık denenir (8sn üst sınır);
+// başarısız/asılı kalırsa localStorage'a kalıcı olarak kuyruğa alınır ve bir
+// sonraki gerçek girişte otomatik tekrar denenir — sonsuza kadar, veri kaybolmaz.
+const _WRITE_QUEUE_KEY='tm_write_queue';
+function _getWriteQueue(){ try{ return JSON.parse(localStorage.getItem(_WRITE_QUEUE_KEY)||'[]'); }catch(e){ return []; } }
+function _saveWriteQueue(q){ try{ localStorage.setItem(_WRITE_QUEUE_KEY,JSON.stringify(q.slice(-20))); }catch(e){} }
+async function _fsSetDocReliable(path,data,merge){
+  try{
+    const to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('write timeout 8s')),8000));
+    await Promise.race([_fsSetDoc(path,data,merge),to]);
+  }catch(e){
+    const q=_getWriteQueue();
+    q.push({path,data,merge:!!merge,ts:Date.now()});
+    _saveWriteQueue(q);
+  }
+}
+let _flushingWriteQueue=false;
+async function _flushWriteQueue(){
+  if(_flushingWriteQueue) return;
+  _flushingWriteQueue=true;
+  try{
+    const q=_getWriteQueue();
+    if(!q.length) return;
+    const remaining=[];
+    for(const item of q){
+      try{
+        const to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('flush timeout')),8000));
+        await Promise.race([_fsSetDoc(item.path,item.data,item.merge),to]);
+      }catch(e){ remaining.push(item); }
+    }
+    _saveWriteQueue(remaining);
+  }finally{ _flushingWriteQueue=false; }
 }
 
 let _pushRetried=false;
@@ -6668,7 +6704,7 @@ async function _firestorePushScore(){
     const wTotal=Math.max(acct.total||0,prev.total||0);
     const wXp=Math.max(xpNow,prev.xp||0);
     // setDoc merge: döküman yoksa oluşturur, varsa günceller (updateDoc gibi başarısız olmaz)
-    await _fsSetDoc(ref,{
+    await _fsSetDocReliable(ref,{
       uid:acct.uid,best:wBest,games:Math.max(acct.games||0,prev.games||0),total:wTotal,
       name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',
       xp:wXp,level:calcLevel(wXp),
@@ -6762,6 +6798,9 @@ window.addEventListener('blur',()=>{_flushWalletNow();if(typeof _flushSavedGameN
     if(!isActive){
       _flushWalletNow();
       if(typeof _flushSavedGameNow==='function')_flushSavedGameNow();
+    } else if(typeof _flushWriteQueue==='function'){
+      // Uygulama öne gelince, önceden başarısız/asılı kalmış yazmalar varsa tekrar dene.
+      _flushWriteQueue();
     }
   });
 })();
