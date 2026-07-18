@@ -91,6 +91,13 @@ body::after{
 @keyframes splashIn{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:none;}}
 @keyframes splashBounce{from{transform:translateY(0) scale(1);}to{transform:translateY(-10px) scale(1.06);}}
 @keyframes splashLoad{0%{width:0%;}70%{width:80%;}100%{width:100%;}}
+/* Süresi belirsiz senkron göstergesi (hesap yükleniyor) — gerçek ilerlemeyi
+   bilmediğimiz için sahte bir yüzde göstermek yerine sürekli kayan bir
+   bant kullanılıyor (standart "indeterminate" desen). */
+.splash-bar-indeterminate{height:100%;width:40%;border-radius:4px;
+  background:linear-gradient(90deg,#5B8DB8,#D4A843);
+  animation:splashIndeterminate 1.3s ease-in-out infinite;}
+@keyframes splashIndeterminate{0%{transform:translateX(-100%);}100%{transform:translateX(250%);}}
 
 /* ── LANG SELECT ── */
 #screen-lang{background:var(--bg);justify-content:center;align-items:center;padding:32px 24px;gap:0;}
@@ -852,7 +859,7 @@ input[type="text"]::placeholder{color:var(--dim);}
          ekranı açılsın, dolunca oyun açılsın" (eski hesabın verisiyle bir anlığına
          bile olsa menü görünmesin). -->
     <div id="gate-syncing" style="display:none">
-      <div class="splash-bar-wrap" style="margin-top:18px"><div class="splash-bar" style="animation:none;width:70%"></div></div>
+      <div class="splash-bar-wrap" style="margin-top:18px"><div class="splash-bar-indeterminate"></div></div>
       <p class="gate-msg" style="margin-top:14px" data-t="gateSyncing">Hesap yükleniyor…</p>
     </div>
     <div id="gate-error" style="display:none">
@@ -5644,7 +5651,10 @@ function _showGateSyncing(){
   const btns=document.getElementById('gate-buttons');
   const sync=document.getElementById('gate-syncing');
   if(btns) btns.style.display='none';
-  if(sync) sync.style.display='block';
+  // DÜZELTME (2026-07-19, "yükleme baremi tam ortada değil" raporu): 'block'
+  // CSS'teki #gate-syncing{display:flex;align-items:center} kuralını inline
+  // stille eziyordu, bar flex ortalamasını kaybedip sola yaslanıyordu.
+  if(sync) sync.style.display='flex';
   const err=document.getElementById('gate-error');
   if(err) err.style.display='none';
 }
