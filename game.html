@@ -1959,28 +1959,7 @@ function initAuthUI(){
     if(native) native.style.display='none';
     if(web) web.style.display='flex';
     out.style.display='none';
-    // Önceden kaydedilmiş isim varsa prefill et
-    const inp=document.getElementById('auth-web-name');
-    if(inp&&(acct.nickname||acct.name)) inp.value=acct.nickname||acct.name;
   }
-}
-
-function webGuestLogin(){
-  const inp=document.getElementById('auth-web-name');
-  const name=(inp?inp.value:'').trim();
-  if(!name||name.length<2){
-    if(inp){inp.style.borderColor='#FF6B6B';setTimeout(()=>{inp.style.borderColor='';},800);}
-    return;
-  }
-  acct.nickname=name;acct._webLogged=true;
-  localStorage.setItem('tm_acct',JSON.stringify(acct));
-  updateMenuAvatar();
-  document.getElementById('auth-web-area').style.display='none';
-  document.getElementById('auth-signout-area').style.display='block';
-  document.getElementById('auth-user-info').textContent=name;
-  // username input da güncelle
-  const ui=document.getElementById('username-input');
-  if(ui) ui.value=name;
 }
 
 function webGuestLogout(){
