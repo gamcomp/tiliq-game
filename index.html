@@ -5467,7 +5467,17 @@ async function initFirebaseAuth(){
       }
     }catch(e){console.warn('Analytics init:',e);}
     onAuthStateChanged(_fbAuth, user=>{
-      if(user) _onFirebaseUser(user);
+      if(user){
+        // DÜZELTME (2026-07-18): interaktif Apple girişinde signInWithCredential(_fbAuth,...)
+        // ile JS SDK'ya köprülenen oturum, JS SDK'nın KENDİ kalıcılık katmanında saklanır —
+        // yani uygulama kapatılıp açıldığında bu listener'ın BURADA otomatik tetiklenmesi
+        // beklenir. Önceki soğuk-açılış geri yükleme bloğu (native FA.getCurrentUser() ile)
+        // bu köprüyü kurmuyordu — bu yüzden taze giriş düzelse bile bir sonraki soğuk
+        // açılışta Apple oturumu yine (bozuk) native Firestore'a düşüyordu. Burada, JS
+        // SDK'nın kendi kalıcı oturumu Apple sağlayıcılıysa bayrağı da set ediyoruz.
+        if(user.providerData?.some(p=>p.providerId==='apple.com')) _forceJsFirestoreForApple=true;
+        _onFirebaseUser(user);
+      }
       if(_authReadyResolve){_authReadyResolve();_authReadyResolve=null;} // ilk callback = "auth durumu belli"
     });
     // Redirect sonrası dönüş kontrolü — timeout eklendi (2026-07-14), bu JS SDK
