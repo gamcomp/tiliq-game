@@ -539,7 +539,7 @@ body::after{
 .modal{display:none;position:fixed;inset:0;z-index:50;width:100%;max-width:480px;margin:0 auto;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center;overscroll-behavior:none;}
 #modal-add-friend{z-index:150;}
 .modal.active{display:flex;}
-.modal-card{background:var(--panel);border:1px solid rgba(255,200,140,.16);border-radius:28px 28px 0 0;width:100%;max-height:90vh;max-height:min(90vh,calc(100dvh - env(safe-area-inset-top,0px) - 8px));display:flex;flex-direction:column;animation:slideUp .35s cubic-bezier(.34,1.56,.64,1);overflow:hidden;padding-bottom:env(safe-area-inset-bottom,0px);
+.modal-card{background:var(--panel);border:1px solid rgba(255,200,140,.16);border-radius:28px 28px 0 0;width:100%;max-height:90vh;max-height:min(90vh,calc(100dvh - env(safe-area-inset-top,0px) - 8px));display:flex;flex-direction:column;animation:slideUp .35s cubic-bezier(.34,1.56,.64,1);overflow:hidden;padding-bottom:calc(env(safe-area-inset-bottom,0px) + var(--banner-h,0px));
   box-shadow:0 -14px 44px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06);}
 /* Modern bottom-sheet tutamacı */
 .modal-card::before{content:'';flex-shrink:0;width:40px;height:4px;border-radius:2px;margin:9px auto 0;
@@ -1936,7 +1936,6 @@ function showProfileSetup(){
     window._selectCountryInGrid('setup-country-grid',f,n);
   });
   document.getElementById('modal-profile-setup').classList.add('active');
-  if(_bannerShown){ _bannerHiddenForModal=true; hideBanner(); } // bkz. showModal notu
 }
 
 function _refreshAllNameDisplays(){
@@ -1981,7 +1980,6 @@ async function saveProfileSetup(){
   // tekrar dener. Veri artık asla sessizce kaybolmuyor.
   await _fsSetDocReliable('users/'+acct.uid,{setupDone:true},true);
   document.getElementById('modal-profile-setup').classList.remove('active');
-  if(_bannerHiddenForModal && !document.querySelector('.modal.active')){ _bannerHiddenForModal=false; showBanner(); }
 }
 
 function toggleAcctCountry(){
@@ -3081,6 +3079,14 @@ function _setBannerSpacers(px){
   const gg=document.getElementById('banner-spacer-game');
   if(gm) gm.style.height=px+'px';
   if(gg) gg.style.height=px+'px';
+  // MODAL/BANNER ÇAKIŞMASI — DÜZELTME v2 (2026-07-20, "ana ekran ve oyun ekranında
+  // banner kaybolmasın" raporu): önceki çözüm her modal açılışında native banner'ı
+  // hideBanner()/showBanner() ile aç/kapa yapıyordu — bu hem gereksiz native round-trip
+  // (ADAPTIVE_BANNER bazen tekrar yüklenemeyip kayboluyordu) hem de "banner
+  // kayboluyor" şikayetine yol açtı. Artık banner HİÇ kapatılmıyor — bunun yerine
+  // .modal-card'a (bkz. CSS) bu CSS değişkeni kadar alt boşluk ekleniyor, içerik
+  // banner'ın native çizim alanına hiç girmiyor.
+  document.documentElement.style.setProperty('--banner-h', px+'px');
 }
 
 // ── BANNER (alt şerit — menü VE oyun ekranında, tepsi/HUD ile çakışmaz) ──────
@@ -5346,34 +5352,27 @@ function showScreen(id){
   // Karo vitrin şeridi: sadece menüdeyken kaysın (gereksiz yere arka planda çalışmasın)
   if(id==='menu') startMenuArtAnim(); else stopMenuArtAnim();
 }
-// BANNER/MODAL ÇAKIŞMASI (2026-07-19, kullanıcı raporu: "banner ayarlar kısmında vs
-// bazı noktaları engelliyor, oyna dedikten sonra devam et/yeni oyun kısmını da
-// engelliyor"): AdMob banner'ı NATIVE bir view (WebView'in DOM'u/CSS z-index'inden
-// TAMAMEN BAĞIMSIZ, OS seviyesinde ekranın üzerine çiziliyor) — #banner-spacer-menu/
-// -game SADECE ana menü/oyun ekranlarında boşluk açıyordu, modallar (Devam Et/Yeni
-// Oyun, Ayarlar, Hesap, vb. hepsi showModal/hideModal üzerinden açılıyor) bu boşluktan
-// habersiz, kendi içeriğini ekranın en altına kadar çizebiliyordu — banner o bölgeyi
-// kapatıyordu. Çözüm: HERHANGİ bir modal açıkken banner'ı geçici gizle, son modal
-// kapanınca (banner zaten açıktıysa) geri getir. Bu, "Banner HUD'u asla kapatmaz"
-// kuralını ihlal etmiyor — modal zaten TÜM ekranı kaplayan geçici bir diyalog, HUD değil.
-let _bannerHiddenForModal=false;
+// BANNER/MODAL ÇAKIŞMASI (2026-07-19 ilk çözüm, 2026-07-20 DÜZELTİLDİ): AdMob
+// banner'ı NATIVE bir view (WebView'in DOM'u/CSS z-index'inden TAMAMEN BAĞIMSIZ,
+// OS seviyesinde ekranın üzerine çiziliyor) — modallar (Devam Et/Yeni Oyun, Ayarlar,
+// Hesap vb.) bu alandan habersiz, içeriğini ekranın en altına kadar çizip banner'ın
+// altında kalıyordu. İLK ÇÖZÜM her modal açılışında banner'ı hideBanner()/showBanner()
+// ile aç/kapa yapıyordu — bu, "ana ekran ve oyun ekranında banner kaybolmasın" raporuna
+// yol açtı (ADAPTIVE_BANNER tekrar yüklenirken bazen geri gelmiyordu). DÜZELTME: banner
+// artık HİÇ kapatılmıyor — çakışma `.modal-card`'ın `--banner-h` CSS değişkeni kadar alt
+// boşluk almasıyla (bkz. _setBannerSpacers) çözülüyor, banner sürekli açık kalıyor.
 function showModal(id){
   playTapLight();vibrate(10);
   if(id==='account'){openAccountModal();syncMyCodeUI();}
   if(id==='add-friend'){syncMyCodeUI();renderFriendCards();}
   if(id==='daily'){renderDailyModal();}
   document.getElementById('modal-'+id).classList.add('active');
-  if(_bannerShown){ _bannerHiddenForModal=true; hideBanner(); }
 }
 function hideModal(id){
   document.getElementById('modal-'+id).classList.remove('active');
   if(id==='add-friend'){
     renderFriendsLB();
     setLBTab('friends');
-  }
-  if(_bannerHiddenForModal && !document.querySelector('.modal.active')){
-    _bannerHiddenForModal=false;
-    showBanner();
   }
 }
 function bgClick(e){if(e.target===document.getElementById('lb-panel'))toggleLB();}
