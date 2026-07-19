@@ -5666,8 +5666,10 @@ async function _initLeaderboardManager(){
   try{
     window._leaderboardManager={
       async getTopScores(n=500,field='best'){
+        // DÜNYA SIRALAMASI FİLTRESİ (2026-07-19): misafir (rankEligible:false)
+        // dökümanlar World sıralamasından hariç tutulur — bkz. _isRankEligible notu.
         // orderBy yerine client-side sort (index gerekmez)
-        const all=(await _fsQueryCollection('users',[{type:'limit',limit:500}])).map(d=>({uid:d.id,...d}));
+        const all=(await _fsQueryCollection('users',[{type:'where',fieldPath:'rankEligible',opStr:'==',value:true},{type:'limit',limit:500}])).map(d=>({uid:d.id,...d}));
         // Sıralama: skor DESC, eşitse skoru ÖNCE yapan (bestAt küçük) üstte
         return all.filter(u=>(u[field]||0)>0).sort((a,b)=>
           (b[field]||0)-(a[field]||0) || ((a.bestAt||Infinity)-(b.bestAt||Infinity))
@@ -5716,7 +5718,7 @@ async function _pullCloudOverwrite(uid){
       acct.best=0; acct.games=0; acct.total=0;
       localStorage.setItem('tm_xp','0');
       localStorage.setItem('tiliq_best','0');
-      await _fsSetDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:0,games:0,total:0,uid,country:acct.country||'',xp:0,level:1});
+      await _fsSetDoc(ref,{code:myCode.toUpperCase(),name:displayName(),best:0,games:0,total:0,uid,country:acct.country||'',xp:0,level:1,rankEligible:_isRankEligible()});
     }
     localStorage.setItem('tm_acct',JSON.stringify(acct));
     _refreshCodeDisplays();
@@ -6671,6 +6673,14 @@ function _refreshCodeDisplays(){
 // "Oyna" butonuna basılınca eski yerel veri okunuyordu çünkü _firestoreSync henüz
 // bitmemişken loadGameState() çağrılıyordu. Artık onPlayPressed bu promise'i bekliyor.
 let _cloudSyncPromise=null;
+// DÜNYA SIRALAMASI UYGUNLUĞU (2026-07-19, kullanıcı isteği): misafir (anonim)
+// kullanıcı kendi Firestore dökümanına yazabilir (cihaz/local ilerlemenin devam
+// edebilmesi için — bkz. Misafir Girişi sistemi) ama bu döküman World sıralamasında
+// GÖRÜNMEMELİ. Google/Apple bağlıysa YA DA en azından "Profili Tamamla" adımı
+// (acct._setupDone) tamamlanmışsa uygun sayılır. firestore.rules bu değeri
+// request.auth.token.firebase.sign_in_provider'dan YENİDEN HESAPLAYIP submit edilen
+// değerle karşılaştırıyor — istemci bunu taklit edip "true" gönderemez.
+function _isRankEligible(){ return !isGuestSession() || !!acct._setupDone; }
 async function _firestoreSync(uid,_isRetry){
   try{
     const ref='users/'+uid;
@@ -6789,13 +6799,13 @@ async function _firestoreSync(uid,_isRetry){
       // (sebebi ne olursa olsun) yerel kuyruğa düşer, bir sonraki gerçek girişte
       // otomatik tekrar denenir — veri sessizce kaybolmaz.
       await _fsSetDocReliable(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
-        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast(),friendCodes:getFriends().map(f=>f.code).filter(Boolean)},true);
+        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast(),friendCodes:getFriends().map(f=>f.code).filter(Boolean),rankEligible:_isRankEligible()},true);
       _coinPend(-_pf1); // coin buluta yazıldı → delta onaylandı
     }else{
       const xpNow=getXP();
       const _pf2=_coinPending();
       await _fsSetDocReliable(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
-        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast()},true);
+        vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast(),rankEligible:_isRankEligible()},true);
       _coinPend(-_pf2);
     }
     _refreshCodeDisplays();
@@ -6876,11 +6886,17 @@ async function _firestorePushScore(){
     const wTotal=Math.max(acct.total||0,prev.total||0);
     const wXp=Math.max(xpNow,prev.xp||0);
     // setDoc merge: döküman yoksa oluşturur, varsa günceller (updateDoc gibi başarısız olmaz)
+    // DÜZELTME (2026-07-19, rankEligible doğrulama hatası): setupDone bu yazmaya
+    // dahil edilmezse ve henüz buluta hiç yazılmamışsa, rankEligible:true göndermek
+    // firestore.rules'daki _validRankEligible tarafından reddediliyordu (kural,
+    // gönderilen setupDone'u BU AYNI istekten okur — ayrı bir yazmada gelmiş
+    // setupDone'u değil). setupDone'u da her zaman burada gönderip tek istekte
+    // tutarlı hale getiriyoruz.
     await _fsSetDocReliable(ref,{
       uid:acct.uid,best:wBest,games:Math.max(acct.games||0,prev.games||0),total:wTotal,
       name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',
-      xp:wXp,level:calcLevel(wXp),
-      weeklyScore:newWeekly,weeklyReset:ws
+      xp:wXp,level:calcLevel(wXp),setupDone:!!acct._setupDone,
+      weeklyScore:newWeekly,weeklyReset:ws,rankEligible:_isRankEligible()
     },true);
     // bestAt (tiebreaker) ayrı yazılır — kural güncellenmeden önce sessizce
     // başarısız olur, ana skor yazması etkilenmez. Kural eklendikçe kalıcı olur.
