@@ -1899,6 +1899,7 @@ function showProfileSetup(){
     window._selectCountryInGrid('setup-country-grid',f,n);
   });
   document.getElementById('modal-profile-setup').classList.add('active');
+  if(_bannerShown){ _bannerHiddenForModal=true; hideBanner(); } // bkz. showModal notu
 }
 
 function _refreshAllNameDisplays(){
@@ -1943,6 +1944,7 @@ async function saveProfileSetup(){
   // tekrar dener. Veri artık asla sessizce kaybolmuyor.
   await _fsSetDocReliable('users/'+acct.uid,{setupDone:true},true);
   document.getElementById('modal-profile-setup').classList.remove('active');
+  if(_bannerHiddenForModal && !document.querySelector('.modal.active')){ _bannerHiddenForModal=false; showBanner(); }
 }
 
 function toggleAcctCountry(){
@@ -5307,18 +5309,34 @@ function showScreen(id){
   // Karo vitrin şeridi: sadece menüdeyken kaysın (gereksiz yere arka planda çalışmasın)
   if(id==='menu') startMenuArtAnim(); else stopMenuArtAnim();
 }
+// BANNER/MODAL ÇAKIŞMASI (2026-07-19, kullanıcı raporu: "banner ayarlar kısmında vs
+// bazı noktaları engelliyor, oyna dedikten sonra devam et/yeni oyun kısmını da
+// engelliyor"): AdMob banner'ı NATIVE bir view (WebView'in DOM'u/CSS z-index'inden
+// TAMAMEN BAĞIMSIZ, OS seviyesinde ekranın üzerine çiziliyor) — #banner-spacer-menu/
+// -game SADECE ana menü/oyun ekranlarında boşluk açıyordu, modallar (Devam Et/Yeni
+// Oyun, Ayarlar, Hesap, vb. hepsi showModal/hideModal üzerinden açılıyor) bu boşluktan
+// habersiz, kendi içeriğini ekranın en altına kadar çizebiliyordu — banner o bölgeyi
+// kapatıyordu. Çözüm: HERHANGİ bir modal açıkken banner'ı geçici gizle, son modal
+// kapanınca (banner zaten açıktıysa) geri getir. Bu, "Banner HUD'u asla kapatmaz"
+// kuralını ihlal etmiyor — modal zaten TÜM ekranı kaplayan geçici bir diyalog, HUD değil.
+let _bannerHiddenForModal=false;
 function showModal(id){
   playTapLight();vibrate(10);
   if(id==='account'){openAccountModal();syncMyCodeUI();}
   if(id==='add-friend'){syncMyCodeUI();renderFriendCards();}
   if(id==='daily'){renderDailyModal();}
   document.getElementById('modal-'+id).classList.add('active');
+  if(_bannerShown){ _bannerHiddenForModal=true; hideBanner(); }
 }
 function hideModal(id){
   document.getElementById('modal-'+id).classList.remove('active');
   if(id==='add-friend'){
     renderFriendsLB();
     setLBTab('friends');
+  }
+  if(_bannerHiddenForModal && !document.querySelector('.modal.active')){
+    _bannerHiddenForModal=false;
+    showBanner();
   }
 }
 function bgClick(e){if(e.target===document.getElementById('lb-panel'))toggleLB();}
@@ -5666,12 +5684,19 @@ async function _initLeaderboardManager(){
   try{
     window._leaderboardManager={
       async getTopScores(n=500,field='best'){
-        // DÜNYA SIRALAMASI FİLTRESİ (2026-07-19): misafir (rankEligible:false)
-        // dökümanlar World sıralamasından hariç tutulur — bkz. _isRankEligible notu.
-        // orderBy yerine client-side sort (index gerekmez)
-        const all=(await _fsQueryCollection('users',[{type:'where',fieldPath:'rankEligible',opStr:'==',value:true},{type:'limit',limit:500}])).map(d=>({uid:d.id,...d}));
+        // DÜNYA SIRALAMASI FİLTRESİ (2026-07-19, DÜZELTİLDİ): İLK denemede
+        // where('rankEligible','==',true) sorgu seviyesinde kullanılmıştı — Firestore'da
+        // bu, alanı HİÇ OLMAYAN dökümanları da eler (== karşılaştırması eksik alanla asla
+        // eşleşmez). rankEligible SADECE bu oturumdan (2026-07-19) itibaren yazılan
+        // dökümanlarda var — bu yüzden TÜM eski/mevcut gerçek hesaplar (rankEligible alanı
+        // hiç olmayanlar) sorgudan komple kayboldu, World sıralaması boş/eksik göründü
+        // (kullanıcı raporu: "androidde ve webde dünya sıralaması gözükmüyor"). Düzeltme:
+        // sorguyu filtresiz bırak, uygunluğu CLIENT-SIDE kontrol et — rankEligible alanı
+        // YOKSA (eski hesap) veya true ise dahil et, sadece AÇIKÇA false ise (misafir) hariç
+        // tut. Bu, misafir hariç tutma amacını korurken eski hesapları geri getiriyor.
+        const all=(await _fsQueryCollection('users',[{type:'limit',limit:500}])).map(d=>({uid:d.id,...d}));
         // Sıralama: skor DESC, eşitse skoru ÖNCE yapan (bestAt küçük) üstte
-        return all.filter(u=>(u[field]||0)>0).sort((a,b)=>
+        return all.filter(u=>(u[field]||0)>0 && u.rankEligible!==false).sort((a,b)=>
           (b[field]||0)-(a[field]||0) || ((a.bestAt||Infinity)-(b.bestAt||Infinity))
         ).slice(0,n);
       },
