@@ -6023,9 +6023,20 @@ window._authSignIn = async function(provider){
 // temizleniyordu, isim/ülke/skor/coin/satın alımlar ekranda kalmaya devam edip
 // "çıkış yapılmamış gibi" görünüyordu (kullanıcı raporu, 2026-07-06).
 function _resetToGuestState(){
+  // MİSAFİR ÇIKIŞI DÜZELTMESİ (2026-07-19): "misafir çıkıp tekrar girince aynı
+  // yerden devam etmiyor" raporu — Firebase Anonymous Auth'ta signOut() çağrıldığı
+  // an o anonim kimlik SONSUZA KADAR kaybolur (Firebase'in kendi davranışı, bizim
+  // kontrolümüzde değil) — bir daha ASLA aynı anonim uid'ye geri dönülemez. Bu
+  // yüzden misafir oturumunda "çıkış" aslında native/JS SDK signOut()'u HİÇ
+  // çağırmamalı — sadece ekranı sıfırlayıp giriş duvarını göstermeli, native
+  // anonim oturum ARKA PLANDA canlı kalmalı. Bir sonraki "Misafir olarak devam
+  // et" dokunuşunda signInAnonymously() zaten aktif olan bu oturumu (aynı uid ile)
+  // geri döndürür → Firestore'daki isim/skor/coin otomatik geri gelir. Bu yüzden
+  // Keychain kaydı da SADECE gerçek hesap çıkışında temizlenir, misafirde değil.
+  const _wasGuest=!!acct._isGuest;
   acct={name:'',color:'#7C4DFF',mascot:'ruby',games:0,best:0,total:0};
   localStorage.setItem('tm_acct',JSON.stringify(acct));
-  _guestUidClear(); // çıkış yapıldı — Keychain'deki misafir kaydı da temizlensin
+  if(!_wasGuest) _guestUidClear(); // sadece gerçek hesap çıkışında Keychain'i temizle
   localStorage.removeItem('tiliq_best');
   localStorage.removeItem('tiliq_last_score');
   localStorage.removeItem('tm_xp');
@@ -6090,6 +6101,12 @@ window._authSignOut = async function(){
     try{ await _firestorePushScore(); }catch(e){}
     try{ await _syncWalletToFirestore(); }catch(e){}
   }
+  // MİSAFİR ÇIKIŞI (2026-07-19): bkz. _resetToGuestState notu — misafirde SDK
+  // signOut()'u ÇAĞIRMIYORUZ, çünkü Firebase Anonymous Auth'ta bu geri dönüşü
+  // olmayan bir işlem (o anonim uid'ye asla geri dönülemez). Native oturum arka
+  // planda canlı kalsın ki "Misafir olarak devam et" tekrar tıklanınca aynı
+  // hesaba (aynı isim/skor/coin) dönülebilsin.
+  const _wasGuest=!!acct._isGuest;
   // KRİTİK SIRALAMA (2026-07-11 düzeltmesi): yerel "çıkış yapıldı" durumu önce
   // kaydedilir. Öncesinde bu, _fbAuth.signOut()/FA.signOut() gibi SDK çağrılarından
   // SONRA çalışıyordu — ama bu çağrılar (özellikle JS SDK'nın _fbAuth.signOut()'u,
@@ -6099,17 +6116,19 @@ window._authSignOut = async function(){
   // yerel sıfırlama garanti; SDK temizliği en iyi çaba olarak arkada kalabilir.
   _resetToGuestState();
   _finishLoginLoading(); // "çıkış yapılıyor" durumundan gerçek giriş butonlarına dön
-  try{
-    if(_fbAuth) await _fbAuth.signOut();
-  }catch(e){}
-  try{
-    // iOS'ta native girişi artık JS SDK'ya köprülemiyoruz (bkz. _authSignIn) — asıl
-    // aktif oturum native Firebase SDK'da tutuluyor. Sadece _fbAuth.signOut() (JS
-    // SDK) çağırmak bu native oturumu KAPATMIYOR. Native plugin'in kendi
-    // signOut()'unu da çağırıyoruz (bir sonraki girişte fresh prompt çıksın diye).
-    const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
-    if(FA) await FA.signOut();
-  }catch(e){}
+  if(!_wasGuest){
+    try{
+      if(_fbAuth) await _fbAuth.signOut();
+    }catch(e){}
+    try{
+      // iOS'ta native girişi artık JS SDK'ya köprülemiyoruz (bkz. _authSignIn) — asıl
+      // aktif oturum native Firebase SDK'da tutuluyor. Sadece _fbAuth.signOut() (JS
+      // SDK) çağırmak bu native oturumu KAPATMIYOR. Native plugin'in kendi
+      // signOut()'unu da çağırıyoruz (bir sonraki girişte fresh prompt çıksın diye).
+      const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
+      if(FA) await FA.signOut();
+    }catch(e){}
+  }
   try{ const RC=_getRC(); if(RC&&_rcReady) await RC.logOut(); }catch(e){}
 };
 
