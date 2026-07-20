@@ -2493,7 +2493,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.15-9';
+const BUILD_VER='v2026.07.20-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3055,6 +3055,7 @@ window._authSignInGuest=async function(){
         _onFirebaseUser(result.user);
       } else {
         console.error('❌ Misafir girişi başarısız — kullanıcı bilgisi alınamadı.');
+        _reportError(new Error('Misafir girişi: kullanıcı bilgisi alınamadı (native)'),false);
         alert('Misafir girişi başarısız oldu.');
       }
     } else {
@@ -3068,6 +3069,7 @@ window._authSignInGuest=async function(){
     }
   }catch(e){
     console.error('❌ MİSAFİR GİRİŞ HATASI:',e);
+    _reportError(e instanceof Error?e:new Error('Misafir giriş hatası: '+(e?.message||e)),false);
     alert('Misafir girişi başarısız oldu: '+(e?.message||e));
   }
 };
@@ -6090,7 +6092,10 @@ window._authSignIn = async function(provider){
             const _bridgeTo=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Apple JS SDK köprü zaman aşımı')),8000));
             await Promise.race([signInWithCredential(_fbAuth,cred),_bridgeTo]);
             _forceJsFirestoreForApple=true;
-          }catch(e){ console.error('❌ APPLE JS SDK KÖPRÜ HATASI (native Firestore\'a düşülüyor, veri kaybı riski):',e); }
+          }catch(e){
+            console.error('❌ APPLE JS SDK KÖPRÜ HATASI (native Firestore\'a düşülüyor, veri kaybı riski):',e);
+            _reportError(e instanceof Error?e:new Error('Apple JS SDK köprü hatası: '+(e?.message||e)),false);
+          }
         }
         _onFirebaseUser(result.user);
       } else {
@@ -6900,6 +6905,10 @@ async function _firestoreSync(uid,_isRetry){
       await new Promise(r=>setTimeout(r,1500));
       return _firestoreSync(uid,true);
     }
+    // İKİ DENEME DE BAŞARISIZ — kullanıcının gerçekten "hesap yüklenemedi" hatası
+    // gördüğü an budur, bu yüzden sadece burada (ilk denemede değil, spam olmasın)
+    // uzaktan rapora gönderiyoruz.
+    _reportError(e instanceof Error?e:new Error('Firestore senkron hatası (2 deneme): '+(e?.message||e)),false);
     // DÜZELTME (2026-07-18, "hesap tam yüklenmeden oyunu açma" isteği): iki deneme de
     // başarısız olduysa artık SESSİZCE yerel (eksik/eski) veriyle devam edilmiyor —
     // çağırana açıkça false dönüyor, o da hata+tekrar dene ekranını gösteriyor.
