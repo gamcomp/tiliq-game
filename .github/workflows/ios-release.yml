@@ -5,7 +5,12 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    # KÖK NEDEN (2026-07-21, dördüncü hata): FirebaseSharedSwift pod'u Swift 6'nın
+    # 'sending' anahtar kelimesini kullanıyor — macos-14 runner'ının varsayılan Xcode'u
+    # (15.4) bunu tanımıyordu ("cannot find type 'sending' in scope"). codemagic.yaml
+    # zaten xcode:latest kullanıyordu (bilerek en güncel sürüm) — macos-15'e geçip
+    # aynı davranışı sağlıyoruz.
+    runs-on: macos-15
     timeout-minutes: 60
     env:
       APP_ID: 6789283001
