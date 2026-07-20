@@ -108,10 +108,23 @@ jobs:
       - name: Initialize temporary keychain
         run: keychain initialize
 
+      - name: Generate fresh private key for new distribution certificate
+        run: openssl genrsa -out $RUNNER_TEMP/cert.key 2048
+
+      # KÖK NEDEN (2026-07-21, ilk GitHub Actions denemesi): --certificate-key
+      # verilmeden fetch-signing-files, Apple hesabında ZATEN VAR OLAN (Codemagic'in
+      # daha önce oluşturduğu) sertifikayı çekmeye çalışıyor — ama Apple API mevcut
+      # sertifikalar için private key DÖNMEZ (private key sadece ilk oluşturulduğu
+      # makinede kalır), bu yüzden "Cannot save Signing Certificates without
+      # certificate private key" hatasıyla düşüyordu. Burada üretilen taze private
+      # key ile --create + --certificate-key verilince, araç bu key'den bir CSR
+      # oluşturup Apple'dan TAMAMEN YENİ bir sertifika istiyor — private key zaten
+      # elimizde olduğu için sorun kalmıyor.
       - name: Fetch/create signing files (auto certificate + provisioning profile)
         run: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key "@file:$RUNNER_TEMP/cert.key" \
             --create
 
       - name: Add certificates to keychain
