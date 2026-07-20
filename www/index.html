@@ -3019,12 +3019,26 @@ window._authSignInGuest=async function(){
   console.log('👤 Misafir girişi başlatılıyor…');
   const _isNative=!!window.Capacitor?.isNativePlatform?.();
   try{
-    if(_isNative){
+    // DÜZELTME (2026-07-20, "misafir girişte hesap yüklenemedi hatası" raporu —
+    // Android): Firestore işlemleri Android'de HER ZAMAN JS SDK üzerinden gidiyor
+    // (bkz. _fsNative() — native Firestore eklentisi SADECE iOS'ta kullanılıyor).
+    // Önceki kod, Android'de de SADECE native FA.signInAnonymously() çağırıyordu —
+    // bu native Firebase Auth oturumunu açıyordu ama JS SDK'nın KENDİ auth durumu
+    // (_fbAuth.currentUser) hiç dolmuyordu. Sonuç: JS SDK Firestore istekleri
+    // request.auth=null ile gidiyor, rules "Missing or insufficient permissions"
+    // ile reddediyordu — _firestoreSync() iki denemeden sonra false dönüp
+    // "Hesap yüklenemedi" hata ekranını gösteriyordu. Anonim girişte (Apple/Google'ın
+    // aksine) native→JS SDK'ya köprüleyecek bir credential/idToken YOK — bu yüzden
+    // iOS'ta (native Firestore eklentisi zaten native auth ile çalıştığı için, tıpkı
+    // Google'da olduğu gibi) native yol korunuyor; Android'de (ve webde) doğrudan JS
+    // SDK'nın signInAnonymously()'si kullanılıyor (Android WebView'de iOS'taki
+    // WKWebView ağ sorunu yok, bu güvenle çalışır).
+    if(_isNative && _isIOS){
       const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication);
       if(!FA){alert('Auth plugin yüklü değil');return;}
       const result=await FA.signInAnonymously();
       if(result?.user){
-        console.log('👤 Native anonim oturum açıldı, uid='+result.user.uid);
+        console.log('👤 Native (iOS) anonim oturum açıldı, uid='+result.user.uid);
         await _guestUidSave(result.user.uid);
         _onFirebaseUser(result.user);
       } else {
@@ -3035,7 +3049,7 @@ window._authSignInGuest=async function(){
       const {signInAnonymously}=await import('./assets/firebase/firebase-auth.js');
       const uc=await signInAnonymously(_fbAuth);
       if(uc?.user){
-        console.log('👤 Web anonim oturum açıldı, uid='+uc.user.uid);
+        console.log('👤 JS SDK anonim oturum açıldı ('+(_isNative?'Android':'Web')+'), uid='+uc.user.uid);
         await _guestUidSave(uc.user.uid);
         _onFirebaseUser(uc.user);
       }
