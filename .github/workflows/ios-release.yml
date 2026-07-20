@@ -127,6 +127,19 @@ jobs:
             --certificate-key "@file:$RUNNER_TEMP/cert.key" \
             --create
 
+      # KÖK NEDEN (2026-07-21, ikinci hata): fetch-signing-files profili varsayılan
+      # olarak ~/Library/Developer/Xcode/UserData/Provisioning Profiles'e kaydediyor;
+      # use-profiles bu profili doğru okuyup proje ayarlarına (PROVISIONING_PROFILE_SPECIFIER
+      # vb.) doğru yazıyor AMA gerçek `xcodebuild archive` komutu profil DOSYASININ
+      # KENDİSİNİ SADECE ~/Library/MobileDevice/Provisioning Profiles/ klasöründe arıyor —
+      # "No profile ... found" hatası buradan geliyordu. Profili iki konuma da kopyalayıp
+      # garantiye alıyoruz.
+      - name: Install provisioning profile where Xcode actually looks for it
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp -f ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || true
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+
       - name: Add certificates to keychain
         run: keychain add-certificates
 
