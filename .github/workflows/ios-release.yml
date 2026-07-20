@@ -1,0 +1,152 @@
+name: iOS Release
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 60
+    env:
+      APP_ID: 6789283001
+      BUNDLE_ID: com.tiliq.game
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.ASC_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install npm dependencies
+        run: npm install
+
+      # TEŞHİS: Google Sign-In'in sessiz askıda kalmasını görünür hataya çevir
+      # (bkz. codemagic.yaml — aynı yama, aynı kök neden)
+      - name: Patch GoogleAuthProviderHandler.swift (visible errors)
+        run: |
+          FILE="node_modules/@capacitor-firebase/authentication/ios/Plugin/Handlers/GoogleAuthProviderHandler.swift"
+          perl -0777 -pi -e 's/guard let clientId = FirebaseApp\.app\(\)\?\.options\.clientID else \{ return \}/guard let clientId = FirebaseApp.app()?.options.clientID else { call.reject("Google ile giriş şu anda kullanılamıyor"); return }/' "$FILE"
+          perl -0777 -pi -e 's/guard let controller = self\.pluginImplementation\.getPlugin\(\)\.bridge\?\.viewController else \{ return \}/guard let controller = self.pluginImplementation.getPlugin().bridge?.viewController else { call.reject("Google ile giriş şu anda kullanılamıyor"); return }/' "$FILE"
+          perl -0777 -pi -e 's/guard let user = result\?\.user,\s*let idToken = user\.idToken\?\.tokenString\s*else \{\s*return\s*\}/guard let user = result?.user,\n                      let idToken = user.idToken?.tokenString\n                else {\n                    call.reject("Google ile giriş şu anda kullanılamıyor")\n                    return\n                }/' "$FILE"
+          perl -0777 -pi -e 's/        #endif\n    }\n}\n?\z/        #else\n        call.reject("Google ile giriş şu anda kullanılamıyor")\n        #endif\n    }\n}\n/' "$FILE"
+
+      # GOOGLE GİRİŞ ÇÖZÜMÜ: podspec'i subspec'siz üst-seviye zorunlu bağımlılık yap
+      - name: Patch CapacitorFirebaseAuthentication.podspec
+        run: |
+          PSFILE="node_modules/@capacitor-firebase/authentication/CapacitorFirebaseAuthentication.podspec"
+          cat > "$PSFILE" <<'PODSPEC_EOF'
+          require 'json'
+
+          package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
+
+          Pod::Spec.new do |s|
+            s.name = 'CapacitorFirebaseAuthentication'
+            s.version = package['version']
+            s.summary = package['description']
+            s.license = package['license']
+            s.homepage = package['repository']['url']
+            s.author = package['author']
+            s.source = { :git => package['repository']['url'], :tag => s.version.to_s }
+            s.source_files = 'ios/Plugin/**/*.{swift,h,m,c,cc,mm,cpp}'
+            s.ios.deployment_target  = '13.0'
+            s.dependency 'Capacitor'
+            s.dependency 'FirebaseAuth', '~> 11.0'
+            s.swift_version = '5.1'
+            s.static_framework = true
+            s.xcconfig = { 'OTHER_SWIFT_FLAGS' => '$(inherited) -DRGCFA_INCLUDE_GOOGLE' }
+            s.dependency 'GoogleSignIn', '7.1.0'
+          end
+          PODSPEC_EOF
+
+      - name: Sync Capacitor web assets into native iOS project
+        run: npx cap sync ios
+
+      # KRİTİK: Podfile'ı cap sync'ten sonra bilinen-doğru içerikle TAMAMEN yeniden yaz
+      - name: Rewrite Podfile
+        run: |
+          cat > ios/App/Podfile <<'PODFILE_EOF'
+          require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+          platform :ios, '15.0'
+          use_frameworks!
+
+          install! 'cocoapods', :disable_input_output_paths => true
+
+          def capacitor_pods
+            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+            pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
+            pod 'CapacitorCommunityInAppReview', :path => '../../node_modules/@capacitor-community/in-app-review'
+            pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication'
+            pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
+            pod 'CapacitorFirebaseFirestore', :path => '../../node_modules/@capacitor-firebase/firestore'
+            pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+            pod 'RevenuecatPurchasesCapacitor', :path => '../../node_modules/@revenuecat/purchases-capacitor'
+            pod 'AparajitaCapacitorSecureStorage', :path => '../../node_modules/@aparajita/capacitor-secure-storage'
+          end
+
+          target 'App' do
+            capacitor_pods
+          end
+
+          post_install do |installer|
+            assertDeploymentTarget(installer)
+          end
+          PODFILE_EOF
+
+      - name: Install CocoaPods dependencies
+        run: |
+          rm -rf ios/App/Pods
+          cd ios/App && pod install
+
+      - name: Install codemagic-cli-tools
+        run: pip3 install --break-system-packages codemagic-cli-tools
+
+      - name: Initialize temporary keychain
+        run: keychain initialize
+
+      - name: Fetch/create signing files (auto certificate + provisioning profile)
+        run: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Add certificates to keychain
+        run: keychain add-certificates
+
+      - name: Use fetched profiles for code signing
+        run: xcode-project use-profiles
+
+      - name: Increment build number
+        working-directory: ios/App
+        run: |
+          LATEST_STORE=$(app-store-connect get-latest-app-store-build-number "$APP_ID" 2>/dev/null || echo "0")
+          LATEST_TESTFLIGHT=$(app-store-connect get-latest-testflight-build-number "$APP_ID" 2>/dev/null || echo "0")
+          if [ -z "$LATEST_STORE" ]; then LATEST_STORE=0; fi
+          if [ -z "$LATEST_TESTFLIGHT" ]; then LATEST_TESTFLIGHT=0; fi
+          LATEST=$LATEST_STORE
+          if [ "$LATEST_TESTFLIGHT" -gt "$LATEST" ]; then LATEST=$LATEST_TESTFLIGHT; fi
+          agvtool new-version -all $((LATEST + 1))
+
+      - name: Build ipa for distribution
+        run: |
+          xcode-project build-ipa \
+            --workspace "ios/App/App.xcworkspace" \
+            --scheme "App"
+
+      - name: Publish to TestFlight
+        run: |
+          app-store-connect publish \
+            --path "$(find . -name '*.ipa' | head -1)"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ipa-and-logs
+          path: |
+            **/*.ipa
+            /tmp/xcodebuild_logs/*.log
+          retention-days: 14
