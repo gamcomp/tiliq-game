@@ -1676,6 +1676,9 @@ function confirmLang(){
   localStorage.setItem('tm_lang_chosen', '1');
   applyLang();
   showScreen('menu');
+  // Dil onaylandı — giriş duvarı (misafir/Google/Apple) artık gösterilebilir (bkz.
+  // _updateLoginGate notu). Girişliyse zaten hiçbir şey olmaz, gate gizli kalır.
+  if(typeof _updateLoginGate==='function') _updateLoginGate();
 }
 
 function initSplash(){
@@ -1896,6 +1899,15 @@ function isLoggedIn(){return !!(acct._fbLogged&&acct.uid);}
 function _updateLoginGate(){
   const g=document.getElementById('login-gate');
   if(!g)return;
+  // SIRALAMA DÜZELTMESİ (2026-07-20, "ilk girişte profil tamamlama dil seçiminden
+  // sonra gelsin" isteği): login-gate z-index:400 ile TAM EKRAN bir overlay —
+  // window 'load' event'i (bu fonksiyonun ilk tetiklendiği yer) dil seçim ekranı
+  // (screen-lang) daha kullanıcıya HİÇ gösterilmeden, splash bile bitmeden ateşleniyordu.
+  // İlk kurulumda (tm_lang_chosen henüz yok) kullanıcı dilini seçmeden gate'i ASLA
+  // gösterme — dil onaylanınca (confirmLang) bu fonksiyon tekrar çağrılıp gate o an
+  // gösterilir. Böylece sıra kesinlikle: splash → dil seçimi → (varsa) giriş/misafir →
+  // profili tamamla.
+  if(!localStorage.getItem('tm_lang_chosen')){ g.classList.remove('show'); return; }
   g.classList.toggle('show',!isLoggedIn());
 }
 window.addEventListener('load',_updateLoginGate);
