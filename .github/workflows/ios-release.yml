@@ -21,6 +21,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # KÖK NEDEN (2026-07-21, beşinci hata — TestFlight yükleme reddi): Apple artık
+      # iOS 26 SDK (Xcode 26+) ile derlenmemiş yüklemeleri kabul etmiyor. Runner
+      # varsayılan olarak Xcode 16.4 seçiyordu (iOS 18.5 SDK). Kurulu en yeni Xcode'u
+      # otomatik seçip kullanıyoruz — hangi sürümlerin gerçekten kurulu olduğunu da
+      # burada görebiliriz.
+      - name: List installed Xcode versions and select the newest
+        run: |
+          ls -d /Applications/Xcode*.app
+          LATEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Selecting: $LATEST"
+          sudo xcode-select -s "$LATEST"
+          xcodebuild -version
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
