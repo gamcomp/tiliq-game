@@ -1444,12 +1444,9 @@ input[type="text"]::placeholder{color:var(--dim);}
         </div>
         <button class="btn-copy-code" id="copy-code-lb-btn" data-t="lbShare" onclick="shareMyCode()">Paylaş</button>
       </div>
-      <div id="fr-weekly-countdown-row" style="margin:6px 14px 0;text-align:center;font-size:11px;color:var(--dim);font-weight:700">
-        📅 <span data-t="weeklyRanking">HAFTALIK SIRALAMA</span> &nbsp;·&nbsp; <span id="weekly-countdown" style="color:#D4A843">--:--:--</span>
-      </div>
       <div id="my-banner-friends" style="margin:4px 14px 0;background:linear-gradient(135deg,rgba(196,113,74,.18),rgba(212,168,67,.1));border:1px solid rgba(212,168,67,.3);border-radius:11px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <div><div class="rank-lbl" data-t="lbAmongFriends">Among Friends</div><div class="rank-n" id="my-rank-friends">#--</div></div>
-        <div style="text-align:right"><div class="rank-lbl" id="fr-score-lbl" data-t="weeklyScore">Bu Hafta</div><div class="rank-sc" id="my-score-friends">0</div></div>
+        <div style="text-align:right"><div class="rank-lbl" id="fr-score-lbl" data-t="statBest">En İyi</div><div class="rank-sc" id="my-score-friends">0</div></div>
       </div>
       <div id="lb-friends-list" style="overflow-y:auto;flex:1;padding:7px 14px 10px;"></div>
       <button class="btn-add-friend" onclick="if(requireAccount('loginForFriends'))showModal('add-friend')">+ <span data-t="addFriend">Add Friend</span></button>
@@ -6817,12 +6814,10 @@ function _refreshCodeDisplays(){
 let _cloudSyncPromise=null;
 // DÜNYA SIRALAMASI UYGUNLUĞU (2026-07-19, kullanıcı isteği): misafir (anonim)
 // kullanıcı kendi Firestore dökümanına yazabilir (cihaz/local ilerlemenin devam
-// edebilmesi için — bkz. Misafir Girişi sistemi) ama bu döküman World sıralamasında
-// GÖRÜNMEMELİ. Google/Apple bağlıysa YA DA en azından "Profili Tamamla" adımı
-// (acct._setupDone) tamamlanmışsa uygun sayılır. firestore.rules bu değeri
-// request.auth.token.firebase.sign_in_provider'dan YENİDEN HESAPLAYIP submit edilen
-// değerle karşılaştırıyor — istemci bunu taklit edip "true" gönderemez.
-function _isRankEligible(){ return !isGuestSession() || !!acct._setupDone; }
+// edebilmesi için — bkz. Misafir Girişi sistemi). DÜZELTME (2026-07-21, kullanıcı
+// isteği): misafirler artık "Profili Tamamla" adımını beklemeden de Dünya
+// sıralamasında görünsün — bu kısıtlama tamamen kaldırıldı, herkes uygun sayılır.
+function _isRankEligible(){ return true; }
 async function _firestoreSync(uid,_isRetry){
   _dlog(uid,'sync_start',{isRetry:!!_isRetry,forceJsIOS:!!_forceJsFirestoreForIOS,fsNativeActive:!!_fsNative()});
   try{
@@ -7313,11 +7308,13 @@ function updateMyWeeklyScore(newScore){
 }
 
 function buildFriendBoard(){
-  // Kendi skorun: yerel kaynakların EN YÜKSEĞİ (stale görünmesin)
-  const myWeekly=Math.max(getMyWeeklyScore()||0, acct.best||0, (typeof score!=='undefined'?score:0));
+  // Kendi skorun: yerel kaynakların EN YÜKSEĞİ (stale görünmesin). DÜZELTME
+  // (2026-07-21, kullanıcı isteği): arkadaş sıralamasındaki haftalık sıfırlama
+  // kaldırıldı — artık dünya sıralaması gibi KALICI en iyi skora göre sıralanıyor.
+  const myBest=Math.max(acct.best||0, (typeof score!=='undefined'?score:0));
   const board=[
-    ...getFriends().map(f=>({n:f.name,s:f.weeklyScore||f.score||0,code:f.code,friend:true,lv:f.level||0})),
-    {n:playerLabel(),s:myWeekly,code:myCode,me:true,lv:calcLevel(getXP())},
+    ...getFriends().map(f=>({n:f.name,s:f.score||0,code:f.code,friend:true,lv:f.level||0})),
+    {n:playerLabel(),s:myBest,code:myCode,me:true,lv:calcLevel(getXP())},
   ];
   board.sort((a,b)=>b.s-a.s);
   return board;
@@ -7337,7 +7334,6 @@ function setLBTab(tab){
 }
 
 function renderFriendsLB(){
-  startWeeklyCountdown();
   const board=buildFriendBoard();
   const myR=board.findIndex(p=>p.me)+1;
   const me=board.find(p=>p.me);

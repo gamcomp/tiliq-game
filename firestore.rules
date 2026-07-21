@@ -1,0 +1,126 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── USERS ────────────────────────────────────────────────────────────────
+    // Okuma: giriş yapmış herkes (liderlik tablosu için gerekli).
+    // Yazma: SADECE kendi dökümanına, geçerli alanlarla, skor asla düşmeden.
+    match /users/{uid} {
+
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && _validUser(request.resource.data)
+        && _validRankEligible(request.resource.data)
+        && request.resource.data.best >= 0;
+
+      // Anti-rollback SADECE sıralama alanında (best).
+      // total/xp kontrolü KALDIRILDI: eski istemciler ham yerel değer gönderiyor,
+      // yerel < bulut olduğunda TÜM yazma reddedilip skorlar hiç güncellenmiyordu.
+      // total/xp sıralamada kullanılmıyor — katı kural faydadan çok zarar veriyordu.
+      allow update: if request.auth != null
+        && request.auth.uid == uid
+        && _validUser(request.resource.data)
+        && _validRankEligible(request.resource.data)
+        && (resource.data.best == null  || request.resource.data.best  >= resource.data.best);
+
+      // Silme yasak — hesap silme yalnızca sunucu tarafından yapılmalı
+      allow delete: if false;
+    }
+
+    // ── FRIEND LINKS ───────────────────────────────────────────────────────────
+    match /friendLinks/{linkId} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasAll(['from','to','fromName','ts'])
+        && request.resource.data.from is string
+        && request.resource.data.from.size() >= 4 && request.resource.data.from.size() <= 8
+        && request.resource.data.to is string
+        && request.resource.data.to.size() >= 4 && request.resource.data.to.size() <= 8
+        && request.resource.data.fromName is string
+        && request.resource.data.fromName.size() <= 40
+        && request.resource.data.ts is int;
+
+      // Değiştirme yasak (skor/isim buradan değiştirilemesin)
+      allow update: if false;
+      allow delete: if request.auth != null;
+    }
+
+    // ── GEÇİCİ TEŞHİS LOGU (2026-07-21) ─────────────────────────────────────────
+    // Apple ile giriş yapan kullanıcının Firestore dökümanı hiç oluşmuyor — sebebini
+    // bulmak için SADECE kendi uid'siyle başlayan bir log dökümanı yazabiliyor.
+    // Kök neden bulununca bu blok TAMAMEN kaldırılacak.
+    match /debugLogs/{logId} {
+      allow create: if request.auth != null && logId.matches(request.auth.uid + '_.*');
+      allow read: if request.auth != null;
+    }
+
+    // ── VARSAYILAN: HER ŞEYİ REDDET ────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// ── KULLANICI DÖKÜMANI DOĞRULAMA ────────────────────────────────────────────────
+// hasOnly: yalnızca izin verilen alanlar yazılabilir (çöp/enjeksiyon engellenir).
+// Tipler + makul üst sınırlar: absürt değerler (999999999) engellenir.
+// DÜNYA SIRALAMASI UYGUNLUĞU (2026-07-21, kullanıcı isteği): misafirler de dahil
+// HERKES Dünya sıralamasında görünsün — artık provider/setupDone kısıtlaması yok,
+// rankEligible sadece true olabilir (false göndermek reddedilir).
+function _validRankEligible(d) {
+  return !('rankEligible' in d) || d.rankEligible == true;
+}
+function _validUser(d) {
+  return d.keys().hasOnly([
+      'uid','code','name','country','setupDone','rankEligible',
+      'best','games','total','xp','level','bestAt',
+      'weeklyScore','weeklyReset',
+      'vip','noAds','coins','owned','invBombs','invUndos','invColorBlast','friendCodes',
+      'activeTheme','activeFlame','treasureDate','dailyStreak',
+      'mascot','soundOn','vol','hapticOn','lang','uiTheme',
+      'savedGame','savedGameAt'
+    ])
+    // Zorunlu alanlar + tip + sınır
+    && d.name is string && d.name.size() >= 1 && d.name.size() <= 32
+    && d.code is string && d.code.size() >= 4 && d.code.size() <= 8
+    && d.best is int && d.best >= 0 && d.best <= 10000000
+    // İsteğe bağlı alanlar (varsa) tip + sınır kontrolü
+    && (!('games' in d)   || (d.games is int && d.games >= 0 && d.games <= 1000000))
+    && (!('total' in d)   || (d.total is int && d.total >= 0 && d.total <= 100000000))
+    && (!('xp' in d)      || (d.xp is int && d.xp >= 0 && d.xp <= 10000000))
+    && (!('level' in d)   || (d.level is int && d.level >= 1 && d.level <= 999))
+    && (!('bestAt' in d)  || (d.bestAt is int && d.bestAt >= 0))
+    && (!('coins' in d)   || (d.coins is int && d.coins >= 0 && d.coins <= 100000000))
+    && (!('invBombs' in d)|| (d.invBombs is int && d.invBombs >= 0 && d.invBombs <= 100000))
+    && (!('invUndos' in d)|| (d.invUndos is int && d.invUndos >= 0 && d.invUndos <= 100000))
+    // Renk Patlat şarjı — uygulama max 1 depolar ama olası gelecekteki denge
+    // değişikliklerine yer bırakmak için üst sınır cömert tutuldu (bomba gibi).
+    && (!('invColorBlast' in d)|| (d.invColorBlast is int && d.invColorBlast >= 0 && d.invColorBlast <= 100000))
+    && (!('vip' in d)     || d.vip is bool)
+    && (!('noAds' in d)   || d.noAds is bool)
+    && (!('owned' in d)   || (d.owned is list && d.owned.size() <= 50))
+    && (!('weeklyReset' in d) || d.weeklyReset is int)
+    && (!('weeklyScore' in d) || (d.weeklyScore is int && d.weeklyScore >= 0 && d.weeklyScore <= 10000000))
+    && (!('country' in d) || (d.country is string && d.country.size() <= 8))
+    && (!('setupDone' in d) || d.setupDone is bool)
+    && (!('rankEligible' in d) || d.rankEligible is bool)
+    && (!('friendCodes' in d) || (d.friendCodes is list && d.friendCodes.size() <= 200))
+    && (!('activeTheme' in d) || (d.activeTheme is string && d.activeTheme.size() <= 20))
+    && (!('activeFlame' in d) || (d.activeFlame is string && d.activeFlame.size() <= 20))
+    && (!('treasureDate' in d) || (d.treasureDate is int && d.treasureDate >= 20250101 && d.treasureDate <= 21001231))
+    && (!('dailyStreak' in d)  || (d.dailyStreak is int && d.dailyStreak >= 0 && d.dailyStreak <= 100000))
+    // Profil/oturum tam senkronu (2026-07-07): oyun hangi cihazdan açılırsa açılsın
+    // aynı haliyle devam etsin — maskot, ayarlar, devam eden oyun kaydı.
+    && (!('mascot' in d)   || (d.mascot is string && d.mascot.size() <= 20))
+    && (!('soundOn' in d)  || d.soundOn is bool)
+    && (!('vol' in d)      || (d.vol is int && d.vol >= 0 && d.vol <= 100))
+    && (!('hapticOn' in d) || d.hapticOn is bool)
+    && (!('lang' in d)     || (d.lang is string && d.lang.size() <= 4))
+    && (!('uiTheme' in d)  || (d.uiTheme is string && d.uiTheme.size() <= 10))
+    && (!('savedGame' in d)   || (d.savedGame is string && d.savedGame.size() <= 8000))
+    && (!('savedGameAt' in d) || (d.savedGameAt is int && d.savedGameAt >= 0))
+    && (!('uid' in d)     || (d.uid is string));
+}
