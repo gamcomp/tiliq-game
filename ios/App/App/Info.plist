@@ -22,6 +22,13 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-1366817286080705~1900233584</string>
+	<!-- Şifreleme uyumluluk (export compliance) sorusu — bu olmadan her yeni build
+	     App Store Connect'te "usesNonExemptEncryption" alanı boş kalıyor ve build
+	     TestFlight test grubuna otomatik açılmıyordu, manuel API/panel müdahalesi
+	     gerekiyordu. Tiliq standart HTTPS/TLS dışında özel şifreleme kullanmıyor
+	     (istisna kapsamında), bu yüzden false — Apple bunu artık hiç sormuyor. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Bu veriler, sana daha alakalı reklamlar göstermek için kullanılır.</string>
 	<key>GIDClientID</key>
