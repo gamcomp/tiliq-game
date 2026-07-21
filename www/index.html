@@ -2997,6 +2997,24 @@ window.addEventListener('unhandledrejection',e=>{
 function _getInAppReview(){
   return window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.InAppReview||null;
 }
+// GEÇİCİ TEŞHİS LOGU (2026-07-21): "Apple ile giriş sonrası Firestore dökümanı hiç
+// oluşmuyor" mystery'sini canlı yakalamak için — native VE JS SDK'yı AYRI AYRI
+// deniyor, hangisinin gerçekten yazabildiğini net gösteriyor. Kök neden bulununca
+// bu fonksiyon + tüm çağrı noktaları + firestore.rules'daki debugLogs bloğu
+// TAMAMEN kaldırılacak.
+async function _dlog(uid,tag,data){
+  if(!uid) return;
+  const payload=Object.assign({tag,ts:Date.now()},data||{});
+  try{
+    const N=_fsNative();
+    if(N) await N.setDocument({reference:'debugLogs/'+uid+'_'+Date.now()+'_'+tag+'_native',data:payload,merge:false});
+  }catch(e){ console.warn('_dlog native fail:',tag,e); }
+  try{
+    const {getFirestore,doc,setDoc}=await import('./assets/firebase/firebase-firestore.js');
+    const db=getFirestore(_fbApp);
+    await setDoc(doc(db,'debugLogs/'+uid+'_'+Date.now()+'_'+tag+'_jssdk'),payload);
+  }catch(e){ console.warn('_dlog jssdk fail:',tag,e); }
+}
 // MİSAFİR OTURUMU — KALICI KİMLİK (2026-07-19): @aparajita/capacitor-secure-storage
 // (iOS Keychain / Android Keystore) — uygulama silinip yeniden yüklense bile
 // (Keychain'in migrate-eden türlerinde) veya sadece kapatılıp açıldığında misafir
@@ -5921,7 +5939,8 @@ function _onFirebaseUser(user){
   // Gerçek (Google/Apple) hesaba geçildi — Keychain'deki eski misafir kaydı artık
   // gereksiz (bir sonraki soğuk açılışta yanlışlıkla misafir oturumu restore edilmesin).
   if(!user.isAnonymous) _guestUidClear();
-  if(_fbUserHandlingUid===user.uid) return; // bu hesap için zaten bir akış sürüyor
+  if(_fbUserHandlingUid===user.uid){ _dlog(user.uid,'onFbUser_locked_skip',{}); return; } // bu hesap için zaten bir akış sürüyor
+  _dlog(user.uid,'onFbUser_start',{isAnonymous:!!user.isAnonymous,forceJsIOS:!!_forceJsFirestoreForIOS});
   _fbUserHandlingUid=user.uid;
   _lastRealUser=user; // "Tekrar Dene" butonu bunu kullanır
   // GÜVENİLİR YAZMA KUYRUĞU (2026-07-18): daha önce başarısız/asılı kalmış
@@ -6071,6 +6090,7 @@ window._authSignIn = async function(provider){
       const _to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT 15sn — native '+provider+' çağrısı hiç dönmedi')),15000));
       const result=await Promise.race([_callPromise,_to]);
       if(result?.user){
+        _dlog(result.user.uid,'native_signin_ok',{provider,hasIdToken:!!result?.credential?.idToken});
         // GÜVENLİK AĞI (2026-07-15): "Apple ile giriş yaptım ama skorlar/kayıt Google
         // gibi çalışmıyor" raporu — _onFirebaseUser() user.isAnonymous true ise TÜM
         // hesap senkron mantığını (skor yükleme, hesap eşleştirme, kayıt) atlayıp
@@ -6097,9 +6117,11 @@ window._authSignIn = async function(provider){
               ? new OAuthProvider('apple.com').credential({idToken:result.credential.idToken,rawNonce:result.credential.nonce})
               : GoogleAuthProvider.credential(result.credential.idToken,result.credential.accessToken);
             const _bridgeTo=new Promise((_,rej)=>setTimeout(()=>rej(new Error(provider+' JS SDK köprü zaman aşımı')),8000));
-            await Promise.race([signInWithCredential(_fbAuth,cred),_bridgeTo]);
+            const _uc=await Promise.race([signInWithCredential(_fbAuth,cred),_bridgeTo]);
             _forceJsFirestoreForIOS=true;
+            _dlog(result.user.uid,'bridge_ok',{jsSdkUid:_uc?.user?.uid,sameUid:_uc?.user?.uid===result.user.uid});
           }catch(e){
+            _dlog(result.user.uid,'bridge_fail',{msg:String(e?.message||e),code:e?.code||''});
             console.error('❌ '+provider.toUpperCase()+' JS SDK KÖPRÜ HATASI (native Firestore\'a düşülüyor):',e);
             _reportError(e instanceof Error?e:new Error(provider+' JS SDK köprü hatası: '+(e?.message||e)),false);
           }
@@ -6769,9 +6791,11 @@ let _cloudSyncPromise=null;
 // değerle karşılaştırıyor — istemci bunu taklit edip "true" gönderemez.
 function _isRankEligible(){ return !isGuestSession() || !!acct._setupDone; }
 async function _firestoreSync(uid,_isRetry){
+  _dlog(uid,'sync_start',{isRetry:!!_isRetry,forceJsIOS:!!_forceJsFirestoreForIOS,fsNativeActive:!!_fsNative()});
   try{
     const ref='users/'+uid;
     const d=await _fsGetDoc(ref);
+    _dlog(uid,'sync_read_ok',{docExists:!!d});
     if(d){
       if(d.code){myCode=d.code;localStorage.setItem('tm_my_code',d.code);}
       // İsim + ülke: SADECE yerelde hiç yoksa buluttan doldur (yeni cihaz senaryosu).
@@ -6887,12 +6911,14 @@ async function _firestoreSync(uid,_isRetry){
       // otomatik tekrar denenir — veri sessizce kaybolmaz.
       await _fsSetDocReliable(ref,{best:acct.best,games:acct.games,total:acct.total,name:displayName(),code:myCode.toUpperCase(),country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
         vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast(),friendCodes:getFriends().map(f=>f.code).filter(Boolean),rankEligible:_isRankEligible()},true);
+      _dlog(uid,'sync_write_update_done',{});
       _coinPend(-_pf1); // coin buluta yazıldı → delta onaylandı
     }else{
       const xpNow=getXP();
       const _pf2=_coinPending();
       await _fsSetDocReliable(ref,{code:myCode.toUpperCase(),name:displayName(),best:acct.best,games:acct.games,total:acct.total,uid,country:acct.country||'',xp:xpNow,level:calcLevel(xpNow),
         vip:isVip(),noAds:isNoAds(),coins:parseInt(localStorage.getItem('tm_coins')||'0'),owned:tmOwned,invBombs:getInvBombs(),invUndos:getInvUndos(),invColorBlast:getColorBlast(),rankEligible:_isRankEligible()},true);
+      _dlog(uid,'sync_write_create_done',{});
       _coinPend(-_pf2);
     }
     _refreshCodeDisplays();
@@ -6902,6 +6928,7 @@ async function _firestoreSync(uid,_isRetry){
     if(typeof updateStreakDisplay==='function') updateStreakDisplay();
     return true;
   }catch(e){
+    _dlog(uid,'sync_catch',{isRetry:!!_isRetry,msg:String(e?.message||e),code:e?.code||''});
     console.error('❌ FIRESTORE SENKRON HATASI (uid='+uid+', retry='+!!_isRetry+'):',e);
     // GÜVENLİK AĞI (2026-07-14): "hesabın leveli daha yüksek ama giriş sonrası eski
     // (düşük) yerel level gösteriyor" raporu — native Firestore çağrıları iOS'ta
@@ -6937,6 +6964,12 @@ async function _fsSetDocReliable(path,data,merge){
     const to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('write timeout 8s')),8000));
     await Promise.race([_fsSetDoc(path,data,merge),to]);
   }catch(e){
+    // GEÇİCİ TEŞHİS (2026-07-21): bu catch bloğu daha önce hatayı TAMAMEN yutuyordu —
+    // _firestoreSync bu yüzden yazma gerçekte başarısız olsa bile hep "başarılı"
+    // sanıyordu. Gerçek hatayı burada logluyoruz (path'ten uid çıkarılıyor).
+    const _uidFromPath=(path.match(/^users\/(.+)$/)||[])[1]||null;
+    _dlog(_uidFromPath,'reliable_write_fail',{path,msg:String(e?.message||e),code:e?.code||'',fsNativeActive:!!_fsNative()});
+    console.error('❌ GÜVENİLİR YAZMA BAŞARISIZ (kuyruğa alındı):',path,e);
     const q=_getWriteQueue();
     q.push({path,data,merge:!!merge,ts:Date.now()});
     _saveWriteQueue(q);
@@ -6954,7 +6987,13 @@ async function _flushWriteQueue(){
       try{
         const to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('flush timeout')),8000));
         await Promise.race([_fsSetDoc(item.path,item.data,item.merge),to]);
-      }catch(e){ remaining.push(item); }
+        const _uid=(item.path.match(/^users\/(.+)$/)||[])[1]||null;
+        _dlog(_uid,'flush_item_ok',{path:item.path,queuedAt:item.ts});
+      }catch(e){
+        remaining.push(item);
+        const _uid=(item.path.match(/^users\/(.+)$/)||[])[1]||null;
+        _dlog(_uid,'flush_item_fail',{path:item.path,msg:String(e?.message||e),queuedAt:item.ts});
+      }
     }
     _saveWriteQueue(remaining);
   }finally{ _flushingWriteQueue=false; }
