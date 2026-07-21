@@ -4042,7 +4042,13 @@ const _FIRE_MOBILE = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent)
 // şekilde çok daha CPU-yoğun (GPU hızlandırmalı değil) çalışıyor; "oyun telefonu çok
 // ısıtıyor" raporu (2026-07-13, iOS) bu yüzden muhtemelen daha da belirgin. Artık
 // TÜM iOS cihazlarında da gölge efekti atlanıyor, cihaz gücünden bağımsız.
-const _LOW_FX = _isIOS || (navigator.deviceMemory && navigator.deviceMemory<=4);
+// GENİŞLETME (2026-07-21, "Android'de çok kasıyor" raporu — 4GB eşiği yetersizdi):
+// deviceMemory sadece RAM miktarını gösterir, GPU gücünü YANSITMAZ — 6-8GB RAM'li
+// orta segment Android telefonlarda bile eski/zayıf GPU olabilir ve shadowBlur GPU
+// hızlandırmalı olmadığı için RAM'den bağımsız pahalı kalır. Artık TÜM Android
+// cihazlarında da (iOS'ta olduğu gibi) gölge efekti atlanıyor, sadece RAM eşiği
+// yerine tüm platform genelinde.
+const _LOW_FX = _isIOS || /Android/i.test(navigator.userAgent) || (navigator.deviceMemory && navigator.deviceMemory<=4);
 
 // Particle pool — ölü alev objeleri yeniden kullanılır (yeni obje yaratılmaz)
 const _flamePool=[];
