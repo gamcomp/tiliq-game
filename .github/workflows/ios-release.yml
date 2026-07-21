@@ -37,9 +37,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install npm dependencies
         run: npm install
+
+      # HIZLANDIRMA (2026-07-22, "güncelleme çok geç" isteği): CocoaPods'un pod
+      # KAYNAKLARINI indirdiği önbellek klasörü — Podfile aynı kalırsa her run'da
+      # Firebase/GoogleSignIn/RevenueCat gibi büyük paketleri tekrar tekrar internetten
+      # indirmek yerine önbellekten alır. DerivedData/derlenmiş çıktı ÖNBELLEKLENMİYOR
+      # (release imzalama için her seferinde temiz derleme daha güvenli) — bu sadece
+      # indirme süresini kısaltır, derleme süresini değil.
+      - name: Cache CocoaPods sources
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/CocoaPods
+          key: pods-v1-${{ runner.os }}-firebase11-googlesignin7.1.0-revenuecat
 
       # TEŞHİS: Google Sign-In'in sessiz askıda kalmasını görünür hataya çevir
       # (bkz. codemagic.yaml — aynı yama, aynı kök neden)
