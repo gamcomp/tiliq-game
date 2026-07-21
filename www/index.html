@@ -6125,7 +6125,13 @@ window._authSignIn = async function(provider){
         // native yolla BİREBİR AYNI mantık (aşağıdaki _isNative genel dalına bkz.).
         if(!result?.credential?.idToken){ alert('Giriş tamamlanamadı (token yok).'); return; }
         const {OAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
-        const cred=new OAuthProvider('apple.com').credential({idToken:result.credential.idToken,rawNonce:result.credential.nonce,accessToken:result.credential.authorizationCode});
+        // ÖNEMLİ (2026-07-21, ikinci tur teşhis): resmi plugin dokümantasyonu bu
+        // credential()'a SADECE idToken+rawNonce veriyor — accessToken ALANI YOK.
+        // Daha önce buraya accessToken:authorizationCode eklenmişti; bu belgelenmemiş
+        // fazladan alan Firebase'in nonce doğrulamasını bozup "Duplicate credential
+        // received / auth/missing-or-invalid-nonce" hatasına yol açıyordu — skipNativeAuth
+        // fix'inden SONRA bile aynı hata devam etmesinin gerçek nedeni buydu.
+        const cred=new OAuthProvider('apple.com').credential({idToken:result.credential.idToken,rawNonce:result.credential.nonce});
         const uc=await signInWithCredential(_fbAuth,cred);
         if(!uc?.user){ alert('Giriş tamamlanamadı.'); return; }
         _forceJsFirestoreForIOS=true;
@@ -6177,7 +6183,7 @@ window._authSignIn = async function(provider){
       if(idToken && _fbAuth){
         const {GoogleAuthProvider,OAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
         const cred=isApple
-          ? new OAuthProvider('apple.com').credential({idToken,rawNonce:result?.credential?.nonce,accessToken:result?.credential?.authorizationCode})
+          ? new OAuthProvider('apple.com').credential({idToken,rawNonce:result?.credential?.nonce})
           : GoogleAuthProvider.credential(idToken, accessToken);
         const uc=await signInWithCredential(_fbAuth, cred);
         if(uc?.user) _onFirebaseUser(uc.user);
