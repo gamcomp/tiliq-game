@@ -1098,6 +1098,7 @@ input[type="text"]::placeholder{color:var(--dim);}
   <div id="game-container">
     <canvas id="gameCanvas"></canvas>
     <canvas id="fireCanvas"></canvas>
+    <div id="drag-dbg" style="position:fixed;top:4px;left:4px;z-index:9999;background:rgba(0,0,0,.75);color:#0f0;font:10px monospace;padding:4px 6px;display:none;white-space:pre;pointer-events:none"></div>
     <div id="overlay">
       <h2 data-t="gameOver">Oyun Bitti!</h2>
       <div class="over-card"><div class="lbl" data-t="yourScore">Skorun</div><div class="big" id="finalScore">0</div></div>
@@ -5343,6 +5344,28 @@ function onPointerMove(e){
     }
   }
   _updateHov(x,y);
+  _updateDragDbg(e,x,y);
+}
+
+// GEÇİCİ TEŞHİS (2026-07-22): "iOS'ta parça sürüklerken hiç yükselmiyor" raporu —
+// DRAG_LIFT platformlar arası aynı sabit ama iOS'ta görsel etkisi yok deniyor.
+// Canlı cihazdan gerçek sayıları görmeden tekrar tahmini sabit değiştirmek yerine
+// (bu daha önce 2 turdur ıskalamıştı) ekrana ham sayıları basıyoruz. Kök neden
+// bulununca bu fonksiyon + çağrı yeri + #drag-dbg divi kaldırılacak.
+function _updateDragDbg(e,x,y){
+  const el=document.getElementById('drag-dbg');
+  if(!el)return;
+  if(!drag||!drag.moved){el.style.display='none';return;}
+  const r=canvas.getBoundingClientRect();
+  const src=(e.touches&&e.touches.length>0)?e.touches[0]:(e.changedTouches&&e.changedTouches.length>0)?e.changedTouches[0]:e;
+  el.style.display='block';
+  el.textContent=
+    'clientY='+(src.clientY|0)+' rectTop='+r.top.toFixed(1)+'\n'+
+    'canvasY(y)='+y.toFixed(1)+' CELL='+CELL+' GOY='+GOY+'\n'+
+    'DRAG_LIFT='+DRAG_LIFT+' liftPx='+(CELL*DRAG_LIFT).toFixed(1)+'\n'+
+    'vy(lifted)='+(y-CELL*DRAG_LIFT).toFixed(1)+'\n'+
+    'dpr='+window.devicePixelRatio+' innerH='+window.innerHeight+'\n'+
+    'canvas.h='+canvas.height+' canvas.cssH='+r.height.toFixed(1);
 }
 
 // MOUSEUP / TOUCHEND
