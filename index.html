@@ -3905,7 +3905,10 @@ function place(pi,row,col){
       if(grid.every(row=>row.every(v=>!v))) perfectClear();
     },260);
 
-    const base=tot*10+(tot>1?(tot-1)*5:0),gain=Math.round(base*Math.min(cm,5));
+    // PUAN ARTIRIMI (2026-07-21, kullanıcı isteği: "puanlandırma oyuncuyu tatmin
+    // edecek şekilde yüksek olsun") — temel puan tam 2 katına çıkarıldı (tot*10→
+    // tot*20, çoklu-satır bonusu 5→10), kombo çarpanı (min(cm,5)) aynı kaldı.
+    const base=tot*20+(tot>1?(tot-1)*10:0),gain=Math.round(base*Math.min(cm,5));
     score+=gain;acct.total+=gain;
     addBombXP(gain);
     addColorBlastXP(gain); // Renk Patlat SADECE kombodan gelen bu puanla dolar
@@ -5035,9 +5038,13 @@ function drawBoard(now){
   _drawCellFire(gx,gy,now);
 
   if(bounce){
+    // DAHA SERİ HİS (2026-07-21, kullanıcı isteği: "yerleştirme daha hızlı ve seri
+    // olsun") — yerleştirme sonrası zıplama animasyonu 300ms'den 170ms'ye düşürüldü,
+    // parça hemen "oturmuş" hissi veriyor, bir sonraki hamle beklemeden yapılabiliyor
+    // (mantık zaten anındaydı, bu sadece görsel gecikme hissini azaltıyor).
     const el=now-bounce.t0;
-    if(el<300){
-      const sc=1+.13*Math.sin((el/300)*Math.PI);
+    if(el<170){
+      const sc=1+.13*Math.sin((el/170)*Math.PI);
       for(const[r,c]of bounce.cells){
         const ci=grid[r][c];if(!ci)continue;
         const bx=gx+c*CELL+CELL/2,by=gy+r*CELL+CELL/2,sz=(CELL-3)*sc;
