@@ -6086,44 +6086,58 @@ window._authSignIn = async function(provider){
     const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication);
     if(!FA){alert('Auth plugin yüklü değil');return;}
     try{
-      const _callPromise=isApple ? FA.signInWithApple() : FA.signInWithGoogle();
+      // KESİN KÖK NEDEN BULUNDU (2026-07-21, canlı debugLogs teşhisiyle doğrulandı):
+      // skipNativeAuth:false (varsayılan) ile FA.signInWithApple() Apple'ın TEK
+      // KULLANIMLIK nonce'unu native Firebase Auth'a girişte HEMEN tüketiyordu.
+      // Sonra aynı idToken+nonce'u JS SDK'ya (signInWithCredential) köprülemeye
+      // çalışmak HER ZAMAN "auth/missing-or-invalid-nonce — Duplicate credential
+      // received" hatasıyla başarısız oluyordu (nonce tek kullanımlık, iki kez
+      // redeem edilemez). Bu yüzden _forceJsFirestoreForIOS hiç true olmuyor,
+      // native Firestore'a düşülüyordu — o da "Missing or insufficient permissions"
+      // ile reddediyordu. Google'da bu sorun YOK (Google'ın kimlik doğrulaması
+      // Apple gibi tek kullanımlık nonce kullanmıyor, native+JS SDK'da aynı
+      // credential sorunsuz iki kez kullanılabiliyor) — bu yüzden fark SADECE
+      // Apple'da görülüyordu. Çözüm: Apple'da native'i HİÇ auth yaptırma
+      // (skipNativeAuth:true, Android'in zaten yaptığı gibi) — nonce SADECE JS
+      // SDK'ya gitsin, JS SDK bu oturum için TEK ve asıl kimlik doğrulama olsun.
+      const _callPromise=isApple ? FA.signInWithApple({skipNativeAuth:true}) : FA.signInWithGoogle();
       const _to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT 15sn — native '+provider+' çağrısı hiç dönmedi')),15000));
       const result=await Promise.race([_callPromise,_to]);
+      const _uidForLog=result?.user?.uid||'apple_pending';
+      _dlog(_uidForLog,'native_signin_ok',{provider,hasIdToken:!!result?.credential?.idToken,skippedNativeAuth:isApple});
+      if(isApple){
+        // skipNativeAuth:true ile result.user Firebase'e giriş yapmış bir kullanıcı
+        // DEĞİL — sadece Apple'ın ham kimlik bilgisi. Asıl kullanıcı JS SDK'nın
+        // signInWithCredential() dönüşünden (uc.user) geliyor, Android'deki genel
+        // native yolla BİREBİR AYNI mantık (aşağıdaki _isNative genel dalına bkz.).
+        if(!result?.credential?.idToken){ alert('Giriş tamamlanamadı (token yok).'); return; }
+        const {OAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
+        const cred=new OAuthProvider('apple.com').credential({idToken:result.credential.idToken,rawNonce:result.credential.nonce,accessToken:result.credential.authorizationCode});
+        const uc=await signInWithCredential(_fbAuth,cred);
+        if(!uc?.user){ alert('Giriş tamamlanamadı.'); return; }
+        _forceJsFirestoreForIOS=true;
+        _dlog(uc.user.uid,'bridge_ok',{jsSdkUid:uc.user.uid,skippedNativeAuth:true});
+        uc.user.isAnonymous=false;
+        _onFirebaseUser(uc.user);
+        return;
+      }
+      // GOOGLE: mevcut, kanıtlanmış davranış — native birincil, sonuç doğrudan
+      // kullanılabilir. Firestore tutarlılığı için ayrıca JS SDK'ya köprüleniyor
+      // (Google'da nonce çakışması olmadığı için bu güvenle çalışıyor).
       if(result?.user){
-        _dlog(result.user.uid,'native_signin_ok',{provider,hasIdToken:!!result?.credential?.idToken});
-        // GÜVENLİK AĞI (2026-07-15): "Apple ile giriş yaptım ama skorlar/kayıt Google
-        // gibi çalışmıyor" raporu — _onFirebaseUser() user.isAnonymous true ise TÜM
-        // hesap senkron mantığını (skor yükleme, hesap eşleştirme, kayıt) atlayıp
-        // hemen çıkıyor. Apple'ın "isim/e-posta sadece ilk yetkilendirmede paylaşılır"
-        // davranışı ya da native eklentinin bu alanı doldurma şekli, ikinci+ Apple
-        // girişlerinde isAnonymous'ın yanlışlıkla true/tanımsız-truthy gelmesine yol
-        // açabiliyor — Google'da bu alan her zaman güvenilir false geliyor, bu yüzden
-        // fark sadece Apple'da görülüyor. Burada AÇIKÇA signInWithApple()/
-        // signInWithGoogle() çağırdığımızı BİLİYORUZ — bu METOTLAR ASLA anonim sonuç
-        // döndürmez, bu yüzden isAnonymous'ı burada kesin olarak false'a zorluyoruz.
         result.user.isAnonymous=false;
-        // BASİTLEŞTİRME (2026-07-21): Eskiden bu köprü SADECE Apple için yapılıyordu
-        // (native Firestore eklentisi Apple oturumlarında yazmayı iletmiyordu, Google
-        // native ile sorunsuzdu) — ama bu asimetri (Apple farklı davranıyor) tekrar
-        // tekrar kafa karışıklığına yol açtı. Artık HER İKİ provider da (Google+Apple)
-        // aynı şekilde JS SDK'ya köprüleniyor — iOS'ta tüm gerçek hesaplar için tek,
-        // tutarlı bir Firestore yolu (_forceJsFirestoreForIOS, bkz. _fsNative notu).
-        // 8sn üst sınır — asılırsa native Firestore'a geri düşülür (Google için zaten
-        // kanıtlanmış çalışan yol, veri kaybı riski yok).
         if(result?.credential?.idToken){
           try{
-            const {GoogleAuthProvider,OAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
-            const cred=isApple
-              ? new OAuthProvider('apple.com').credential({idToken:result.credential.idToken,rawNonce:result.credential.nonce})
-              : GoogleAuthProvider.credential(result.credential.idToken,result.credential.accessToken);
-            const _bridgeTo=new Promise((_,rej)=>setTimeout(()=>rej(new Error(provider+' JS SDK köprü zaman aşımı')),8000));
+            const {GoogleAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
+            const cred=GoogleAuthProvider.credential(result.credential.idToken,result.credential.accessToken);
+            const _bridgeTo=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Google JS SDK köprü zaman aşımı')),8000));
             const _uc=await Promise.race([signInWithCredential(_fbAuth,cred),_bridgeTo]);
             _forceJsFirestoreForIOS=true;
             _dlog(result.user.uid,'bridge_ok',{jsSdkUid:_uc?.user?.uid,sameUid:_uc?.user?.uid===result.user.uid});
           }catch(e){
             _dlog(result.user.uid,'bridge_fail',{msg:String(e?.message||e),code:e?.code||''});
-            console.error('❌ '+provider.toUpperCase()+' JS SDK KÖPRÜ HATASI (native Firestore\'a düşülüyor):',e);
-            _reportError(e instanceof Error?e:new Error(provider+' JS SDK köprü hatası: '+(e?.message||e)),false);
+            console.error('❌ GOOGLE JS SDK KÖPRÜ HATASI (native Firestore\'a düşülüyor):',e);
+            _reportError(e instanceof Error?e:new Error('Google JS SDK köprü hatası: '+(e?.message||e)),false);
           }
         }
         _onFirebaseUser(result.user);
