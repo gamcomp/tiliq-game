@@ -2490,7 +2490,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.22-1';
+const BUILD_VER='v2026.07.23-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -6123,7 +6123,12 @@ window._authSignIn = async function(provider){
       // (skipNativeAuth:true, Android'in zaten yaptığı gibi) — nonce SADECE JS
       // SDK'ya gitsin, JS SDK bu oturum için TEK ve asıl kimlik doğrulama olsun.
       if(isApple) alert('TEŞHİS: FA hazır, FA.signInWithApple() çağrılıyor…');
-      const _callPromise=isApple ? FA.signInWithApple({skipNativeAuth:true}) : FA.signInWithGoogle();
+      // ÖNEMLİ (2026-07-23): capacitor.config.json'daki plugin varsayılanı artık
+      // skipNativeAuth:true (Apple'ın konfig-varsayılanı ile çağrı-anı override'ı
+      // arasındaki çelişkinin native tarafta boş sonuç dönmesine sebep olduğundan
+      // şüphelenildi). Google'ın KANITLANMIŞ native-birincil davranışı bu değişiklikten
+      // ETKİLENMESİN diye burada AÇIKÇA skipNativeAuth:false veriliyor.
+      const _callPromise=isApple ? FA.signInWithApple({skipNativeAuth:true}) : FA.signInWithGoogle({skipNativeAuth:false});
       const _to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT 15sn — native '+provider+' çağrısı hiç dönmedi')),15000));
       const result=await Promise.race([_callPromise,_to]);
       if(isApple) alert('TEŞHİS: native çağrı DÖNDÜ, hasUser='+(!!result?.user)+' hasIdToken='+(!!result?.credential?.idToken));
@@ -6186,7 +6191,8 @@ window._authSignIn = async function(provider){
     const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication);
     if(!FA){alert('Auth plugin yüklü değil');return;}
     try{
-      const result=isApple ? await FA.signInWithApple({skipNativeAuth:true}) : await FA.signInWithGoogle();
+      // Google config-varsayılanından etkilenmesin diye açıkça false (bkz. yukarıdaki iOS dalındaki 2026-07-23 notu)
+      const result=isApple ? await FA.signInWithApple({skipNativeAuth:true}) : await FA.signInWithGoogle({skipNativeAuth:false});
       // Native plugin native Firebase SDK'ya giriş yapar; oyun Firestore için JS SDK
       // kullanıyor → credential ile JS SDK'ya da giriş yap (yoksa Firestore yetkisiz kalır).
       const idToken=result?.credential?.idToken;
