@@ -1098,7 +1098,6 @@ input[type="text"]::placeholder{color:var(--dim);}
   <div id="game-container">
     <canvas id="gameCanvas"></canvas>
     <canvas id="fireCanvas"></canvas>
-    <div id="drag-dbg" style="position:fixed;top:4px;left:4px;z-index:9999;background:rgba(0,0,0,.75);color:#0f0;font:10px monospace;padding:4px 6px;display:none;white-space:pre;pointer-events:none"></div>
     <div id="overlay">
       <h2 data-t="gameOver">Oyun Bitti!</h2>
       <div class="over-card"><div class="lbl" data-t="yourScore">Skorun</div><div class="big" id="finalScore">0</div></div>
@@ -5203,7 +5202,8 @@ function drawDrag(){
   // koordinatla, sadece çizim daha akıcı/titremesiz olsun diye) — kullanıcı isteği, 2026-07-04
   if(drag.rx==null){drag.rx=drag.x;drag.ry=drag.y;}
   drag.rx+=(drag.x-drag.rx)*.45;drag.ry+=(drag.y-drag.ry)*.45;
-  const ox=drag.rx-b.cols*CELL/2,oy=drag.ry-b.rows*CELL/2-CELL*DRAG_LIFT;
+  // oy: parçanın ÜST kenarı — alt kenar (oy+rows*CELL) parmağın CELL*DRAG_LIFT üzerinde
+  const ox=drag.rx-b.cols*CELL/2,oy=drag.ry-CELL*DRAG_LIFT-b.rows*CELL;
   // Havada taşınma gölgesi — parça board'un üzerinde süzülüyor hissi
   ctx.save();ctx.globalAlpha=.30;ctx.fillStyle='rgba(0,0,0,.55)';
   for(const[r,c]of p.shape.cells){
@@ -5290,20 +5290,27 @@ const DRAG_PX=9;
 // açık isteği üzerine (2026-07-15): iki platform da AYNI sabiti kullanıyor —
 // tekrar sapma raporu gelirse calcCell()/contentInset tarafına bakılmalı,
 // bu sabite değil.
-const DRAG_LIFT=1.5; // parmağın kaç CELL üzerinde çizilsin (Android ve iOS ortak)
+const DRAG_LIFT=1.5; // parçanın ALT KENARI parmağın kaç CELL üzerinde dursun (tüm platformlar ortak)
+// LIFT ÇAPASI DEĞİŞTİ (2026-07-22, kullanıcı isteği "şekiller parmaktan yukarıda
+// gözüksün"): lift eskiden parçanın MERKEZİNDEN ölçülüyordu — 2+ sıra yüksek
+// parçalarda merkez 75px yukarıda olsa bile ALT SIRA parmağın hemen üstünde
+// (hatta parmağın kapladığı ~40px'in altında) kalıyordu, "hiç yükselmiyor" hissi
+// buradan geliyordu (canlı iOS teşhisiyle doğrulandı: matematik doğru çalışıyordu,
+// his yanlıştı). Artık lift parçanın ALT KENARINDAN ölçülüyor: parça kaç sıra
+// olursa olsun TAMAMI parmağın en az 1.5 hücre üzerinde süzülür.
 
 function _inGrid(x,y){const gx=GOX(),gy=GOY;return x>=gx&&x<gx+CELL*GRID&&y>=gy&&y<gy+CELL*GRID;}
 
 function _updateHov(x,y){
-  const vy=(drag&&drag.moved)?y-CELL*DRAG_LIFT:y; // görsel y (lift uygulanmış)
-  if(_inGrid(x,vy)){
-    if(drag&&drag.moved&&selPiece!==null){
-      const b=bounds(pieces[selPiece].shape.cells);
+  if(drag&&drag.moved&&selPiece!==null){
+    const b=bounds(pieces[selPiece].shape.cells);
+    const vy=y-CELL*DRAG_LIFT-b.rows*CELL/2; // parça MERKEZİ (alt-kenar çapalı lift)
+    if(_inGrid(x,vy)){
       hov={row:Math.round((vy-GOY)/CELL-b.rows/2),col:Math.round((x-GOX())/CELL-b.cols/2)};
-    } else {
-      hov=c2g(x,y);
-    }
-  } else { hov=null; }
+    } else { hov=null; }
+  } else {
+    hov=_inGrid(x,y)?c2g(x,y):null;
+  }
 }
 
 // MOUSEDOWN / TOUCHSTART
@@ -5344,28 +5351,6 @@ function onPointerMove(e){
     }
   }
   _updateHov(x,y);
-  _updateDragDbg(e,x,y);
-}
-
-// GEÇİCİ TEŞHİS (2026-07-22): "iOS'ta parça sürüklerken hiç yükselmiyor" raporu —
-// DRAG_LIFT platformlar arası aynı sabit ama iOS'ta görsel etkisi yok deniyor.
-// Canlı cihazdan gerçek sayıları görmeden tekrar tahmini sabit değiştirmek yerine
-// (bu daha önce 2 turdur ıskalamıştı) ekrana ham sayıları basıyoruz. Kök neden
-// bulununca bu fonksiyon + çağrı yeri + #drag-dbg divi kaldırılacak.
-function _updateDragDbg(e,x,y){
-  const el=document.getElementById('drag-dbg');
-  if(!el)return;
-  if(!drag||!drag.moved){el.style.display='none';return;}
-  const r=canvas.getBoundingClientRect();
-  const src=(e.touches&&e.touches.length>0)?e.touches[0]:(e.changedTouches&&e.changedTouches.length>0)?e.changedTouches[0]:e;
-  el.style.display='block';
-  el.textContent=
-    'clientY='+(src.clientY|0)+' rectTop='+r.top.toFixed(1)+'\n'+
-    'canvasY(y)='+y.toFixed(1)+' CELL='+CELL+' GOY='+GOY+'\n'+
-    'DRAG_LIFT='+DRAG_LIFT+' liftPx='+(CELL*DRAG_LIFT).toFixed(1)+'\n'+
-    'vy(lifted)='+(y-CELL*DRAG_LIFT).toFixed(1)+'\n'+
-    'dpr='+window.devicePixelRatio+' innerH='+window.innerHeight+'\n'+
-    'canvas.h='+canvas.height+' canvas.cssH='+r.height.toFixed(1);
 }
 
 // MOUSEUP / TOUCHEND
