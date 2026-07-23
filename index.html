@@ -2490,7 +2490,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.20-1';
+const BUILD_VER='v2026.07.22-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -6089,6 +6089,10 @@ async function _waitForCapPlugin(getter,timeoutMs){
 // _fbAnonSignIn() TAMAMEN KALDIRILDI (2026-07-17) — bkz. initFirebaseAuth'taki not.
 
 window._authSignIn = async function(provider){
+  // GEÇİCİ TEŞHİS (2026-07-22): "Apple ile giriş — hiçbir şekilde tepki olmuyor"
+  // raporu — buton dokunuşunun gerçekten bu fonksiyona ulaşıp ulaşmadığını VE FA
+  // plugin'inin hazır olup olmadığını görmek için. Kök neden bulununca kaldırılacak.
+  if(provider==='apple') alert('TEŞHİS: _authSignIn(apple) çağrıldı, _isNative='+(!!window.Capacitor?.isNativePlatform?.())+' _isIOS='+_isIOS);
   const _isNative=!!window.Capacitor?.isNativePlatform?.();
   const isApple=provider==='apple';
   if(_isNative && _isIOS){
@@ -6118,9 +6122,11 @@ window._authSignIn = async function(provider){
       // Apple'da görülüyordu. Çözüm: Apple'da native'i HİÇ auth yaptırma
       // (skipNativeAuth:true, Android'in zaten yaptığı gibi) — nonce SADECE JS
       // SDK'ya gitsin, JS SDK bu oturum için TEK ve asıl kimlik doğrulama olsun.
+      if(isApple) alert('TEŞHİS: FA hazır, FA.signInWithApple() çağrılıyor…');
       const _callPromise=isApple ? FA.signInWithApple({skipNativeAuth:true}) : FA.signInWithGoogle();
       const _to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT 15sn — native '+provider+' çağrısı hiç dönmedi')),15000));
       const result=await Promise.race([_callPromise,_to]);
+      if(isApple) alert('TEŞHİS: native çağrı DÖNDÜ, hasUser='+(!!result?.user)+' hasIdToken='+(!!result?.credential?.idToken));
       const _uidForLog=result?.user?.uid||'apple_pending';
       _dlog(_uidForLog,'native_signin_ok',{provider,hasIdToken:!!result?.credential?.idToken,skippedNativeAuth:isApple});
       if(isApple){
