@@ -2490,7 +2490,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.24-1';
+const BUILD_VER='v2026.07.24-2';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -6104,86 +6104,48 @@ window._authSignIn = async function(provider){
     const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication);
     if(!FA){alert('Auth plugin yüklü değil');return;}
     try{
-      // KESİN KÖK NEDEN BULUNDU (2026-07-21, canlı debugLogs teşhisiyle doğrulandı):
-      // skipNativeAuth:false (varsayılan) ile FA.signInWithApple() Apple'ın TEK
-      // KULLANIMLIK nonce'unu native Firebase Auth'a girişte HEMEN tüketiyordu.
-      // Sonra aynı idToken+nonce'u JS SDK'ya (signInWithCredential) köprülemeye
-      // çalışmak HER ZAMAN "auth/missing-or-invalid-nonce — Duplicate credential
-      // received" hatasıyla başarısız oluyordu (nonce tek kullanımlık, iki kez
-      // redeem edilemez). Bu yüzden _forceJsFirestoreForIOS hiç true olmuyor,
-      // native Firestore'a düşülüyordu — o da "Missing or insufficient permissions"
-      // ile reddediyordu. Google'da bu sorun YOK (Google'ın kimlik doğrulaması
-      // Apple gibi tek kullanımlık nonce kullanmıyor, native+JS SDK'da aynı
-      // credential sorunsuz iki kez kullanılabiliyor) — bu yüzden fark SADECE
-      // Apple'da görülüyordu. Çözüm: Apple'da native'i HİÇ auth yaptırma
-      // (skipNativeAuth:true, Android'in zaten yaptığı gibi) — nonce SADECE JS
-      // SDK'ya gitsin, JS SDK bu oturum için TEK ve asıl kimlik doğrulama olsun.
-      // ÖNEMLİ (2026-07-23): capacitor.config.json'daki plugin varsayılanı artık
-      // skipNativeAuth:true (Apple'ın konfig-varsayılanı ile çağrı-anı override'ı
-      // arasındaki çelişkinin native tarafta boş sonuç dönmesine sebep olduğundan
-      // şüphelenildi). Google'ın KANITLANMIŞ native-birincil davranışı bu değişiklikten
-      // ETKİLENMESİN diye burada AÇIKÇA skipNativeAuth:false veriliyor.
-      const _callPromise=isApple ? FA.signInWithApple({skipNativeAuth:true}) : FA.signInWithGoogle({skipNativeAuth:false});
+      // KÖK NEDEN — DÖRDÜNCÜ VE SON TUR (2026-07-24, canlı hata mesajıyla KESİN
+      // doğrulandı: "Apple JS SDK köprü zaman aşımı — signInWithCredential hiç
+      // dönmedi"). Önceki üç turun hepsi (nonce reuse → skipNativeAuth:true →
+      // accessToken alanı → config/çağrı-anı çelişkisi) yanlış ağaçları
+      // kovalıyordu. GERÇEK KÖK NEDEN: Firebase JS SDK'nın gerçek ağ istekleri
+      // (signInWithCredential dahil) bu cihazın WKWebView'inde TAMAMEN ÇALIŞMIYOR
+      // — asla dönmüyor, network hatası bile vermiyor (dosyanın en başındaki
+      // 2026-07-11 notunda zaten belgelenmişti). skipNativeAuth:true ile Apple'ı
+      // SADECE JS SDK'ya bağımlı hale getirmek, onu bu ölü ağ katmanına tamamen
+      // teslim ediyordu — giriş asla tamamlanamıyordu. "native Firestore Apple
+      // yazmalarını reddediyor" (2026-07-18) bulgusu da muhtemelen bunun bir
+      // SONUCUYDU: skipNativeAuth:true ile Apple için hiç native Firebase Auth
+      // oturumu oluşmuyor, native Firestore'un kimlik doğrulayacak hiçbir şeyi
+      // kalmıyor. Çözüm: Apple'ı TAMAMEN Google'ın kanıtlanmış deseniyle
+      // birleştir — native birincil (skipNativeAuth:false), sonuç doğrudan
+      // kullanılır, JS SDK köprüsü sadece iyi-niyetli/best-effort denenir
+      // (başarısız olursa native Firestore'a sorunsuz düşülür, girişi ASLA
+      // engellemez).
+      const _callPromise=isApple ? FA.signInWithApple({skipNativeAuth:false}) : FA.signInWithGoogle({skipNativeAuth:false});
       const _to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT 15sn — native '+provider+' çağrısı hiç dönmedi')),15000));
       const result=await Promise.race([_callPromise,_to]);
       const _uidForLog=result?.user?.uid||'apple_pending';
-      _dlog(_uidForLog,'native_signin_ok',{provider,hasIdToken:!!result?.credential?.idToken,skippedNativeAuth:isApple});
-      if(isApple){
-        // skipNativeAuth:true ile result.user Firebase'e giriş yapmış bir kullanıcı
-        // DEĞİL — sadece Apple'ın ham kimlik bilgisi. Asıl kullanıcı JS SDK'nın
-        // signInWithCredential() dönüşünden (uc.user) geliyor, Android'deki genel
-        // native yolla BİREBİR AYNI mantık (aşağıdaki _isNative genel dalına bkz.).
-        if(!result?.credential?.idToken){ alert('Giriş tamamlanamadı (token yok).'); return; }
-        const {OAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
-        // ÖNEMLİ (2026-07-21, ikinci tur teşhis): resmi plugin dokümantasyonu bu
-        // credential()'a SADECE idToken+rawNonce veriyor — accessToken ALANI YOK.
-        // Daha önce buraya accessToken:authorizationCode eklenmişti; bu belgelenmemiş
-        // fazladan alan Firebase'in nonce doğrulamasını bozup "Duplicate credential
-        // received / auth/missing-or-invalid-nonce" hatasına yol açıyordu — skipNativeAuth
-        // fix'inden SONRA bile aynı hata devam etmesinin gerçek nedeni buydu.
-        const cred=new OAuthProvider('apple.com').credential({idToken:result.credential.idToken,rawNonce:result.credential.nonce});
-        // KÖK NEDEN BULUNDU (2026-07-24, üçüncü tur teşhis): bu signInWithCredential
-        // çağrısının HİÇ zaman aşımı koruması yoktu — Google'ın aynı adımında 8sn'lik
-        // bir yarış (_bridgeTo) var ama burada unutulmuştu. Bu satırın kendisi zaten
-        // dosyanın en başındaki yorumda belgelenen BİLİNEN sorunu tetikliyordu: JS
-        // SDK'nın gerçek ağ isteği (signInWithCredential dahil) iOS WKWebView'de HİÇ
-        // dönmeden sonsuza kadar askıda kalabiliyor — ne hata, ne sonuç, tamamen
-        // sessiz. "Apple ekranı kapanıyor ama oyun hiç tepki vermiyor" raporunun asıl
-        // nedeni buydu. Google'la aynı desen: 12sn zaman aşımı + try/catch ile hata
-        // görünür hale getirildi.
-        try{
-          const _bridgeTo=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Apple JS SDK köprü zaman aşımı (12sn) — signInWithCredential hiç dönmedi')),12000));
-          const uc=await Promise.race([signInWithCredential(_fbAuth,cred),_bridgeTo]);
-          if(!uc?.user){ alert('Giriş tamamlanamadı.'); return; }
-          _forceJsFirestoreForIOS=true;
-          _dlog(uc.user.uid,'bridge_ok',{jsSdkUid:uc.user.uid,skippedNativeAuth:true});
-          uc.user.isAnonymous=false;
-          _onFirebaseUser(uc.user);
-        }catch(e){
-          _dlog(_uidForLog,'bridge_fail',{msg:String(e?.message||e),code:e?.code||''});
-          console.error('❌ APPLE JS SDK KÖPRÜ HATASI:',e);
-          _reportError(e instanceof Error?e:new Error('Apple JS SDK köprü hatası: '+(e?.message||e)),false);
-          alert('Giriş hatası: '+(e?.message||e));
-        }
-        return;
-      }
-      // GOOGLE: mevcut, kanıtlanmış davranış — native birincil, sonuç doğrudan
-      // kullanılabilir. Firestore tutarlılığı için ayrıca JS SDK'ya köprüleniyor
-      // (Google'da nonce çakışması olmadığı için bu güvenle çalışıyor).
+      _dlog(_uidForLog,'native_signin_ok',{provider,hasIdToken:!!result?.credential?.idToken});
+      // ARTIK Apple ve Google BİREBİR AYNI YOL — native birincil, sonuç doğrudan
+      // kullanılabilir. JS SDK köprüsü Firestore tutarlılığı için best-effort
+      // denenir ama BAŞARISIZ OLSA BİLE giriş devam eder (native Firestore'a düşülür).
       if(result?.user){
         result.user.isAnonymous=false;
         if(result?.credential?.idToken){
           try{
-            const {GoogleAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
-            const cred=GoogleAuthProvider.credential(result.credential.idToken,result.credential.accessToken);
-            const _bridgeTo=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Google JS SDK köprü zaman aşımı')),8000));
+            const {GoogleAuthProvider,OAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
+            const cred=isApple
+              ? new OAuthProvider('apple.com').credential({idToken:result.credential.idToken,rawNonce:result.credential.nonce})
+              : GoogleAuthProvider.credential(result.credential.idToken,result.credential.accessToken);
+            const _bridgeTo=new Promise((_,rej)=>setTimeout(()=>rej(new Error(provider+' JS SDK köprü zaman aşımı')),8000));
             const _uc=await Promise.race([signInWithCredential(_fbAuth,cred),_bridgeTo]);
             _forceJsFirestoreForIOS=true;
             _dlog(result.user.uid,'bridge_ok',{jsSdkUid:_uc?.user?.uid,sameUid:_uc?.user?.uid===result.user.uid});
           }catch(e){
             _dlog(result.user.uid,'bridge_fail',{msg:String(e?.message||e),code:e?.code||''});
-            console.error('❌ GOOGLE JS SDK KÖPRÜ HATASI (native Firestore\'a düşülüyor):',e);
-            _reportError(e instanceof Error?e:new Error('Google JS SDK köprü hatası: '+(e?.message||e)),false);
+            console.error('❌ '+provider.toUpperCase()+' JS SDK KÖPRÜ HATASI (native Firestore\'a düşülüyor):',e);
+            _reportError(e instanceof Error?e:new Error(provider+' JS SDK köprü hatası: '+(e?.message||e)),false);
           }
         }
         _onFirebaseUser(result.user);
