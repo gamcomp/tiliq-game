@@ -2490,7 +2490,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.24-4';
+const BUILD_VER='v2026.07.24-5';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5991,6 +5991,7 @@ function _finishLoginLoading(){
 // tamamlanıp çakışma penceresini kaçırıyordu — ama kök neden platforma özel değildi.
 // Aynı UID için aynı anda sadece TEK bir akış çalışsın diye kilitliyoruz.
 let _fbUserHandlingUid=null;
+let _lastSignInProvider=null; // 'apple'/'google' — _onFirebaseUser'ın _googleName varsayılanını Apple'da atlaması için
 function _onFirebaseUser(user){
   // MİSAFİR (anonim) OTURUM (2026-07-19): anonim giriş artık SADECE "Misafir olarak
   // devam et" butonuyla (window._authSignInGuest) başlar — hiçbir zaman otomatik/arka
@@ -6016,7 +6017,11 @@ function _onFirebaseUser(user){
   // GÜVENİLİR YAZMA KUYRUĞU (2026-07-18): daha önce başarısız/asılı kalmış
   // yazmalar varsa (sebebi ne olursa olsun), her gerçek girişte tekrar denenir.
   _flushWriteQueue();
-  acct._googleName = user.displayName || user.email || '';
+  // DÜZELTME (2026-07-24, kullanıcı isteği): Apple'da ilk girişte kullanıcının
+  // GERÇEK adını (Apple'ın verdiği tam isim) profil adı olarak KULLANMA — Google'da
+  // bu kalsın (mevcut, istenen davranış), Apple'da boş kalsın ki kullanıcı "Profili
+  // Tamamla" ekranında kendi takma adını girsin, gerçek ismi hiç görünmesin/kaydolmasın.
+  acct._googleName = (_lastSignInProvider==='apple') ? '' : (user.displayName || user.email || '');
   // DİKKAT: acct.nickname'e YAZMA — displayName() zaten nickname boşsa _googleName'e
   // düşüyor (görüntüleme için yeterli). Buraya yazmak, _firestoreSync'in gerçek
   // kayıtlı takma adı (örn. "Behzat") buluttan geri yüklemesini ENGELLİYORDU çünkü
@@ -6143,6 +6148,7 @@ async function _waitForCapPlugin(getter,timeoutMs){
 window._authSignIn = async function(provider){
   const _isNative=!!window.Capacitor?.isNativePlatform?.();
   const isApple=provider==='apple';
+  _lastSignInProvider=provider;
   if(_isNative && _isIOS){
     // iOS'A ÖZEL YOL (2026-07-11 teşhis sonucu): Firebase JS SDK'sının gerçek CORS+POST
     // istekleri (signInWithCredential dahil) bu WKWebView'de AbortController ile bile
