@@ -2490,7 +2490,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.24-3';
+const BUILD_VER='v2026.07.24-4';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3002,15 +3002,8 @@ function _getInAppReview(){
 async function _dlog(uid,tag,data){
   if(!uid) return;
   const payload=Object.assign({tag,ts:Date.now()},data||{});
-  try{
-    const N=_fsNative();
-    if(N) await N.setDocument({reference:'debugLogs/'+uid+'_'+Date.now()+'_'+tag+'_native',data:payload,merge:false});
-  }catch(e){ console.warn('_dlog native fail:',tag,e); }
-  try{
-    const {getFirestore,doc,setDoc}=await import('./assets/firebase/firebase-firestore.js');
-    const db=getFirestore(_fbApp);
-    await setDoc(doc(db,'debugLogs/'+uid+'_'+Date.now()+'_'+tag+'_jssdk'),payload);
-  }catch(e){ console.warn('_dlog jssdk fail:',tag,e); }
+  try{ await _fsSetDoc('debugLogs/'+uid+'_'+Date.now()+'_'+tag,payload,false); }
+  catch(e){ console.warn('_dlog fail:',tag,e); }
 }
 // MİSAFİR OTURUMU — KALICI KİMLİK (2026-07-19): @aparajita/capacitor-secure-storage
 // (iOS Keychain / Android Keystore) — uygulama silinip yeniden yüklense bile
@@ -3048,7 +3041,7 @@ window._authSignInGuest=async function(){
   try{
     // DÜZELTME (2026-07-20, "misafir girişte hesap yüklenemedi hatası" raporu —
     // Android): Firestore işlemleri Android'de HER ZAMAN JS SDK üzerinden gidiyor
-    // (bkz. _fsNative() — native Firestore eklentisi SADECE iOS'ta kullanılıyor).
+    // (bkz. _fsRestActive() — iOS Firestore REST üzerinden, Android/web JS SDK üzerinden gidiyor).
     // Önceki kod, Android'de de SADECE native FA.signInAnonymously() çağırıyordu —
     // bu native Firebase Auth oturumunu açıyordu ama JS SDK'nın KENDİ auth durumu
     // (_fbAuth.currentUser) hiç dolmuyordu. Sonuç: JS SDK Firestore istekleri
@@ -5594,15 +5587,9 @@ async function initFirebaseAuth(){
     }catch(e){console.warn('Analytics init:',e);}
     onAuthStateChanged(_fbAuth, user=>{
       if(user){
-        // DÜZELTME (2026-07-21): iOS'ta ARTIK TÜM gerçek (Google+Apple) girişler JS
-        // SDK'ya köprüleniyor (bkz. _authSignIn notu — eskiden sadece Apple'a özeldi,
-        // "Apple'da neden farklı davranıyor" karmaşasına yol açan asimetriydi). Bu
-        // listener JS SDK'nın KENDİ kalıcılık katmanından tetiklenir — uygulama
-        // kapatılıp açıldığında burada otomatik tetiklenmesi beklenir. iOS'ta buraya
-        // gelen HER kullanıcı (misafir hariç, misafir JS SDK'ya hiç köprülenmiyor)
-        // zaten köprülenmiş demektir, bu yüzden provider ayrımı yapmadan bayrağı set
-        // ediyoruz.
-        if(_isIOS && !user.isAnonymous) _forceJsFirestoreForIOS=true;
+        // Bu listener sadece JS SDK'nın KENDİ kalıcılık katmanından (Android/web)
+        // tetiklenir — iOS Firestore artık REST katmanı üzerinden gidiyor (bkz.
+        // 2026-07-24 notu), bu yüzden burada özel bir bayrak set etmeye gerek yok.
         _onFirebaseUser(user);
       }
       if(_authReadyResolve){_authReadyResolve();_authReadyResolve=null;} // ilk callback = "auth durumu belli"
@@ -5692,63 +5679,125 @@ async function initFirebaseAuth(){
   }
 }
 
-// ── FIRESTORE SOYUTLAMA KATMANI (2026-07-11, 2026-07-21'de BASİTLEŞTİRİLDİ) ──
-// iOS'ta Firebase JS SDK'nın WKWebView üzerinden yaptığı ağ istekleri güvenilir
-// çalışmıyor, bu yüzden native girişler (native URLSession) kullanılıyor. AMA
-// native @capacitor-firebase/firestore eklentisi Apple oturumlarında yazmayı
-// hiç iletmiyordu (2026-07-18 bulgusu) — bunun için Apple'a ÖZEL bir JS SDK
-// köprüsü eklenmişti. Bu asimetri (Apple farklı, Google/Misafir farklı davranıyor)
-// tekrar tekrar kafa karışıklığına yol açtı (en son: Android'de misafir "hesap
-// yüklenemedi" hatası da benzer bir platform/provider karışıklığıydı). DÜZELTME
-// (2026-07-21): iOS'ta artık TÜM GERÇEK hesap girişleri (Google + Apple, ikisi de
-// _authSignIn'de JS SDK'ya köprüleniyor) native Firestore yerine JS SDK'yı
-// kullanıyor — Android/web ile tutarlı, tek bir davranış. Misafir (anonim) BUNUN
-// DIŞINDA: anonim girişin bridge edilecek bir credential'ı YOK (OAuth token'ı
-// olmayan tek sağlayıcı), JS SDK'nın kendi signInAnonymously()'sini çağırmak da
-// iOS'un WKWebView ağ sorununa maruz kalır — bu yüzden misafir iOS'ta native
-// Firestore kullanmaya devam ediyor (bu yolda hiç bozukluk kanıtlanmadı, sorun
-// sadece Apple OAuth oturumlarına özeldi).
-let _forceJsFirestoreForIOS=false;
-function _fsNative(){
-  return (_isIOS && window.Capacitor?.isNativePlatform?.() && !_forceJsFirestoreForIOS) ? (window.Capacitor?.Plugins?.FirebaseFirestore||null) : null;
+// ── FIRESTORE SOYUTLAMA KATMANI (2026-07-11, 2026-07-24'te KÖKTEN DEĞİŞTİ) ──
+// KESİN KÖK NEDEN (2026-07-24, canlı debugLogs kanıtıyla doğrulandı): iOS'ta İKİ
+// AYRI Firestore erişim yolu da güvenilmezdi:
+//  1) JS SDK (signInWithCredential, getDoc, setDoc vb.) WKWebView'de GERÇEK ağ
+//     isteklerini SONSUZA KADAR askıda bırakıyor — asla dönmüyor.
+//  2) Native @capacitor-firebase/firestore eklentisi OKUMALARDA sorunsuzdu ama
+//     YAZMALARI HER ZAMAN "Missing or insufficient permissions" ile reddediyordu
+//     — hem Apple hem Google hesaplarında (sadece Apple'a özel değilmiş). Okuma
+//     kuralı sadece "giriş yapılmış mı" kontrol ederken, yazma kuralı ayrıca
+//     "request.auth.uid == uid" eşleşmesi istiyor — bu, eklentinin native
+//     Firestore SDK'sının GÜNCEL oturumun kimliğini yazma isteklerine doğru
+//     yansıtmadığına (bayat/yanlış eşleşen auth durumu) işaret ediyor.
+// ÇÖZÜM: Bu WKWebView'de BASİT fetch()/GET istekleri sorunsuz çalıştığı zaten
+// biliniyordu (yukarıdaki eski notlarda da belgelenmişti) — o yüzden Firestore'a
+// ne native eklenti ne JS SDK üzerinden değil, DOĞRUDAN REST API'sine (fetch +
+// native Firebase Auth'tan alınan taze ID token) gidiliyor. Bu hem native
+// eklentinin bayat-auth sorununu hem JS SDK'nın askıda kalma sorununu aynı anda
+// atlatıyor. Android/web JS SDK ile devam ediyor (o platformlarda hiç sorun
+// kanıtlanmadı).
+function _fsRestActive(){ return _isIOS && !!window.Capacitor?.isNativePlatform?.(); }
+const _FS_DOCS_ROOT='https://firestore.googleapis.com/v1/projects/'+FB_CONFIG.projectId+'/databases/(default)/documents';
+async function _fsRestToken(){
+  const FA=window.Capacitor?.Plugins?.FirebaseAuthentication;
+  if(!FA) throw new Error('Auth plugin yok (REST token)');
+  const r=await FA.getIdToken();
+  if(!r?.token) throw new Error('ID token alınamadı');
+  return r.token;
+}
+function _fsEncodeValue(v){
+  if(v===null||v===undefined) return {nullValue:null};
+  if(typeof v==='string') return {stringValue:v};
+  if(typeof v==='boolean') return {booleanValue:v};
+  if(typeof v==='number') return Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v};
+  if(Array.isArray(v)) return {arrayValue:{values:v.map(_fsEncodeValue)}};
+  if(typeof v==='object') return {mapValue:{fields:_fsEncodeFields(v)}};
+  return {stringValue:String(v)};
+}
+function _fsEncodeFields(obj){
+  const out={};
+  for(const k in obj){ if(obj[k]!==undefined) out[k]=_fsEncodeValue(obj[k]); }
+  return out;
+}
+function _fsDecodeValue(v){
+  if(!v) return null;
+  if('stringValue' in v) return v.stringValue;
+  if('integerValue' in v) return parseInt(v.integerValue,10);
+  if('doubleValue' in v) return v.doubleValue;
+  if('booleanValue' in v) return v.booleanValue;
+  if('nullValue' in v) return null;
+  if('arrayValue' in v) return (v.arrayValue.values||[]).map(_fsDecodeValue);
+  if('mapValue' in v) return _fsDecodeFields(v.mapValue.fields||{});
+  if('timestampValue' in v) return v.timestampValue;
+  return null;
+}
+function _fsDecodeFields(fields){
+  const out={};
+  for(const k in fields||{}) out[k]=_fsDecodeValue(fields[k]);
+  return out;
+}
+async function _fsRestGetDoc(path){
+  const token=await _fsRestToken();
+  const res=await fetch(_FS_DOCS_ROOT+'/'+path,{headers:{Authorization:'Bearer '+token}});
+  if(res.status===404) return null;
+  if(!res.ok) throw new Error('Firestore REST GET '+res.status+': '+(await res.text()).slice(0,200));
+  const j=await res.json();
+  return _fsDecodeFields(j.fields);
+}
+async function _fsRestSetDoc(path,data,merge){
+  const token=await _fsRestToken();
+  let url=_FS_DOCS_ROOT+'/'+path;
+  if(merge) url+='?'+Object.keys(data).map(k=>'updateMask.fieldPaths='+encodeURIComponent(k)).join('&');
+  const res=await fetch(url,{method:'PATCH',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({fields:_fsEncodeFields(data)})});
+  if(!res.ok) throw new Error('Firestore REST PATCH '+res.status+': '+(await res.text()).slice(0,200));
+}
+function _fsRestFilter(f){
+  const opMap={'==':'EQUAL','<':'LESS_THAN','<=':'LESS_THAN_OR_EQUAL','>':'GREATER_THAN','>=':'GREATER_THAN_OR_EQUAL','in':'IN','array-contains':'ARRAY_CONTAINS'};
+  return {fieldFilter:{field:{fieldPath:f.fieldPath},op:opMap[f.opStr]||'EQUAL',value:_fsEncodeValue(f.value)}};
+}
+async function _fsRestQueryCollection(path,constraints){
+  const token=await _fsRestToken();
+  const parts=path.split('/');
+  const collectionId=parts[parts.length-1];
+  const parentPath=parts.slice(0,-1).join('/');
+  const structuredQuery={from:[{collectionId}]};
+  const filters=(constraints||[]).filter(c=>c.type==='where');
+  if(filters.length===1) structuredQuery.where=_fsRestFilter(filters[0]);
+  else if(filters.length>1) structuredQuery.where={compositeFilter:{op:'AND',filters:filters.map(_fsRestFilter)}};
+  const ob=(constraints||[]).find(c=>c.type==='orderBy');
+  if(ob) structuredQuery.orderBy=[{field:{fieldPath:ob.fieldPath},direction:(ob.directionStr||'asc').toUpperCase()==='DESC'?'DESCENDING':'ASCENDING'}];
+  const lim=(constraints||[]).find(c=>c.type==='limit');
+  if(lim) structuredQuery.limit=lim.limit;
+  const url=_FS_DOCS_ROOT+(parentPath?'/'+parentPath:'')+':runQuery';
+  const res=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({structuredQuery})});
+  if(!res.ok) throw new Error('Firestore REST runQuery '+res.status+': '+(await res.text()).slice(0,200));
+  const j=await res.json();
+  return (j||[]).filter(r=>r.document).map(r=>({id:r.document.name.split('/').pop(),..._fsDecodeFields(r.document.fields)}));
 }
 async function _fsGetDoc(path){
-  const N=_fsNative();
-  if(N){
-    const r=await N.getDocument({reference:path});
-    return r?.snapshot?.data ?? null;
-  }
+  if(_fsRestActive()) return _fsRestGetDoc(path);
   const {getFirestore,doc,getDoc}=await import('./assets/firebase/firebase-firestore.js');
   const db=getFirestore(_fbApp);
   const snap=await getDoc(doc(db,path));
   return snap.exists()?snap.data():null;
 }
 async function _fsSetDoc(path,data,merge){
-  const N=_fsNative();
-  if(N){ await N.setDocument({reference:path,data,merge:!!merge}); return; }
+  if(_fsRestActive()) return _fsRestSetDoc(path,data,merge);
   const {getFirestore,doc,setDoc}=await import('./assets/firebase/firebase-firestore.js');
   const db=getFirestore(_fbApp);
   await setDoc(doc(db,path),data,merge?{merge:true}:undefined);
 }
 async function _fsUpdateDoc(path,data){
-  const N=_fsNative();
-  if(N){ await N.updateDocument({reference:path,data}); return; }
+  if(_fsRestActive()) return _fsRestSetDoc(path,data,true);
   const {getFirestore,doc,updateDoc}=await import('./assets/firebase/firebase-firestore.js');
   const db=getFirestore(_fbApp);
   await updateDoc(doc(db,path),data);
 }
 // constraints: [{type:'where',fieldPath,opStr,value}, {type:'orderBy',fieldPath,directionStr}, {type:'limit',limit}]
 async function _fsQueryCollection(path,constraints){
-  const N=_fsNative();
-  if(N){
-    const filters=(constraints||[]).filter(c=>c.type==='where');
-    const nonFilters=(constraints||[]).filter(c=>c.type!=='where');
-    const opts={reference:path};
-    if(filters.length) opts.compositeFilter={type:'and',queryConstraints:filters};
-    if(nonFilters.length) opts.queryConstraints=nonFilters;
-    const r=await N.getCollection(opts);
-    return (r?.snapshots||[]).map(s=>({id:s.id,...s.data}));
-  }
+  if(_fsRestActive()) return _fsRestQueryCollection(path,constraints);
   const {getFirestore,collection,getDocs,query,orderBy,limit,where}=await import('./assets/firebase/firebase-firestore.js');
   const db=getFirestore(_fbApp);
   const qc=(constraints||[]).map(c=>{
@@ -5961,7 +6010,7 @@ function _onFirebaseUser(user){
   // gereksiz (bir sonraki soğuk açılışta yanlışlıkla misafir oturumu restore edilmesin).
   if(!user.isAnonymous) _guestUidClear();
   if(_fbUserHandlingUid===user.uid){ _dlog(user.uid,'onFbUser_locked_skip',{}); return; } // bu hesap için zaten bir akış sürüyor
-  _dlog(user.uid,'onFbUser_start',{isAnonymous:!!user.isAnonymous,forceJsIOS:!!_forceJsFirestoreForIOS});
+  _dlog(user.uid,'onFbUser_start',{isAnonymous:!!user.isAnonymous});
   _fbUserHandlingUid=user.uid;
   _lastRealUser=user; // "Tekrar Dene" butonu bunu kullanır
   // GÜVENİLİR YAZMA KUYRUĞU (2026-07-18): daha önce başarısız/asılı kalmış
@@ -6131,26 +6180,12 @@ window._authSignIn = async function(provider){
       const _uidForLog=result?.user?.uid||'apple_pending';
       _dlog(_uidForLog,'native_signin_ok',{provider,hasIdToken:!!result?.credential?.idToken});
       // ARTIK Apple ve Google BİREBİR AYNI YOL — native birincil, sonuç doğrudan
-      // kullanılabilir. JS SDK köprüsü Firestore tutarlılığı için best-effort
-      // denenir ama BAŞARISIZ OLSA BİLE giriş devam eder (native Firestore'a düşülür).
+      // kullanılabilir. JS SDK KÖPRÜSÜ TAMAMEN KALDIRILDI (2026-07-24): Firestore
+      // artık REST katmanı üzerinden gidiyor (native Auth ID token ile), JS SDK'ya
+      // hiç ihtiyaç yok — hem "sonsuza kadar askıda kalma" riskini hem her girişte
+      // boşa harcanan 8 saniyeyi ortadan kaldırıyor.
       if(result?.user){
         result.user.isAnonymous=false;
-        if(result?.credential?.idToken){
-          try{
-            const {GoogleAuthProvider,OAuthProvider,signInWithCredential}=await import('./assets/firebase/firebase-auth.js');
-            const cred=isApple
-              ? new OAuthProvider('apple.com').credential({idToken:result.credential.idToken,rawNonce:result.credential.nonce})
-              : GoogleAuthProvider.credential(result.credential.idToken,result.credential.accessToken);
-            const _bridgeTo=new Promise((_,rej)=>setTimeout(()=>rej(new Error(provider+' JS SDK köprü zaman aşımı')),8000));
-            const _uc=await Promise.race([signInWithCredential(_fbAuth,cred),_bridgeTo]);
-            _forceJsFirestoreForIOS=true;
-            _dlog(result.user.uid,'bridge_ok',{jsSdkUid:_uc?.user?.uid,sameUid:_uc?.user?.uid===result.user.uid});
-          }catch(e){
-            _dlog(result.user.uid,'bridge_fail',{msg:String(e?.message||e),code:e?.code||''});
-            console.error('❌ '+provider.toUpperCase()+' JS SDK KÖPRÜ HATASI (native Firestore\'a düşülüyor):',e);
-            _reportError(e instanceof Error?e:new Error(provider+' JS SDK köprü hatası: '+(e?.message||e)),false);
-          }
-        }
         _onFirebaseUser(result.user);
       } else {
         alert('Giriş tamamlanamadı — kullanıcı bilgisi alınamadı.');
@@ -6815,7 +6850,7 @@ let _cloudSyncPromise=null;
 // sıralamasında görünsün — bu kısıtlama tamamen kaldırıldı, herkes uygun sayılır.
 function _isRankEligible(){ return true; }
 async function _firestoreSync(uid,_isRetry){
-  _dlog(uid,'sync_start',{isRetry:!!_isRetry,forceJsIOS:!!_forceJsFirestoreForIOS,fsNativeActive:!!_fsNative()});
+  _dlog(uid,'sync_start',{isRetry:!!_isRetry,fsRestActive:!!_fsRestActive()});
   try{
     const ref='users/'+uid;
     const d=await _fsGetDoc(ref);
@@ -6992,7 +7027,7 @@ async function _fsSetDocReliable(path,data,merge){
     // _firestoreSync bu yüzden yazma gerçekte başarısız olsa bile hep "başarılı"
     // sanıyordu. Gerçek hatayı burada logluyoruz (path'ten uid çıkarılıyor).
     const _uidFromPath=(path.match(/^users\/(.+)$/)||[])[1]||null;
-    _dlog(_uidFromPath,'reliable_write_fail',{path,msg:String(e?.message||e),code:e?.code||'',fsNativeActive:!!_fsNative()});
+    _dlog(_uidFromPath,'reliable_write_fail',{path,msg:String(e?.message||e),code:e?.code||'',fsRestActive:!!_fsRestActive()});
     console.error('❌ GÜVENİLİR YAZMA BAŞARISIZ (kuyruğa alındı):',path,e);
     const q=_getWriteQueue();
     q.push({path,data,merge:!!merge,ts:Date.now()});
