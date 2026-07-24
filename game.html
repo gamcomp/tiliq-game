@@ -2490,7 +2490,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.24-2';
+const BUILD_VER='v2026.07.24-3';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3063,7 +3063,10 @@ window._authSignInGuest=async function(){
     if(_isNative && _isIOS){
       const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication);
       if(!FA){alert('Auth plugin yüklü değil');return;}
-      const result=await FA.signInAnonymously();
+      // signInAnonymously, skipNativeAuth:true ile birlikte kullanılamıyor (plugin
+      // kısıtlaması, "cannot be used in combination with skipNativeAuth" hatası) —
+      // config varsayılanı ne olursa olsun burada açıkça false veriyoruz.
+      const result=await FA.signInAnonymously({skipNativeAuth:false});
       if(result?.user){
         console.log('👤 Native (iOS) anonim oturum açıldı, uid='+result.user.uid);
         await _guestUidSave(result.user.uid);
