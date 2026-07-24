@@ -2490,7 +2490,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.24-5';
+const BUILD_VER='v2026.07.24-6';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5738,19 +5738,43 @@ function _fsDecodeFields(fields){
   for(const k in fields||{}) out[k]=_fsDecodeValue(fields[k]);
   return out;
 }
+// GEÇİCİ HIZ SINIRI/TOKEN TOLERANSI (2026-07-24, "hesap yüklenemedi ama biraz
+// sonra tekrar dene diyince açılıyor" raporu): 429/503/401/403 kısa süreli
+// sorunları için fetch'i küçük gecikmelerle 3 kez dener — 401/403'te TAZE bir
+// token alıp öyle dener (bayat/henüz-hazır-olmayan token ihtimaline karşı).
+// Kullanıcı elle "Tekrar Dene"ye basmadan çoğu geçici durum burada çözülsün.
+async function _fsRestFetch(buildOpts){
+  const delays=[400,1200,3000];
+  let lastErr;
+  for(let i=0;i<=delays.length;i++){
+    try{
+      const token=await _fsRestToken();
+      const {url,opts}=buildOpts(token);
+      const res=await fetch(url,opts);
+      if((res.status===429||res.status===503||res.status===401||res.status===403)&&i<delays.length){
+        await new Promise(r=>setTimeout(r,delays[i]));
+        continue;
+      }
+      return res;
+    }catch(e){
+      lastErr=e;
+      if(i<delays.length){ await new Promise(r=>setTimeout(r,delays[i])); continue; }
+      throw e;
+    }
+  }
+  throw lastErr||new Error('Firestore REST fetch başarısız');
+}
 async function _fsRestGetDoc(path){
-  const token=await _fsRestToken();
-  const res=await fetch(_FS_DOCS_ROOT+'/'+path,{headers:{Authorization:'Bearer '+token}});
+  const res=await _fsRestFetch(token=>({url:_FS_DOCS_ROOT+'/'+path,opts:{headers:{Authorization:'Bearer '+token}}}));
   if(res.status===404) return null;
   if(!res.ok) throw new Error('Firestore REST GET '+res.status+': '+(await res.text()).slice(0,200));
   const j=await res.json();
   return _fsDecodeFields(j.fields);
 }
 async function _fsRestSetDoc(path,data,merge){
-  const token=await _fsRestToken();
   let url=_FS_DOCS_ROOT+'/'+path;
   if(merge) url+='?'+Object.keys(data).map(k=>'updateMask.fieldPaths='+encodeURIComponent(k)).join('&');
-  const res=await fetch(url,{method:'PATCH',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({fields:_fsEncodeFields(data)})});
+  const res=await _fsRestFetch(token=>({url,opts:{method:'PATCH',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({fields:_fsEncodeFields(data)})}}));
   if(!res.ok) throw new Error('Firestore REST PATCH '+res.status+': '+(await res.text()).slice(0,200));
 }
 function _fsRestFilter(f){
@@ -5758,7 +5782,6 @@ function _fsRestFilter(f){
   return {fieldFilter:{field:{fieldPath:f.fieldPath},op:opMap[f.opStr]||'EQUAL',value:_fsEncodeValue(f.value)}};
 }
 async function _fsRestQueryCollection(path,constraints){
-  const token=await _fsRestToken();
   const parts=path.split('/');
   const collectionId=parts[parts.length-1];
   const parentPath=parts.slice(0,-1).join('/');
@@ -5771,7 +5794,7 @@ async function _fsRestQueryCollection(path,constraints){
   const lim=(constraints||[]).find(c=>c.type==='limit');
   if(lim) structuredQuery.limit=lim.limit;
   const url=_FS_DOCS_ROOT+(parentPath?'/'+parentPath:'')+':runQuery';
-  const res=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({structuredQuery})});
+  const res=await _fsRestFetch(token=>({url,opts:{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({structuredQuery})}}));
   if(!res.ok) throw new Error('Firestore REST runQuery '+res.status+': '+(await res.text()).slice(0,200));
   const j=await res.json();
   return (j||[]).filter(r=>r.document).map(r=>({id:r.document.name.split('/').pop(),..._fsDecodeFields(r.document.fields)}));
