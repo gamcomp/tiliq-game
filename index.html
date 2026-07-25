@@ -2490,7 +2490,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.25-2';
+const BUILD_VER='v2026.07.25-3';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3296,7 +3296,12 @@ let _invBombsInPlay=0;   // mevcut bombCount içinde envanterden gelen (bonus) b
 // 700->950: bomba kazanmak daha da zorlaştı (kullanıcı isteği, 2026-07-04).
 // Stok: satın alma YOKSA en fazla 2 bomba taşınabilir (BOMB_MAX_FREE). Mağazadan
 // bomba alındıysa (envanter) bu sınırın üstüne çıkılabilir, üst sınır BOMB_MAX_TOTAL.
-const BOMB_THRESHOLD=950,BOMB_MAX_FREE=2,BOMB_MAX_TOTAL=9;
+// PUAN 2. TUR ARTIRIMI (2026-07-25, kullanıcı isteği: "puan artışını çoğalt,
+// bomba kazanımı için gerekli skoru da aynı oranda artır") — base skor formülü
+// tekrar 2 katına çıkarıldı (aşağıda), bomba/renk patlat XP eşikleri de AYNI
+// oranda (×2) büyütüldü ki kazanma HIZI (oyun süresine göre) değişmesin —
+// sadece görünen sayılar büyüsün, dengesi bozulmasın.
+const BOMB_THRESHOLD=1900,BOMB_MAX_FREE=2,BOMB_MAX_TOTAL=9;
 let _bombHoldTimer=null,_bombHoldInterval=null;
 
 function updateBombBar(){
@@ -3494,7 +3499,7 @@ function _bombChainCheck(row,col,type){
 // alma aşamasında değil, KULLANIM aşamasında gerekiyor (bombayla birebir aynı
 // desen) — kullanıcı isteği, 2026-07-08.
 let colorBlastXP=0;
-const COLOR_BLAST_THRESHOLD=2400;
+const COLOR_BLAST_THRESHOLD=4800; // bkz. BOMB_THRESHOLD'daki 2026-07-25 notu — aynı ×2 oranı
 function addColorBlastXP(gain){
   if(dead)return;
   if(getColorBlast()>=COLOR_BLAST_MAX)return;
@@ -3906,10 +3911,12 @@ function place(pi,row,col){
       if(grid.every(row=>row.every(v=>!v))) perfectClear();
     },260);
 
-    // PUAN ARTIRIMI (2026-07-21, kullanıcı isteği: "puanlandırma oyuncuyu tatmin
-    // edecek şekilde yüksek olsun") — temel puan tam 2 katına çıkarıldı (tot*10→
-    // tot*20, çoklu-satır bonusu 5→10), kombo çarpanı (min(cm,5)) aynı kaldı.
-    const base=tot*20+(tot>1?(tot-1)*10:0),gain=Math.round(base*Math.min(cm,5));
+    // PUAN ARTIRIMI — 2. TUR (2026-07-25, kullanıcı isteği: "puan artışını çoğalt,
+    // skor çok daha hızlı artsın") — 2026-07-21'de tot*10→tot*20 yapılmıştı, şimdi
+    // tekrar 2 katına çıkarıldı (tot*20→tot*40, bonus 10→20). Kombo çarpanı
+    // (min(cm,5)) aynı kaldı — bomba/renk patlat eşikleri de aynı oranda büyütüldü
+    // (BOMB_THRESHOLD/COLOR_BLAST_THRESHOLD) ki kazanma hızı değişmesin.
+    const base=tot*40+(tot>1?(tot-1)*20:0),gain=Math.round(base*Math.min(cm,5));
     score+=gain;acct.total+=gain;
     addBombXP(gain);
     addColorBlastXP(gain); // Renk Patlat SADECE kombodan gelen bu puanla dolar
