@@ -2490,7 +2490,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.24-6';
+const BUILD_VER='v2026.07.25-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5298,7 +5298,14 @@ const DRAG_LIFT=1.5; // parçanın ALT KENARI parmağın kaç CELL üzerinde dur
 function _inGrid(x,y){const gx=GOX(),gy=GOY;return x>=gx&&x<gx+CELL*GRID&&y>=gy&&y<gy+CELL*GRID;}
 
 function _updateHov(x,y){
-  if(drag&&drag.moved&&selPiece!==null){
+  // DÜZELTME (2026-07-25, "Renk Patlat alakasız hücreleri siliyor" raporu):
+  // parça-lift matematiği SADECE gerçek bir parça sürüklerken uygulanmalı.
+  // bombMode/colorBlastMode aktifken (tepsiden bir parçaya hafifçe dokunup ufak
+  // bir sürükleme DRAG_PX eşiğini aşarsa selPiece dolup drag.moved true oluyordu)
+  // bu dal yanlışlıkla devreye girip parmağın olduğu yerle HİÇ alakası olmayan bir
+  // hücreyi hedef gösteriyordu — bomba/renk patlat her zaman DOĞRUDAN nokta→hücre
+  // eşlemesi kullanmalı, parça sınırlarına göre değil.
+  if(!bombMode&&!colorBlastMode&&drag&&drag.moved&&selPiece!==null){
     const b=bounds(pieces[selPiece].shape.cells);
     const vy=y-CELL*DRAG_LIFT-b.rows*CELL/2; // parça MERKEZİ (alt-kenar çapalı lift)
     if(_inGrid(x,vy)){
