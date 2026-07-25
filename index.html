@@ -2490,7 +2490,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.25-3';
+const BUILD_VER='v2026.07.26-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -6092,7 +6092,6 @@ function _onFirebaseUser(user){
   if(typeof renderDailyCard==='function') renderDailyCard();
   if(typeof updateStreakDisplay==='function') updateStreakDisplay();
   if(typeof _refreshAllNameDisplays==='function') _refreshAllNameDisplays();
-  _rcLogIn(user.uid);   // RevenueCat'i bu hesaba bağla (entitlement taşınsın)
   _getCrashlytics()?.setUserId({userId:user.uid}).catch(()=>{}); // crash raporlarında "kimdi" bilgisi
   // MİSAFİR/GERÇEK HESAP AYRIMI (2026-07-19): eskiden burada sadece auth-signout-area
   // gösterilirdi (misafir/gerçek ayrımı yoktu) — artık initAuthUI() tek kaynak, misafirse
@@ -6410,48 +6409,15 @@ window._authSignOut = async function(){
       if(FA) await FA.signOut();
     }catch(e){}
   }
-  try{ const RC=_getRC(); if(RC&&_rcReady) await RC.logOut(); }catch(e){}
 };
 
-// ── REVENUECAT IAP ───────────────────────────────────────────────────────────
-const RC_API_KEY='goog_VKytUieATEEzpTPAetzPtCYwkCa';
-const RC_ENTITLEMENT_VIP='vip';
-const RC_ENTITLEMENT_NO_ADS='no_ads';
-let _rcReady=false;
-
-function _getRC(){return window.Capacitor?.Plugins?.PurchasesPlugin||null;}
-
-async function initRevenueCat(){
-  const RC=_getRC();
-  if(!RC)return;
-  try{
-    await RC.configure({apiKey:RC_API_KEY});
-    _rcReady=true;
-    await _syncEntitlements();
-  }catch(e){console.warn('RC init:',e);}
-}
-
-// RevenueCat kullanıcısını Firebase UID'sine bağla — entitlement hesaba bağlansın
-async function _rcLogIn(uid){
-  const RC=_getRC();
-  if(!RC||!uid)return;
-  try{
-    if(!_rcReady){ await RC.configure({apiKey:RC_API_KEY}); _rcReady=true; }
-    await RC.logIn({appUserID:uid});
-    await _syncEntitlements();
-  }catch(e){console.warn('RC login:',e);}
-}
-
-async function _syncEntitlements(){
-  const RC=_getRC();
-  if(!RC||!_rcReady)return;
-  try{
-    const info=await RC.getCustomerInfo();
-    const active=info.customerInfo?.entitlements?.active||{};
-    if(active[RC_ENTITLEMENT_VIP]){_applyVip();}
-    if(active[RC_ENTITLEMENT_NO_ADS]){_applyNoAds();}
-  }catch(e){console.warn('RC sync:',e);}
-}
+// RevenueCat TAMAMEN KALDIRILDI (2026-07-25, kullanıcı isteği): gerçek satın alma
+// akışı (purchasePackage/getOfferings) zaten hiç yoktu, sadece entitlement-sync
+// kalıntısı vardı — o da isVip()/isNoAds() zaten kalıcı false döndüğü için (bkz.
+// aşağı) tamamen ölü koddu. Google Play'in Billing Library v8 zorunluluğu
+// (1 Kasım 2026) nedeniyle kullanılmayan bir SDK'yı büyük sürüm riskiyle
+// güncellemek yerine söküldü — native plugin (npm paketi, Podfile/build.gradle
+// satırları) de ayrıca kaldırıldı.
 
 // VIP / Reklamsız SİSTEMDEN TAMAMEN KALDIRILDI (2026-07-15, kullanıcı isteği —
 // hem Android hem iOS). Mağazada zaten bu ürünleri satan bir buton yoktu, ama
@@ -7848,9 +7814,8 @@ function skipTutorial(){
   sl.style.setProperty('--pct',Math.round(sndVol*100)+'%');
   // Loop bir kez başlat
   requestAnimationFrame(loop);
-  // AdMob + RevenueCat + Firebase Auth başlat
+  // AdMob + Firebase Auth başlat
   initAdMob();
-  initRevenueCat();
   initFirebaseAuth();
   // Yükleme ekranından başla
   initSplash();
