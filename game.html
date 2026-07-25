@@ -2490,7 +2490,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.25-1';
+const BUILD_VER='v2026.07.25-2';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2740,8 +2740,16 @@ function drawMenuArt(now){
   }
   mctx.restore();
 }
+let _menuArtLastDrawAt=0;
 function _menuArtLoop(now){
-  drawMenuArt(now);
+  // DÜZELTME (2026-07-25, "iOS'ta cihaz ısınıyor" raporu, ikinci tur): ana oyun
+  // döngüsüne (loop()) 2026-07-16'da eklenen 60fps çizim tavanı bu ayrı menü
+  // animasyon döngüsüne HİÇ uygulanmamıştı — ProMotion ekranlarda (120Hz) menüde
+  // geçirilen her saniye bu şerit iki katı sıklıkta çiziliyordu. Aynı tavan burada da.
+  if(now-_menuArtLastDrawAt>=_FRAME_MIN_MS){
+    _menuArtLastDrawAt=now;
+    drawMenuArt(now);
+  }
   _menuArtRaf=requestAnimationFrame(_menuArtLoop);
 }
 function startMenuArtAnim(){
@@ -6535,10 +6543,16 @@ function openFlamePreview(id){
   if(_fpBigRaf)cancelAnimationFrame(_fpBigRaf);
   _fpBigT0=performance.now();
   const cv=document.getElementById('flame-prev-big');
+  // DÜZELTME (2026-07-25, "iOS ısınıyor" ikinci tur): burada da 60fps tavanı yok — büyük
+  // alev önizleme modalı açıkken ProMotion ekranlarda 120Hz'e kadar sınırsız WebGL render.
+  let _fpBigLastDrawAt=0;
   (function frame(now){
-    const t=(now-_fpBigT0)/1000;
-    if(_fpGL) _renderFlameThemeToCanvas(cv,f,t);
-    else _drawFlameFallback(cv,f);
+    if(now-_fpBigLastDrawAt>=_FRAME_MIN_MS){
+      _fpBigLastDrawAt=now;
+      const t=(now-_fpBigT0)/1000;
+      if(_fpGL) _renderFlameThemeToCanvas(cv,f,t);
+      else _drawFlameFallback(cv,f);
+    }
     _fpBigRaf=requestAnimationFrame(frame);
   })(performance.now());
 }
@@ -6596,7 +6610,13 @@ function _startFlamePreviews(){
   if(!canvases.length)return;
   const items=canvases.map(c=>({c,f:FLAME_THEMES.find(x=>x.id===c.dataset.flame)}));
   _fpT0=performance.now();
+  // DÜZELTME (2026-07-25, "iOS ısınıyor" ikinci tur): burada HER KART için ayrı bir
+  // WebGL render yapılıyor (items.forEach) — 60fps tavanı olmadan ProMotion ekranlarda
+  // bu, kart sayısı × 2 kat GPU yükü demekti (mağazanın Alev Temaları sekmesi açıkken).
+  let _fpListLastDrawAt=0;
   function frame(now){
+    if(now-_fpListLastDrawAt<_FRAME_MIN_MS){ _flamePrevRaf=requestAnimationFrame(frame); return; }
+    _fpListLastDrawAt=now;
     const t=(now-_fpT0)/1000;
     if(_fpGL){ items.forEach(o=>{if(o.f)_renderFlameThemeToCanvas(o.c,o.f,t);}); }
     else { items.forEach(o=>{if(o.f)_drawFlameFallback(o.c,o.f);}); _flamePrevRaf=null; return; } // GL yok: statik yedek, animasyon döngüsü gerekmiyor
