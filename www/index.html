@@ -2504,7 +2504,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.26-5';
+const BUILD_VER='v2026.07.26-6';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5234,8 +5234,8 @@ function drawDrag(){
   // koordinatla, sadece çizim daha akıcı/titremesiz olsun diye) — kullanıcı isteği, 2026-07-04
   if(drag.rx==null){drag.rx=drag.x;drag.ry=drag.y;}
   drag.rx+=(drag.x-drag.rx)*.45;drag.ry+=(drag.y-drag.ry)*.45;
-  // oy: parçanın ÜST kenarı — alt kenar (oy+rows*CELL) parmağın CELL*DRAG_LIFT üzerinde
-  const ox=drag.rx-b.cols*CELL/2,oy=drag.ry-CELL*DRAG_LIFT-b.rows*CELL;
+  // oy: parçanın ÜST kenarı — alt kenar (oy+rows*CELL) parmağın _liftCell()*DRAG_LIFT üzerinde
+  const ox=drag.rx-b.cols*CELL/2,oy=drag.ry-_liftCell()*DRAG_LIFT-b.rows*CELL;
   // Havada taşınma gölgesi — parça board'un üzerinde süzülüyor hissi
   ctx.save();ctx.globalAlpha=.30;ctx.fillStyle='rgba(0,0,0,.55)';
   for(const[r,c]of p.shape.cells){
@@ -5323,6 +5323,18 @@ const DRAG_PX=9;
 // tekrar sapma raporu gelirse calcCell()/contentInset tarafına bakılmalı,
 // bu sabite değil.
 const DRAG_LIFT=1.5; // parçanın ALT KENARI parmağın kaç CELL üzerinde dursun (tüm platformlar ortak)
+// KÖK NEDEN BULUNDU (2026-07-26, "iOS'ta şekil Android'deki gibi yukarı gitmiyor"
+// raporu): DRAG_LIFT ikisinde de aynı ama piksel karşılığı CELL*DRAG_LIFT — ve
+// CELL, calcCell() içinde YÜKSEKLİK kısıtlı hesaplanıyor (header+booster+banner
+// yüksekliği). iOS'ta üst güvenli alan (notch/Dynamic Island) header'ı Android'den
+// daha uzun yapıyor → yükseklik kısıtı devreye giriyor → CELL küçülüyor → aynı 1.5
+// çarpanı DAHA AZ piksel kaldırıyor. Çözüm: lift'i her zaman GENİŞLİK tabanlı bir
+// referans hücre boyutuyla hesapla — bu, safe-area/header yüksekliği platformdan
+// platforma değişse bile SABİT kalır (genişlik, notch'tan etkilenmiyor).
+function _liftCell(){
+  const vw=Math.min(window.innerWidth,480);
+  return Math.min(Math.floor((vw-10)/GRID),50);
+}
 // LIFT ÇAPASI DEĞİŞTİ (2026-07-22, kullanıcı isteği "şekiller parmaktan yukarıda
 // gözüksün"): lift eskiden parçanın MERKEZİNDEN ölçülüyordu — 2+ sıra yüksek
 // parçalarda merkez 75px yukarıda olsa bile ALT SIRA parmağın hemen üstünde
@@ -5343,7 +5355,7 @@ function _updateHov(x,y){
   // eşlemesi kullanmalı, parça sınırlarına göre değil.
   if(!bombMode&&!colorBlastMode&&drag&&drag.moved&&selPiece!==null){
     const b=bounds(pieces[selPiece].shape.cells);
-    const vy=y-CELL*DRAG_LIFT-b.rows*CELL/2; // parça MERKEZİ (alt-kenar çapalı lift)
+    const vy=y-_liftCell()*DRAG_LIFT-b.rows*CELL/2; // parça MERKEZİ (alt-kenar çapalı lift)
     if(_inGrid(x,vy)){
       hov={row:Math.round((vy-GOY)/CELL-b.rows/2),col:Math.round((x-GOX())/CELL-b.cols/2)};
     } else { hov=null; }
