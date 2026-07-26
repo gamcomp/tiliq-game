@@ -2504,7 +2504,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.26-6';
+const BUILD_VER='v2026.07.26-7';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -5322,7 +5322,7 @@ const DRAG_PX=9;
 // açık isteği üzerine (2026-07-15): iki platform da AYNI sabiti kullanıyor —
 // tekrar sapma raporu gelirse calcCell()/contentInset tarafına bakılmalı,
 // bu sabite değil.
-const DRAG_LIFT=1.5; // parçanın ALT KENARI parmağın kaç CELL üzerinde dursun (tüm platformlar ortak)
+const DRAG_LIFT=2.4; // parçanın ALT KENARI parmağın kaç CELL üzerinde dursun (tüm platformlar ortak) — 2026-07-26: kullanıcı isteği üzerine 1.5'ten yükseltildi ("şekil çok daha yukarda hareket etsin")
 // KÖK NEDEN BULUNDU (2026-07-26, "iOS'ta şekil Android'deki gibi yukarı gitmiyor"
 // raporu): DRAG_LIFT ikisinde de aynı ama piksel karşılığı CELL*DRAG_LIFT — ve
 // CELL, calcCell() içinde YÜKSEKLİK kısıtlı hesaplanıyor (header+booster+banner
