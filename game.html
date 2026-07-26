@@ -2176,6 +2176,15 @@ function xpForLevel(n){
 
 function getXP(){return parseInt(localStorage.getItem('tm_xp')||'0');}
 function addXP(n){
+  // DÜZELTME (2026-07-26, "2x XP satın aldık ama aktif mi anlamıyoruz" raporu): bu
+  // özellik TAMAMEN İŞLEVSİZDİ — activateXPBoost() bir bayrak (xpBoostNext) set
+  // ediyordu ama bu bayrak kodun HİÇBİR yerinde okunmuyordu, XP asla gerçekten
+  // 2 katına çıkmıyordu (sadece bir kutlama mesajı gösteriliyordu). addXP() TÜM
+  // XP kazanımlarının (oyun içi combo/satır XP'si + oyun sonu bonus) tek geçiş
+  // noktası olduğu için çarpan burada uygulanıyor — böylece "sonraki oyunda çift
+  // XP" vaadi tüm oyun boyunca tutarlı şekilde gerçekleşiyor. localStorage'dan
+  // okunuyor (in-memory xpBoostNext değişkeni sayfa yenilenince sıfırlanıyordu).
+  if(localStorage.getItem('tm_xp_boost')==='1') n=n*2;
   const prev=getXP();
   const now=prev+n;
   localStorage.setItem('tm_xp',String(now));
@@ -2495,7 +2504,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.26-2';
+const BUILD_VER='v2026.07.26-3';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -4586,6 +4595,13 @@ function showOver(){
   clearGameState();
   acct.games++;localStorage.setItem('tm_acct',JSON.stringify(acct));
   addXP(Math.floor(score/10)+20);
+  // "Sonraki oyunda çift XP" — bu oyun bitti, bayrağı temizle (bir dahaki oyun
+  // normal XP kazansın, sonsuza kadar aktif kalmasın).
+  if(localStorage.getItem('tm_xp_boost')==='1'){
+    localStorage.removeItem('tm_xp_boost');
+    xpBoostNext=false;
+    if(typeof renderInventory==='function') renderInventory();
+  }
   document.getElementById('finalScore').textContent=score.toLocaleString();
   const bestKey='tiliq_best';
   localStorage.setItem('tiliq_last_score',String(score));
@@ -6942,9 +6958,17 @@ async function _firestoreSync(uid,_isRetry){
         tmOwned=Array.from(new Set([...tmOwned,...d.owned]));
         localStorage.setItem('tm_owned',JSON.stringify(tmOwned));
       }
-      if('invBombs' in d) setInvBombs(d.invBombs||0);
-      if('invUndos' in d) setInvUndos(d.invUndos||0);
-      if('invColorBlast' in d) setColorBlast(d.invColorBlast||0);
+      // DÜZELTME (2026-07-26, "Renk Patlat/XP boost aktif ama tahtaya dokununca hiçbir
+      // şey olmuyor" raporu): bu üç satır buluttaki değeri KÖRLEMESİNE üzerine
+      // yazıyordu (coin'lerdeki gibi bir "en yükseği al" koruması yoktu). Kullanıcı
+      // az önce şarj kazanıp/satın alıp henüz buluta yazılmadan (senkron gecikmesi)
+      // arka planda BAŞKA bir senkron tetiklenirse, o eski/düşük bulut değeri yerel
+      // TAZE değeri sıfırlıyordu — buton "aktif" görünmeye devam ediyordu (o an zaten
+      // true olmuştu) ama useColorBlast() içindeki "getColorBlast()<=0" kontrolü
+      // artık şarj kalmadığı için sessizce hiçbir şey yapmadan çıkıyordu.
+      if('invBombs' in d) setInvBombs(Math.max(getInvBombs(),d.invBombs||0));
+      if('invUndos' in d) setInvUndos(Math.max(getInvUndos(),d.invUndos||0));
+      if('invColorBlast' in d) setColorBlast(Math.max(getColorBlast(),d.invColorBlast||0));
       // Arkadaş kodları: buluttan gelenleri yerel listeye ekle (başka cihazda
       // eklenen arkadaşlar bu cihazda da görünsün — kullanıcı raporu, 2026-07-06).
       // İsim/skor burada değil, arkadaşlar sekmesi açılınca fetchFriendScores ile
