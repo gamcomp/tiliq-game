@@ -2504,7 +2504,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.26-3';
+const BUILD_VER='v2026.07.26-4';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -6721,16 +6721,22 @@ async function onPlayPressed(){
   const btn=document.querySelector('.btn-play');
   if(btn)btn.classList.add('syncing');
   try{
-    // "Oyna basınca devam et/yeni oyun daha hemen gelsin" raporu (2026-07-12) —
-    // bütçe 2.2sn'den 300ms'ye indirildi. Bulut senkronu zaten çoğu zaman bu ana
-    // kadar tamamlanmış oluyor (giriş anında başlar); tamamlanmamışsa yerel veriyle
-    // devam edilir, senkron arka planda sürmeye devam eder ve bir sonraki
-    // yazımda/açılışta kendini düzeltir — anlık tepki, ufak gecikme riskine tercih edildi.
+    // KÖK NEDEN BULUNDU (2026-07-26, "iOS/web/Android'de aynı hesap ama farklı
+    // yerden devam ediyor" raporu): bu bütçe 2026-07-12'de 2.2sn'den 300ms'ye
+    // indirilmişti — o dönem senkron genelde hızlı tamamlanıyordu. Ama artık
+    // (özellikle iOS'ta REST katmanının kendi 429/503/401/403 yeniden deneme
+    // mekanizması, 400ms-3sn arası gecikmelerle) senkron 300ms'yi neredeyse HİÇ
+    // yetiştiremiyor — kullanıcı "Oyna"ya basar basmaz senkron henüz bitmeden
+    // YEREL (o cihazın kendi eski) devam kaydı gösteriliyordu. Her cihaz kendi
+    // bayat yerel kaydıyla oynayıp buluta yazınca, cihazlar birbirinin ilerlemesini
+    // sürekli eziyordu — raporun asıl nedeni buydu. Bütçe 3sn'ye çıkarıldı; bu
+    // hâlâ "sonsuza kadar bekleme" değil ama gerçek ağ turlarına (yeniden
+    // denemeler dahil) makul bir şans veriyor.
     const _chain=(async()=>{
       await _authReadyPromise;
       if(_cloudSyncPromise) await _cloudSyncPromise;
     })();
-    await Promise.race([_chain, new Promise(r=>setTimeout(r,300))]);
+    await Promise.race([_chain, new Promise(r=>setTimeout(r,3000))]);
   }catch(e){}
   if(btn)btn.classList.remove('syncing');
   const st=loadGameState();
