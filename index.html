@@ -2504,7 +2504,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.26-4';
+const BUILD_VER='v2026.07.26-5';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -6719,24 +6719,27 @@ function hideTmStoreModal(){document.getElementById('modal-store-tm').classList.
 // cihazdan devam ediliyordu (kullanıcı raporu, 2026-07-08: "3 yerden farklı puan").
 async function onPlayPressed(){
   const btn=document.querySelector('.btn-play');
+  vibrate(10); // dokunuşa ANINDA tepki (bekleme başlamadan önce) — "geç tepki" hissini önler
   if(btn)btn.classList.add('syncing');
   try{
     // KÖK NEDEN BULUNDU (2026-07-26, "iOS/web/Android'de aynı hesap ama farklı
-    // yerden devam ediyor" raporu): bu bütçe 2026-07-12'de 2.2sn'den 300ms'ye
+    // yerden devam ediyor" raporu): bütçe 2026-07-12'de 2.2sn'den 300ms'ye
     // indirilmişti — o dönem senkron genelde hızlı tamamlanıyordu. Ama artık
     // (özellikle iOS'ta REST katmanının kendi 429/503/401/403 yeniden deneme
-    // mekanizması, 400ms-3sn arası gecikmelerle) senkron 300ms'yi neredeyse HİÇ
-    // yetiştiremiyor — kullanıcı "Oyna"ya basar basmaz senkron henüz bitmeden
-    // YEREL (o cihazın kendi eski) devam kaydı gösteriliyordu. Her cihaz kendi
-    // bayat yerel kaydıyla oynayıp buluta yazınca, cihazlar birbirinin ilerlemesini
-    // sürekli eziyordu — raporun asıl nedeni buydu. Bütçe 3sn'ye çıkarıldı; bu
-    // hâlâ "sonsuza kadar bekleme" değil ama gerçek ağ turlarına (yeniden
-    // denemeler dahil) makul bir şans veriyor.
+    // mekanizması) senkron 300ms'yi neredeyse HİÇ yetiştiremiyordu, bu yüzden
+    // her cihaz kendi bayat yerel kaydıyla oynayıp buluta yazınca birbirini
+    // eziyordu. Bütçe önce 3sn'ye çıkarıldı ama bu sefer "Oyna"ya basınca tepki
+    // ÇOK GEÇ gelmeye başladı (2026-07-26, ikinci rapor) — 3sn çoğu zaman gerçek
+    // ihtiyaçtan fazlaydı. 1.2sn'ye düşürüldü: çoğu senkron (hata/yeniden deneme
+    // olmadan) bundan çok daha hızlı bitiyor, gerçekten yavaşsa da buton en fazla
+    // 1.2sn beklettikten sonra yerel veriyle devam eder — kalan senkron arka planda
+    // sürer ve _firestoreSync'in savedAt karşılaştırması bir sonraki senkronda
+    // kendini düzeltir.
     const _chain=(async()=>{
       await _authReadyPromise;
       if(_cloudSyncPromise) await _cloudSyncPromise;
     })();
-    await Promise.race([_chain, new Promise(r=>setTimeout(r,3000))]);
+    await Promise.race([_chain, new Promise(r=>setTimeout(r,1200))]);
   }catch(e){}
   if(btn)btn.classList.remove('syncing');
   const st=loadGameState();

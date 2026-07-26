@@ -16,7 +16,6 @@ dependencies {
     implementation project(':capacitor-firebase-crashlytics')
     implementation project(':capacitor-firebase-firestore')
     implementation project(':capacitor-app')
-    implementation project(':revenuecat-purchases-capacitor')
 
 }
 
