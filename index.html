@@ -1681,6 +1681,8 @@ function confirmLang(){
   // Dil onaylandı — giriş duvarı (misafir/Google/Apple) artık gösterilebilir (bkz.
   // _updateLoginGate notu). Girişliyse zaten hiçbir şey olmaz, gate gizli kalır.
   if(typeof _updateLoginGate==='function') _updateLoginGate();
+  // AdMob (ve içindeki iOS ATT izin isteği) artık burada başlatılıyor — bkz. initSplash() notu.
+  if(typeof initAdMob==='function') initAdMob();
 }
 
 function initSplash(){
@@ -1690,6 +1692,15 @@ function initSplash(){
       showScreen('lang');
     } else {
       showScreen('menu');
+      // App Store RED (2026-08-05, 4.0.0/5.1.1): initAdMob() eskiden init()'te,
+      // uygulama açılır açılmaz — hatta dil seçim ekranı üzerine bindirilerek —
+      // çağrılıyordu. iOS'ta bu, ATT ("Allow Tiliq to track...") izin diyalogunun
+      // kullanıcı henüz dil bile seçmeden, yarım/hazırlanmamış bir ekranın üzerine
+      // düşmesine yol açıyordu — reviewer bunu "eksik/bozuk" (2.1.0) ve zamanlaması
+      // uygunsuz bir izin isteği (5.1.1) olarak değerlendirdi. Artık AdMob/ATT isteği
+      // SADECE kullanıcı menüye ulaştığında tetikleniyor: ilk kurulumda confirmLang()
+      // içinde, dönen kullanıcılarda ise burada (splash sonrası menüye geçince).
+      if(typeof initAdMob==='function') initAdMob();
     }
   }, 2000);
 }
@@ -2504,7 +2515,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.07.26-7';
+const BUILD_VER='v2026.08.05-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -7864,8 +7875,8 @@ function skipTutorial(){
   sl.style.setProperty('--pct',Math.round(sndVol*100)+'%');
   // Loop bir kez başlat
   requestAnimationFrame(loop);
-  // AdMob + Firebase Auth başlat
-  initAdMob();
+  // Firebase Auth hemen başlar — AdMob (ve ATT izni) artık burada DEĞİL, kullanıcı
+  // menüye ulaşınca confirmLang()/initSplash() içinde tetikleniyor (bkz. oradaki not).
   initFirebaseAuth();
   // Yükleme ekranından başla
   initSplash();
