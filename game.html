@@ -1690,7 +1690,9 @@ function confirmLang(){
   // _updateLoginGate notu). Girişliyse zaten hiçbir şey olmaz, gate gizli kalır.
   if(typeof _updateLoginGate==='function') _updateLoginGate();
   // AdMob (ve içindeki iOS ATT izin isteği) artık burada başlatılıyor — bkz. initSplash() notu.
-  if(typeof initAdMob==='function') initAdMob();
+  // Küçük gecikme: bkz. initSplash()'taki "BannerExecutor NPE" notu — aynı çökme riski
+  // burada da (menüye geçişle senkron çağrı) geçerli, aynı düzeltme uygulandı.
+  setTimeout(()=>{ if(typeof initAdMob==='function') initAdMob(); }, 400);
 }
 
 function initSplash(){
@@ -1708,7 +1710,15 @@ function initSplash(){
       // uygunsuz bir izin isteği (5.1.1) olarak değerlendirdi. Artık AdMob/ATT isteği
       // SADECE kullanıcı menüye ulaştığında tetikleniyor: ilk kurulumda confirmLang()
       // içinde, dönen kullanıcılarda ise burada (splash sonrası menüye geçince).
-      if(typeof initAdMob==='function') initAdMob();
+      // ANDROID ÇÖKME DÜZELTMESİ (2026-08-09, Crashlytics: BannerExecutor.createNewAdView
+      // NullPointerException, "güncelleme sonrası splash'ten hemen sonra kapanıyor"
+      // raporu): initAdMob() (içindeki showBanner() dahil) showScreen('menu') ile TAM
+      // AYNI anda, senkron çağrılıyordu — native Activity/WebView geçişi henüz
+      // oturmadan AdMob banner'ı oluşturmaya çalışınca native tarafta null referansla
+      // çöküyordu. Küçük bir setTimeout ile bir sonraki tick'e erteleyip native tarafa
+      // nefes alacak zaman veriyoruz — ATT'nin "menüden önce gösterilmemesi" şartını
+      // hâlâ karşılıyor (birkaç yüz ms sonra da olsa menüden SONRA isteniyor).
+      setTimeout(()=>{ if(typeof initAdMob==='function') initAdMob(); }, 400);
     }
   }, 2000);
 }
@@ -2527,7 +2537,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.08.07-1';
+const BUILD_VER='v2026.08.09-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
