@@ -2537,7 +2537,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.08.09-1';
+const BUILD_VER='v2026.08.10-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3827,10 +3827,18 @@ function continueGame(){
   // State geri yükle
   grid=st.grid.map(r=>[...r]);
   score=st.score; combo=0; // devam edince combo sıfırdan başlar
-  // Bombalar: kazanılanlar HER oyuna girişte sıfırlanır, sadece satın alınan
-  // (envanter) bombalar taşınır (kullanıcı isteği, 2026-07-04)
-  bombCount=Math.min(BOMB_MAX_TOTAL,getInvBombs()); bombXP=0;
-  _invBombsInPlay=bombCount;
+  // BUG DÜZELTMESİ (2026-08-10, "durdurup devam edince bomba sıfırlanıyor" raporu):
+  // Bombalar oturum içinde kazanılırken SADECE bombCount'a (yerel) ekleniyor,
+  // envantere (tm_inv_bombs) anında yazılmıyor — bkz. addBombXP(). Bu yüzden burada
+  // eskiden bombCount'u envanterden SIFIRDAN hesaplamak (2026-07-04'ten kalma —
+  // o zamanki niyet "her YENİ oyunda kazanılan bombalar sıfırlanır" idi, ama bu
+  // satır yanlışlıkla continueGame()'e de kopyalanmıştı) kazanılan bombayı siliyordu.
+  // Devam Et = aynı oturumun devamı, yeni oyun DEĞİL — bombCount/bombXP artık
+  // kaydedilen state'ten (st.bombCount/st.bombXP) geri yükleniyor. Eski (bu alanlar
+  // olmadan kaydedilmiş) state'ler için envanterden hesaplamaya geri düşülüyor.
+  bombCount=typeof st.bombCount==='number'?st.bombCount:Math.min(BOMB_MAX_TOTAL,getInvBombs());
+  bombXP=typeof st.bombXP==='number'?st.bombXP:0;
+  _invBombsInPlay=Math.min(bombCount,getInvBombs());
   colorBlastXP=0;
   pieces=st.pieces.map(p=>({
     shape:{cells:p.cells},ci:p.ci,placed:p.placed,rotFlash:0,rotT:0

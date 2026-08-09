@@ -22,7 +22,8 @@
     "firebase": "^10.0.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.0.0"
+    "@capacitor/cli": "^6.0.0",
+    "patch-package": "^8.0.1"
   },
   "author": "BehzatBerk",
   "license": "UNLICENSED"
