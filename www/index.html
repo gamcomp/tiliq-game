@@ -1777,13 +1777,21 @@ function updateHaptic(){
 }
 
 // ── ASMR SES SİSTEMİ ─────────────────────────────────────────────────────────
+// GENİŞLETME (2026-08-12, kullanıcı isteği — "sesler daha coşkulu ve gelişmiş
+// olsun, bomba/sıra/sütun patlatırken vs her şeydeki sesler geliştirilsin"):
+// tone()'a hafif bir attack rampı eklendi (aniden başlamak yerine ~6ms'de
+// tepeye çıkıyor — daha dolgun/"tık"sız bir başlangıç). İki yeni primitif
+// eklendi: sweep() (perde kayması — whoosh/sihir hissi) ve thump() (hızlı
+// perde düşüşlü bas vuruş — patlama/darbe ağırlığı, gerçek bir "kick drum"
+// gibi). Aşağıdaki tüm playXxx() fonksiyonları bunlarla zenginleştirildi.
 function tone(freq,dur,vol,type='sine',decay=.85){
   if(!sndOn)return;const a=getAC();if(!a)return;
   const o=a.createOscillator(),g=a.createGain();
   o.connect(g);g.connect(a.destination);
   o.type=type;o.frequency.value=freq;
   const now=a.currentTime,v=vol*sndVol;
-  g.gain.setValueAtTime(v,now);
+  g.gain.setValueAtTime(0,now);
+  g.gain.linearRampToValueAtTime(v,now+.006);
   g.gain.exponentialRampToValueAtTime(.001,now+dur*decay);
   o.start(now);o.stop(now+dur);
 }
@@ -1800,39 +1808,85 @@ function noise(dur,vol,loFreq=200,hiFreq=2000){
   g.gain.exponentialRampToValueAtTime(.001,now+dur*.7);
   src.start(now);src.stop(now+dur);
 }
+// Perde kayması (freq1→freq2) — sihirli/"whoosh" hissi (Renk Patlat, sparkle sweep'leri).
+function sweep(freq1,freq2,dur,vol,type='sine'){
+  if(!sndOn)return;const a=getAC();if(!a)return;
+  const o=a.createOscillator(),g=a.createGain();
+  o.connect(g);g.connect(a.destination);
+  o.type=type;
+  const now=a.currentTime,v=vol*sndVol;
+  o.frequency.setValueAtTime(Math.max(freq1,1),now);
+  o.frequency.exponentialRampToValueAtTime(Math.max(freq2,1),now+dur);
+  g.gain.setValueAtTime(0,now);
+  g.gain.linearRampToValueAtTime(v,now+.012);
+  g.gain.exponentialRampToValueAtTime(.001,now+dur);
+  o.start(now);o.stop(now+dur);
+}
+// Hızlı perde-düşüşlü bas vuruş ("kick drum" tarzı) — patlama/darbe ağırlığı için.
+function thump(startFreq,dur,vol){
+  if(!sndOn)return;const a=getAC();if(!a)return;
+  const o=a.createOscillator(),g=a.createGain();
+  o.connect(g);g.connect(a.destination);
+  o.type='sine';
+  const now=a.currentTime,v=vol*sndVol;
+  o.frequency.setValueAtTime(startFreq,now);
+  o.frequency.exponentialRampToValueAtTime(30,now+dur);
+  g.gain.setValueAtTime(v,now);
+  g.gain.exponentialRampToValueAtTime(.001,now+dur);
+  o.start(now);o.stop(now+dur);
+}
 // Seramik karo yerleştirme: hafif "tık" + rezonans
 function playTick(){
-  noise(.06,.08,800,3000);
-  tone(1200,0.08,.06,'sine');
+  noise(.07,.095,800,3200);
+  tone(1200,0.09,.07,'sine');
 }
-// Satır temizleme: tatmin edici "çıtır" + melodik ding dizisi
+// Satır/sütun temizleme: tatmin edici "çıtır" + melodik ding dizisi + bas darbe
 function playPling(n,cm){
-  noise(.18,.12,300,1800);
-  // Ağırlık: alçak bass thump (çoklu temizlikte daha derin)
-  if(n>=2){tone(70+n*6,.18,.09,'sine');tone(45,.22,.06,'sine');}
+  noise(.22,.16,300,2200);
+  // Ağırlık: gerçek bas "thump" (çoklu temizlikte daha derin/güçlü)
+  if(n>=2) thump(140+n*10,.3,.17);
   const base=[880,1100,1320,1540,1760];
   for(let i=0;i<Math.min(n,5);i++){
     const f=base[i]*(1+(cm-1)*.05);
     setTimeout(()=>{
-      tone(f,.22,.1*(1+(cm-1)*.12),'sine');
-      tone(f*2,.14,.04,'sine');
+      tone(f,.24,.14*(1+(cm-1)*.14),'sine');
+      tone(f*2,.16,.06,'sine');
+      tone(f*1.5,.14,.04,'triangle'); // ekstra harmoni — daha zengin/dolgun ton
     },i*55);
   }
-  // Yüksek kombo: ekstra parlak sparkle
-  if(cm>=5)setTimeout(()=>{tone(2093,.18,.05,'sine');tone(2637,.14,.035,'sine');},n*55+40);
-  if(cm>=3)setTimeout(()=>noise(.12,.06,400,2000),n*55+10);
+  // Yüksek kombo: parlak sparkle + yükselen sihirli sweep
+  if(cm>=5)setTimeout(()=>{
+    tone(2093,.2,.075,'sine');tone(2637,.16,.05,'sine');
+    sweep(1200,2800,.28,.06,'sine');
+  },n*55+40);
+  if(cm>=3)setTimeout(()=>noise(.16,.09,500,2600),n*55+10);
 }
-// Oyun bitti: cam kırılması / seramik düşüşü
+// Oyun bitti: bas darbe + cam kırılması / seramik düşüşü
 function playOver(){
-  noise(.4,.15,150,900);
-  tone(320,.5,.08,'sawtooth');
-  setTimeout(()=>tone(220,.4,.05,'sawtooth'),180);
+  thump(160,.5,.15);
+  noise(.4,.18,150,900);
+  tone(320,.5,.09,'sawtooth');
+  setTimeout(()=>tone(220,.4,.06,'sawtooth'),180);
 }
-// Bomba: patlama + çıkrık
+// Bomba: derin bas patlama + gürleme + kıvılcım/döküntü kuyruğu — çok daha büyük ve dolgun
 function playBomb(){
-  noise(.5,.2,60,400);
-  tone(180,.6,.1,'sawtooth');
-  setTimeout(()=>{noise(.25,.1,300,1200);tone(450,.3,.07,'square');},120);
+  thump(90,.55,.24);
+  noise(.55,.3,50,500);
+  setTimeout(()=>{ noise(.3,.17,400,1600); sweep(900,150,.28,.09,'sawtooth'); },90);
+  setTimeout(()=>{ noise(.2,.09,1000,3200); },220); // yüksek frekans kıvılcım kuyruğu
+}
+// Renk Patlat: sihirli/parlak "whoosh" — bombadan bilinçli olarak farklı karakterde
+// (patlama yerine renkli enerji dalgası hissi), artık playBomb() ile paylaşılmıyor.
+function playColorBlast(){
+  sweep(400,1700,.32,.14,'sine');
+  noise(.32,.16,800,3600);
+  setTimeout(()=>{ tone(1568,.24,.085,'sine'); tone(1976,.2,.06,'sine'); },80);
+  setTimeout(()=>{ noise(.22,.1,1200,4200); },150);
+}
+// Zincir reaksiyon bonusu: kısa yükselen pırıltı arpej (önceden hiç sesi yoktu)
+function playChain(){
+  [1568,1976,2349].forEach((f,i)=>setTimeout(()=>tone(f,.18,.07,'sine'),i*45));
+  sweep(1000,2400,.2,.05,'sine');
 }
 // Menü/UI dokunuşu: hafif tık (CLAUDE.md 8.5 — Buton dokunuşu → Light)
 function playTapLight(){tone(700,.05,.045,'sine');}
@@ -2537,7 +2591,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.08.10-1';
+const BUILD_VER='v2026.08.12-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3537,6 +3591,7 @@ function _bombChainCheck(row,col,type){
     const cx=GOX()+col*CELL+CELL/2,cy=GOY+row*CELL+CELL/2;
     floats.push({x:cx,y:cy-CELL*2.5,txt:t('bombChain')+' +'+bonus,a:1,vy:-2,c:'#C77DFF',big:true});
     showCelebration(t('bombChain'),'#C77DFF',1000);
+    playChain();
   }
 }
 
@@ -3633,7 +3688,7 @@ function useColorBlast(row,col){
   spawnBombBlast(cx,cy,affected,true);
   vibrate([70,20,50,20,110]);
   flashScreen('line',500);
-  playBomb();
+  playColorBlast();
 
   setTimeout(()=>{
     affected.forEach(([r,c])=>{grid[r][c]=0;});
