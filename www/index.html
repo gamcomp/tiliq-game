@@ -463,7 +463,7 @@ body::after{
 #fireCanvas{position:absolute;left:0;top:0;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:0;transition:opacity .3s ease;}
 
 @keyframes shake{0%{transform:translateX(0)}10%{transform:translateX(-9px) rotate(-.5deg)}22%{transform:translateX(8px) rotate(.4deg)}35%{transform:translateX(-7px) rotate(-.3deg)}50%{transform:translateX(6px)}65%{transform:translateX(-4px)}80%{transform:translateX(3px)}100%{transform:translateX(0)}}
-@keyframes shakeBig{0%{transform:translateX(0) scale(1)}8%{transform:translateX(-14px) scale(1.01) rotate(-.8deg)}18%{transform:translateX(12px) scale(.99) rotate(.6deg)}30%{transform:translateX(-10px) rotate(-.4deg)}44%{transform:translateX(8px)}58%{transform:translateX(-6px)}72%{transform:translateX(4px)}86%{transform:translateX(-2px)}100%{transform:translateX(0) scale(1)}}
+@keyframes shakeBig{0%{transform:translateX(0) scale(1)}8%{transform:translateX(-19px) scale(1.015) rotate(-1.1deg)}18%{transform:translateX(16px) scale(.985) rotate(.85deg)}30%{transform:translateX(-13px) rotate(-.55deg)}44%{transform:translateX(10px)}58%{transform:translateX(-8px)}72%{transform:translateX(5px)}86%{transform:translateX(-3px)}100%{transform:translateX(0) scale(1)}}
 @keyframes shakeSm{0%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(1px)}100%{transform:translateX(0)}}
 #game-container.shake-sm{animation:shakeSm .28s ease;}
 #game-container.shake{animation:shake .42s ease;}
@@ -2591,7 +2591,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.08.12-1';
+const BUILD_VER='v2026.08.12-2';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -4485,76 +4485,84 @@ function _drawInfernoFlash(now){
 }
 
 function spawnExplosion(x,y,c,big=false){
-  const count=big?22:14;
-  // Merkez darbe flash'ı (additive ile anlık parlama)
-  sparks.push({x,y,vx:0,vy:0,a:1,c:'#FFF7E0',sz:big?CELL*1.0:CELL*.6,type:'glow',fade:big?.10:.13});
-  // İç → orta → dış 3 shockwave halkası
-  shockwaves.push({x,y,r:3,maxR:big?CELL*1.2:CELL*.8,a:1,c:'#FFE5B4',lw:3});
+  // GÖRSEL BÜYÜTME (2026-08-12, kullanıcı isteği — "patlama efektleri daha
+  // görkemli olsun"): parçacık sayıları ve şok halkası katmanları artırıldı.
+  // sparks.length zaten _sparksCap (mobilde 80, masaüstünde 140) ile
+  // sınırlandığı için mobil performans bütçesi hâlâ korunuyor.
+  const count=big?30:18;
+  // Merkez darbe flash'ı (additive ile anlık parlama) — büyütüldü
+  sparks.push({x,y,vx:0,vy:0,a:1,c:'#FFF7E0',sz:big?CELL*1.3:CELL*.75,type:'glow',fade:big?.09:.12});
+  // İç → orta → dış → uzak 4 shockwave halkası (öncesinde 3'tü)
+  shockwaves.push({x,y,r:3,maxR:big?CELL*1.4:CELL*.9,a:1,c:'#FFE5B4',lw:3.5});
   if(big){
-    shockwaves.push({x,y,r:4,maxR:CELL*2.4,a:.8,c,lw:2.5});
-    shockwaves.push({x,y,r:5,maxR:CELL*3.6,a:.5,c:'#FFD93D',lw:1.5});
+    shockwaves.push({x,y,r:4,maxR:CELL*2.8,a:.85,c,lw:2.8});
+    shockwaves.push({x,y,r:5,maxR:CELL*4.2,a:.55,c:'#FFD93D',lw:1.8});
+    shockwaves.push({x,y,r:6,maxR:CELL*5.4,a:.3,c:'#FF5A3C',lw:1.2});
   } else {
-    shockwaves.push({x,y,r:4,maxR:CELL*1.8,a:.7,c,lw:2});
+    shockwaves.push({x,y,r:4,maxR:CELL*2.1,a:.75,c,lw:2.3});
   }
   // Ana parçacıklar
   for(let i=0;i<count;i++){
     const a=Math.random()*Math.PI*2;
-    const sp=(big?4:2.5)+Math.random()*(big?6:4);
+    const sp=(big?4.6:3)+Math.random()*(big?7:5);
     const isShard=Math.random()>.4;
     sparks.push({
       x,y,
-      vx:Math.cos(a)*sp, vy:Math.sin(a)*sp-(big?2.5:1.8),
-      a:1, c, sz:isShard?5+Math.random()*6:2.5+Math.random()*4,
+      vx:Math.cos(a)*sp, vy:Math.sin(a)*sp-(big?2.8:2),
+      a:1, c, sz:isShard?5+Math.random()*7:2.5+Math.random()*4.5,
       type:isShard?'shard':'dot',
-      rot:Math.random()*Math.PI*2, rotV:(Math.random()-.5)*.3,
-      fade:big?.018:.024,
+      rot:Math.random()*Math.PI*2, rotV:(Math.random()-.5)*.35,
+      fade:big?.016:.022,
     });
   }
   // Altın kor parçaları
-  for(let i=0;i<(big?12:6);i++){
-    const a=Math.random()*Math.PI*2,sp=1+Math.random()*2.5;
-    sparks.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1.2,a:1,c:'#FFE5B4',sz:big?6:4,type:'glow',fade:.016});
+  for(let i=0;i<(big?17:9);i++){
+    const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*3;
+    sparks.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1.4,a:1,c:'#FFE5B4',sz:big?7:4.5,type:'glow',fade:.014});
   }
   // Uzak dağılan ateş kıvılcımları
   if(big){
-    for(let i=0;i<16;i++){
-      const a=Math.random()*Math.PI*2,sp=5+Math.random()*8;
-      sparks.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,a:.9,c:Math.random()>.5?'#FF9F43':'#FFD93D',sz:2+Math.random()*2,type:'ember',fade:.02});
+    for(let i=0;i<24;i++){
+      const a=Math.random()*Math.PI*2,sp=5.5+Math.random()*9;
+      sparks.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3.3,a:.95,c:Math.random()>.5?'#FF9F43':'#FFD93D',sz:2+Math.random()*2.5,type:'ember',fade:.018});
     }
   }
 }
 
 // Bomba için özel büyük patlama — 3×3 alan + gecikimli dalgalanma
 function spawnBombBlast(cx,cy,affectedCells,isSuper=false){
-  flashScreen('boom',isSuper?520:400);
+  // GÖRSEL BÜYÜTME (2026-08-12): daha fazla enkaz/kor parçacığı, 4. bir şok
+  // halkası, daha büyük merkez flaş — spawnExplosion() ile aynı gerekçe.
+  flashScreen('boom',isSuper?560:440);
   // Merkez dev patlama — beyaz-sıcak çekirdek + turuncu halka + is/duman
   spawnExplosion(cx,cy,isSuper?'#FFD93D':'#FF9F43',true);
-  sparks.push({x:cx,y:cy,vx:0,vy:0,a:1,c:'#FFFFF0',sz:CELL*(isSuper?1.3:0.9),type:'glow',fade:.16});
-  shockwaves.push({x:cx,y:cy,r:6,maxR:CELL*(isSuper?4.2:3.0),a:.9,c:'#FFF4D6',lw:3});
-  // Kademeli 2. ve 3. şok halkası — anlık değil, ardışık genişleyen dalga hissi
-  setTimeout(()=>shockwaves.push({x:cx,y:cy,r:8,maxR:CELL*(isSuper?5.5:4.0),a:.55,c:'#FF9F43',lw:2}),70);
-  setTimeout(()=>shockwaves.push({x:cx,y:cy,r:10,maxR:CELL*(isSuper?7:5),a:.32,c:'#FF5A3C',lw:1.5}),150);
+  sparks.push({x:cx,y:cy,vx:0,vy:0,a:1,c:'#FFFFF0',sz:CELL*(isSuper?1.6:1.1),type:'glow',fade:.14});
+  shockwaves.push({x:cx,y:cy,r:6,maxR:CELL*(isSuper?4.8:3.4),a:.95,c:'#FFF4D6',lw:3.5});
+  // Kademeli 2., 3. ve 4. şok halkası — ardışık genişleyen dalga hissi (öncesinde 3 halka)
+  setTimeout(()=>shockwaves.push({x:cx,y:cy,r:8,maxR:CELL*(isSuper?6.2:4.5),a:.6,c:'#FF9F43',lw:2.2}),70);
+  setTimeout(()=>shockwaves.push({x:cx,y:cy,r:10,maxR:CELL*(isSuper?7.8:5.6),a:.38,c:'#FF5A3C',lw:1.7}),150);
+  setTimeout(()=>shockwaves.push({x:cx,y:cy,r:12,maxR:CELL*(isSuper?9.5:7),a:.2,c:'#FFD93D',lw:1.2}),240);
   // Enkaz: karışık boyutlu köşeli parçalar + is/duman lekesi (ağırlık/tahribat hissi)
-  const debrisN=isSuper?26:16;
+  const debrisN=isSuper?36:22;
   for(let i=0;i<debrisN;i++){
-    const a=Math.random()*Math.PI*2, sp=3+Math.random()*(isSuper?7:5);
-    sparks.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,a:1,
-      c:Math.random()>.5?'#4A2A18':'#2A1810',sz:3+Math.random()*5,
-      type:'shard',rot:Math.random()*6.28,rotV:(Math.random()-.5)*.3,fade:.018});
+    const a=Math.random()*Math.PI*2, sp=3.4+Math.random()*(isSuper?8:6);
+    sparks.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3.4,a:1,
+      c:Math.random()>.5?'#4A2A18':'#2A1810',sz:3+Math.random()*5.5,
+      type:'shard',rot:Math.random()*6.28,rotV:(Math.random()-.5)*.35,fade:.016});
   }
-  for(let i=0;i<(isSuper?10:6);i++){
-    const a=Math.random()*Math.PI*2, sp=.6+Math.random()*1.2;
-    sparks.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1.8,a:.55,
-      c:'rgba(90,80,75,.7)',sz:6+Math.random()*8,type:'dot',fade:.012});
+  for(let i=0;i<(isSuper?14:8);i++){
+    const a=Math.random()*Math.PI*2, sp=.7+Math.random()*1.4;
+    sparks.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-2,a:.6,
+      c:'rgba(90,80,75,.7)',sz:6+Math.random()*9,type:'dot',fade:.010});
   }
   // "BOOM!" floating metin
-  floats.push({x:cx,y:cy-CELL,txt:isSuper?t('superBombAct'):'💥 BOOM!',a:1,vy:-2.8,c:'#FFD93D',big:true,scale:isSuper?1.7:1.4});
+  floats.push({x:cx,y:cy-CELL,txt:isSuper?t('superBombAct'):'💥 BOOM!',a:1,vy:-2.8,c:'#FFD93D',big:true,scale:isSuper?1.9:1.55});
   // Her etkilenen hücre sırayla fırlar — kor taneleri + kısa şok halkası
   affectedCells.forEach(([r,c2],i)=>{
     const px=GOX()+c2*CELL+CELL/2, py=GOY+r*CELL+CELL/2;
     setTimeout(()=>{
-      spawnSparks(px,py,'#FF9F43',isSuper?13:10);
-      shockwaves.push({x:px,y:py,r:2,maxR:CELL*.9,a:.6,c:'#FFD93D',lw:2});
+      spawnSparks(px,py,'#FF9F43',isSuper?17:13);
+      shockwaves.push({x:px,y:py,r:2,maxR:CELL*1.05,a:.65,c:'#FFD93D',lw:2.3});
     },30+i*18);
   });
   // BOOM sonrası titreme - güçlü
@@ -4569,15 +4577,16 @@ function perfectClear(){
   vibrate([40,20,60,20,100]);
   showCelebration('✨ PERFECT! ✨','#FFD93D');
   spawnExplosion(cx,cy,'#FFD93D',true);
-  // Renkli konfeti dalgası (nadir an, cömert)
-  for(let i=0;i<40;i++){
-    const a=Math.random()*Math.PI*2, sp=3+Math.random()*6;
-    sparks.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,a:1,
-      c:CLR[Math.floor(Math.random()*CLR.length)],sz:4+Math.random()*4,
-      type:'shard',rot:Math.random()*6.28,rotV:(Math.random()-.5)*.35,fade:.012});
+  // Renkli konfeti dalgası (nadir an, cömert) — büyütüldü
+  for(let i=0;i<55;i++){
+    const a=Math.random()*Math.PI*2, sp=3.4+Math.random()*7;
+    sparks.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3.4,a:1,
+      c:CLR[Math.floor(Math.random()*CLR.length)],sz:4+Math.random()*4.5,
+      type:'shard',rot:Math.random()*6.28,rotV:(Math.random()-.5)*.4,fade:.010});
   }
-  shockwaves.push({x:cx,y:cy,r:5,maxR:CELL*5,a:.75,c:'#FFD93D',lw:3});
-  shockwaves.push({x:cx,y:cy,r:8,maxR:CELL*6.5,a:.5,c:'#FF9F43',lw:2});
+  shockwaves.push({x:cx,y:cy,r:5,maxR:CELL*5.8,a:.8,c:'#FFD93D',lw:3.3});
+  shockwaves.push({x:cx,y:cy,r:8,maxR:CELL*7.5,a:.55,c:'#FF9F43',lw:2.3});
+  setTimeout(()=>shockwaves.push({x:cx,y:cy,r:10,maxR:CELL*9,a:.3,c:'#FFF4D6',lw:1.5}),120);
   floats.push({x:cx,y:cy-CELL,txt:'+500 BONUS',a:1,vy:-1.4,c:'#6BCB77',big:true});
   // Perfect clear bonusu
   score+=500;acct.total+=500;
