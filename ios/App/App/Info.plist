@@ -30,7 +30,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>Bu veriler, sana daha alakalı reklamlar göstermek için kullanılır.</string>
+	<string>This data is used to show you more relevant ads.</string>
 	<key>GIDClientID</key>
 	<string>158314507461-97fac1odn1diae7lifju101i8u6kr6n6.apps.googleusercontent.com</string>
 	<key>CFBundleURLTypes</key>
