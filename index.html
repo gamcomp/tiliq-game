@@ -17,6 +17,23 @@
   --over:rgba(15,6,2,.93);
   --accent:#C4714A; --acc2:#D4A843;
   --btn-sec:rgba(255,190,120,.08);
+
+  /* ═══ TILIQ 2.0 DESIGN TOKEN SİSTEMİ (2026-08-12) ═══════════════════════
+     Brief madde 5-30: merkezi bir token katmanı. Mevcut renk değişkenlerinin
+     (--bg/--text/--accent vb.) ÜZERİNE ekleniyor, hiçbirini değiştirmiyor —
+     mevcut ~8500 satırlık CSS bu değişkenlerle çalışmaya devam eder, kırılma
+     riski yok. Yeni bileşenler (kart/buton/modal/toast) bu token'ları
+     kullanacak şekilde yazılıyor; mevcutlar zamanla kademeli taşınabilir. */
+  --bg-primary:var(--bg); --bg-secondary:var(--bg2); --bg-card:var(--card);
+  --bg-card-hover:var(--dim2);
+  --accent-primary:var(--accent); --accent-secondary:var(--acc2);
+  --accent-success:#6BCB77; --accent-warning:#FFD93D; --accent-danger:#FF5A5A;
+  --text-primary:var(--text); --text-secondary:var(--dim); --text-muted:var(--dim2);
+  --border:var(--gb); --shadow:0 8px 24px rgba(0,0,0,.35);
+  --shadow-sm:0 2px 8px rgba(0,0,0,.25); --shadow-lg:0 16px 40px rgba(0,0,0,.45);
+  --glow:0 0 20px var(--accent-primary);
+  --radius-sm:8px; --radius-md:14px; --radius-lg:20px; --radius-xl:28px;
+  --spacing-xs:4px; --spacing-sm:8px; --spacing-md:14px; --spacing-lg:20px; --spacing-xl:32px;
 }
 [data-theme="light"] {
   --bg:#F8F0E4; --bg2:#EDE3D2; --card:#FFF8F0;
@@ -861,7 +878,7 @@ body[data-vibe="bio"]::after{
 .modal{display:none;position:fixed;inset:0;z-index:50;width:100%;max-width:480px;margin:0 auto;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);align-items:flex-end;justify-content:center;overscroll-behavior:none;}
 #modal-add-friend{z-index:150;}
 .modal.active{display:flex;}
-.modal-card{background:var(--panel);border:1px solid rgba(255,200,140,.16);border-radius:28px 28px 0 0;width:100%;max-height:90vh;max-height:min(90vh,calc(100dvh - env(safe-area-inset-top,0px) - 8px));display:flex;flex-direction:column;animation:slideUp .35s cubic-bezier(.34,1.56,.64,1);overflow:hidden;padding-bottom:calc(env(safe-area-inset-bottom,0px) + var(--banner-h,0px));
+.modal-card{background:var(--panel);border:1px solid rgba(255,200,140,.16);border-radius:var(--radius-xl) var(--radius-xl) 0 0;box-shadow:var(--shadow-lg);width:100%;max-height:90vh;max-height:min(90vh,calc(100dvh - env(safe-area-inset-top,0px) - 8px));display:flex;flex-direction:column;animation:slideUp .35s cubic-bezier(.34,1.56,.64,1);overflow:hidden;padding-bottom:calc(env(safe-area-inset-bottom,0px) + var(--banner-h,0px));
   box-shadow:0 -14px 44px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06);}
 /* Modern bottom-sheet tutamacı */
 .modal-card::before{content:'';flex-shrink:0;width:40px;height:4px;border-radius:2px;margin:9px auto 0;
@@ -3003,7 +3020,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.08.12-7';
+const BUILD_VER='v2026.08.12-8';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
