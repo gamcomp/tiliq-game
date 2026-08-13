@@ -97,13 +97,15 @@ body[data-vibe="neon"]{
     radial-gradient(ellipse at 15% 80%,rgba(47,233,255,.16) 0%,transparent 45%),
     #0D0518 !important;
 }
-/* Merkezden dışa dönen bulanık girdap — conic gradient + yavaş rotasyon */
+/* Merkezden dışa dönen bulanık girdap — conic gradient + yavaş rotasyon.
+   Brief (2026-08-12, "8 saniye kuralı"): %15 opak, 20 sn döngü — hipnotik ama
+   asla dikkat dağıtıcı olmayacak kadar yavaş ve soluk. */
 body[data-vibe="neon"]::before{
   background-image:none;background:conic-gradient(from 0deg at 50% 45%,
     rgba(123,47,247,.24),rgba(255,47,185,.18) 30%,rgba(47,233,255,.16) 55%,
     rgba(123,47,247,.24) 100%);
-  background-size:auto;filter:blur(70px);opacity:.8;
-  animation:neonSpiralSpin 45s linear infinite;
+  background-size:auto;filter:blur(70px);opacity:.15;
+  animation:neonSpiralSpin 20s linear infinite;
 }
 @keyframes neonSpiralSpin{from{transform:rotate(0deg) scale(1.4)}to{transform:rotate(360deg) scale(1.4)}}
 /* Nabız gibi atan neon partikül lekeleri (statik konumlu, sırayla parlayıp söner) */
@@ -173,7 +175,9 @@ body[data-vibe="neon"]::after{
    kodunu (108 varyantlı tabla sistemi) değiştirmek yerine CSS filter ile
    tüm render'ı vibe paletine doğru kaydırıyoruz — hızlı, tutarlı, performans
    maliyeti yok (GPU compositing). */
-body[data-vibe="neon"] #gameCanvas{filter:hue-rotate(200deg) saturate(1.85) brightness(1.06);}
+/* Neon vibe'da bloklar artık gerçek imza paletiyle (CLR override, bkz.
+   applyVibe()) çiziliyor — canvas'a hue-filter uygulamak burada ARTIK
+   gerekmiyor (uygulanırsa zaten doğru renkleri tekrar kaydırıp bozardı). */
 body[data-vibe="aurora"] #gameCanvas{filter:hue-rotate(135deg) saturate(1.25) brightness(.94) contrast(1.05);}
 body[data-vibe="vapor"] #gameCanvas{filter:hue-rotate(275deg) saturate(1.6) brightness(1.08) contrast(1.05);}
 body[data-vibe="bio"] #gameCanvas{filter:hue-rotate(165deg) saturate(1.5) brightness(.9);}
@@ -2070,6 +2074,17 @@ function applyVibe(){
     if(b) b.classList.toggle('active',vibe===v);
   });
   localStorage.setItem('tm_vibe',vibe);
+  // MARKA KİMLİĞİ BRIEF'İ AŞAMA 1 (2026-08-12): Neon Psikedelik seçiliyken
+  // bloklar da imza paletine geçer (Store'daki satın alınmış tema değişmez,
+  // sadece üzerine biner — Klasik'e/başka vibe'a dönünce oyuncunun kendi
+  // teması geri gelir). init()'te de çalışsın diye applyVibe() içine alındı,
+  // sadece manuel değiştirmede değil, sayfa yeniden yüklendiğinde de tutarlı.
+  if(typeof CLR!=='undefined' && typeof THEME_PALETTES!=='undefined'){
+    const pal=(vibe==='neon')?THEME_PALETTES.vibeNeon:getTheme();
+    CLR.length=0;pal.clr.forEach(c=>CLR.push(c));
+    GLOW.length=0;pal.glow.forEach(g=>GLOW.push(g));
+    if(typeof reloadTileTextures==='function') reloadTileTextures();
+  }
 }
 function setVibe(v){vibe=v;applyVibe();vibrate(10);}
 
@@ -2910,7 +2925,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.08.12-5';
+const BUILD_VER='v2026.08.12-6';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2970,6 +2985,13 @@ const THEME_PALETTES={
   neon:{
     clr:['#56CFE1','#FF6B9D','#C77DFF','#FFD93D','#6BCB77','#FF9F43'],
     glow:['rgba(86,207,225,.55)','rgba(255,107,157,.55)','rgba(199,125,255,.55)','rgba(255,217,61,.55)','rgba(107,203,119,.55)','rgba(255,159,67,.55)'],
+  },
+  // "Tiliq imza paleti" (2026-08-12, marka kimliği brief'i — bkz. setVibe()):
+  // Mağaza'daki kilitli 'neon' temasından AYRI — Atmosfer'den "Neon Psikedelik"
+  // seçilince otomatik uygulanan, satın almaya bağlı olmayan görsel katman.
+  vibeNeon:{
+    clr:['#7B2FF7','#FF2FB9','#2FE9FF','#F5FF3D','#39FF6A','#FF7A1A'],
+    glow:['rgba(123,47,247,.6)','rgba(255,47,185,.6)','rgba(47,233,255,.6)','rgba(245,255,61,.55)','rgba(57,255,106,.55)','rgba(255,122,26,.55)'],
   },
   retro:{
     clr:['#E63946','#F4A261','#2A9D8F','#E9C46A','#457B9D','#A8DADC'],
