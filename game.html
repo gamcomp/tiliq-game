@@ -656,7 +656,8 @@ body[data-vibe="bio"]::after{
 .level-badge{background:linear-gradient(135deg,var(--accent),var(--acc2));border-radius:999px;padding:4px 12px;font-size:12px;font-weight:900;color:#fff;box-shadow:0 2px 8px rgba(196,113,74,.35);}
 /* Lig rozeti (brief madde 5 — basitleştirilmiş: gerçek haftalık terfi/düşme
    döngüsü yerine en iyi skora dayalı kademe göstergesi; bkz. LEAGUE_TIERS). */
-.league-badge{font-size:16px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.3));cursor:default;}
+.league-badge{font-size:16px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.3));cursor:default;display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;}
+.league-badge img{width:100%;height:100%;object-fit:contain;}
 .level-xp-text{font-size:11px;color:var(--dim);font-weight:600;}
 .level-track{height:8px;background:var(--dim2);border-radius:4px;overflow:hidden;position:relative;}
 .level-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--acc2));transition:width .8s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden;}
@@ -2147,11 +2148,11 @@ function setVibe(v){vibe=v;applyVibe();vibrate(10);}
 // sıfırlama gerektirir (bu ortamda kurulamaz); bunun yerine en iyi skora
 // dayalı, anlık ve sunucusuz bir kademe göstergesi.
 const LEAGUE_TIERS=[
-  {min:0,     ico:'🥉',name:'Bronz'},
-  {min:3000,  ico:'🥈',name:'Gümüş'},
-  {min:10000, ico:'🥇',name:'Altın'},
-  {min:30000, ico:'💎',name:'Platin'},
-  {min:75000, ico:'👑',name:'Elmas'},
+  {min:0,     ico:'assets/icons/medal_bronze.png',  name:'Bronz'},
+  {min:3000,  ico:'assets/icons/medal_silver.png',  name:'Gümüş'},
+  {min:10000, ico:'assets/icons/medal_gold.png',    name:'Altın'},
+  {min:30000, ico:'assets/icons/medal_platinum.png',name:'Platin'},
+  {min:75000, ico:'assets/icons/medal_diamond.png', name:'Elmas'},
 ];
 function getLeagueTier(score){
   let t=LEAGUE_TIERS[0];
@@ -2162,7 +2163,7 @@ function updateLeagueBadge(score){
   const el=document.getElementById('league-badge');
   if(!el)return;
   const tier=getLeagueTier(score);
-  el.textContent=tier.ico;
+  el.innerHTML=`<img src="${tier.ico}" alt="">`;
   el.title=tier.name+' Ligi';
 }
 function mascotReact(){
@@ -3025,7 +3026,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.08.13-1';
+const BUILD_VER='v2026.08.13-2';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3071,8 +3072,10 @@ function resizeCanvas(){
 // ── TEMA PALETLERİ ────────────────────────────────────────────────────────────
 const THEME_PALETTES={
   classic:{
-    clr:['#6B9EB8','#C08B72','#8AB89A','#C9A85E','#BA9082','#8CAE72'],
-    glow:['rgba(107,158,184,.22)','rgba(192,139,114,.22)','rgba(138,184,154,.22)','rgba(201,168,94,.22)','rgba(186,144,130,.22)','rgba(140,174,114,.22)'],
+    // TILIQ 2.0 — "mücevher" paleti: marka kimliğinin mor/cyan yönüyle uyumlu, 6 rengin
+    // birbirinden net ayrılması (renk körü erişilebilirliği) korunarak zenginleştirildi.
+    clr:['#4FA8E8','#FF6B8A','#4FD98C','#F5C542','#B565F0','#FF9B45'],
+    glow:['rgba(79,168,232,.3)','rgba(255,107,138,.3)','rgba(79,217,140,.3)','rgba(245,197,66,.3)','rgba(181,101,240,.3)','rgba(255,155,69,.3)'],
   },
   wooden:{
     clr:['#A0714F','#C49A6C','#8B6343','#D4AA70','#7B5B3A','#B8893F'],
