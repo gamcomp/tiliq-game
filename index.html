@@ -170,6 +170,15 @@ body[data-vibe="neon"]::after{
 }
 [data-vibe="neon"] .treasure-box{box-shadow:0 0 22px rgba(255,47,185,.22);}
 [data-vibe="neon"] .streak-badge{background:linear-gradient(135deg,#7B2FF7,#2FE9FF);color:#0D0518;}
+/* XP çubuğu + LV rozeti: brief madde 3 — "XP çubuğu cyan→magenta degrade
+   dolgu; LV rozeti holografik" */
+[data-vibe="neon"] .level-fill{background:linear-gradient(90deg,#2FE9FF,#FF2FB9);}
+[data-vibe="neon"] .level-badge{
+  background:linear-gradient(120deg,#7B2FF7,#FF2FB9,#2FE9FF,#F5FF3D,#7B2FF7);
+  background-size:320% 100%;animation:neonHoloShift 4s linear infinite;
+  box-shadow:0 0 10px rgba(255,47,185,.4);
+}
+@keyframes neonHoloShift{0%{background-position:0% 0}100%{background-position:320% 0}}
 
 /* Oyun içi tahta (canvas) — vibe'a göre renk kayması. Canvas'ın kendi çizim
    kodunu (108 varyantlı tabla sistemi) değiştirmek yerine CSS filter ile
@@ -361,6 +370,13 @@ body[data-vibe="bio"]::after{
 [data-vibe="bio"] .treasure-box,[data-vibe="bio"] .inv-cell{border-color:rgba(47,245,208,.24);}
 [data-vibe="bio"] .streak-badge{background:linear-gradient(135deg,#B04CFF,#2FF5D0);color:#03121A;}
 
+/* Brief madde 7 — erişilebilirlik: "Azaltılmış hareket" sisteminde döngüsel
+   animasyonlar durur, statik degradeler kalır. Işıklar asla 3 Hz üzeri
+   yanıp sönmez zaten (en hızlı döngümüz ~2 sn = 0.5 Hz). */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;}
+}
+
 /* ── SCREENS ── */
 .screen{display:none;position:fixed;inset:0;width:100%;max-width:480px;margin:0 auto;flex-direction:column;align-items:center;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:none;}
 .screen.active{display:flex;}
@@ -458,6 +474,13 @@ body[data-vibe="bio"]::after{
 .menu-logo-emoji{width:64px;height:64px;object-fit:contain;display:block;margin:0 auto;
   filter:drop-shadow(0 4px 10px rgba(212,168,67,.5));animation:heroFloat 3.4s ease-in-out infinite;}
 @keyframes heroFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-6px) rotate(2deg)}}
+/* Maskot "canlılık" nabzı (brief madde 4 — gerçek rig/asset olmadan CSS
+   yaklaşımı): periyodik göz kırpma hissi veren kısa dikey sıkışma + rekor/
+   combo anında tetiklenen büyük tepki sıçraması. */
+.menu-logo-emoji.mascot-blink{animation:heroFloat 3.4s ease-in-out infinite,mascotBlink 5s ease-in-out infinite;}
+@keyframes mascotBlink{0%,92%,100%{filter:drop-shadow(0 4px 10px rgba(212,168,67,.5)) scaleY(1)}94%{filter:drop-shadow(0 4px 10px rgba(212,168,67,.5));transform:scaleY(.85)}96%{transform:scaleY(1)}}
+.menu-logo-emoji.mascot-react{animation:mascotReact .7s cubic-bezier(.34,1.9,.6,1) both;}
+@keyframes mascotReact{0%{transform:scale(1) rotate(0)}30%{transform:scale(1.3) rotate(-8deg)}60%{transform:scale(1.15) rotate(6deg)}100%{transform:scale(1) rotate(0)}}
 .menu-sub{font-size:11px;font-weight:700;color:var(--dim);text-align:center;
   letter-spacing:3px;text-transform:uppercase;}
 .menu-sub-line{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:-2px;}
@@ -615,6 +638,9 @@ body[data-vibe="bio"]::after{
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 4px 14px rgba(0,0,0,.2);}
 .level-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .level-badge{background:linear-gradient(135deg,var(--accent),var(--acc2));border-radius:999px;padding:4px 12px;font-size:12px;font-weight:900;color:#fff;box-shadow:0 2px 8px rgba(196,113,74,.35);}
+/* Lig rozeti (brief madde 5 — basitleştirilmiş: gerçek haftalık terfi/düşme
+   döngüsü yerine en iyi skora dayalı kademe göstergesi; bkz. LEAGUE_TIERS). */
+.league-badge{font-size:16px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.3));cursor:default;}
 .level-xp-text{font-size:11px;color:var(--dim);font-weight:600;}
 .level-track{height:8px;background:var(--dim2);border-radius:4px;overflow:hidden;position:relative;}
 .level-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--acc2));transition:width .8s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden;}
@@ -1300,6 +1326,7 @@ input[type="text"]::placeholder{color:var(--dim);}
       <div class="level-card">
         <div class="level-top">
           <div class="level-badge" id="lv-badge">LV 1</div>
+          <div class="league-badge" id="league-badge" title="">🥉</div>
           <div class="level-xp-text" id="lv-xp-text">0 / 500 XP</div>
         </div>
         <div class="level-track"><div class="level-fill" id="lv-fill" style="width:0%"></div></div>
@@ -2000,6 +2027,7 @@ function confirmLang(){
   // Küçük gecikme: bkz. initSplash()'taki "BannerExecutor NPE" notu — aynı çökme riski
   // burada da (menüye geçişle senkron çağrı) geçerli, aynı düzeltme uygulandı.
   setTimeout(()=>{ if(typeof initAdMob==='function') initAdMob(); }, 400);
+  if(typeof playAmbientPad==='function') playAmbientPad();
 }
 
 function initSplash(){
@@ -2026,6 +2054,7 @@ function initSplash(){
       // nefes alacak zaman veriyoruz — ATT'nin "menüden önce gösterilmemesi" şartını
       // hâlâ karşılıyor (birkaç yüz ms sonra da olsa menüden SONRA isteniyor).
       setTimeout(()=>{ if(typeof initAdMob==='function') initAdMob(); }, 400);
+      if(typeof playAmbientPad==='function') playAmbientPad();
     }
   }, 2000);
 }
@@ -2087,6 +2116,38 @@ function applyVibe(){
   }
 }
 function setVibe(v){vibe=v;applyVibe();vibrate(10);}
+
+// Maskot tepki animasyonu (brief madde 4) — rekor/büyük combo anlarında logo
+// ikonu kısa bir "heyecan sıçraması" yapar. Gerçek karakter rigi yerine
+// mevcut taç/logo görseline uygulanan CSS yaklaşımı (bkz. yukarıdaki not).
+// Lig sistemi (brief madde 5, basitleştirilmiş — bkz. yukarıdaki not).
+// Gerçek haftalık kohort/terfi-düşme sistemi Cloud Functions + zamanlanmış
+// sıfırlama gerektirir (bu ortamda kurulamaz); bunun yerine en iyi skora
+// dayalı, anlık ve sunucusuz bir kademe göstergesi.
+const LEAGUE_TIERS=[
+  {min:0,     ico:'🥉',name:'Bronz'},
+  {min:3000,  ico:'🥈',name:'Gümüş'},
+  {min:10000, ico:'🥇',name:'Altın'},
+  {min:30000, ico:'💎',name:'Platin'},
+  {min:75000, ico:'👑',name:'Elmas'},
+];
+function getLeagueTier(score){
+  let t=LEAGUE_TIERS[0];
+  for(const tier of LEAGUE_TIERS) if(score>=tier.min) t=tier;
+  return t;
+}
+function updateLeagueBadge(score){
+  const el=document.getElementById('league-badge');
+  if(!el)return;
+  const tier=getLeagueTier(score);
+  el.textContent=tier.ico;
+  el.title=tier.name+' Ligi';
+}
+function mascotReact(){
+  document.querySelectorAll('.menu-logo-emoji').forEach(el=>{
+    el.classList.remove('mascot-react');void el.offsetWidth;el.classList.add('mascot-react');
+  });
+}
 
 // ── SOUND ────────────────────────────────────────────────────────────────────
 let AC=null;
@@ -2224,6 +2285,21 @@ function playChain(){
 }
 // Menü/UI dokunuşu: hafif tık (CLAUDE.md 8.5 — Buton dokunuşu → Light)
 function playTapLight(){tone(700,.05,.045,'sine');}
+
+// ── AMBIENT PAD (brief madde 6, minimal versiyon) ────────────────────────────
+// Gerçek "adaptif müzik" (pad→arpej→perküsyon katmanları, gerçek loop yönetimi)
+// hazır ses dosyası/karışım gerektiren büyük bir iş — burada mevcut sentez
+// altyapısıyla (tone()) çok yumuşak, uzun süreli bir pad akoru çalınıyor,
+// menüye her girişte bir kez tetikleniyor (kalıcı loop state'i yönetilmiyor
+// ki sızıntı/asılı osilatör riski olmasın).
+function playAmbientPad(){
+  if(!sndOn)return;
+  const a=getAC();if(!a)return;
+  // Kök + beşli — çok uzun, çok alçak sesli, yavaşça açılıp kapanan iki nabız
+  [220,330].forEach((f,i)=>{
+    setTimeout(()=>tone(f,4.5,.018,'sine',.9),i*180);
+  });
+}
 
 // ── HAPTIC ───────────────────────────────────────────────────────────────────
 function vibrate(pattern){
@@ -2864,7 +2940,9 @@ function renderDailyCard(){
   // İstatistikler
   const totalGames=acct?.games??parseInt(localStorage.getItem('tm_games')||'0');
   document.getElementById('lstat-games').textContent=totalGames;
-  document.getElementById('lstat-best').textContent=(acct?.best??parseInt(localStorage.getItem('tiliq_best')||'0')).toLocaleString();
+  const _bestForLeague=acct?.best??parseInt(localStorage.getItem('tiliq_best')||'0');
+  document.getElementById('lstat-best').textContent=_bestForLeague.toLocaleString();
+  if(typeof updateLeagueBadge==='function') updateLeagueBadge(_bestForLeague);
   document.getElementById('lstat-streak').textContent=streak+'🔥';
   const lastScoreRaw=localStorage.getItem('tiliq_last_score');
   const lastBox=document.getElementById('lstat-last-box');
@@ -2925,7 +3003,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.08.12-6';
+const BUILD_VER='v2026.08.12-7';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3310,6 +3388,7 @@ function buildPool(){
 let grid=[],pieces=[],score=0,combo=0,best=0,selPiece=null,dead=false;
 
 // Yeni rekor kaydı
+let _newBestCelebratedThisGame=false;
 function noteNewBest(){
   best=score;
   localStorage.setItem('tiliq_best',String(best));
@@ -3318,6 +3397,18 @@ function noteNewBest(){
   updateMyWeeklyScore(score);
   localStorage.setItem('tm_acct',JSON.stringify(acct));
   pushMyScore();
+  // Brief madde 4 ("Yüksek skor anı"): oyun başına SADECE İLK rekor kırılışında
+  // kutlama tetiklenir — sonraki her puan artışı da best'i geçtiği için
+  // noteNewBest() sürekli çağrılıyor, spam kutlama olmasın diye tek seferlik.
+  if(!_newBestCelebratedThisGame && typeof grid!=='undefined' && grid.length){
+    _newBestCelebratedThisGame=true;
+    const cx=GOX()+CELL*GRID/2,cy=GOY+CELL*GRID/2;
+    floats.push({x:cx,y:cy-CELL*1.8,txt:'✨ '+t('newRecord')+' ✨',a:1,vy:-1.6,c:'#F5FF3D',big:true,scale:1.8});
+    if(typeof spawnExplosion==='function') spawnExplosion(cx,cy,'#FF2FB9',true);
+    if(typeof playPerfect==='function') playPerfect();
+    if(typeof vibrate==='function') vibrate([40,20,60,20,100]);
+    if(typeof mascotReact==='function') mascotReact();
+  }
 }
 
 // ── COMBO TIMER ───────────────────────────────────────────────────────────────
@@ -3898,7 +3989,7 @@ function useBomb(row,col){
     if(gain>0){
       score+=gain;acct.total+=gain;
       if(score>best)noteNewBest();
-      document.getElementById('scoreDisplay').textContent=score.toLocaleString();
+      setScoreDisplay(score);
       document.getElementById('bestDisplay').textContent=best.toLocaleString();
       floats.push({x:cx,y:cy-CELL*1.5,txt:'+'+gain,a:1,vy:-2.2,c:'#FFD93D',big:true,scale:1.7});
       punchScore();
@@ -3928,7 +4019,7 @@ function _bombChainCheck(row,col,type){
     const bonus=(chainRows.length+chainCols.length)*25;
     score+=bonus;
     if(score>best)noteNewBest(); // burada da eksikti — zincir bonusu rekor kırdırabilir
-    document.getElementById('scoreDisplay').textContent=score.toLocaleString();
+    setScoreDisplay(score);
     const cx=GOX()+col*CELL+CELL/2,cy=GOY+row*CELL+CELL/2;
     floats.push({x:cx,y:cy-CELL*2.5,txt:t('bombChain')+' +'+bonus,a:1,vy:-2,c:'#C77DFF',big:true});
     showCelebration(t('bombChain'),'#C77DFF',1000);
@@ -4037,7 +4128,7 @@ function useColorBlast(row,col){
     if(gain>0){
       score+=gain;acct.total+=gain;
       if(score>best)noteNewBest();
-      document.getElementById('scoreDisplay').textContent=score.toLocaleString();
+      setScoreDisplay(score);
       document.getElementById('bestDisplay').textContent=best.toLocaleString();
       floats.push({x:cx,y:cy-CELL*1.5,txt:'+'+gain,a:1,vy:-2.2,c:color,big:true,scale:1.7});
       punchScore();
@@ -4050,7 +4141,7 @@ function useColorBlast(row,col){
       const bonus=(cR.length+cC.length)*25;
       score+=bonus;
       if(score>best)noteNewBest();
-      document.getElementById('scoreDisplay').textContent=score.toLocaleString();
+      setScoreDisplay(score);
       floats.push({x:cx,y:cy-CELL*2.5,txt:t('bombChain')+' +'+bonus,a:1,vy:-2,c:'#C77DFF',big:true});
       showCelebration(t('bombChain'),'#C77DFF',1000);
     }
@@ -4090,10 +4181,41 @@ function doRescue(){
   });
 }
 
+// Skor sayısı artık anlık sıçramak yerine kısa bir sayaç animasyonuyla akarak
+// yükselir (brief 2026-08-12, "sayı artışları anlık değil, sayaç animasyonuyla
+// akarak yükselir" — Candy Crush/Royal Match hissi).
+let _scoreDispVal=0,_scoreDispRaf=null;
+function setScoreDisplay(v){
+  const el=document.getElementById('scoreDisplay');
+  if(!el)return;
+  const from=_scoreDispVal,to=v,dur=280,t0=performance.now();
+  _scoreDispVal=to;
+  if(_scoreDispRaf) cancelAnimationFrame(_scoreDispRaf);
+  function step(now){
+    const p=Math.min(1,(now-t0)/dur);
+    const eased=1-Math.pow(1-p,3);
+    el.textContent=Math.round(from+(to-from)*eased).toLocaleString();
+    if(p<1) _scoreDispRaf=requestAnimationFrame(step);
+    else _scoreDispRaf=null;
+  }
+  _scoreDispRaf=requestAnimationFrame(step);
+}
+
 // ── GRID HELPERS ──────────────────────────────────────────────────────────────
 function initGrid(){grid=Array.from({length:GRID},()=>new Array(GRID).fill(0));}
 function fits(sh,r,c){for(const[dr,dc]of sh.cells){const rr=r+dr,cc=c+dc;if(rr<0||rr>=GRID||cc<0||cc>=GRID||grid[rr][cc])return false;}return true;}
 function anyFits(sh){for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++)if(fits(sh,r,c))return true;return false;}
+// İpucu sistemi (brief madde 4) — tepsideki ilk yerleşebilir parça+konum.
+let _lastMoveAt=0;
+function _findHintPlacement(){
+  for(let pi=0;pi<pieces.length;pi++){
+    const p=pieces[pi];if(p.placed)continue;
+    for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++){
+      if(fits(p.shape,r,c))return{pi,row:r,col:c};
+    }
+  }
+  return null;
+}
 function rndPiece(must=false){
   const pool=buildPool();
   let s,tt=0;
@@ -4244,6 +4366,8 @@ function continueGame(){
   selPiece=null;
 
   best=parseInt(localStorage.getItem('tiliq_best')||'0');
+  _lastMoveAt=performance.now();
+  _scoreDispVal=score; // Devam Et: bu bir kazanım değil, geri yükleme — animasyonsuz anlık göster
   document.getElementById('scoreDisplay').textContent=score.toLocaleString();
   document.getElementById('bestDisplay').textContent=best;
   document.getElementById('comboDisplay').textContent='×'+Math.min(combo+1,5);
@@ -4315,6 +4439,7 @@ function startGame(){
   updateBombBar();
   updateColorBlastBtn();
   best=parseInt(localStorage.getItem('tiliq_best')||'0');
+  _scoreDispVal=0;_newBestCelebratedThisGame=false;_lastMoveAt=performance.now();
   document.getElementById('scoreDisplay').textContent='0';
   document.getElementById('bestDisplay').textContent=best;
   document.getElementById('comboDisplay').textContent='×1';
@@ -4336,6 +4461,7 @@ function place(pi,row,col){
   for(const[dr,dc]of p.shape.cells){grid[row+dr][col+dc]=p.ci+1;cells.push([row+dr,col+dc]);}
   p.placed=true;playTick();vibrate(12);
   bounce={cells,t0:performance.now()};
+  _lastMoveAt=performance.now(); // ipucu sistemi için — her yerleştirmede sıfırlanır
   spawnPlaceDust(cells,p.ci);   // yerleştirme tozu
 
   // Check full rows/cols
@@ -4372,7 +4498,7 @@ function place(pi,row,col){
     addBombXP(gain);
     addColorBlastXP(gain); // Renk Patlat SADECE kombodan gelen bu puanla dolar
     if(score>best)noteNewBest();
-    document.getElementById('scoreDisplay').textContent=score.toLocaleString();
+    setScoreDisplay(score);
     document.getElementById('bestDisplay').textContent=best.toLocaleString();
     document.getElementById('comboDisplay').textContent='×'+cm;
 
@@ -4382,6 +4508,7 @@ function place(pi,row,col){
     ch.classList.remove('pop');
     void ch.offsetWidth;
     ch.classList.add('pop');
+    if(cm>=5 && typeof mascotReact==='function') mascotReact(); // büyük combo — maskot tepki verir (brief madde 4)
 
     // Alev efekti — canvas'ta canvas flame particles
     const gx=GOX(),fx=gx+col*CELL+CELL/2,fy=GOY+row*CELL;
@@ -4931,7 +5058,7 @@ function perfectClear(){
   floats.push({x:cx,y:cy-CELL,txt:'+500 BONUS',a:1,vy:-1.4,c:'#6BCB77',big:true});
   // Perfect clear bonusu
   score+=500;acct.total+=500;
-  document.getElementById('scoreDisplay').textContent=score.toLocaleString();
+  setScoreDisplay(score);
   // EKSİKTİ: bu bonus yeni rekor kırdırabilir ama noteNewBest() hiç çağrılmıyordu —
   // rekor ne yerelde ne buluta yazılmıyordu (kullanıcı raporu: "sıralamadaki skor donmuş").
   if(score>best)noteNewBest();
@@ -5504,6 +5631,21 @@ function drawBoard(now){
       drawCell(x,y,pieces[selPiece].ci+1,preOK?.38:.13);
       if(!preOK){ctx.save();ctx.globalAlpha=.3;rrect(x+1.5,y+1.5,CELL-3,CELL-3,6,'#FF4455',null);ctx.restore();}
     } else {drawCell(x,y,grid[r][c]);}
+  }
+
+  // İpucu parıltısı (brief madde 4, 2026-08-12): uzun süre hamle yapılmazsa
+  // yerleşebilecek bir alan hafifçe parlar — oyuncuyu sıkışmadan önce uyarır.
+  if(!dead&&!bombMode&&!colorBlastMode&&selPiece===null&&now-_lastMoveAt>6000){
+    const hint=_findHintPlacement();
+    if(hint){
+      const glowA=0.16+Math.sin(now*0.003)*0.1;
+      for(const[dr,dc]of pieces[hint.pi].shape.cells){
+        const hr=hint.row+dr,hc=hint.col+dc;
+        const hx=gx+hc*CELL,hy=gy+hr*CELL;
+        ctx.save();ctx.globalAlpha=glowA;ctx.shadowColor='#FFD93D';ctx.shadowBlur=12;
+        rrect(hx+1.5,hy+1.5,CELL-3,CELL-3,6,'#FFD93D',null);ctx.restore();
+      }
+    }
   }
 
   // Ara sıra rastgele bir taşta çapraz parıltı (glint) — mücevher canlılığı
@@ -8346,6 +8488,7 @@ function skipTutorial(){
   applyTheme();
   applyVibe();
   applyLang();
+  document.querySelectorAll('.menu-logo-emoji').forEach(el=>el.classList.add('mascot-blink'));
   applyThemePalette(activeThemeId); // kayıtlı renk teması + texture'ları yükle
   syncMyCodeUI();
   updateMenuAvatar();
