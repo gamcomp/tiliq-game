@@ -49,12 +49,11 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;overflow:hidden;}
 body{
-  /* AI mağara ambiyansı + üst/altta GÜÇLÜ karartma (görselin parlak lav/ağız bölgeleri
-     ekranın üst ve altında turuncu bar gibi görünüyordu — kullanıcı istemedi) */
+  /* TILIQ 2.0 — kozmik mor/cyan marka ambiyansı + üst/altta karartma (okunabilirlik için) */
   background:
-    linear-gradient(180deg,rgba(16,6,3,.94) 0%,rgba(16,6,3,.66) 22%,rgba(16,6,3,.62) 55%,rgba(16,6,3,.90) 82%,rgba(16,6,3,.97) 100%),
-    url('assets/bg_game.webp') center/cover no-repeat,
-    radial-gradient(ellipse at 50% 100%,#2A1108 0%,#180C06 40%,#100603 100%);
+    linear-gradient(180deg,rgba(9,5,20,.94) 0%,rgba(9,5,20,.62) 22%,rgba(9,5,20,.58) 55%,rgba(9,5,20,.88) 82%,rgba(9,5,20,.97) 100%),
+    url('assets/bg_game_v2.webp') center/cover no-repeat,
+    radial-gradient(ellipse at 50% 100%,#1A0B2E 0%,#100620 40%,#08040F 100%);
   font-family:system-ui,-apple-system,sans-serif;
   color:var(--text); touch-action:none; user-select:none;
   display:flex; justify-content:center;
@@ -720,7 +719,8 @@ body[data-vibe="bio"]::after{
   border-radius:16px;padding:10px 4px;font-size:10.5px;font-weight:700;cursor:pointer;
   font-family:inherit;transition:background .2s,transform .12s;
   display:flex;flex-direction:column;align-items:center;gap:4px;}
-.btn-menu .m-icon{font-size:21px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));}
+.btn-menu .m-icon{font-size:21px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));display:inline-flex;width:21px;height:21px;align-items:center;justify-content:center;}
+.btn-menu .m-icon img{border-radius:6px;}
 .btn-menu:hover{background:rgba(255,200,140,.07);}
 .btn-wide{flex:none;width:100%;max-width:320px;}
 
@@ -791,8 +791,13 @@ body[data-vibe="bio"]::after{
   transition:box-shadow .25s,border-color .25s;}
 /* Bomba kullanıma hazır (bombCount>0): yumuşak nefes alan parıltı */
 #bomb-btn.ready #bomb-icon{border-color:rgba(255,159,67,.7);box-shadow:inset 0 1px 2px rgba(255,255,255,.1),0 0 10px rgba(255,159,67,.55);animation:bombReadyBreathe 1.8s ease-in-out infinite;}
+#bomb-icon.super{border-color:rgba(255,217,80,.85);box-shadow:inset 0 1px 2px rgba(255,255,255,.15),0 0 14px rgba(255,217,80,.75);filter:hue-rotate(-18deg) saturate(1.3);}
 @keyframes bombReadyBreathe{0%,100%{box-shadow:inset 0 1px 2px rgba(255,255,255,.1),0 0 8px rgba(255,159,67,.4);}50%{box-shadow:inset 0 1px 2px rgba(255,255,255,.1),0 0 16px rgba(255,159,67,.75);}}
 #bomb-cnt{background:rgba(255,159,67,.22);border-radius:8px;padding:0 5px;font-weight:900;}
+#colorblast-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;font-size:17px;flex-shrink:0;
+  background:radial-gradient(circle at 35% 30%,#3A2A5A,#180F2A 70%);
+  border:1.5px solid rgba(199,125,255,.35);box-shadow:inset 0 1px 2px rgba(255,255,255,.08),0 2px 6px rgba(0,0,0,.35);}
+#colorblast-btn.ready #colorblast-icon,#colorblast-btn:not([disabled]) #colorblast-icon{border-color:rgba(199,125,255,.7);box-shadow:inset 0 1px 2px rgba(255,255,255,.1),0 0 10px rgba(199,125,255,.55);}
 
 #game-container{position:relative;flex-shrink:0;}
 #gameCanvas{display:block;cursor:pointer;transition:box-shadow .35s ease;}
@@ -1368,16 +1373,16 @@ input[type="text"]::placeholder{color:var(--dim);}
   <div id="menu-nav">
     <div class="menu-row">
       <button class="btn-menu" onclick="toggleLB()">
-        <span class="m-icon">🏆</span><span data-t="leaderboard">Sıralama</span>
+        <span class="m-icon"><img src="assets/icons/icon_trophy.png" alt="" style="width:100%;height:100%;object-fit:contain"></span><span data-t="leaderboard">Sıralama</span>
       </button>
       <button class="btn-menu" onclick="showTmStoreModal()">
-        <span class="m-icon">🛍️</span><span data-t="store">Store</span>
+        <span class="m-icon"><img src="assets/icons/icon_store.png" alt="" style="width:100%;height:100%;object-fit:contain"></span><span data-t="store">Store</span>
       </button>
       <button class="btn-menu" onclick="showModal('account')">
         <span class="m-icon">👤</span><span data-t="account">Hesap</span>
       </button>
       <button class="btn-menu" onclick="showModal('settings')">
-        <span class="m-icon">⚙️</span><span data-t="settings">Ayarlar</span>
+        <span class="m-icon"><img src="assets/icons/icon_settings.png" alt="" style="width:100%;height:100%;object-fit:contain"></span><span data-t="settings">Ayarlar</span>
       </button>
     </div>
   </div>
@@ -1413,7 +1418,7 @@ input[type="text"]::placeholder{color:var(--dim);}
       <div class="chip-val" id="comboDisplay">×1</div>
       <div id="combo-timer-bar"><div id="combo-timer-fill"></div></div>
     </div>
-    <button class="btn-icon" onclick="toggleLB()">🏆</button>
+    <button class="btn-icon" onclick="toggleLB()" style="padding:0;overflow:hidden"><img src="assets/icons/icon_trophy.png" alt="" style="width:100%;height:100%;object-fit:cover"></button>
   </div>
   <div id="booster-row">
     <button class="bst-btn" id="bomb-btn"
@@ -1423,7 +1428,7 @@ input[type="text"]::placeholder{color:var(--dim);}
       onpointerup="clearBombHold()"
       onpointerleave="clearBombHold()"
       disabled>
-      <span id="bomb-icon">💣</span>
+      <span id="bomb-icon"><img src="assets/icons/icon_bomb.png" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></span>
       <div class="bomb-info">
         <span><span id="bomb-type-lbl">Bomba</span><span id="bomb-cnt" style="margin-left:3px">×0</span><span id="bomb-ad-icon" style="margin-left:3px;font-size:10px;opacity:.75;display:none">📺</span></span>
         <div id="bomb-bar"><div id="bomb-bar-fill"></div></div>
@@ -1431,7 +1436,7 @@ input[type="text"]::placeholder{color:var(--dim);}
       </div>
     </button>
     <button class="bst-btn" id="colorblast-btn" onclick="activateColorBlast()" disabled>
-      <span id="colorblast-icon">🎨</span>
+      <span id="colorblast-icon"><img src="assets/icons/icon_colorblast.png" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></span>
       <div class="bomb-info">
         <span><span id="colorblast-lbl" data-t="colorBlast">Renk Patlat</span><span id="colorblast-cnt" style="margin-left:3px">×0</span></span>
         <div id="colorblast-bar"><div id="colorblast-bar-fill"></div></div>
@@ -3020,7 +3025,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.08.12-8';
+const BUILD_VER='v2026.08.13-1';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3869,10 +3874,10 @@ function updateBombBar(){
   const icon=document.getElementById('bomb-icon');
   const lbl=document.getElementById('bomb-type-lbl');
   if(bombType==='super'&&bombCount>=2){
-    if(icon) icon.textContent='💥';
+    if(icon) icon.classList.add('super');
     if(lbl) lbl.textContent=t('superBomb');
   } else {
-    if(icon) icon.textContent='💣';
+    if(icon) icon.classList.remove('super');
     if(lbl) lbl.textContent=t('bomb');
   }
 }
