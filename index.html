@@ -36,7 +36,7 @@
 })();
 </script>
 <link rel="icon" type="image/png" href="assets/sky-harbor/tiliq-app-icon.png">
-<link rel="stylesheet" href="crown-quest.css?v=20260824-text-clarity">
+<link rel="stylesheet" href="crown-quest.css?v=20260824-ios-fit-auth">
 </head>
 <body data-theme="dark" data-vibe="kingdom" data-visual="sky-harbor">
 <div id="vfx-flash"></div>
@@ -59,12 +59,12 @@
     <img class="tiliq-wordmark-logo gate-wordmark-logo" src="assets/sky-harbor/tiliq-wordmark.svg" alt="Tiliq">
     <div id="gate-buttons">
       <p class="gate-msg" data-t="gateMsg">Oturum aç</p>
-      <button class="auth-btn auth-btn-google" onclick="window._authSignIn('google')">
+      <button class="auth-btn auth-btn-google" data-auth-provider="google" onclick="window._authSignIn('google')">
 
         <span data-t="googleSignIn">Sign in with Google</span>
       </button>
-      <button class="auth-btn auth-btn-apple" id="apple-signin-gate" style="display:none" onclick="window._authSignIn('apple')">
-
+      <button class="auth-btn auth-btn-apple" id="apple-signin-gate" data-auth-provider="apple" style="display:none" onclick="window._authSignIn('apple')">
+        <span class="apple-mark" aria-hidden="true">&#63743;</span>
         <span data-t="appleSignIn">Sign in with Apple</span>
       </button>
       <button class="auth-btn auth-btn-guest" style="margin-top:8px;opacity:.75;background:transparent;border:1px solid rgba(255,255,255,.25)" onclick="window._authSignInGuest()">
@@ -202,7 +202,7 @@
     <div id="menu-art"><canvas id="menuArtCanvas" width="300" height="88"></canvas></div>
 
     <!-- Ana CTA -->
-    <button class="btn-play" onclick="onPlayPressed()"><span class="play-ico" aria-hidden="true"></span><span data-t="play">Oyna</span></button>
+    <button class="btn-play" id="menu-play-btn" onclick="onPlayPressed()"><span class="play-ico" aria-hidden="true"></span><span data-t="play">Oyna</span></button>
 
     <!-- Sky Harbor referansındaki sağ üçlü eylem rayı. -->
     <div class="kingdom-top-cards">
@@ -247,6 +247,10 @@
       </div>
     </div>
   </div><!-- /menu-scroll -->
+  <div id="play-transition" role="status" aria-live="polite" aria-hidden="true">
+    <img src="assets/sky-harbor/propeller.png" alt="">
+    <span>Uçuş hazırlanıyor…</span>
+  </div>
   <div id="banner-spacer-menu" style="width:100%;flex-shrink:0;height:0;"></div>
 
 </div>
@@ -560,12 +564,12 @@
         <!-- Capacitor (mobil uygulama) auth butonları -->
         <div id="auth-native-area" style="display:none;flex-direction:column;gap:8px;">
           <p style="font-size:12px;color:var(--dim);text-align:center;margin-bottom:8px" data-t="syncDesc">Save your score to the cloud, access from any device</p>
-          <button class="auth-btn auth-btn-google" onclick="window._authSignIn('google')">
+          <button class="auth-btn auth-btn-google" data-auth-provider="google" onclick="window._authSignIn('google')">
 
             <span data-t="googleSignIn">Sign in with Google</span>
           </button>
-          <button class="auth-btn auth-btn-apple" style="display:none" onclick="window._authSignIn('apple')">
-
+          <button class="auth-btn auth-btn-apple" data-auth-provider="apple" style="display:none" onclick="window._authSignIn('apple')">
+            <span class="apple-mark" aria-hidden="true">&#63743;</span>
             <span data-t="appleSignIn">Sign in with Apple</span>
           </button>
         </div>
@@ -596,12 +600,12 @@
              çağrısı, mevcut merge-dialog akışı otomatik devreye girer). -->
         <div id="auth-link-area" style="display:none;flex-direction:column;gap:8px;">
           <p style="font-size:12px;color:var(--dim);text-align:center;margin-bottom:2px" data-t="guestLinkMsg">You're playing as a guest — link an account so your progress isn't lost</p>
-          <button class="auth-btn auth-btn-google" onclick="window._authSignIn('google')">
+          <button class="auth-btn auth-btn-google" data-auth-provider="google" onclick="window._authSignIn('google')">
 
             <span data-t="googleSignIn">Sign in with Google</span>
           </button>
-          <button class="auth-btn auth-btn-apple" id="apple-link-btn" style="display:none" onclick="window._authSignIn('apple')">
-
+          <button class="auth-btn auth-btn-apple" id="apple-link-btn" data-auth-provider="apple" style="display:none" onclick="window._authSignIn('apple')">
+            <span class="apple-mark" aria-hidden="true">&#63743;</span>
             <span data-t="appleSignIn">Sign in with Apple</span>
           </button>
           <button class="auth-btn auth-btn-signout" style="opacity:.6;font-size:12px" onclick="window._confirmGuestReset()" data-t="guestResetBtn">Reset guest session</button>
@@ -2318,7 +2322,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.08.24-text-clarity';
+const BUILD_VER='v2026.08.24-ios-fit-auth';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2349,7 +2353,8 @@ function calcCell(){
   const chrome=hudSpace+navSpace
              + (bannerSpacer?bannerSpacer.getBoundingClientRect().height:(_bannerShown?BANNER_RESERVE_PX:0));
   const vh=window.innerHeight-chrome-8;
-  const byWidth=Math.floor((vw*.88)/GRID);
+  // Dar telefonlarda tahta kenarlara yapışmasın; referanstaki rahat çerçeve oranı.
+  const byWidth=Math.floor((vw*.84)/GRID);
   const byHeight=Math.max(20,Math.floor((vh-trayGap()-26)/10.1));
   return Math.min(byWidth,byHeight,58);
 }
@@ -6733,7 +6738,7 @@ function _onFirebaseUser(user){
   // İlk gerçek giriş VE yerel ilerleme VARSA: önce cloud'a bak.
   const localBest=acct.best||0;
   if(acct._mergedUid!==user.uid && localBest>0){
-    _cloudSyncPromise=_fetchCloudData(user.uid).then(cloud=>{
+    _cloudSyncPromise=_trackCloudSync(_fetchCloudData(user.uid).then(cloud=>{
       acct._mergedUid=user.uid;
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       if(cloud && (cloud.best||0)>0){
@@ -6760,15 +6765,15 @@ function _onFirebaseUser(user){
         localStorage.setItem('tm_acct',JSON.stringify(acct));
         _postLoginSetupOnce();
       });
-    });
+    }));
   } else {
     // Yerel ilerleme yok veya daha önce aktarıldı — normal senkronizasyon
-    _cloudSyncPromise=_firestoreSync(user.uid).then(ok=>{
+    _cloudSyncPromise=_trackCloudSync(_firestoreSync(user.uid).then(ok=>{
       if(!ok){ _showGateError(); return; }
       acct._mergedUid=user.uid;
       localStorage.setItem('tm_acct',JSON.stringify(acct));
       _postLoginSetupOnce();
-    });
+    }));
   }
 }
 // Yeniden dene: son gerçek kullanıcıyla senkronu baştan başlatır.
@@ -6829,9 +6834,31 @@ function _clearAuthActionError(){
   if(el){el.textContent='';el.classList.remove('show');}
 }
 
+let _authSignInPending=false;
+function _setAuthProviderBusy(provider,busy){
+  document.querySelectorAll('[data-auth-provider]').forEach(btn=>{
+    const isCurrent=btn.dataset.authProvider===provider;
+    btn.disabled=!!busy;
+    btn.classList.toggle('auth-pending',!!busy&&isCurrent);
+    btn.setAttribute('aria-busy',busy&&isCurrent?'true':'false');
+  });
+}
+function _finishAuthSignInAttempt(provider){
+  _authSignInPending=false;
+  _setAuthProviderBusy(provider,false);
+}
+
 window._authSignIn = async function(provider){
   const _isNative=!!window.Capacitor?.isNativePlatform?.();
   const isApple=provider==='apple';
+  // Native auth eklentisi aynı anda tek bir interaktif çağrı saklıyor. Çift dokunma
+  // ikinci çağrıyla ilk Apple sayfasının callback'ini ezip iki promise'den birini
+  // sonsuza kadar bekletebiliyordu. İlk dokunuşu anında görünür kıl ve akış bitene
+  // kadar diğer giriş düğmelerini kilitle.
+  if(_authSignInPending)return;
+  _authSignInPending=true;
+  _clearAuthActionError();
+  _setAuthProviderBusy(provider,true);
   _lastSignInProvider=provider;
   if(_isNative && _isIOS){
     // iOS'A ÖZEL YOL (2026-07-11 teşhis sonucu): Firebase JS SDK'sının gerçek CORS+POST
@@ -6844,7 +6871,7 @@ window._authSignIn = async function(provider){
     // (URLSession, WKWebView fetch değil) kullanarak TÜM kimlik doğrulamayı kendi içinde
     // tamamlıyor, result.user doğrudan kullanılabilir geliyor.
     const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication);
-    if(!FA){alert('Auth plugin yüklü değil');return;}
+    if(!FA){_showAuthActionError(new Error('Auth plugin yüklü değil'));_finishAuthSignInAttempt(provider);return;}
     try{
       // KÖK NEDEN — DÖRDÜNCÜ VE SON TUR (2026-07-24, canlı hata mesajıyla KESİN
       // doğrulandı: "Apple JS SDK köprü zaman aşımı — signInWithCredential hiç
@@ -6865,7 +6892,11 @@ window._authSignIn = async function(provider){
       // (başarısız olursa native Firestore'a sorunsuz düşülür, girişi ASLA
       // engellemez).
       const _callPromise=isApple ? FA.signInWithApple({skipNativeAuth:false}) : FA.signInWithGoogle({skipNativeAuth:false});
-      const _to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT 15sn — native '+provider+' çağrısı hiç dönmedi')),15000));
+      // Apple'ın Face ID/Touch ID, e-posta gizleme ve ilk onay ekranı kullanıcı
+      // etkileşimidir; 15 saniyelik eski sınır normal bir oturumu yarıda kesiyordu.
+      // Native handler'ın sessiz hata noktaları artık patch-package ile reject ettiği
+      // için bu sınır sadece gerçek bir bridge kilitlenmesine karşı 90 saniyedir.
+      const _to=new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT 90sn — native '+provider+' çağrısı hiç dönmedi')),90000));
       const result=await Promise.race([_callPromise,_to]);
       const _uidForLog=result?.user?.uid||'apple_pending';
       _dlog(_uidForLog,'native_signin_ok',{provider,hasIdToken:!!result?.credential?.idToken});
@@ -6878,19 +6909,20 @@ window._authSignIn = async function(provider){
         result.user.isAnonymous=false;
         _onFirebaseUser(result.user);
       } else {
-        alert('Giriş tamamlanamadı — kullanıcı bilgisi alınamadı.');
+        _showAuthActionError(new Error('Giriş tamamlanamadı — kullanıcı bilgisi alınamadı.'));
       }
     }catch(e){
       console.warn('Native '+provider+' auth (iOS):',e);
       const code=e?.code||''; const msg=e?.message||JSON.stringify(e);
-      if(!/cancel|1000|closed/i.test(code+msg)) alert('Giriş hatası: '+(code?code+' — ':'')+msg);
+      if(!/cancel|1000|closed/i.test(code+msg)) _showAuthActionError(e);
     }
+    _finishAuthSignInAttempt(provider);
     return;
   }
   if(_isNative){
     // Capacitor native Google/Apple Sign-In (Android — JS SDK köprüsü burada çalışıyor)
     const FA=await _waitForCapPlugin(()=>window.Capacitor?.Plugins?.FirebaseAuthentication);
-    if(!FA){alert('Auth plugin yüklü değil');return;}
+    if(!FA){_showAuthActionError(new Error('Auth plugin yüklü değil'));_finishAuthSignInAttempt(provider);return;}
     try{
       // Google config-varsayılanından etkilenmesin diye açıkça false (bkz. yukarıdaki iOS dalındaki 2026-07-23 notu)
       const result=isApple ? await FA.signInWithApple({skipNativeAuth:true}) : await FA.signInWithGoogle({skipNativeAuth:false});
@@ -6908,12 +6940,12 @@ window._authSignIn = async function(provider){
       } else if(result?.user){
         _onFirebaseUser(result.user);
       } else {
-        alert('Giriş tamamlanamadı (token yok).');
+        _showAuthActionError(new Error('Giriş tamamlanamadı (token yok).'));
       }
     }catch(e){
       console.warn('Native '+provider+' auth:',e);
       const code=e?.code||''; const msg=e?.message||JSON.stringify(e);
-      if(!/cancel|1000|closed/i.test(code+msg)) alert('Giriş hatası: '+(code?code+' — ':'')+msg);
+      if(!/cancel|1000|closed/i.test(code+msg)) _showAuthActionError(e);
     }
   } else {
     // Web: popup önce dene, başarısız olursa redirect
@@ -6921,7 +6953,7 @@ window._authSignIn = async function(provider){
     if(!_fbAuth){
       try{await Promise.race([_authReadyPromise,new Promise((_,reject)=>setTimeout(()=>reject(new Error('auth init timeout')),5000))]);}catch(e){}
     }
-    if(!_fbAuth){_showAuthActionError(new Error('auth init timeout'));return;}
+    if(!_fbAuth){_showAuthActionError(new Error('auth init timeout'));_finishAuthSignInAttempt(provider);return;}
     try{
       const {GoogleAuthProvider,OAuthProvider,signInWithPopup,signInWithRedirect}=await import('./assets/firebase/firebase-auth.js');
       const authP=isApple ? new OAuthProvider('apple.com') : new GoogleAuthProvider();
@@ -6936,6 +6968,7 @@ window._authSignIn = async function(provider){
           await signInWithRedirect(_fbAuth, authP);
         } else if(popupErr.code==='auth/popup-closed-by-user'||popupErr.code==='auth/cancelled-popup-request'){
           // Kullanıcı pencereyi kapattıysa tüm uygulamayı redirect etme.
+          _finishAuthSignInAttempt(provider);
           return;
         } else {
           console.warn('Web '+provider+' auth popup:', popupErr);
@@ -6947,6 +6980,7 @@ window._authSignIn = async function(provider){
       _showAuthActionError(e);
     }
   }
+  _finishAuthSignInAttempt(provider);
 };
 
 // Çıkış yapınca hesaba ait TÜM yerel veriyi sıfırlar — önceden sadece uid/_fbLogged
@@ -7443,13 +7477,26 @@ function showTmStoreModal(){
 }
 function hideTmStoreModal(){document.getElementById('modal-store-tm').classList.remove('active');_stopFlamePreviews();}
 
-// "Oyna" butonuna basınca, buluttaki devam-eden-oyun senkronu henüz bitmemişse
-// KISA bir süre beklenir (max 2.5sn) — aksi halde eski/yerel veri okunup yanlış
-// cihazdan devam ediliyordu (kullanıcı raporu, 2026-07-08: "3 yerden farklı puan").
+function _setPlayTransition(active){
+  const mask=document.getElementById('play-transition');
+  const buttons=document.querySelectorAll('#menu-play-btn,.btn-menu:nth-child(3)');
+  buttons.forEach(btn=>{
+    btn.classList.toggle('syncing',!!active);
+    btn.disabled=!!active;
+  });
+  if(mask){
+    mask.classList.toggle('active',!!active);
+    mask.setAttribute('aria-hidden',active?'false':'true');
+  }
+}
+
+// "Oyna" butonuna basınca yalnızca gerçekten sürmekte olan bulut senkronunu kısa
+// süre bekle. Önceki akış her dokunuşta görünür geribildirim olmadan 1,2 saniyeye
+// kadar ana ekranda kalıyor, iPhone'da düğme çalışmıyormuş hissi veriyordu.
 async function onPlayPressed(){
-  const btn=document.querySelector('.btn-play');
+  if(document.getElementById('play-transition')?.classList.contains('active'))return;
   vibrate(10); // dokunuşa ANINDA tepki (bekleme başlamadan önce) — "geç tepki" hissini önler
-  if(btn)btn.classList.add('syncing');
+  _setPlayTransition(true);
   try{
     // KÖK NEDEN BULUNDU (2026-07-26, "iOS/web/Android'de aynı hesap ama farklı
     // yerden devam ediyor" raporu): bütçe 2026-07-12'de 2.2sn'den 300ms'ye
@@ -7464,18 +7511,20 @@ async function onPlayPressed(){
     // 1.2sn beklettikten sonra yerel veriyle devam eder — kalan senkron arka planda
     // sürer ve _firestoreSync'in savedAt karşılaştırması bir sonraki senkronda
     // kendini düzeltir.
-    const _chain=(async()=>{
-      await _authReadyPromise;
-      if(_cloudSyncPromise) await _cloudSyncPromise;
-    })();
-    await Promise.race([_chain, new Promise(r=>setTimeout(r,1200))]);
+    if(!_cloudSyncSettled){
+      const _chain=(async()=>{
+        await _authReadyPromise;
+        if(_cloudSyncPromise) await _cloudSyncPromise;
+      })();
+      await Promise.race([_chain, new Promise(r=>setTimeout(r,450))]);
+    }
   }catch(e){}
-  if(btn)btn.classList.remove('syncing');
   const st=loadGameState();
   if(st&&st.score>0){
     // Yarım oyun var — sor
     const el=document.getElementById('continue-dialog-score');
     if(el) el.textContent=st.score.toLocaleString()+' '+t('pts');
+    _setPlayTransition(false);
     showModal('continue');
   } else {
     startNewGame();
@@ -7487,6 +7536,7 @@ function startNewGame(){
   showScreen('game');
   resizeCanvas();
   startGame();
+  _setPlayTransition(false);
   updateStreakDisplay();
   showTutorial();
 }
@@ -7632,6 +7682,15 @@ function _refreshCodeDisplays(){
 // "Oyna" butonuna basılınca eski yerel veri okunuyordu çünkü _firestoreSync henüz
 // bitmemişken loadGameState() çağrılıyordu. Artık onPlayPressed bu promise'i bekliyor.
 let _cloudSyncPromise=null;
+let _cloudSyncSettled=true;
+let _cloudSyncVersion=0;
+function _trackCloudSync(promise){
+  const version=++_cloudSyncVersion;
+  _cloudSyncSettled=false;
+  return Promise.resolve(promise).finally(()=>{
+    if(version===_cloudSyncVersion)_cloudSyncSettled=true;
+  });
+}
 // DÜNYA SIRALAMASI UYGUNLUĞU (2026-07-19, kullanıcı isteği): misafir (anonim)
 // kullanıcı kendi Firestore dökümanına yazabilir (cihaz/local ilerlemenin devam
 // edebilmesi için — bkz. Misafir Girişi sistemi). DÜZELTME (2026-07-21, kullanıcı

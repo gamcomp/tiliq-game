@@ -5518,3 +5518,348 @@ html:lang(zh) * {
   .kingdom-season-copy strong,
   .sky-action-label { font-size: 7px; }
 }
+
+/* ── iPhone production fit + platform authentication ──────────────────────
+   The native WebView now draws edge-to-edge and these rules own the safe-area
+   spacing. Controls keep their visual hierarchy without filling every available
+   pixel on narrow portrait displays. */
+#login-gate {
+  padding:
+    max(28px, calc(var(--safe-top) + 18px))
+    18px
+    max(24px, calc(var(--safe-bottom) + 16px));
+}
+
+#login-gate .gate-card {
+  width: min(100%, 372px);
+  padding: 28px 22px 22px;
+  border-color: #c78b35;
+  outline: 1px solid rgba(9, 70, 105, .18);
+  outline-offset: -5px;
+  background:
+    radial-gradient(circle at 50% 0, rgba(116, 202, 231, .16), transparent 34%),
+    linear-gradient(180deg, rgba(255, 252, 241, .985), rgba(232, 214, 178, .99));
+  box-shadow: inset 0 2px 0 #fff, 0 22px 58px rgba(2, 28, 52, .46);
+}
+
+#login-gate .gate-card::before {
+  border-color: #d8a34c;
+  box-shadow: 0 0 0 5px #f6edd6, 0 8px 20px rgba(7, 42, 64, .25);
+}
+
+#login-gate .gate-wordmark-logo {
+  width: min(78%, 248px);
+  border-color: rgba(170, 108, 28, .62);
+  background: rgba(255, 253, 245, .72);
+  box-shadow: inset 0 1px 0 #fff;
+}
+
+#login-gate .gate-msg {
+  margin: 11px 0 8px;
+  color: #18384d;
+  font-size: 14px;
+  font-weight: 650;
+  text-shadow: none;
+}
+
+#login-gate .auth-btn,
+#auth-native-area .auth-btn,
+#auth-link-area .auth-btn {
+  position: relative;
+  min-height: 52px;
+  margin-top: 8px;
+  padding: 0 18px;
+  border-radius: 13px;
+  font-size: 16px;
+  line-height: 1;
+  transition: transform .12s ease, opacity .16s ease, box-shadow .16s ease;
+}
+
+#login-gate .auth-btn-google,
+#auth-native-area .auth-btn-google,
+#auth-link-area .auth-btn-google {
+  border: 1px solid #b8b8b8 !important;
+  background: #fff !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, .16);
+  color: #202124;
+}
+
+#login-gate .auth-btn-apple,
+#auth-native-area .auth-btn-apple,
+#auth-link-area .auth-btn-apple {
+  min-width: 140px;
+  min-height: 52px;
+  border: 1px solid #000 !important;
+  background: #000 !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .26);
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* Apple CDN tarafından üretilen resmi Türkçe düğmeyi uygulamayla birlikte
+   paketliyoruz. Metin DOM'da kaldığı için VoiceOver etiketi korunur. */
+html:lang(tr) #login-gate .auth-btn-apple,
+html:lang(tr) #auth-native-area .auth-btn-apple,
+html:lang(tr) #auth-link-area .auth-btn-apple {
+  background-color: #000 !important;
+  background-image: url("assets/apple-signin/sign-in-tr.png") !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 309px 52px !important;
+  color: transparent;
+}
+
+html:lang(tr) .auth-btn-apple .apple-mark {
+  display: none;
+}
+
+.auth-btn-apple .apple-mark {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  width: 25px;
+  transform: translateY(-51%);
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1;
+  text-align: center;
+}
+
+#login-gate .auth-btn-guest {
+  border: 1px solid rgba(19, 66, 93, .38) !important;
+  background: rgba(255, 255, 255, .34) !important;
+  color: #174263;
+  opacity: 1 !important;
+}
+
+.auth-btn.auth-pending {
+  pointer-events: none;
+  opacity: .72;
+}
+
+.auth-btn.auth-pending::after {
+  content: "";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: auth-spin .7s linear infinite;
+}
+
+.auth-btn-apple.auth-pending::after {
+  border-color: #fff;
+  border-right-color: transparent;
+}
+
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+
+/* Immediate feedback while the short cloud-save freshness check completes. */
+#play-transition {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  visibility: hidden;
+  background: rgba(5, 31, 53, .18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .14s ease, visibility 0s linear .14s;
+  backdrop-filter: blur(1.5px);
+}
+
+#play-transition.active {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+#play-transition img {
+  width: 52px;
+  height: 52px;
+  padding: 7px;
+  border: 2px solid #e3ad53;
+  border-radius: 50%;
+  background: rgba(255, 249, 229, .94);
+  box-shadow: 0 7px 18px rgba(4, 34, 56, .3);
+  animation: play-propeller .55s linear infinite;
+}
+
+#play-transition span {
+  padding: 8px 14px;
+  border: 1px solid #e3ad53;
+  border-radius: 999px;
+  background: rgba(7, 49, 82, .92);
+  color: #fff5dc;
+  font-size: 12px;
+  font-weight: 650;
+  box-shadow: 0 5px 14px rgba(4, 31, 52, .24);
+}
+
+@keyframes play-propeller { to { transform: rotate(360deg); } }
+
+#screen-menu .btn-play.syncing {
+  filter: saturate(.84) brightness(.96);
+}
+
+/* Narrow, tall phones: introduce margins instead of scaling panels to the edge. */
+@media (max-width: 430px) and (min-height: 720px) {
+  #menu-scroll {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .kingdom-hud {
+    min-height: 62px;
+    grid-template-columns: 60px minmax(0, 1fr) 44px;
+    gap: 8px;
+  }
+
+  .kingdom-player,
+  .av-circle {
+    width: 57px;
+    height: 57px;
+  }
+
+  .kingdom-wallets { gap: 6px; }
+  .kingdom-wallet {
+    height: 39px;
+    grid-template-columns: 25px minmax(0, 1fr) 17px;
+    padding-inline: 4px;
+  }
+  .kingdom-wallet::before { width: 25px; height: 25px; }
+
+  #screen-menu .menu-hero {
+    left: 14px;
+    top: calc(var(--safe-top) + 82px);
+    width: min(60vw, 238px);
+    min-height: 76px;
+  }
+
+  .kingdom-top-cards {
+    right: 14px;
+    width: clamp(76px, 21vw, 88px);
+    gap: 12px;
+  }
+
+  #daily-card,
+  .kingdom-card {
+    height: clamp(86px, 11.5dvh, 100px);
+  }
+
+  #screen-menu .btn-play {
+    width: min(62%, 286px);
+    min-height: clamp(66px, 8.7dvh, 76px);
+    border-radius: 32px;
+    font-size: clamp(30px, 8.4vw, 38px);
+  }
+
+  #menu-nav,
+  .game-nav {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    border-radius: 17px;
+  }
+
+  #menu-nav { transform: none; }
+
+  .btn-menu,
+  .game-nav button {
+    height: 68px;
+  }
+
+  .m-icon,
+  .game-nav button::before {
+    width: 37px;
+    height: 37px;
+  }
+
+  .game-hud {
+    height: clamp(128px, 15.8dvh, 144px);
+  }
+
+  #header.game-topbar {
+    left: 14px;
+    right: 14px;
+    height: 52px;
+    grid-template-columns: 52px 1fr 52px;
+  }
+
+  #header .btn-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
+  }
+
+  #score-hero {
+    left: 76px;
+    right: 76px;
+    min-height: 60px;
+  }
+
+  #booster-row {
+    top: calc(var(--safe-top) + 74px);
+    left: 14px;
+    right: 14px;
+    height: 48px;
+    grid-template-columns: minmax(0, 1fr) 74px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .bst-btn,
+  #combo-chip {
+    height: 48px;
+  }
+
+  #bomb-icon,
+  #colorblast-icon {
+    width: 36px;
+    height: 36px;
+    top: 6px;
+  }
+
+  .bst-btn { padding-left: 43px; }
+  #combo-chip { padding-left: 31px; }
+  #combo-chip::before { width: 28px; height: 28px; top: 9px; }
+
+  #game-container {
+    margin-top: clamp(10px, 1.6dvh, 16px);
+  }
+
+  .game-nav {
+    height: 68px;
+    bottom: max(8px, var(--safe-bottom));
+  }
+}
+
+@media (max-height: 719px) {
+  #login-gate .gate-card {
+    padding-top: 22px;
+    padding-bottom: 17px;
+  }
+  #login-gate .gate-card::before {
+    width: 76px;
+    height: 76px;
+    margin-top: -58px;
+  }
+  #login-gate .auth-btn { min-height: 46px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-btn.auth-pending::after,
+  #play-transition img { animation-duration: 1.4s; }
+}
