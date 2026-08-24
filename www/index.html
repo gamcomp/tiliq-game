@@ -36,7 +36,7 @@
 })();
 </script>
 <link rel="icon" type="image/png" href="assets/sky-harbor/tiliq-app-icon.png">
-<link rel="stylesheet" href="crown-quest.css?v=20260824-ios-fit-auth">
+<link rel="stylesheet" href="crown-quest.css?v=20260825-admob-privacy-banner">
 </head>
 <body data-theme="dark" data-vibe="kingdom" data-visual="sky-harbor">
 <div id="vfx-flash"></div>
@@ -487,6 +487,12 @@
         <div class="theme-row" style="flex-wrap:wrap;gap:8px">
           <button class="theme-btn active" id="btn-vibe-kingdom" onclick="setVibe('kingdom')">SKY HARBOR</button>
         </div>
+      </div>
+      <!-- Google UMP yalnızca bölge/hesap yapılandırması gerektiriyorsa gösterir. -->
+      <div class="set-card ad-privacy-card" id="ad-privacy-card" hidden>
+        <div class="set-title"><img src="assets/sky-harbor/settings.png" alt=""> <span id="ad-privacy-title">Gizlilik ve Reklamlar</span></div>
+        <p id="ad-privacy-note">Reklam kişiselleştirme tercihlerini dilediğin zaman güncelleyebilirsin.</p>
+        <button class="theme-btn ad-privacy-btn" id="ad-privacy-btn" onclick="openAdPrivacyOptions()">Reklam gizlilik seçenekleri</button>
       </div>
       <!-- DİL kartı -->
       <div class="set-card">
@@ -1059,6 +1065,7 @@ function applyLang(){
   if(document.getElementById('store-body')) renderStoreBody();
   if(document.getElementById('modal-daily')?.classList.contains('active')) renderDailyModal();
   updateContinueBtn();
+  if(typeof _updateAdPrivacyUI==='function'&&_privacyOptionsRequired)_updateAdPrivacyUI();
   // İsim çeviriyle ezilmesin — gerçek profil adını geri yaz
   if(typeof updateMenuAvatar==='function') updateMenuAvatar();
 }
@@ -1140,6 +1147,7 @@ function updateSound(){
   sndOn=document.getElementById('snd-toggle').checked;
   localStorage.setItem('tm_snd',sndOn?'on':'off');
   _updateAudioSettingsUI();
+  if(typeof _syncAdAudioPolicy==='function')_syncAdAudioPolicy();
   if(typeof syncWallet==='function')syncWallet();
 }
 function updateMusic(){
@@ -1147,6 +1155,7 @@ function updateMusic(){
   localStorage.setItem('tm_music',musicOn?'on':'off');
   _updateAudioSettingsUI();
   _syncSkyMusic();
+  if(typeof _syncAdAudioPolicy==='function')_syncAdAudioPolicy();
 }
 function _updateAudioSettingsUI(){
   const row=document.getElementById('vol-row');
@@ -1158,6 +1167,7 @@ function updateVol(v){
   sl.style.setProperty('--pct',v+'%');
   localStorage.setItem('tm_vol',sndVol);
   _setSkyMusicLevel();
+  if(typeof _syncAdAudioPolicy==='function')_syncAdAudioPolicy();
   if(typeof syncWallet==='function')syncWallet();
 }
 function updateHaptic(){
@@ -2322,7 +2332,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.08.24-ios-fit-auth';
+const BUILD_VER='v2026.08.25-admob-privacy-banner';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2334,7 +2344,10 @@ const GRID=8;
 // dead zone" hatası olurdu.
 let _bannerShown=false;
 let _bannerSizeListenerAdded=false;
-const BANNER_RESERVE_PX=64; // adaptif banner için ayrılan güvenli alt boşluk (tepsi asla kapanmaz)
+let _bannerNativeExists=false,_bannerDesired=false,_bannerState='idle';
+let _bannerRetryTimer=null,_bannerRetryAttempt=0,_bannerHeight=0,_bannerLastHeight=0;
+let _adMobReady=false,_adsCanRequest=false,_privacyOptionsRequired=false,_adMobInitPromise=null;
+const BANNER_RESERVE_PX=64; // boyut eventi gecikirse kullanılan toplam güvenli alan
 const trayGap=()=>12;
 function outerUiHeight(el,fallback){
   if(!el)return fallback;
@@ -2971,8 +2984,8 @@ const ADMOB_REWARDED_ID=_isIOS?'ca-app-pub-1366817286080705/8274070242':'ca-app-
 const ADMOB_INTERSTITIAL_ID=_isIOS?'ca-app-pub-1366817286080705/2069991062':'ca-app-pub-1366817286080705/5666042603';
 // Gerçek banner ad unit ID (com.tiliq.game)
 const ADMOB_BANNER_ID=_isIOS?'ca-app-pub-1366817286080705/7286658728':'ca-app-pub-1366817286080705/5782005360';
-let _adCb=null,_adTick=null,_admobListeners=[];
-let _interReady=false;
+let _adCb=null,_adTick=null,_admobListeners=[],_bannerListeners=[];
+let _interReady=false,_interPreparing=false,_fullScreenAdOpen=false,_lastInterstitialAt=0;
 // Banner artık oyun içinde de gösteriliyor (kullanıcı isteği, 2026-07-09) — önceden
 // sadece menüde açıktı ("HUD'u kapatmaz" kuralı gereği tepsi/HUD ile çakışmasın diye
 // oyun ekranında kapalı tutuluyordu). Artık çakışmayı DOM'da GERÇEK bir boşluk elemanıyla
@@ -2981,10 +2994,14 @@ let _interReady=false;
 // payı hiç etkisi olmuyor (test edilip görüldü). Spacer, canvas boyutundan bağımsız çalışır.
 const BANNER_ENABLED=true;
 function _setBannerSpacers(px){
+  const adHeight=Math.max(0,Math.ceil(Number(px)||0));
+  const safeHeight=adHeight?adHeight+8:0;
+  _bannerHeight=adHeight;
+  if(adHeight)_bannerLastHeight=adHeight;
   const gm=document.getElementById('banner-spacer-menu');
   const gg=document.getElementById('banner-spacer-game');
-  if(gm) gm.style.height=px+'px';
-  if(gg) gg.style.height=px+'px';
+  if(gm) gm.style.height=safeHeight+'px';
+  if(gg) gg.style.height=safeHeight+'px';
   // MODAL/BANNER ÇAKIŞMASI — DÜZELTME v2 (2026-07-20, "ana ekran ve oyun ekranında
   // banner kaybolmasın" raporu): önceki çözüm her modal açılışında native banner'ı
   // hideBanner()/showBanner() ile aç/kapa yapıyordu — bu hem gereksiz native round-trip
@@ -2992,102 +3009,235 @@ function _setBannerSpacers(px){
   // kayboluyor" şikayetine yol açtı. Artık banner HİÇ kapatılmıyor — bunun yerine
   // .modal-card'a (bkz. CSS) bu CSS değişkeni kadar alt boşluk ekleniyor, içerik
   // banner'ın native çizim alanına hiç girmiyor.
-  document.documentElement.style.setProperty('--banner-h', px+'px');
+  document.documentElement.style.setProperty('--banner-h',safeHeight+'px');
+  document.documentElement.style.setProperty('--banner-ad-h',adHeight+'px');
+  document.documentElement.classList.toggle('banner-visible',adHeight>0);
+  if(document.getElementById('screen-game')?.classList.contains('active')){
+    requestAnimationFrame(()=>resizeCanvas());
+  }
+}
+
+function _screenWantsBanner(){
+  if(document.visibilityState==='hidden')return false;
+  return !!document.querySelector('#screen-menu.active,#screen-game.active');
+}
+function _clearBannerRetry(){
+  if(_bannerRetryTimer){clearTimeout(_bannerRetryTimer);_bannerRetryTimer=null;}
+}
+function _scheduleBannerRetry(){
+  _clearBannerRetry();
+  if(!_bannerDesired||!_adsCanRequest||navigator.onLine===false)return;
+  const delays=[15000,30000,60000,120000,300000];
+  const delay=delays[Math.min(_bannerRetryAttempt++,delays.length-1)];
+  _bannerRetryTimer=setTimeout(()=>{_bannerRetryTimer=null;if(_screenWantsBanner())showBanner();},delay);
+}
+async function _installBannerListeners(AdMob){
+  if(_bannerSizeListenerAdded)return;
+  _bannerSizeListenerAdded=true;
+  _bannerListeners.push(await AdMob.addListener('bannerAdSizeChanged',(info)=>{
+    if(!_bannerDesired)return;
+    const h=info&&Number(info.height)>0?Number(info.height):BANNER_RESERVE_PX-8;
+    _bannerState='shown';_bannerShown=true;_bannerNativeExists=true;_bannerRetryAttempt=0;
+    _clearBannerRetry();_setBannerSpacers(h);
+  }));
+  _bannerListeners.push(await AdMob.addListener('bannerAdLoaded',()=>{
+    if(!_bannerDesired){hideBanner();return;}
+    _bannerState='shown';_bannerShown=true;_bannerNativeExists=true;_bannerRetryAttempt=0;
+    _clearBannerRetry();
+    if(!_bannerHeight)_setBannerSpacers(BANNER_RESERVE_PX-8);
+  }));
+  _bannerListeners.push(await AdMob.addListener('bannerAdFailedToLoad',(info)=>{
+    console.warn('Banner load:',info);
+    _bannerState='failed';_bannerShown=false;_bannerNativeExists=false;_setBannerSpacers(0);
+    Promise.resolve(AdMob.removeBanner()).catch(()=>{});
+    _scheduleBannerRetry();
+  }));
+  _bannerListeners.push(await AdMob.addListener('bannerAdImpression',()=>{
+    logEvent('ad_impression',{ad_format:'banner'});
+  }));
 }
 
 // ── BANNER (alt şerit — menü VE oyun ekranında, tepsi/HUD ile çakışmaz) ──────
 async function showBanner(){
-  if(!BANNER_ENABLED)return;        // Banner devre dışı
-  if(isNoAds())return;              // VIP/Reklamsız sistemden kaldırıldı (2026-07-15) — artık hep false
+  _bannerDesired=true;
+  if(!BANNER_ENABLED||isNoAds())return;
   const AdMob=_getAdMob();
-  if(!AdMob||_bannerShown)return;   // Web/test: banner yok
+  if(!AdMob||!_adMobReady||!_adsCanRequest)return;
+  if(_bannerState==='loading'||_bannerState==='shown')return;
   try{
-    // Adaptif banner yüksekliği cihaza göre değişir (sabit 64px bazı cihazlarda
-    // yetersiz kalıp menü/tepsiyi kapatıyordu) — gerçek boyutu bannerAdSizeChanged
-    // event'inden alıp boşluğu ona göre ayarlıyoruz, 64px sadece ilk/varsayılan tahmin.
-    if(!_bannerSizeListenerAdded){
-      _bannerSizeListenerAdded=true;
-      AdMob.addListener('bannerAdSizeChanged',(info)=>{
-        const h=info&&info.height>0?Math.ceil(info.height)+8:BANNER_RESERVE_PX; // +8 güvenlik payı
-        _setBannerSpacers(h);
-      });
+    _clearBannerRetry();
+    if(_bannerNativeExists&&_bannerState==='hidden'){
+      _bannerState='loading';
+      await AdMob.resumeBanner();
+      _bannerState='shown';_bannerShown=true;
+      _setBannerSpacers(_bannerLastHeight||BANNER_RESERVE_PX-8);
+      return;
     }
+    _bannerState='loading';_bannerNativeExists=true;
     await AdMob.showBanner({
       adId:ADMOB_BANNER_ID,
       adSize:'ADAPTIVE_BANNER',
       position:'BOTTOM_CENTER',
       margin:0,
     });
-    _bannerShown=true;
-    _setBannerSpacers(BANNER_RESERVE_PX); // ilk tahmin, sizeChanged gelince güncellenecek
-    // Oyun ekranındaysak tahtayı/tepsiyi de yeniden ölçekle (küçük ek güvenlik payı)
-    if(document.getElementById('screen-game')?.classList.contains('active')) resizeCanvas();
-  }catch(e){ console.warn('Banner show:',e); }
+  }catch(e){
+    console.warn('Banner show:',e);
+    _bannerState='failed';_bannerShown=false;_bannerNativeExists=false;_setBannerSpacers(0);
+    _scheduleBannerRetry();
+  }
 }
 async function hideBanner(){
+  _bannerDesired=false;_clearBannerRetry();_setBannerSpacers(0);
   const AdMob=_getAdMob();
-  if(!AdMob||!_bannerShown)return;
+  if(!AdMob||!_bannerNativeExists){_bannerShown=false;_bannerState='hidden';return;}
   try{
-    await AdMob.hideBanner(); _bannerShown=false;
-    _setBannerSpacers(0);
-    if(document.getElementById('screen-game')?.classList.contains('active')) resizeCanvas();
+    await AdMob.hideBanner();_bannerShown=false;_bannerState='hidden';
   }catch(e){ console.warn('Banner hide:',e); }
 }
+window.addEventListener('online',()=>{if(_screenWantsBanner()){_bannerDesired=true;showBanner();}});
 
 // ── INTERSTITIAL (tam ekran, oyun bitişinde) ─────────────────────────────────
 async function _prepareInterstitial(){
   const AdMob=_getAdMob();
-  if(!AdMob||isNoAds())return;
-  try{ await AdMob.prepareInterstitial({adId:ADMOB_INTERSTITIAL_ID}); _interReady=true; }
-  catch(e){ console.warn('Interstitial prepare:',e); }
+  if(!AdMob||!_adMobReady||!_adsCanRequest||isNoAds()||_interReady||_interPreparing)return;
+  _interPreparing=true;
+  try{
+    await Promise.race([
+      AdMob.prepareInterstitial({adId:ADMOB_INTERSTITIAL_ID}),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error('interstitial timeout')),12000)),
+    ]);
+    _interReady=true;
+  }catch(e){_interReady=false;console.warn('Interstitial prepare:',e);}
+  finally{_interPreparing=false;}
 }
 async function showInterstitial(){
-  if(isNoAds())return;              // VIP/Reklamsız sistemden kaldırıldı (2026-07-15) — artık hep false
+  if(isNoAds()||!_adsCanRequest||_fullScreenAdOpen||Date.now()-_lastInterstitialAt<90000)return;
   const AdMob=_getAdMob();
-  if(!AdMob)return;                 // Web/test: interstitial yok
+  if(!AdMob||!_adMobReady)return;
   try{
     if(!_interReady) await _prepareInterstitial();
     if(!_interReady)return;
-    _setSkyMusicPaused(true);
+    _fullScreenAdOpen=true;_setSkyMusicPaused(true);
     let interMusicListeners=[];
     const resumeAfterInterstitial=()=>{
-      _setSkyMusicPaused(false);
+      _fullScreenAdOpen=false;_setSkyMusicPaused(false);
       interMusicListeners.forEach(listener=>listener&&listener.remove&&listener.remove());
       interMusicListeners=[];
     };
     try{
       interMusicListeners.push(await AdMob.addListener('interstitialAdDismissed',resumeAfterInterstitial));
       interMusicListeners.push(await AdMob.addListener('interstitialAdFailedToShow',resumeAfterInterstitial));
+      _lastInterstitialAt=Date.now();_interReady=false;
       await AdMob.showInterstitial();
     }catch(e){resumeAfterInterstitial();throw e;}
-    _interReady=false;
     _prepareInterstitial();         // sonraki için önden hazırla
-  }catch(e){ console.warn('Interstitial show:',e); }
+  }catch(e){_fullScreenAdOpen=false;_setSkyMusicPaused(false);console.warn('Interstitial show:',e);}
 }
 
 function _getAdMob(){
   return window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.AdMob||null;
 }
 
+function _syncAdAudioPolicy(){
+  const AdMob=_getAdMob();
+  if(!AdMob||!_adMobReady)return;
+  if(AdMob.setApplicationMuted)AdMob.setApplicationMuted({muted:!sndOn&&!musicOn}).catch(()=>{});
+  if(AdMob.setApplicationVolume)AdMob.setApplicationVolume({volume:Math.round(sndVol*10)/10}).catch(()=>{});
+}
+
+async function _resumeBannerAfterForeground(){
+  if(!_screenWantsBanner()||!_adsCanRequest)return;
+  _bannerDesired=true;
+  const AdMob=_getAdMob();
+  if(AdMob&&_bannerNativeExists){
+    try{
+      await AdMob.resumeBanner();
+      _bannerState='shown';_bannerShown=true;
+      if(!_bannerHeight)_setBannerSpacers(_bannerLastHeight||BANNER_RESERVE_PX-8);
+      return;
+    }catch(e){_bannerNativeExists=false;_bannerState='failed';}
+  }
+  showBanner();
+}
+
 async function initAdMob(){
+  if(_adMobReady)return;
+  if(_adMobInitPromise)return _adMobInitPromise;
   const AdMob=_getAdMob();
   if(!AdMob)return;
-  try{
-    // iOS'a ÖZEL ZORUNLU ADIM (2026-07-15, Android'de karşılığı yok/gerekmiyor):
-    // Info.plist'te NSUserTrackingUsageDescription tanımlı ama izin isteği hiç
-    // TETİKLENMİYORDU — App Tracking Transparency izni "belirlenmemiş" kalınca
-    // Apple bunu "reddedilmiş" gibi işliyor, reklam ağlarının teklif kalitesini
-    // düşürüyor (SKAdNetworkItems eksikliğiyle birlikte etkisi büyüyordu). Android
-    // bu izin akışını hiç gerektirmiyor, bu yüzden fark sadece iOS'ta görülüyordu.
-    if(_isIOS && AdMob.requestTrackingAuthorization){
-      try{ await AdMob.requestTrackingAuthorization(); }catch(e){console.warn('ATT request:',e);}
+  _adMobInitPromise=(async()=>{
+    try{
+      await AdMob.initialize({initializeForTesting:false,maxAdContentRating:'General'});
+      _adMobReady=true;
+      await _installBannerListeners(AdMob);
+
+      // UMP bilgisini her uygulama açılışında yenile; gerekiyorsa Google'ın kendi
+      // mesajını göster ve yalnızca SDK izin veriyorsa reklam talep et.
+      let consentInfo={canRequestAds:true,privacyOptionsRequirementStatus:'NOT_REQUIRED'};
+      if(AdMob.requestConsentInfo){
+        try{
+          consentInfo=await AdMob.requestConsentInfo();
+          if(consentInfo.status==='REQUIRED'&&consentInfo.isConsentFormAvailable){
+            consentInfo=await AdMob.showConsentForm();
+          }
+        }catch(e){
+          console.warn('Ad consent:',e);
+          consentInfo={canRequestAds:false,privacyOptionsRequirementStatus:'UNKNOWN'};
+        }
+      }
+      _adsCanRequest=consentInfo.canRequestAds===true;
+      _privacyOptionsRequired=consentInfo.privacyOptionsRequirementStatus==='REQUIRED';
+      _updateAdPrivacyUI();
+      if(!_adsCanRequest)return;
+
+      if(_isIOS&&AdMob.requestTrackingAuthorization){
+        try{
+          const att=AdMob.trackingAuthorizationStatus?await AdMob.trackingAuthorizationStatus():null;
+          const status=att&&(att.status||att.value);
+          if(!status||status==='notDetermined'||status==='NOT_DETERMINED')await AdMob.requestTrackingAuthorization();
+        }catch(e){console.warn('ATT request:',e);}
+      }
+      _syncAdAudioPolicy();
+      _prepareInterstitial();
+      _prepareRewardedAd();
+      if(_screenWantsBanner())showBanner();
+    }catch(e){
+      _adMobReady=false;_adsCanRequest=false;_adMobInitPromise=null;
+      console.warn('AdMob init:',e);
     }
-    await AdMob.initialize({initializeForTesting:false});
-    _prepareInterstitial();   // ilk interstitial'ı önden hazırla
-    _prepareRewardedAd();     // ilk ödüllü reklamı önden hazırla ("reklamlar geç açılıyor" raporu — önceden hiç preload yoktu, her tıklamada sıfırdan indiriliyordu)
-    // Menüdeysek banner'ı göster (AdMob hazır olduktan sonra)
-    if(!document.getElementById('screen-game')?.classList.contains('active')) showBanner();
-  }catch(e){console.warn('AdMob init:',e);}
+  })();
+  return _adMobInitPromise;
+}
+
+function _updateAdPrivacyUI(message){
+  const card=document.getElementById('ad-privacy-card');
+  if(!card)return;
+  card.hidden=!_privacyOptionsRequired;
+  const tr=lang==='TR';
+  const title=document.getElementById('ad-privacy-title');if(title)title.textContent=tr?'Gizlilik ve Reklamlar':'Privacy & Ads';
+  const note=document.getElementById('ad-privacy-note');if(note)note.textContent=message||(tr?'Reklam tercihlerini dilediğin zaman güncelleyebilirsin.':'You can update your ad choices at any time.');
+  const btn=document.getElementById('ad-privacy-btn');if(btn)btn.textContent=tr?'Reklam gizlilik seçenekleri':'Ad privacy choices';
+}
+async function openAdPrivacyOptions(){
+  const AdMob=_getAdMob(),btn=document.getElementById('ad-privacy-btn');
+  if(!AdMob||!_adMobReady||!AdMob.showPrivacyOptionsForm)return;
+  if(btn)btn.disabled=true;
+  try{
+    await AdMob.showPrivacyOptionsForm();
+    const info=await AdMob.requestConsentInfo();
+    _adsCanRequest=info.canRequestAds===true;
+    _privacyOptionsRequired=info.privacyOptionsRequirementStatus==='REQUIRED';
+    _updateAdPrivacyUI();
+    if(_adsCanRequest){_prepareInterstitial();_prepareRewardedAd();if(_screenWantsBanner())showBanner();}
+    else{
+      await hideBanner();
+      try{await AdMob.removeBanner();}catch(e){}
+      _bannerNativeExists=false;_interReady=false;_rewardReady=false;
+    }
+  }catch(e){
+    console.warn('Privacy options:',e);
+    _updateAdPrivacyUI(lang==='TR'?'Tercihler şu anda açılamadı. Lütfen tekrar dene.':'Choices are unavailable right now. Please try again.');
+  }finally{if(btn)btn.disabled=false;}
 }
 
 // ── ÖDÜLLÜ REKLAM ÖN-YÜKLEME ─────────────────────────────────────────────────
@@ -3096,13 +3246,18 @@ async function initAdMob(){
 // reklam gösterilene kadar birkaç saniye boş bekleme oluyordu ("reklamlar çok geç açılıyor").
 // Şimdi reklam, ihtiyaç duyulmadan ÖNCE (oyun açılışında ve her izlemeden sonra) arka
 // planda hazırlanıyor; buton tıklandığında genelde zaten hazır, anında açılıyor.
-let _rewardReady=false, _rewardPreparing=false;
+let _rewardReady=false,_rewardPreparing=false,_rewardFlowActive=false;
 async function _prepareRewardedAd(){
   const AdMob=_getAdMob();
-  if(!AdMob||_rewardReady||_rewardPreparing)return;
+  if(!AdMob||!_adMobReady||!_adsCanRequest||_rewardReady||_rewardPreparing)return;
   _rewardPreparing=true;
-  try{ await AdMob.prepareRewardVideoAd({adId:ADMOB_REWARDED_ID}); _rewardReady=true; }
-  catch(e){ console.warn('Rewarded prepare:',e); }
+  try{
+    await Promise.race([
+      AdMob.prepareRewardVideoAd({adId:ADMOB_REWARDED_ID}),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error('rewarded timeout')),12000)),
+    ]);
+    _rewardReady=true;
+  }catch(e){_rewardReady=false;console.warn('Rewarded prepare:',e);}
   finally{ _rewardPreparing=false; }
 }
 
@@ -3131,60 +3286,78 @@ function _setAdOverlayState(state,title,copy){
 }
 function _showAdOverlay(meta,state='loading'){
   _setSkyMusicPaused(true);
+  // Ödüllü reklamın hazırlık/hata paneli açıkken alt banner ayrı bir reklam gibi
+  // görünmesin ve kapatma alanına binmesin. Akış kapanınca kaldığı ekranda geri gelir.
+  hideBanner();
   _adContext=meta||adContext('default');
   const ov=document.getElementById('ad-overlay');
   const icon=document.getElementById('ad-reward-icon');if(icon)icon.src=_adContext.icon;
   const title=document.getElementById('ad-reward-title');if(title)title.textContent=_adContext.title;
   const copy=document.getElementById('ad-reward-copy');if(copy)copy.textContent=_adContext.copy;
-  const skip=document.getElementById('ad-skip-btn');if(skip)skip.style.display='none';
+  const skip=document.getElementById('ad-skip-btn');if(skip){skip.style.display='none';skip.textContent=lang==='TR'?'Kapat':'Close';}
   const timer=document.getElementById('ad-timer');if(timer){timer.textContent='…';timer.style.setProperty('--ad-progress','0');}
   _setAdOverlayState(state,lang==='TR'?'Reklam hazırlanıyor…':'Preparing ad…',lang==='TR'?'Bağlantı kuruluyor, bu ekran otomatik ilerler':'Connecting; this screen advances automatically');
   ov.style.display='flex';
 }
-function _hideAdOverlay(resumeMusic=true){
+function _hideAdOverlay(resumeMusic=true,resumeBanner=true){
   const ov=document.getElementById('ad-overlay');if(ov)ov.style.display='none';
   if(resumeMusic)_setSkyMusicPaused(false);
+  if(resumeBanner&&_screenWantsBanner()){_bannerDesired=true;showBanner();}
 }
 function _completeRewardedAd(onRewarded){
   _showAdOverlay(_adContext,'done');
   _setAdOverlayState('done',lang==='TR'?'Ödül hazır!':'Reward ready!',lang==='TR'?'Hesabına uygulanıyor…':'Applying it to your account…');
   const timer=document.getElementById('ad-timer');if(timer){timer.textContent='✓';timer.style.setProperty('--ad-progress','100');}
-  setTimeout(()=>{_hideAdOverlay();logEvent('ad_rewarded',{ad_format:'rewarded'});onRewarded&&onRewarded();},720);
+  setTimeout(()=>{_rewardFlowActive=false;_fullScreenAdOpen=false;_hideAdOverlay();logEvent('ad_rewarded',{ad_format:'rewarded'});onRewarded&&onRewarded();},720);
+}
+
+function _clearRewardedListeners(){
+  _admobListeners.forEach(l=>l&&l.remove&&l.remove());
+  _admobListeners=[];
+}
+function _showAdUnavailable(){
+  _clearRewardedListeners();_rewardFlowActive=false;_fullScreenAdOpen=false;_rewardReady=false;
+  _showAdOverlay(_adContext||adContext('default'),'error');
+  _setAdOverlayState('error',lang==='TR'?'Reklam şu anda hazır değil':'Ad unavailable',lang==='TR'?'Bağlantını kontrol edip biraz sonra yeniden dene. Ödül harcanmadı.':'Check your connection and try again shortly. Nothing was spent.');
+  const timer=document.getElementById('ad-timer');if(timer){timer.textContent='!';timer.style.setProperty('--ad-progress','0');}
+  const skip=document.getElementById('ad-skip-btn');if(skip){skip.textContent=lang==='TR'?'Kapat':'Close';skip.style.display='flex';}
+  _setSkyMusicPaused(false);
+  setTimeout(()=>_prepareRewardedAd(),15000);
 }
 
 async function showRewardedAd(onRewarded,meta){
+  if(_rewardFlowActive||_fullScreenAdOpen)return;
+  _rewardFlowActive=true;
   _showAdOverlay(meta||adContext('default'),'loading');
   const AdMob=_getAdMob();
   if(!AdMob){_showMockAd(onRewarded,meta);return;}
+  if(!_adMobReady||!_adsCanRequest){_showAdUnavailable();return;}
   try{
     // Önceki listener'ları temizle
-    _admobListeners.forEach(l=>l&&l.remove&&l.remove());
-    _admobListeners=[];
+    _clearRewardedListeners();
     let rewarded=false;
     const l1=await AdMob.addListener('onRewardedVideoAdReward',()=>{rewarded=true;});
     const l2=await AdMob.addListener('onRewardedVideoAdDismissed',()=>{
-      l1.remove();l2.remove();
+      _clearRewardedListeners();_fullScreenAdOpen=false;_rewardFlowActive=false;
       _rewardReady=false;
       _prepareRewardedAd(); // sonraki için hemen yeniden hazırla
       if(rewarded)_completeRewardedAd(onRewarded);
       else _hideAdOverlay();
     });
-    _admobListeners=[l1,l2];
+    const l3=await AdMob.addListener('onRewardedVideoAdFailedToShow',()=>_showAdUnavailable());
+    _admobListeners=[l1,l2,l3];
     if(!_rewardReady) await _prepareRewardedAd(); // hazır değilse (nadir) burada bekle
-    // KOD BOŞLUĞU (2026-07-15, "reklam hazır değil" hatası raporu): prepare
-    // başarısız olsa bile (ör. no-fill) kod yine de showRewardVideoAd()'ı
-    // çağırıyordu — native SDK "ad not ready" hatası fırlatıyordu, kullanıcı
-    // bunu görüyordu. Artık prepare gerçekten başarısız kaldıysa direkt sahte
-    // reklama düşülüyor, native SDK'ya hiç sorulmuyor.
-    if(!_rewardReady){ _showMockAd(onRewarded,meta); return; }
+    // Native no-fill/failure durumunda sahte reklamla ödül VERME. Tarayıcıdaki
+    // demo akışı native gelir/ödül akışına hiçbir zaman karışmamalı.
+    if(!_rewardReady){_showAdUnavailable();return;}
     _setAdOverlayState('loading',lang==='TR'?'Reklam açılıyor…':'Opening ad…',lang==='TR'?'Ödül için reklamı sonuna kadar izle':'Watch to the end to receive the reward');
     await new Promise(resolve=>setTimeout(resolve,180));
-    _hideAdOverlay(false);
+    _fullScreenAdOpen=true;
+    _hideAdOverlay(false,false);
     await AdMob.showRewardVideoAd();
   }catch(e){
     console.warn('AdMob rewarded error:',e);
-    _rewardReady=false;
-    _showMockAd(onRewarded,meta); // Hata durumunda mock'a düş
+    _showAdUnavailable();
   }
 }
 
@@ -3200,14 +3373,13 @@ function _showMockAd(onRewarded,meta){
   _adTick=setInterval(()=>{
     t--;
     timer.textContent=Math.max(0,t);timer.style.setProperty('--ad-progress',String((5-t)*20));
-    if(t===0)document.getElementById('ad-skip-btn').style.display='flex';
     if(t<=0){clearInterval(_adTick);closeAd(true);}
   },1000);
 }
 function closeAd(rewarded){
   clearInterval(_adTick);
   const cb=_adCb;
-  _adCb=null;
+  _adCb=null;_rewardFlowActive=false;_fullScreenAdOpen=false;
   if(rewarded&&cb)_completeRewardedAd(cb);
   else _hideAdOverlay();
 }
@@ -5997,6 +6169,7 @@ function showModal(id){
   if(id==='add-friend'){syncMyCodeUI();renderFriendCards();}
   if(id==='daily'){renderDailyModal();}
   if(id==='missions'){renderMissionModal();}
+  if(id==='settings'&&typeof _updateAdPrivacyUI==='function')_updateAdPrivacyUI();
   document.getElementById('modal-'+id).classList.add('active');
 }
 function hideModal(id){
@@ -8033,9 +8206,12 @@ window.addEventListener('blur',()=>{_flushWalletNow();if(typeof _flushSavedGameN
     if(!isActive){
       _flushWalletNow();
       if(typeof _flushSavedGameNow==='function')_flushSavedGameNow();
-    } else if(typeof _flushWriteQueue==='function'){
-      // Uygulama öne gelince, önceden başarısız/asılı kalmış yazmalar varsa tekrar dene.
-      _flushWriteQueue();
+    } else {
+      // Uygulama öne gelince hem bekleyen bulut yazılarını hem de native banner'ı
+      // geri getir. Bazı iOS/Android sürümleri arka plan dönüşünde banner view'ını
+      // saklıyor ama JS durumunu değiştirmiyor.
+      if(typeof _flushWriteQueue==='function')_flushWriteQueue();
+      if(typeof _resumeBannerAfterForeground==='function')_resumeBannerAfterForeground();
     }
   });
 })();
@@ -8660,6 +8836,10 @@ function skipTutorial(){
 
 </script>
 
+<!-- Native AdMob banner WebView'in üstünde çizilir; bu yatak yalnızca ekranın
+     banner için ayırdığı alanı temaya bağlar ve reklam gelmezse görünmez. -->
+<div id="ad-banner-bed" aria-hidden="true"><span>REKLAM</span></div>
+
 <!-- ── REKLAM OVERLAY ── -->
 <div id="ad-overlay">
   <div class="ad-shell" id="ad-shell" data-state="loading">
@@ -8676,7 +8856,7 @@ function skipTutorial(){
       <div><strong id="ad-progress-title" data-t="adWatching">Reklam izleniyor…</strong><small id="ad-progress-copy">Tamamlanınca ödül otomatik verilecek</small></div>
     </div>
     <div class="ad-flow-steps" aria-hidden="true"><span class="active"><i>1</i>HAZIRLA</span><b></b><span><i>2</i>İZLE</span><b></b><span><i>3</i>ÖDÜL</span></div>
-    <button id="ad-skip-btn" onclick="closeAd(true)"><span class="ui-check-icon" aria-hidden="true"></span> Ödülü Al</button>
+    <button id="ad-skip-btn" onclick="closeAd(false)">Kapat</button>
   </div>
 </div>
 

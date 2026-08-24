@@ -1,6 +1,6 @@
 {
   "name": "tiliq",
-  "version": "1.3.86",
+  "version": "1.3.87",
   "description": "Tiliq — Mobil Blok Puzzle Oyunu",
   "scripts": {
     "postinstall": "patch-package",
@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^6.0.1",
-    "@capacitor-community/admob": "^8.0.0",
+    "@capacitor-community/admob": "8.1.0",
     "@capacitor-community/in-app-review": "^6.0.0",
     "@capacitor-firebase/authentication": "^6.0.0",
     "@capacitor-firebase/crashlytics": "^6.3.1",

@@ -5863,3 +5863,105 @@ html:lang(tr) .auth-btn-apple .apple-mark {
   .auth-btn.auth-pending::after,
   #play-transition img { animation-duration: 1.4s; }
 }
+
+/* ── AdMob 2026: anchored adaptive banner safe area ────────────────────────
+   Native banner WebView'in üstünde çizildiğinden yerleşim CSS tarafından
+   otomatik bilinmez. JS gerçek reklam yüksekliğini bu iki değişkene yazar. */
+:root {
+  --banner-h: 0px;
+  --banner-ad-h: 0px;
+}
+
+[hidden] { display: none !important; }
+
+#ad-banner-bed {
+  position: fixed;
+  left: 50%;
+  bottom: var(--safe-bottom);
+  z-index: 900;
+  width: min(100%, 480px);
+  height: var(--banner-ad-h);
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, #fff9e9, #efe0bd);
+  border-top: 1px solid rgba(196, 139, 53, .72);
+  box-shadow: 0 -7px 18px rgba(4, 34, 57, .2);
+  transition: height .22s ease, opacity .18s ease;
+}
+
+#ad-banner-bed span { display: none; }
+html.banner-visible #ad-banner-bed { opacity: 1; }
+#banner-spacer-menu,
+#banner-spacer-game { transition: height .22s ease; }
+
+/* Banner yüklendiğinde alt navigasyon ve ana CTA gerçek yüksekliği kadar yukarı
+   çıkar. En sondaki bu kurallar kısa-ekran media kurallarını da bilinçli ezer. */
+#menu-nav,
+.game-nav {
+  bottom: calc(max(8px, var(--safe-bottom)) + var(--banner-h)) !important;
+  transition: bottom .22s ease;
+}
+
+#screen-menu .btn-play {
+  bottom: calc(max(8px, var(--safe-bottom)) + 94px + var(--banner-h)) !important;
+  transition: bottom .22s ease, transform .12s ease, filter .12s ease;
+}
+
+.modal,
+#lb-panel {
+  padding-bottom: calc(max(12px, var(--safe-bottom)) + var(--banner-h));
+}
+
+.modal-card,
+#lb-card {
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - var(--banner-h) - 24px) !important;
+}
+
+#overlay {
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - var(--banner-h) - 20px);
+}
+
+/* Ayarlar içindeki UMP gizlilik girişi yalnızca Google REQUIRED döndürdüğünde açılır. */
+#modal-settings .ad-privacy-card {
+  display: grid;
+  gap: 10px;
+  border-color: #dca750;
+  background:
+    radial-gradient(circle at 92% 5%, rgba(93, 202, 228, .18), transparent 35%),
+    linear-gradient(145deg, rgba(13, 84, 132, .96), rgba(5, 43, 76, .98));
+}
+
+#modal-settings .ad-privacy-card p {
+  margin: 0;
+  color: #cde6ed;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+#modal-settings .ad-privacy-btn {
+  width: 100%;
+  min-height: 44px;
+  flex: none;
+}
+
+#modal-settings .ad-privacy-btn:disabled { opacity: .58; }
+
+.ad-shell[data-state="error"] .ad-stage {
+  border-color: rgba(239, 166, 92, .75);
+  background: radial-gradient(circle, rgba(226, 98, 67, .18), transparent 58%), rgba(2, 29, 53, .62);
+}
+
+.ad-shell[data-state="error"] .ad-loader i { animation: none; border-color: #ef9a62; }
+.ad-shell[data-state="error"] .ad-loader .ui-video-icon { opacity: .42; }
+
+@media (max-height: 719px) {
+  #screen-menu .btn-play {
+    bottom: calc(max(6px, var(--safe-bottom)) + 66px + var(--banner-h)) !important;
+  }
+
+  #menu-nav,
+  .game-nav {
+    bottom: calc(max(4px, var(--safe-bottom)) + var(--banner-h)) !important;
+  }
+}
