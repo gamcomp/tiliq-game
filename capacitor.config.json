@@ -7,7 +7,7 @@
   },
   "ios": {
     "contentInset": "always",
-    "backgroundColor": "#14080C",
+    "backgroundColor": "#F3E4C5",
     "preferredContentMode": "mobile",
     "scrollEnabled": false
   },
@@ -23,7 +23,7 @@
     },
     "SplashScreen": {
       "launchShowDuration": 2000,
-      "backgroundColor": "#14080C",
+      "backgroundColor": "#F3E4C5",
       "showSpinner": false
     }
   }

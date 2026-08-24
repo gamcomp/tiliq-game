@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 190" role="img" aria-labelledby="title desc">
+  <title id="title">Tiliq</title>
+  <desc id="desc">Fildişi Premium için lacivert ve pirinç Tiliq yazı logosu</desc>
+  <defs>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14658d"/>
+      <stop offset="0.52" stop-color="#0a4b72"/>
+      <stop offset="1" stop-color="#063756"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur"/>
+      <feOffset dy="7" result="offset"/>
+      <feColorMatrix in="offset" values="0 0 0 0 .62 0 0 0 0 .38 0 0 0 0 .09 0 0 0 .62 0"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <text x="280" y="148" text-anchor="middle" filter="url(#shadow)"
+        font-family="Arial Rounded MT Bold, Trebuchet MS, Arial, sans-serif"
+        font-size="154" font-weight="900" letter-spacing="-11"
+        fill="url(#face)" stroke="#f0c66d" stroke-width="7" paint-order="stroke fill">Tiliq</text>
+  <text x="280" y="148" text-anchor="middle"
+        font-family="Arial Rounded MT Bold, Trebuchet MS, Arial, sans-serif"
+        font-size="154" font-weight="900" letter-spacing="-11"
+        fill="none" stroke="#fff7dc" stroke-width="1.5" opacity=".5">Tiliq</text>
+  <path d="M118 163h324" stroke="#d49a3d" stroke-width="4" stroke-linecap="round"/>
+  <path d="M205 175h150" stroke="#60bfd5" stroke-width="3" stroke-linecap="round" opacity=".75"/>
+</svg>
