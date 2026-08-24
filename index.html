@@ -36,7 +36,7 @@
 })();
 </script>
 <link rel="icon" type="image/png" href="assets/sky-harbor/tiliq-app-icon.png">
-<link rel="stylesheet" href="crown-quest.css?v=20260825-admob-privacy-banner">
+<link rel="stylesheet" href="crown-quest.css?v=20260825-safe-hud-i18n">
 </head>
 <body data-theme="dark" data-vibe="kingdom" data-visual="sky-harbor">
 <div id="vfx-flash"></div>
@@ -96,7 +96,7 @@
     <img class="tiliq-wordmark-logo splash-wordmark-logo" src="assets/sky-harbor/tiliq-wordmark.svg" alt="Tiliq">
     <div class="splash-sub">Block Puzzle</div>
     <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
-    <div class="splash-status"><span>UÇUŞ SİSTEMİ HAZIRLANIYOR</span><i></i></div>
+    <div class="splash-status"><span data-t="flightSystemReady">UÇUŞ SİSTEMİ HAZIRLANIYOR</span><i></i></div>
   </div>
 </div>
 
@@ -206,14 +206,14 @@
 
     <!-- Sky Harbor referansındaki sağ üçlü eylem rayı. -->
     <div class="kingdom-top-cards">
-      <button class="kingdom-card sky-missions" onclick="showMissions()"><small>GÖREVLER</small><strong id="mission-card-status">3 yeni rota</strong></button>
-      <button class="kingdom-card sky-ranking" onclick="toggleLB()"><small>SIRALAMA</small><strong>Gökyüzü ligi</strong></button>
+      <button class="kingdom-card sky-missions" onclick="showMissions()"><small data-t="missions">GÖREVLER</small><strong id="mission-card-status">3 yeni rota</strong></button>
+      <button class="kingdom-card sky-ranking" onclick="toggleLB()"><small data-t="leaderboard">SIRALAMA</small><strong data-t="skyLeague">Gökyüzü ligi</strong></button>
       <div id="daily-card" class="sky-mail-card">
         <div class="treasure-box" id="treasure-box" onclick="showModal('daily')">
           <div class="tb-icon" id="tb-icon" aria-hidden="true"></div>
           <div class="tb-body"><div class="tb-label" id="tb-label" data-t="dailyBonus">GÜNLÜK BONUS</div><div class="tb-amount" id="tb-amount">15</div><div class="tb-streak" id="tb-streak"></div></div>
           <button class="tb-cta" id="tb-cta" onclick="event.stopPropagation();showModal('daily')" data-t="dailyView">Gör</button>
-          <span class="sky-action-label">POSTA KUTUSU</span>
+          <span class="sky-action-label" data-t="mailbox">POSTA KUTUSU</span>
         </div>
         <!-- Bu canlı veriler header'da sunulur; güncelleme kodunun hedefleri korunur. -->
         <div class="level-card kingdom-level-data">
@@ -230,26 +230,26 @@
     <div id="menu-nav">
       <div class="menu-row">
         <button class="btn-menu active" onclick="showScreen('menu')">
-          <span class="m-icon"><img alt=""></span><span>Ana Sayfa</span>
+          <span class="m-icon"><img alt=""></span><span data-t="navHome">Ana Sayfa</span>
         </button>
         <button class="btn-menu" onclick="toggleLB()">
-          <span class="m-icon"><img alt=""></span><span>Saray</span>
+          <span class="m-icon"><img alt=""></span><span data-t="navPalace">Saray</span>
         </button>
         <button class="btn-menu" onclick="onPlayPressed()">
-          <span class="m-icon"><img alt=""></span><span>Salon</span>
+          <span class="m-icon"><img alt=""></span><span data-t="navLounge">Salon</span>
         </button>
         <button class="btn-menu" onclick="toggleLB()">
-          <span class="m-icon"><img alt=""></span><span>Takım</span>
+          <span class="m-icon"><img alt=""></span><span data-t="navTeam">Takım</span>
         </button>
         <button class="btn-menu" onclick="showTmStoreModal()">
-          <span class="m-icon"><img alt=""></span><span>Dükkan</span>
+          <span class="m-icon"><img alt=""></span><span data-t="navShop">Dükkan</span>
         </button>
       </div>
     </div>
   </div><!-- /menu-scroll -->
   <div id="play-transition" role="status" aria-live="polite" aria-hidden="true">
     <img src="assets/sky-harbor/propeller.png" alt="">
-    <span>Uçuş hazırlanıyor…</span>
+    <span data-t="flightPreparing">Uçuş hazırlanıyor…</span>
   </div>
   <div id="banner-spacer-menu" style="width:100%;flex-shrink:0;height:0;"></div>
 
@@ -269,16 +269,16 @@
       <div class="continue-score-card">
         <span data-t="yourScore">Skorun</span>
         <strong id="continue-dialog-score">0 puan</strong>
-        <i>Uçuş kaydın hazır</i>
+        <i data-t="flightSaveReady">Uçuş kaydın hazır</i>
       </div>
       <button class="continue-primary" onclick="continueGame();hideModal('continue')">
         <img src="assets/sky-harbor/propeller.png" alt="">
-        <span><strong data-t="continueGame">Devam Et</strong><small>Kaldığın rotaya dön</small></span>
+        <span><strong data-t="continueGame">Devam Et</strong><small data-t="continueRoute">Kaldığın rotaya dön</small></span>
         <b aria-hidden="true">›</b>
       </button>
       <button class="continue-secondary" onclick="startNewGame();hideModal('continue')">
         <img src="assets/sky-harbor/refresh.png" alt="">
-        <span><strong data-t="newGame">Yeni Oyun</strong><small>Yeni bir uçuş başlat</small></span>
+        <span><strong data-t="newGame">Yeni Oyun</strong><small data-t="newFlightRoute">Yeni bir uçuş başlat</small></span>
         <b aria-hidden="true">+</b>
       </button>
     </div>
@@ -295,7 +295,7 @@
   </div>
   <section id="score-hero" aria-label="Skor paneli">
     <div class="game-level-chip"><span>LV</span><b id="game-level-value">1</b><i><em id="game-level-fill"></em></i></div>
-    <div class="score-hero-label">SKOR</div>
+    <div class="score-hero-label" data-t="score">SKOR</div>
     <div class="score-hero-value" id="scoreDisplay">0</div>
     <div class="score-hero-best"><img alt=""> <span data-t="best">En İyi</span>: <strong id="bestDisplay">0</strong></div>
   </section>
@@ -336,34 +336,34 @@
     <div id="bomb-target-bar" role="status" aria-live="polite">
       <button class="bomb-target-cancel" onclick="cancelBombMode()" aria-label="Bomba hedeflemesini iptal et">×</button>
       <div class="bomb-target-emblem"><span></span></div>
-      <div class="bomb-target-copy"><strong id="bomb-target-title">Hedef seç</strong><small id="bomb-target-copy">Tahtada patlatmak istediğin hücreye dokun</small></div>
-      <button id="bomb-target-confirm" onclick="confirmBombTarget()" disabled>Patlat</button>
+      <div class="bomb-target-copy"><strong id="bomb-target-title" data-t="targetSelect">Hedef seç</strong><small id="bomb-target-copy" data-t="targetCopy">Tahtada patlatmak istediğin hücreye dokun</small></div>
+      <button id="bomb-target-confirm" onclick="confirmBombTarget()" disabled data-t="blast">Patlat</button>
     </div>
     <div id="overlay">
-      <div class="go-kicker">SKY HARBOR · UÇUŞ RAPORU</div>
-      <div class="go-heading"><img src="assets/sky-harbor/trophy.png" alt=""><div><h2 data-t="gameOver">Oyun Bitti!</h2><small>Sefer tamamlandı, kaptan.</small></div></div>
+      <div class="go-kicker">SKY HARBOR · <span data-t="flightReport">UÇUŞ RAPORU</span></div>
+      <div class="go-heading"><img src="assets/sky-harbor/trophy.png" alt=""><div><h2 data-t="gameOver">Oyun Bitti!</h2><small data-t="flightComplete">Sefer tamamlandı, kaptan.</small></div></div>
       <div class="over-card">
         <div class="lbl" data-t="yourScore">Skorun</div>
         <div class="big" id="finalScore">0</div>
-        <div class="go-score-stats"><span><small>EN İYİ</small><b id="go-best-value">0</b></span><i></i><span><small>SEVİYE</small><b id="go-level-value">1</b></span></div>
+        <div class="go-score-stats"><span><small data-t="best">EN İYİ</small><b id="go-best-value">0</b></span><i></i><span><small data-t="level">SEVİYE</small><b id="go-level-value">1</b></span></div>
       </div>
       <div class="go-status-row">
-        <div id="rank-badge"><span class="rank-orbit" aria-hidden="true"></span><span>#--</span><small>DÜNYA SIRASI</small></div>
+        <div id="rank-badge"><span class="rank-orbit" aria-hidden="true"></span><span>#--</span><small data-t="worldRank">DÜNYA SIRASI</small></div>
         <div id="best-banner"><img src="assets/sky-harbor/ranking.png" alt=""><span data-t="newRecord">Yeni Rekor!</span></div>
       </div>
       <div id="continue-prompt" style="display:none">
-        <div class="continue-flight-head"><img src="assets/sky-harbor/propeller.png" alt=""><div><strong>Uçuşa devam et</strong><small>En dolu 3 satır temizlenir ve yeni parçalar gelir.</small></div></div>
-        <div class="continue-ad-note"><span class="ui-video-icon" aria-hidden="true"></span><strong>1 ödüllü reklam</strong><small>Reklam tamamlanınca anında devam edersin</small></div>
+        <div class="continue-flight-head"><img src="assets/sky-harbor/propeller.png" alt=""><div><strong data-t="continueFlight">Uçuşa devam et</strong><small data-t="continueClearRows">En dolu 3 satır temizlenir ve yeni parçalar gelir.</small></div></div>
+        <div class="continue-ad-note"><span class="ui-video-icon" aria-hidden="true"></span><strong data-t="rewardedAdOne">1 ödüllü reklam</strong><small data-t="adContinueNote">Reklam tamamlanınca anında devam edersin</small></div>
         <div class="cp-btns">
-          <button class="cp-yes" onclick="answerContinue(true)"><span class="ui-video-icon" aria-hidden="true"></span><span>Reklam İzle</span></button>
-          <button class="cp-no" onclick="answerContinue(false)"><span>Skoru Tamamla</span></button>
+          <button class="cp-yes" onclick="answerContinue(true)"><span class="ui-video-icon" aria-hidden="true"></span><span data-t="watchAd">Reklam İzle</span></button>
+          <button class="cp-no" onclick="answerContinue(false)"><span data-t="completeScore">Skoru Tamamla</span></button>
         </div>
       </div>
       <button id="go-reward-btn" onclick="claimScoreCoins()">
         <div class="r2-icon"><span class="ui-video-icon" aria-hidden="true"></span></div>
         <div class="r2-body">
           <div class="r2-title" data-t="goScoreReward">Skor Ödülü</div>
-          <div class="r2-sub" id="go-reward-sub">1 reklam izle, coin ödülünü al</div>
+          <div class="r2-sub" id="go-reward-sub" data-t="scoreRewardSub">1 reklam izle, coin ödülünü al</div>
         </div>
         <div class="r2-badge" id="go-reward-badge"><img src="assets/sky-harbor/coin.png" alt=""></div>
       </button>
@@ -385,11 +385,11 @@
     </div>
   </div>
   <nav class="game-nav" aria-label="Oyun navigasyonu">
-    <button onclick="backToMenu()"><img alt=""><span>Ana Sayfa</span></button>
-    <button onclick="backToMenu()"><img alt=""><span>Saray</span></button>
-    <button class="game-nav-play" onclick="document.getElementById('gameCanvas').focus()"><img alt=""><span>Salon</span></button>
-    <button onclick="toggleLB()"><img alt=""><span>Takım</span></button>
-    <button onclick="showTmStoreModal()"><img alt=""><span>Dükkan</span></button>
+    <button onclick="backToMenu()"><img alt=""><span data-t="navHome">Ana Sayfa</span></button>
+    <button onclick="backToMenu()"><img alt=""><span data-t="navPalace">Saray</span></button>
+    <button class="game-nav-play" onclick="document.getElementById('gameCanvas').focus()"><img alt=""><span data-t="navLounge">Salon</span></button>
+    <button onclick="toggleLB()"><img alt=""><span data-t="navTeam">Takım</span></button>
+    <button onclick="showTmStoreModal()"><img alt=""><span data-t="navShop">Dükkan</span></button>
   </nav>
   <div id="banner-spacer-game" style="width:100%;flex-shrink:0;height:0;"></div>
 </div>
@@ -397,7 +397,7 @@
 <!-- Tüm ekranlarda çalışan Sky Harbor seviye/rütbe bildirimi -->
 <div id="level-up-flight" role="status" aria-live="polite">
   <div class="level-up-propeller" aria-hidden="true"><img src="assets/sky-harbor/propeller.png" alt=""></div>
-  <div class="level-up-copy"><small>YENİ UÇUŞ RÜTBESİ</small><strong><span>LV</span> <b id="level-up-value">2</b></strong><em>Rota ilerlemen kaydedildi</em></div>
+  <div class="level-up-copy"><small data-t="newFlightRank">YENİ UÇUŞ RÜTBESİ</small><strong><span>LV</span> <b id="level-up-value">2</b></strong><em data-t="routeSaved">Rota ilerlemen kaydedildi</em></div>
   <div class="level-up-route" aria-hidden="true"><i></i><i></i><i></i></div>
 </div>
 
@@ -405,7 +405,7 @@
 <div id="tut-overlay">
   <div id="tut-card">
     <div id="tut-visual">
-      <button id="tut-skip" onclick="skipTutorial()">Atla</button>
+      <button id="tut-skip" onclick="skipTutorial()" data-t="skip">Atla</button>
       <div id="tut-anim"></div>
     </div>
     <div id="tut-body">
@@ -434,12 +434,12 @@
   <div class="modal-card mission-modal-card">
     <div class="modal-head">
       <button class="btn-icon" onclick="hideModal('missions')">‹</button>
-      <h3>GÖREVLER</h3>
+      <h3 data-t="missions">GÖREVLER</h3>
       <div class="mission-reset" id="mission-reset">23:59</div>
     </div>
     <div class="mission-hero">
       <div class="mission-propeller" aria-hidden="true"></div>
-      <div><small>GÜNLÜK UÇUŞ PLANI</small><strong>Rotaları tamamla, altın kazan</strong></div>
+      <div><small data-t="missionPlan">GÜNLÜK UÇUŞ PLANI</small><strong data-t="missionHero">Rotaları tamamla, altın kazan</strong></div>
     </div>
     <div class="modal-body" id="mission-list"></div>
   </div>
@@ -483,16 +483,16 @@
       </div>
       <!-- Tüm ekranlar tek, tutarlı Crown Quest sanat yönetimini kullanır. -->
       <div class="set-card">
-        <div class="set-title"><img src="assets/sky-harbor/propeller.png" alt=""> Görsel Stil</div>
+        <div class="set-title"><img src="assets/sky-harbor/propeller.png" alt=""> <span data-t="visualStyle">Görsel Stil</span></div>
         <div class="theme-row" style="flex-wrap:wrap;gap:8px">
           <button class="theme-btn active" id="btn-vibe-kingdom" onclick="setVibe('kingdom')">SKY HARBOR</button>
         </div>
       </div>
       <!-- Google UMP yalnızca bölge/hesap yapılandırması gerektiriyorsa gösterir. -->
       <div class="set-card ad-privacy-card" id="ad-privacy-card" hidden>
-        <div class="set-title"><img src="assets/sky-harbor/settings.png" alt=""> <span id="ad-privacy-title">Gizlilik ve Reklamlar</span></div>
-        <p id="ad-privacy-note">Reklam kişiselleştirme tercihlerini dilediğin zaman güncelleyebilirsin.</p>
-        <button class="theme-btn ad-privacy-btn" id="ad-privacy-btn" onclick="openAdPrivacyOptions()">Reklam gizlilik seçenekleri</button>
+        <div class="set-title"><img src="assets/sky-harbor/settings.png" alt=""> <span id="ad-privacy-title" data-t="privacyAds">Gizlilik ve Reklamlar</span></div>
+        <p id="ad-privacy-note" data-t="privacyAdsNote">Reklam kişiselleştirme tercihlerini dilediğin zaman güncelleyebilirsin.</p>
+        <button class="theme-btn ad-privacy-btn" id="ad-privacy-btn" onclick="openAdPrivacyOptions()" data-t="privacyChoices">Reklam gizlilik seçenekleri</button>
       </div>
       <!-- DİL kartı -->
       <div class="set-card">
@@ -531,9 +531,9 @@
       <div class="avatar-center"><div class="av-big" id="av-big"></div></div>
       <div class="profile-level-card">
         <div class="profile-level-emblem"><small>LV</small><b id="profile-level-value">1</b></div>
-        <div class="profile-level-copy"><strong>Uçuş Seviyesi</strong><span id="profile-level-xp">0 / 63 XP</span><i><em id="profile-level-fill"></em></i></div>
+        <div class="profile-level-copy"><strong data-t="flightLevel">Uçuş Seviyesi</strong><span id="profile-level-xp">0 / 63 XP</span><i><em id="profile-level-fill"></em></i></div>
       </div>
-      <div class="profile-avatar-picker-head"><strong>Kaptan Portresi</strong><small>Uçuş profilinde görünecek karakteri seç</small></div>
+      <div class="profile-avatar-picker-head"><strong data-t="captainPortrait">Kaptan Portresi</strong><small data-t="captainPortraitSub">Uçuş profilinde görünecek karakteri seç</small></div>
       <div class="mascot-grid" id="mascot-grid"></div>
       <div class="input-group">
         <label class="input-label" data-t="username">Takma Ad</label>
@@ -977,7 +977,116 @@ const AUDIO_TEXT={
   HI:{audio:'ध्वनि और संगीत',soundEffects:'ध्वनि प्रभाव',music:'संगीत'},
   NL:{audio:'Geluid en muziek',soundEffects:'Geluidseffecten',music:'Muziek'}
 };
-function t(k){ return (AUDIO_TEXT[lang]&&AUDIO_TEXT[lang][k]) || (T[lang]&&T[lang][k]) || (AUDIO_TEXT.EN&&AUDIO_TEXT.EN[k]) || (T.EN&&T.EN[k]) || ''; }
+
+// Sky Harbor sanat katmanı sonradan eklendiği için metinlerinin bir bölümü eski
+// T sözlüğüne bağlı değildi. Her satırın sırası SKY_LANGS ile aynıdır; böylece
+// yeni tema ekranları da desteklenen 14 dilde eksiksiz ve tek kaynaktan güncellenir.
+const SKY_LANGS=['TR','EN','JA','KO','DE','FR','ES','IT','PT','RU','HI','NL','AR','ZH'];
+const SKY_TEXT=Object.fromEntries(SKY_LANGS.map(code=>[code,{}]));
+function _skyWords(key,values){
+  SKY_LANGS.forEach((code,i)=>{SKY_TEXT[code][key]=values[i]||values[1]||'';});
+}
+[
+  ['ad',["REKLAM","AD","広告","광고","ANZEIGE","PUBLICITÉ","ANUNCIO","PUBBLICITÀ","ANÚNCIO","РЕКЛАМА","विज्ञापन","ADVERTENTIE","إعلان","广告"]],
+  ['adLoading',["Reklam yükleniyor…","Loading ad…","広告を読み込み中…","광고 불러오는 중…","Anzeige wird geladen…","Chargement de la publicité…","Cargando anuncio…","Caricamento annuncio…","Carregando anúncio…","Загрузка рекламы…","विज्ञापन लोड हो रहा है…","Advertentie laden…","جارٍ تحميل الإعلان…","正在加载广告…"]],
+  ['adWatching',["Reklam izleniyor…","Watching ad…","広告を再生中…","광고 재생 중…","Anzeige läuft…","Publicité en cours…","Viendo anuncio…","Annuncio in corso…","Exibindo anúncio…","Просмотр рекламы…","विज्ञापन चल रहा है…","Advertentie wordt afgespeeld…","جارٍ عرض الإعلان…","广告播放中…"]],
+  ['addBtn',["Ekle","Add","追加","추가","Hinzufügen","Ajouter","Añadir","Aggiungi","Adicionar","Добавить","जोड़ें","Toevoegen","إضافة","添加"]],
+  ['googleSignIn',["Google ile Giriş Yap","Sign in with Google","Googleでログイン","Google로 로그인","Mit Google anmelden","Se connecter avec Google","Iniciar sesión con Google","Accedi con Google","Entrar com Google","Войти через Google","Google से साइन इन करें","Inloggen met Google","تسجيل الدخول باستخدام Google","使用 Google 登录"]],
+  ['pts',["puan","pts","点","점","Pkt.","pts","pts","pt","pts","очк.","अंक","pt","نقطة","分"]],
+  ['signOut',["Çıkış Yap","Sign Out","ログアウト","로그아웃","Abmelden","Se déconnecter","Cerrar sesión","Esci","Sair","Выйти","साइन आउट","Uitloggen","تسجيل الخروج","退出登录"]],
+  ['tabEffects',["Kombo Efektleri","Combo Effects","コンボエフェクト","콤보 효과","Combo-Effekte","Effets de combo","Efectos de combo","Effetti combo","Efeitos de combo","Эффекты комбо","कॉम्बो प्रभाव","Combo-effecten","تأثيرات الكومبو","连击特效"]],
+  ['tutNext',["Sonraki →","Next →","次へ →","다음 →","Weiter →","Suivant →","Siguiente →","Avanti →","Próximo →","Далее →","अगला →","Volgende →","التالي ←","下一步 →"]],
+  ['flightSystemReady',["UÇUŞ SİSTEMİ HAZIRLANIYOR","PREPARING FLIGHT SYSTEM","フライトシステムを準備中","비행 시스템 준비 중","FLUGSYSTEM WIRD VORBEREITET","PRÉPARATION DU SYSTÈME DE VOL","PREPARANDO SISTEMA DE VUELO","PREPARAZIONE SISTEMA DI VOLO","PREPARANDO SISTEMA DE VOO","ПОДГОТОВКА СИСТЕМЫ ПОЛЁТА","उड़ान प्रणाली तैयार हो रही है","VLUCHTSYSTEEM VOORBEREIDEN","جارٍ تجهيز نظام الطيران","正在准备飞行系统"]],
+  ['missions',["GÖREVLER","MISSIONS","ミッション","미션","MISSIONEN","MISSIONS","MISIONES","MISSIONI","MISSÕES","ЗАДАНИЯ","मिशन","MISSIES","المهام","任务"]],
+  ['skyLeague',["Gökyüzü ligi","Sky League","スカイリーグ","스카이 리그","Himmelsliga","Ligue du ciel","Liga del cielo","Lega del cielo","Liga do céu","Небесная лига","स्काई लीग","Luchtliga","دوري السماء","天空联赛"]],
+  ['mailbox',["POSTA KUTUSU","MAILBOX","メールボックス","우편함","POSTFACH","BOÎTE AUX LETTRES","BUZÓN","POSTA","CAIXA DE CORREIO","ПОЧТА","डाक पेटी","POSTVAK","صندوق البريد","邮箱"]],
+  ['navHome',["Ana Sayfa","Home","ホーム","홈","Start","Accueil","Inicio","Home","Início","Главная","मुख्य पृष्ठ","Home","الرئيسية","主页"]],
+  ['navPalace',["Saray","Palace","宮殿","궁전","Palast","Palais","Palacio","Palazzo","Palácio","Дворец","महल","Paleis","القصر","宫殿"]],
+  ['navLounge',["Salon","Lounge","ラウンジ","라운지","Lounge","Salon","Salón","Salone","Salão","Зал","लाउंज","Salon","الصالة","大厅"]],
+  ['navTeam',["Takım","Team","チーム","팀","Team","Équipe","Equipo","Squadra","Equipe","Команда","टीम","Team","الفريق","团队"]],
+  ['navShop',["Dükkan","Shop","ショップ","상점","Shop","Boutique","Tienda","Negozio","Loja","Магазин","दुकान","Winkel","المتجر","商店"]],
+  ['flightPreparing',["Uçuş hazırlanıyor…","Preparing flight…","フライトを準備中…","비행 준비 중…","Flug wird vorbereitet…","Préparation du vol…","Preparando vuelo…","Preparazione del volo…","Preparando voo…","Подготовка полёта…","उड़ान तैयार हो रही है…","Vlucht voorbereiden…","جارٍ تجهيز الرحلة…","正在准备飞行…"]],
+  ['flightSaveReady',["Uçuş kaydın hazır","Your flight save is ready","フライト記録の準備完了","비행 저장 준비 완료","Dein Flugstand ist bereit","Votre sauvegarde de vol est prête","Tu partida está lista","Il salvataggio del volo è pronto","Seu voo salvo está pronto","Сохранение полёта готово","आपकी उड़ान सेव तैयार है","Je vluchtopslag is klaar","حفظ رحلتك جاهز","飞行存档已就绪"]],
+  ['continueRoute',["Kaldığın rotaya dön","Return to your saved route","保存したルートに戻る","저장된 항로로 돌아가기","Zur gespeicherten Route zurück","Reprendre votre itinéraire","Volver a la ruta guardada","Torna alla rotta salvata","Voltar à rota salva","Вернуться к маршруту","सहेजे मार्ग पर लौटें","Terug naar je opgeslagen route","العودة إلى مسارك المحفوظ","返回已保存航线"]],
+  ['newFlightRoute',["Yeni bir uçuş başlat","Start a new flight","新しいフライトを開始","새 비행 시작","Neuen Flug starten","Commencer un nouveau vol","Iniciar un nuevo vuelo","Inizia un nuovo volo","Iniciar um novo voo","Начать новый полёт","नई उड़ान शुरू करें","Nieuwe vlucht starten","بدء رحلة جديدة","开始新的飞行"]],
+  ['level',["Seviye","Level","レベル","레벨","Level","Niveau","Nivel","Livello","Nível","Уровень","स्तर","Niveau","المستوى","等级"]],
+  ['targetSelect',["Hedef seç","Select target","ターゲットを選択","대상 선택","Ziel wählen","Choisir la cible","Elige un objetivo","Scegli il bersaglio","Escolha o alvo","Выберите цель","लक्ष्य चुनें","Kies doel","اختر الهدف","选择目标"]],
+  ['targetCopy',["Tahtada patlatmak istediğin hücreye dokun","Tap the board cell you want to smash","壊したいマスをタップ","부술 칸을 탭하세요","Tippe auf das Feld, das du zerschlagen willst","Touchez la case à briser","Toca la casilla que quieras romper","Tocca la casella da distruggere","Toque na célula que deseja quebrar","Коснитесь клетки, которую хотите разбить","जिस खाने को तोड़ना है उस पर टैप करें","Tik op het vak dat je wilt breken","المس الخانة التي تريد تحطيمها","点击要击碎的格子"]],
+  ['blast',["Patlat","Smash","破壊","부수기","Zerschlagen","Frapper","Romper","Colpisci","Quebrar","Разбить","तोड़ें","Breek","تحطيم","击碎"]],
+  ['flightReport',["UÇUŞ RAPORU","FLIGHT REPORT","フライトレポート","비행 보고서","FLUGBERICHT","RAPPORT DE VOL","INFORME DE VUELO","RAPPORTO DI VOLO","RELATÓRIO DE VOO","ОТЧЁТ О ПОЛЁТЕ","उड़ान रिपोर्ट","VLUCHTRAPPORT","تقرير الرحلة","飞行报告"]],
+  ['flightComplete',["Sefer tamamlandı, kaptan.","Flight complete, Captain.","フライト完了です、キャプテン。","비행 완료, 기장님.","Flug beendet, Captain.","Vol terminé, Capitaine.","Vuelo completado, capitán.","Volo completato, Capitano.","Voo concluído, capitão.","Полёт завершён, капитан.","उड़ान पूरी हुई, कप्तान।","Vlucht voltooid, kapitein.","اكتملت الرحلة أيها القبطان.","飞行完成，机长。"]],
+  ['continueFlight',["Uçuşa devam et","Continue flight","フライトを続ける","비행 계속하기","Flug fortsetzen","Continuer le vol","Continuar vuelo","Continua il volo","Continuar voo","Продолжить полёт","उड़ान जारी रखें","Vlucht voortzetten","متابعة الرحلة","继续飞行"]],
+  ['continueClearRows',["En dolu 3 satır temizlenir ve yeni parçalar gelir.","The 3 fullest rows are cleared and new pieces arrive.","最も埋まった3列を消して新しいピースを補充します。","가장 찬 3줄을 지우고 새 조각을 받습니다.","Die 3 vollsten Reihen werden geleert und neue Teile kommen.","Les 3 lignes les plus remplies sont effacées et de nouvelles pièces arrivent.","Se limpian las 3 filas más llenas y llegan piezas nuevas.","Le 3 righe più piene vengono eliminate e arrivano nuovi pezzi.","As 3 linhas mais cheias são limpas e novas peças chegam.","Три самые заполненные линии очистятся, появятся новые фигуры.","सबसे भरी 3 पंक्तियाँ साफ होंगी और नए टुकड़े आएँगे।","De 3 volste rijen worden gewist en er komen nieuwe stukken.","تُمسح أكثر 3 صفوف امتلاءً وتصل قطع جديدة.","清除最满的3行并获得新方块。"]],
+  ['rewardedAdOne',["1 ödüllü reklam","1 rewarded ad","リワード広告1本","보상형 광고 1개","1 Belohnungsanzeige","1 publicité récompensée","1 anuncio recompensado","1 annuncio con premio","1 anúncio premiado","1 рекламный ролик","1 पुरस्कार विज्ञापन","1 beloningsadvertentie","إعلان مكافأة واحد","1个激励广告"]],
+  ['adContinueNote',["Reklam tamamlanınca anında devam edersin","Continue instantly when the ad finishes","広告終了後すぐに続行できます","광고가 끝나면 바로 계속합니다","Nach der Anzeige geht es sofort weiter","Continuez dès la fin de la publicité","Continúa al instante al terminar el anuncio","Continua subito al termine dell'annuncio","Continue assim que o anúncio terminar","Продолжение сразу после рекламы","विज्ञापन पूरा होते ही खेल जारी रहेगा","Ga direct verder na de advertentie","تابع فور انتهاء الإعلان","广告结束后立即继续"]],
+  ['watchAd',["Reklam İzle","Watch Ad","広告を見る","광고 보기","Anzeige ansehen","Voir la publicité","Ver anuncio","Guarda annuncio","Ver anúncio","Смотреть рекламу","विज्ञापन देखें","Bekijk advertentie","مشاهدة الإعلان","观看广告"]],
+  ['completeScore',["Skoru Tamamla","Finish Score","スコアを確定","점수 확정","Punktzahl abschließen","Valider le score","Finalizar puntuación","Concludi punteggio","Finalizar pontuação","Завершить счёт","स्कोर पूरा करें","Score afronden","إنهاء النتيجة","结算分数"]],
+  ['scoreRewardSub',["1 reklam izle, coin ödülünü al","Watch 1 ad to claim your coin reward","広告を1本見てコイン報酬を獲得","광고 1개를 보고 코인 보상을 받으세요","Sieh 1 Anzeige und erhalte deine Münzen","Regardez 1 publicité pour recevoir vos pièces","Mira 1 anuncio y recibe tus monedas","Guarda 1 annuncio e ottieni le monete","Veja 1 anúncio e receba suas moedas","Посмотрите 1 рекламу и получите монеты","1 विज्ञापन देखकर कॉइन इनाम पाएँ","Bekijk 1 advertentie en ontvang je munten","شاهد إعلانًا واحدًا لتحصل على مكافأة العملات","观看1个广告领取金币奖励"]],
+  ['newFlightRank',["YENİ UÇUŞ RÜTBESİ","NEW FLIGHT RANK","新しいフライトランク","새 비행 등급","NEUER FLUGRANG","NOUVEAU RANG DE VOL","NUEVO RANGO DE VUELO","NUOVO GRADO DI VOLO","NOVO RANK DE VOO","НОВЫЙ ЛЁТНЫЙ РАНГ","नई उड़ान रैंक","NIEUWE VLUCHTRANG","رتبة طيران جديدة","新飞行等级"]],
+  ['routeSaved',["Rota ilerlemen kaydedildi","Route progress saved","ルート進行を保存しました","항로 진행 저장 완료","Routenfortschritt gespeichert","Progression de route enregistrée","Progreso de ruta guardado","Progressi della rotta salvati","Progresso da rota salvo","Прогресс маршрута сохранён","मार्ग प्रगति सहेजी गई","Routevoortgang opgeslagen","تم حفظ تقدم المسار","航线进度已保存"]],
+  ['skip',["Atla","Skip","スキップ","건너뛰기","Überspringen","Passer","Saltar","Salta","Pular","Пропустить","छोड़ें","Overslaan","تخطي","跳过"]],
+  ['missionPlan',["GÜNLÜK UÇUŞ PLANI","DAILY FLIGHT PLAN","デイリーフライトプラン","일일 비행 계획","TÄGLICHER FLUGPLAN","PLAN DE VOL QUOTIDIEN","PLAN DE VUELO DIARIO","PIANO DI VOLO GIORNALIERO","PLANO DE VOO DIÁRIO","ЕЖЕДНЕВНЫЙ ПЛАН ПОЛЁТА","दैनिक उड़ान योजना","DAGELIJKS VLUCHTPLAN","خطة الطيران اليومية","每日飞行计划"]],
+  ['missionHero',["Rotaları tamamla, altın kazan","Complete routes and earn gold","ルートを完了してゴールドを獲得","항로를 완료하고 골드를 획득하세요","Routen abschließen und Gold verdienen","Terminez les itinéraires et gagnez de l'or","Completa rutas y gana oro","Completa le rotte e guadagna oro","Complete rotas e ganhe ouro","Завершайте маршруты и получайте золото","मार्ग पूरे करें और सोना पाएँ","Voltooi routes en verdien goud","أكمل المسارات واربح الذهب","完成航线赢取金币"]],
+  ['visualStyle',["Görsel Stil","Visual Style","ビジュアルスタイル","비주얼 스타일","Visueller Stil","Style visuel","Estilo visual","Stile visivo","Estilo visual","Визуальный стиль","दृश्य शैली","Visuele stijl","النمط المرئي","视觉风格"]],
+  ['privacyAds',["Gizlilik ve Reklamlar","Privacy & Ads","プライバシーと広告","개인정보 및 광고","Datenschutz & Anzeigen","Confidentialité et publicités","Privacidad y anuncios","Privacy e annunci","Privacidade e anúncios","Конфиденциальность и реклама","गोपनीयता और विज्ञापन","Privacy en advertenties","الخصوصية والإعلانات","隐私与广告"]],
+  ['privacyAdsNote',["Reklam tercihlerini dilediğin zaman güncelleyebilirsin.","You can update your ad choices at any time.","広告設定はいつでも変更できます。","광고 설정은 언제든 변경할 수 있습니다.","Du kannst deine Anzeigenoptionen jederzeit ändern.","Vous pouvez modifier vos choix publicitaires à tout moment.","Puedes cambiar tus preferencias de anuncios cuando quieras.","Puoi aggiornare le preferenze degli annunci in qualsiasi momento.","Você pode atualizar suas escolhas de anúncios a qualquer momento.","Настройки рекламы можно изменить в любое время.","आप विज्ञापन विकल्प कभी भी बदल सकते हैं।","Je kunt je advertentiekeuzes altijd wijzigen.","يمكنك تحديث خيارات الإعلانات في أي وقت.","你可以随时更新广告选项。"]],
+  ['privacyChoices',["Reklam gizlilik seçenekleri","Ad privacy choices","広告プライバシー設定","광고 개인정보 설정","Datenschutzoptionen für Anzeigen","Choix de confidentialité publicitaire","Opciones de privacidad de anuncios","Scelte privacy annunci","Opções de privacidade de anúncios","Настройки конфиденциальности рекламы","विज्ञापन गोपनीयता विकल्प","Privacykeuzes voor advertenties","خيارات خصوصية الإعلانات","广告隐私选项"]],
+  ['privacyUnavailable',["Tercihler şu anda açılamadı. Lütfen tekrar dene.","Choices are unavailable right now. Please try again.","現在設定を開けません。もう一度お試しください。","지금 설정을 열 수 없습니다. 다시 시도하세요.","Die Optionen sind derzeit nicht verfügbar. Bitte versuche es erneut.","Les choix sont indisponibles pour le moment. Réessayez.","Las opciones no están disponibles ahora. Inténtalo de nuevo.","Le opzioni non sono disponibili. Riprova.","As opções estão indisponíveis agora. Tente novamente.","Настройки сейчас недоступны. Повторите попытку.","विकल्प अभी उपलब्ध नहीं हैं। फिर प्रयास करें।","Keuzes zijn nu niet beschikbaar. Probeer opnieuw.","الخيارات غير متاحة الآن. حاول مجددًا.","选项暂时不可用，请重试。"]],
+  ['flightLevel',["Uçuş Seviyesi","Flight Level","フライトレベル","비행 레벨","Fluglevel","Niveau de vol","Nivel de vuelo","Livello di volo","Nível de voo","Лётный уровень","उड़ान स्तर","Vluchtniveau","مستوى الطيران","飞行等级"]],
+  ['captainPortrait',["Kaptan Portresi","Captain Portrait","キャプテンポートレート","기장 초상화","Captain-Porträt","Portrait du capitaine","Retrato del capitán","Ritratto del capitano","Retrato do capitão","Портрет капитана","कप्तान चित्र","Kapiteinsportret","صورة القبطان","机长头像"]],
+  ['captainPortraitSub',["Uçuş profilinde görünecek karakteri seç","Choose the character shown on your flight profile","フライトプロフィールに表示するキャラクターを選択","비행 프로필에 표시할 캐릭터를 선택하세요","Wähle die Figur für dein Flugprofil","Choisissez le personnage de votre profil de vol","Elige el personaje de tu perfil de vuelo","Scegli il personaggio del profilo di volo","Escolha o personagem do seu perfil de voo","Выберите персонажа для лётного профиля","उड़ान प्रोफ़ाइल में दिखने वाला पात्र चुनें","Kies het personage voor je vluchtprofiel","اختر الشخصية التي ستظهر في ملف رحلتك","选择飞行档案中显示的角色"]],
+  ['missionComboTitle',["5 kombo yap","Make 5 combos","コンボを5回達成","콤보 5회 달성","5 Combos erzielen","Faire 5 combos","Haz 5 combos","Esegui 5 combo","Faça 5 combos","Сделать 5 комбо","5 कॉम्बो बनाएँ","Maak 5 combo's","نفّذ 5 كومبو","完成5次连击"]],
+  ['missionComboSub',["Türbini art arda hızlandır","Accelerate the turbine repeatedly","タービンを連続加速","터빈을 연속 가속하세요","Turbine mehrfach beschleunigen","Accélérez la turbine à la suite","Acelera la turbina varias veces","Accelera la turbina in serie","Acelere a turbina em sequência","Ускоряйте турбину подряд","टर्बाइन को लगातार तेज करें","Versnel de turbine achter elkaar","سرّع التوربين تباعًا","连续加速涡轮"]],
+  ['missionRowsTitle',["5 satır temizle","Clear 5 rows","5列消す","5줄 지우기","5 Reihen löschen","Effacer 5 lignes","Limpia 5 filas","Elimina 5 righe","Limpe 5 linhas","Очистить 5 линий","5 पंक्तियाँ साफ करें","Wis 5 rijen","امسح 5 صفوف","清除5行"]],
+  ['missionRowsSub',["Kargo güvertesini boşalt","Clear the cargo deck","貨物デッキを空にする","화물 갑판을 비우세요","Frachtdeck leeren","Videz le pont de chargement","Vacía la cubierta de carga","Svuota il ponte di carico","Esvazie o convés de carga","Освободите грузовую палубу","कार्गो डेक खाली करें","Maak het vrachtdek leeg","أفرغ سطح الشحن","清空货运甲板"]],
+  ['missionScoreTitle',["500 puan kazan","Score 500 points","500点獲得","500점 획득","500 Punkte erzielen","Marquer 500 points","Consigue 500 puntos","Ottieni 500 punti","Marque 500 pontos","Набрать 500 очков","500 अंक बनाएँ","Scoor 500 punten","سجّل 500 نقطة","获得500分"]],
+  ['missionScoreSub',["Günlük uçuş rekoruna ulaş","Reach the daily flight record","デイリーフライト記録に到達","일일 비행 기록에 도달하세요","Täglichen Flugrekord erreichen","Atteignez le record de vol quotidien","Alcanza el récord diario de vuelo","Raggiungi il record di volo giornaliero","Alcance o recorde diário de voo","Достигните дневного рекорда","दैनिक उड़ान रिकॉर्ड तक पहुँचें","Behaal het dagelijkse vluchtrecord","حقق رقم الرحلة اليومي","达到每日飞行纪录"]],
+  ['rewardReadyCount',["{n} ödül hazır","{n} rewards ready","報酬{n}件を受取可能","보상 {n}개 준비됨","{n} Belohnungen bereit","{n} récompenses prêtes","{n} recompensas listas","{n} premi pronti","{n} recompensas prontas","Наград готово: {n}","{n} इनाम तैयार","{n} beloningen klaar","{n} مكافآت جاهزة","{n}份奖励可领取"]],
+  ['allRoutesDone',["Tüm rotalar tamam","All routes complete","全ルート完了","모든 항로 완료","Alle Routen abgeschlossen","Tous les itinéraires terminés","Todas las rutas completadas","Tutte le rotte completate","Todas as rotas concluídas","Все маршруты завершены","सभी मार्ग पूरे","Alle routes voltooid","اكتملت جميع المسارات","所有航线已完成"]],
+  ['dailyFlightPlan',["Günlük uçuş planı","Daily flight plan","デイリーフライトプラン","일일 비행 계획","Täglicher Flugplan","Plan de vol quotidien","Plan de vuelo diario","Piano di volo giornaliero","Plano de voo diário","Ежедневный план полёта","दैनिक उड़ान योजना","Dagelijks vluchtplan","خطة الطيران اليومية","每日飞行计划"]],
+  ['claimed',["ALINDI","CLAIMED","受取済み","수령 완료","ERHALTEN","RÉCUPÉRÉ","RECIBIDO","RISCOSSO","RECEBIDO","ПОЛУЧЕНО","प्राप्त","ONTVANGEN","تم الاستلام","已领取"]],
+  ['claim',["TOPLA","CLAIM","受け取る","받기","ABHOLEN","RÉCUPÉRER","RECOGER","RITIRA","COLETAR","ЗАБРАТЬ","प्राप्त करें","ONTVANG","استلام","领取"]],
+  ['continueLabel',["DEVAM","CONTINUE","続ける","계속","WEITER","CONTINUER","SEGUIR","CONTINUA","CONTINUAR","ДАЛЕЕ","जारी रखें","VERDER","متابعة","继续"]],
+  ['gold',["ALTIN","GOLD","ゴールド","골드","GOLD","OR","ORO","ORO","OURO","ЗОЛОТО","सोना","GOUD","ذهب","金币"]]
+].forEach(([key,values])=>_skyWords(key,values));
+
+[
+  ['safeRewardFlow',["GÜVENLİ ÖDÜL AKIŞI","SAFE REWARD FLOW","安全な報酬フロー","안전한 보상 절차","SICHERER BELOHNUNGSABLAUF","PARCOURS DE RÉCOMPENSE SÛR","FLUJO DE RECOMPENSA SEGURO","FLUSSO PREMIO SICURO","FLUXO DE RECOMPENSA SEGURO","БЕЗОПАСНОЕ ПОЛУЧЕНИЕ НАГРАДЫ","सुरक्षित इनाम प्रक्रिया","VEILIGE BELONINGSROUTE","مسار مكافأة آمن","安全奖励流程"]],
+  ['afterAd',["REKLAM SONRASI","AFTER THE AD","広告視聴後","광고 시청 후","NACH DER ANZEIGE","APRÈS LA PUBLICITÉ","DESPUÉS DEL ANUNCIO","DOPO L'ANNUNCIO","APÓS O ANÚNCIO","ПОСЛЕ РЕКЛАМЫ","विज्ञापन के बाद","NA DE ADVERTENTIE","بعد الإعلان","广告结束后"]],
+  ['rewardWillActivate',["Ödülün etkinleşecek","Your reward will activate","報酬が有効になります","보상이 활성화됩니다","Deine Belohnung wird aktiviert","Votre récompense sera activée","Tu recompensa se activará","Il premio verrà attivato","Sua recompensa será ativada","Награда активируется","आपका इनाम सक्रिय होगा","Je beloning wordt geactiveerd","سيتم تفعيل مكافأتك","你的奖励将激活"]],
+  ['watchToEnd',["Reklamı sonuna kadar izle","Watch the ad to the end","広告を最後まで視聴","광고를 끝까지 시청하세요","Sieh die Anzeige bis zum Ende","Regardez la publicité jusqu'au bout","Mira el anuncio hasta el final","Guarda l'annuncio fino alla fine","Assista ao anúncio até o fim","Досмотрите рекламу до конца","विज्ञापन अंत तक देखें","Bekijk de advertentie tot het einde","شاهد الإعلان حتى النهاية","观看广告直到结束"]],
+  ['connectAuto',["Bağlantı kuruluyor, bu ekran otomatik ilerler","Connecting; this screen advances automatically","接続中です。この画面は自動で進みます","연결 중이며 화면이 자동으로 진행됩니다","Verbindung wird hergestellt; dieser Bildschirm läuft automatisch weiter","Connexion en cours; cet écran avance automatiquement","Conectando; esta pantalla avanza automáticamente","Connessione; questa schermata avanza automaticamente","Conectando; esta tela avança automaticamente","Подключение; экран продолжит автоматически","कनेक्ट हो रहा है; यह स्क्रीन अपने आप आगे बढ़ेगी","Verbinden; dit scherm gaat automatisch verder","جارٍ الاتصال؛ ستتقدم هذه الشاشة تلقائيًا","正在连接；此页面将自动继续"]],
+  ['completeAuto',["Tamamlanınca ödül otomatik verilecek","The reward is granted automatically when complete","完了すると報酬が自動付与されます","완료되면 보상이 자동 지급됩니다","Nach Abschluss wird die Belohnung automatisch vergeben","La récompense est accordée automatiquement à la fin","La recompensa se entrega automáticamente al terminar","Il premio viene assegnato automaticamente al termine","A recompensa é entregue automaticamente ao concluir","После завершения награда начислится автоматически","पूरा होने पर इनाम अपने आप मिलेगा","Na afloop wordt de beloning automatisch toegekend","تُمنح المكافأة تلقائيًا عند الاكتمال","完成后自动发放奖励"]],
+  ['prepare',["HAZIRLA","PREPARE","準備","준비","VORBEREITEN","PRÉPARER","PREPARAR","PREPARA","PREPARAR","ПОДГОТОВКА","तैयार","VOORBEREIDEN","تجهيز","准备"]],
+  ['watch',["İZLE","WATCH","視聴","시청","ANSEHEN","REGARDER","VER","GUARDA","ASSISTIR","СМОТРЕТЬ","देखें","BEKIJK","مشاهدة","观看"]],
+  ['reward',["ÖDÜL","REWARD","報酬","보상","BELOHNUNG","RÉCOMPENSE","RECOMPENSA","PREMIO","RECOMPENSA","НАГРАДА","इनाम","BELONING","مكافأة","奖励"]],
+  ['adPreparing',["Reklam hazırlanıyor…","Preparing ad…","広告を準備中…","광고 준비 중…","Anzeige wird vorbereitet…","Préparation de la publicité…","Preparando anuncio…","Preparazione annuncio…","Preparando anúncio…","Подготовка рекламы…","विज्ञापन तैयार हो रहा है…","Advertentie voorbereiden…","جارٍ تجهيز الإعلان…","正在准备广告…"]],
+  ['rewardReadyTitle',["Ödül hazır!","Reward ready!","報酬の準備完了！","보상 준비 완료!","Belohnung bereit!","Récompense prête !","¡Recompensa lista!","Premio pronto!","Recompensa pronta!","Награда готова!","इनाम तैयार!","Beloning klaar!","المكافأة جاهزة!","奖励已就绪！"]],
+  ['applyingReward',["Hesabına uygulanıyor…","Applying it to your account…","アカウントに反映中…","계정에 적용 중…","Wird deinem Konto gutgeschrieben…","Ajout à votre compte…","Aplicando a tu cuenta…","Applicazione all'account…","Aplicando à sua conta…","Начисление на аккаунт…","आपके खाते में जोड़ा जा रहा है…","Wordt aan je account toegevoegd…","جارٍ تطبيقها على حسابك…","正在发放到你的账户…"]],
+  ['adUnavailable',["Reklam şu anda hazır değil","Ad unavailable","広告を利用できません","광고를 사용할 수 없습니다","Anzeige nicht verfügbar","Publicité indisponible","Anuncio no disponible","Annuncio non disponibile","Anúncio indisponível","Реклама недоступна","विज्ञापन उपलब्ध नहीं है","Advertentie niet beschikbaar","الإعلان غير متاح","广告不可用"]],
+  ['adUnavailableCopy',["Bağlantını kontrol edip biraz sonra yeniden dene. Ödül harcanmadı.","Check your connection and try again shortly. Nothing was spent.","接続を確認して後でもう一度お試しください。報酬は消費されていません。","연결을 확인하고 잠시 후 다시 시도하세요. 아무것도 차감되지 않았습니다.","Prüfe deine Verbindung und versuche es später erneut. Nichts wurde verbraucht.","Vérifiez votre connexion et réessayez bientôt. Rien n'a été dépensé.","Comprueba tu conexión e inténtalo más tarde. No se gastó nada.","Controlla la connessione e riprova tra poco. Non è stato consumato nulla.","Verifique a conexão e tente novamente em breve. Nada foi gasto.","Проверьте подключение и повторите позже. Ничего не списано.","कनेक्शन जाँचें और थोड़ी देर बाद फिर प्रयास करें। कुछ खर्च नहीं हुआ।","Controleer je verbinding en probeer later opnieuw. Er is niets verbruikt.","تحقق من الاتصال وحاول لاحقًا. لم يتم استهلاك شيء.","检查网络后稍后重试，未消耗任何内容。"]]
+].forEach(([key,values])=>_skyWords(key,values));
+
+[
+  ['skyCollection',["SKY HARBOR KOLEKSİYONU","SKY HARBOR COLLECTION","SKY HARBOR コレクション","SKY HARBOR 컬렉션","SKY HARBOR-KOLLEKTION","COLLECTION SKY HARBOR","COLECCIÓN SKY HARBOR","COLLEZIONE SKY HARBOR","COLEÇÃO SKY HARBOR","КОЛЛЕКЦИЯ SKY HARBOR","SKY HARBOR संग्रह","SKY HARBOR-COLLECTIE","مجموعة SKY HARBOR","SKY HARBOR 系列"]],
+  ['activeVisualWorld',["Aktif görsel dünya","Active visual world","使用中のビジュアルワールド","활성 비주얼 월드","Aktive Spielwelt","Univers visuel actif","Mundo visual activo","Mondo visivo attivo","Mundo visual ativo","Активный визуальный мир","सक्रिय विज़ुअल दुनिया","Actieve visuele wereld","العالم المرئي النشط","当前视觉世界"]],
+  ['cargoPalettes',["KARGO BLOK PALETLERİ","CARGO BLOCK PALETTES","カーゴブロックパレット","화물 블록 팔레트","FRACHTBLOCK-PALETTEN","PALETTES DE BLOCS CARGO","PALETAS DE BLOQUES DE CARGA","PALETTE BLOCCHI CARGO","PALETAS DE BLOCOS DE CARGA","ПАЛИТРЫ ГРУЗОВЫХ БЛОКОВ","कार्गो ब्लॉक पैलेट","VRACHTBLOKPALETTEN","لوحات ألوان كتل الشحن","货运方块配色"]],
+  ['comboCollection',["KOMBO KOLEKSİYONU","COMBO COLLECTION","コンボコレクション","콤보 컬렉션","COMBO-KOLLEKTION","COLLECTION DE COMBOS","COLECCIÓN DE COMBOS","COLLEZIONE COMBO","COLEÇÃO DE COMBOS","КОЛЛЕКЦИЯ КОМБО","कॉम्बो संग्रह","COMBOCOLLECTIE","مجموعة الكومبو","连击特效系列"]],
+  ['premiumComboEffects',["6 Premium Kombo Efekti","6 Premium Combo Effects","プレミアムコンボエフェクト6種","프리미엄 콤보 효과 6개","6 Premium-Combo-Effekte","6 effets de combo premium","6 efectos de combo premium","6 effetti combo premium","6 efeitos de combo premium","6 премиум-эффектов комбо","6 प्रीमियम कॉम्बो प्रभाव","6 premium combo-effecten","6 تأثيرات كومبو مميزة","6款高级连击特效"]],
+  ['premiumComboSub',["Coin ile aç, istediğini seç ve tablanın çevresinde kullan.","Unlock with coins, choose one and use it around the board.","コインで解放し、好きなエフェクトを盤面に適用。","코인으로 잠금 해제하고 보드 주변에 적용하세요.","Mit Münzen freischalten, auswählen und am Spielfeld verwenden.","Débloquez avec des pièces et appliquez l'effet autour du plateau.","Desbloquea con monedas y úsalo alrededor del tablero.","Sblocca con monete e applicalo attorno alla griglia.","Desbloqueie com moedas e use ao redor do tabuleiro.","Открывайте за монеты и применяйте вокруг поля.","कॉइन से अनलॉक करें और बोर्ड के चारों ओर उपयोग करें।","Ontgrendel met munten en gebruik het rond het bord.","افتحها بالعملات واستخدمها حول اللوحة.","使用金币解锁并应用在棋盘周围。"]],
+  ['view',["GÖR →","VIEW →","見る →","보기 →","ANSEHEN →","VOIR →","VER →","VEDI →","VER →","СМОТРЕТЬ →","देखें →","BEKIJK →","عرض ←","查看 →"]],
+  ['comboEffectsTitle',["KOMBO EFEKTLERİ","COMBO EFFECTS","コンボエフェクト","콤보 효과","COMBO-EFFEKTE","EFFETS DE COMBO","EFECTOS DE COMBO","EFFETTI COMBO","EFEITOS DE COMBO","ЭФФЕКТЫ КОМБО","कॉम्बो प्रभाव","COMBO-EFFECTEN","تأثيرات الكومبو","连击特效"]],
+  ['activeFlightEffect',["AKTİF UÇUŞ EFEKTİ","ACTIVE FLIGHT EFFECT","使用中のフライトエフェクト","활성 비행 효과","AKTIVER FLUGEFFEKT","EFFET DE VOL ACTIF","EFECTO DE VUELO ACTIVO","EFFETTO DI VOLO ATTIVO","EFEITO DE VOO ATIVO","АКТИВНЫЙ ЭФФЕКТ ПОЛЁТА","सक्रिय उड़ान प्रभाव","ACTIEF VLUCHTEFFECT","تأثير الطيران النشط","当前飞行特效"]],
+  ['standardAirRail',["Standart Hava Rayı","Standard Air Rail","スタンダードエアレール","기본 에어 레일","Standard-Luftschiene","Rail aérien standard","Riel aéreo estándar","Scia aerea standard","Trilho aéreo padrão","Стандартный воздушный след","मानक एयर रेल","Standaard luchtrail","مسار الهواء القياسي","标准空中轨道"]],
+  ['comboPowerCopy',["Kombo yükseldikçe efekt hızlanır ve güçlenir.","The effect speeds up and grows stronger as the combo rises.","コンボが上がるほどエフェクトが速く強くなります。","콤보가 오를수록 효과가 빨라지고 강해집니다.","Mit höherem Combo wird der Effekt schneller und stärker.","L'effet accélère et s'intensifie avec le combo.","El efecto acelera y se intensifica al subir el combo.","L'effetto accelera e si intensifica con la combo.","O efeito acelera e fica mais forte com o combo.","С ростом комбо эффект ускоряется и усиливается.","कॉम्बो बढ़ने पर प्रभाव तेज़ और शक्तिशाली होता है।","Het effect versnelt en wordt sterker bij een hogere combo.","يتسارع التأثير ويقوى مع ارتفاع الكومبو.","连击越高，特效越快越强。"]],
+  ['standard',["STANDART","STANDARD","標準","기본","STANDARD","STANDARD","ESTÁNDAR","STANDARD","PADRÃO","СТАНДАРТ","मानक","STANDAARD","قياسي","标准"]],
+  ['standardApplied',["Standart efekt uygulandı","Standard effect applied","標準エフェクトを適用しました","기본 효과 적용 완료","Standardeffekt angewendet","Effet standard appliqué","Efecto estándar aplicado","Effetto standard applicato","Efeito padrão aplicado","Стандартный эффект применён","मानक प्रभाव लागू हुआ","Standaardeffect toegepast","تم تطبيق التأثير القياسي","已应用标准特效"]],
+  ['featured',["ÖNERİLEN","FEATURED","おすすめ","추천","EMPFOHLEN","À LA UNE","DESTACADO","IN EVIDENZA","DESTAQUE","РЕКОМЕНДУЕМ","विशेष","AANBEVOLEN","مميز","推荐"]],
+  ['applied',["uygulandı","applied","適用済み","적용됨","angewendet","appliqué","aplicado","applicato","aplicado","применён","लागू हुआ","toegepast","تم التطبيق","已应用"]],
+  ['purchased',["satın alındı","purchased","購入済み","구매 완료","gekauft","acheté","comprado","acquistato","comprado","куплено","खरीदा गया","gekocht","تم الشراء","已购买"]]
+].forEach(([key,values])=>_skyWords(key,values));
+
+function t(k){ return (SKY_TEXT[lang]&&SKY_TEXT[lang][k]) || (AUDIO_TEXT[lang]&&AUDIO_TEXT[lang][k]) || (T[lang]&&T[lang][k]) || (SKY_TEXT.EN&&SKY_TEXT.EN[k]) || (AUDIO_TEXT.EN&&AUDIO_TEXT.EN[k]) || (T.EN&&T.EN[k]) || ''; }
 function ts(k,fb){ const v=t(k); return v||fb; }
 
 // ── YÜKLEME + DİL SEÇİMİ AKIŞI ──────────────────────────────────────────────
@@ -1064,6 +1173,9 @@ function applyLang(){
   renderDailyCard();
   if(document.getElementById('store-body')) renderStoreBody();
   if(document.getElementById('modal-daily')?.classList.contains('active')) renderDailyModal();
+  updateMissionCardStatus();
+  if(document.getElementById('modal-missions')?.classList.contains('active')) renderMissionModal();
+  if(typeof updateBombBar==='function') updateBombBar();
   updateContinueBtn();
   if(typeof _updateAdPrivacyUI==='function'&&_privacyOptionsRequired)_updateAdPrivacyUI();
   // İsim çeviriyle ezilmesin — gerçek profil adını geri yaz
@@ -2208,9 +2320,9 @@ function renderDailyCard(){
 // Sky Harbor günlük uçuş görevleri. Çekirdek oyun kuralını değiştirmez; mevcut
 // satır/kombo/skor olaylarını dinleyip görev ilerlemesine ve ödüle dönüştürür.
 const SKY_MISSIONS=[
-  {id:'combos',goal:5,reward:60,title:'5 kombo yap',sub:'Türbini art arda hızlandır',icon:'combo'},
-  {id:'rows',goal:5,reward:80,title:'5 satır temizle',sub:'Kargo güvertesini boşalt',icon:'rows'},
-  {id:'score',goal:500,reward:100,title:'500 puan kazan',sub:'Günlük uçuş rekoruna ulaş',icon:'score'},
+  {id:'combos',goal:5,reward:60,titleKey:'missionComboTitle',subKey:'missionComboSub',icon:'combo'},
+  {id:'rows',goal:5,reward:80,titleKey:'missionRowsTitle',subKey:'missionRowsSub',icon:'rows'},
+  {id:'score',goal:500,reward:100,titleKey:'missionScoreTitle',subKey:'missionScoreSub',icon:'score'},
 ];
 
 function skyMissionState(){
@@ -2236,7 +2348,7 @@ function updateMissionCardStatus(state=skyMissionState()){
   if(!el)return;
   const ready=SKY_MISSIONS.filter(m=>(state[m.id]||0)>=m.goal&&!state.claimed[m.id]).length;
   const done=SKY_MISSIONS.filter(m=>state.claimed[m.id]).length;
-  el.textContent=ready?`${ready} ödül hazır`:done===SKY_MISSIONS.length?'Tüm rotalar tamam':'Günlük uçuş planı';
+  el.textContent=ready?t('rewardReadyCount').replace('{n}',ready):done===SKY_MISSIONS.length?t('allRoutesDone'):t('dailyFlightPlan');
 }
 
 function missionTimeLeft(){
@@ -2253,10 +2365,10 @@ function renderMissionModal(){
   if(reset)reset.textContent=missionTimeLeft();
   list.innerHTML=SKY_MISSIONS.map(m=>{
     const value=Math.min(m.goal,state[m.id]||0),complete=value>=m.goal,claimed=!!state.claimed[m.id];
-    const pct=Math.round(value/m.goal*100),label=claimed?'ALINDI':complete?'TOPLA':'DEVAM';
+    const pct=Math.round(value/m.goal*100),label=claimed?t('claimed'):complete?t('claim'):t('continueLabel');
     return `<div class="mission-row${complete?' done':''}">
       <div class="mission-icon ${m.icon}"></div>
-      <div class="mission-copy"><strong>${m.title}</strong><small>${m.sub}</small><div class="mission-track"><i style="width:${pct}%"></i></div><div class="mission-reward"><span>${value.toLocaleString()} / ${m.goal.toLocaleString()}</span><span><img src="assets/sky-harbor/coin.png" alt="">${m.reward}</span></div></div>
+      <div class="mission-copy"><strong>${t(m.titleKey)}</strong><small>${t(m.subKey)}</small><div class="mission-track"><i style="width:${pct}%"></i></div><div class="mission-reward"><span>${value.toLocaleString()} / ${m.goal.toLocaleString()}</span><span><img src="assets/sky-harbor/coin.png" alt="">${m.reward}</span></div></div>
       <button class="mission-claim" ${complete&&!claimed?'':'disabled'} onclick="claimSkyMission('${m.id}')">${label}</button>
     </div>`;
   }).join('');
@@ -2274,7 +2386,7 @@ function claimSkyMission(id){
   state.claimed[id]=true;
   saveSkyMissionState(state);
   tmAddCoins(mission.reward);
-  showCelebration(`+${mission.reward} ALTIN`,'#f4d58e');
+  showCelebration(`+${mission.reward} ${t('gold')}`,'#f4d58e');
   playPerfect();vibrate([25,15,45]);
   renderMissionModal();
 }
@@ -2332,7 +2444,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.08.25-admob-privacy-banner';
+const BUILD_VER='v2026.08.25-safe-hud-i18n';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3213,10 +3325,9 @@ function _updateAdPrivacyUI(message){
   const card=document.getElementById('ad-privacy-card');
   if(!card)return;
   card.hidden=!_privacyOptionsRequired;
-  const tr=lang==='TR';
-  const title=document.getElementById('ad-privacy-title');if(title)title.textContent=tr?'Gizlilik ve Reklamlar':'Privacy & Ads';
-  const note=document.getElementById('ad-privacy-note');if(note)note.textContent=message||(tr?'Reklam tercihlerini dilediğin zaman güncelleyebilirsin.':'You can update your ad choices at any time.');
-  const btn=document.getElementById('ad-privacy-btn');if(btn)btn.textContent=tr?'Reklam gizlilik seçenekleri':'Ad privacy choices';
+  const title=document.getElementById('ad-privacy-title');if(title)title.textContent=t('privacyAds');
+  const note=document.getElementById('ad-privacy-note');if(note)note.textContent=message||t('privacyAdsNote');
+  const btn=document.getElementById('ad-privacy-btn');if(btn)btn.textContent=t('privacyChoices');
 }
 async function openAdPrivacyOptions(){
   const AdMob=_getAdMob(),btn=document.getElementById('ad-privacy-btn');
@@ -3236,7 +3347,7 @@ async function openAdPrivacyOptions(){
     }
   }catch(e){
     console.warn('Privacy options:',e);
-    _updateAdPrivacyUI(lang==='TR'?'Tercihler şu anda açılamadı. Lütfen tekrar dene.':'Choices are unavailable right now. Please try again.');
+    _updateAdPrivacyUI(t('privacyUnavailable'));
   }finally{if(btn)btn.disabled=false;}
 }
 
@@ -3263,14 +3374,13 @@ async function _prepareRewardedAd(){
 
 let _adContext=null;
 function adContext(kind,extra={}){
-  const tr=lang==='TR';
   const contexts={
-    daily:{icon:'assets/sky-harbor/chest.png',title:tr?'Günlük ikmal sandığı':'Daily supply chest',copy:tr?'Ödül reklam bitince açılır':'Reward unlocks after the ad'},
-    bomb:{icon:'assets/sky-harbor/hammer.png',title:tr?'Bomba hedefleme hakkı':'Bomb targeting access',copy:tr?'Reklamdan sonra alanını seç':'Choose the area after the ad'},
-    color:{icon:'assets/sky-harbor/refresh.png',title:tr?'Renk Patlat hakkı':'Color Blast access',copy:tr?'Reklamdan sonra silinecek rengi seç':'Choose a color after the ad'},
-    rescue:{icon:'assets/sky-harbor/propeller.png',title:tr?'Uçuşa devam hakkı':'Continue flight access',copy:tr?'3 dolu satır temizlenir':'Three fullest rows will be cleared'},
-    score:{icon:'assets/sky-harbor/coin.png',title:tr?'Skor coin ödülü':'Score coin reward',copy:tr?'Reklam bitince coinler eklenir':'Coins are added after the ad'},
-    default:{icon:'assets/sky-harbor/propeller.png',title:tr?'Sky Harbor ödülü':'Sky Harbor reward',copy:tr?'Reklamı sonuna kadar izle':'Watch the ad to the end'},
+    daily:{icon:'assets/sky-harbor/chest.png',title:t('dailyBonus'),copy:t('watchToEnd')},
+    bomb:{icon:'assets/sky-harbor/hammer.png',title:t('bomb'),copy:t('watchToEnd')},
+    color:{icon:'assets/sky-harbor/refresh.png',title:t('colorBlast'),copy:t('watchToEnd')},
+    rescue:{icon:'assets/sky-harbor/propeller.png',title:t('continueFlight'),copy:t('continueClearRows')},
+    score:{icon:'assets/sky-harbor/coin.png',title:t('goScoreReward'),copy:t('scoreRewardSub')},
+    default:{icon:'assets/sky-harbor/propeller.png',title:t('reward'),copy:t('watchToEnd')},
   };
   return Object.assign({},contexts[kind]||contexts.default,extra);
 }
@@ -3294,9 +3404,9 @@ function _showAdOverlay(meta,state='loading'){
   const icon=document.getElementById('ad-reward-icon');if(icon)icon.src=_adContext.icon;
   const title=document.getElementById('ad-reward-title');if(title)title.textContent=_adContext.title;
   const copy=document.getElementById('ad-reward-copy');if(copy)copy.textContent=_adContext.copy;
-  const skip=document.getElementById('ad-skip-btn');if(skip){skip.style.display='none';skip.textContent=lang==='TR'?'Kapat':'Close';}
+  const skip=document.getElementById('ad-skip-btn');if(skip){skip.style.display='none';skip.textContent=t('close');}
   const timer=document.getElementById('ad-timer');if(timer){timer.textContent='…';timer.style.setProperty('--ad-progress','0');}
-  _setAdOverlayState(state,lang==='TR'?'Reklam hazırlanıyor…':'Preparing ad…',lang==='TR'?'Bağlantı kuruluyor, bu ekran otomatik ilerler':'Connecting; this screen advances automatically');
+  _setAdOverlayState(state,t('adPreparing'),t('connectAuto'));
   ov.style.display='flex';
 }
 function _hideAdOverlay(resumeMusic=true,resumeBanner=true){
@@ -3306,7 +3416,7 @@ function _hideAdOverlay(resumeMusic=true,resumeBanner=true){
 }
 function _completeRewardedAd(onRewarded){
   _showAdOverlay(_adContext,'done');
-  _setAdOverlayState('done',lang==='TR'?'Ödül hazır!':'Reward ready!',lang==='TR'?'Hesabına uygulanıyor…':'Applying it to your account…');
+  _setAdOverlayState('done',t('rewardReadyTitle'),t('applyingReward'));
   const timer=document.getElementById('ad-timer');if(timer){timer.textContent='✓';timer.style.setProperty('--ad-progress','100');}
   setTimeout(()=>{_rewardFlowActive=false;_fullScreenAdOpen=false;_hideAdOverlay();logEvent('ad_rewarded',{ad_format:'rewarded'});onRewarded&&onRewarded();},720);
 }
@@ -3318,9 +3428,9 @@ function _clearRewardedListeners(){
 function _showAdUnavailable(){
   _clearRewardedListeners();_rewardFlowActive=false;_fullScreenAdOpen=false;_rewardReady=false;
   _showAdOverlay(_adContext||adContext('default'),'error');
-  _setAdOverlayState('error',lang==='TR'?'Reklam şu anda hazır değil':'Ad unavailable',lang==='TR'?'Bağlantını kontrol edip biraz sonra yeniden dene. Ödül harcanmadı.':'Check your connection and try again shortly. Nothing was spent.');
+  _setAdOverlayState('error',t('adUnavailable'),t('adUnavailableCopy'));
   const timer=document.getElementById('ad-timer');if(timer){timer.textContent='!';timer.style.setProperty('--ad-progress','0');}
-  const skip=document.getElementById('ad-skip-btn');if(skip){skip.textContent=lang==='TR'?'Kapat':'Close';skip.style.display='flex';}
+  const skip=document.getElementById('ad-skip-btn');if(skip){skip.textContent=t('close');skip.style.display='flex';}
   _setSkyMusicPaused(false);
   setTimeout(()=>_prepareRewardedAd(),15000);
 }
@@ -3350,7 +3460,7 @@ async function showRewardedAd(onRewarded,meta){
     // Native no-fill/failure durumunda sahte reklamla ödül VERME. Tarayıcıdaki
     // demo akışı native gelir/ödül akışına hiçbir zaman karışmamalı.
     if(!_rewardReady){_showAdUnavailable();return;}
-    _setAdOverlayState('loading',lang==='TR'?'Reklam açılıyor…':'Opening ad…',lang==='TR'?'Ödül için reklamı sonuna kadar izle':'Watch to the end to receive the reward');
+    _setAdOverlayState('loading',t('adPreparing'),t('watchToEnd'));
     await new Promise(resolve=>setTimeout(resolve,180));
     _fullScreenAdOpen=true;
     _hideAdOverlay(false,false);
@@ -3365,7 +3475,7 @@ async function showRewardedAd(onRewarded,meta){
 function _showMockAd(onRewarded,meta){
   _adCb=onRewarded;
   _showAdOverlay(meta||_adContext||adContext('default'),'watching');
-  _setAdOverlayState('watching',lang==='TR'?'Reklam izleniyor…':'Ad playing…',lang==='TR'?'Kapatmadan tamamla; ödül otomatik verilecek':'Finish without closing; reward is automatic');
+  _setAdOverlayState('watching',t('adWatching'),t('completeAuto'));
   document.getElementById('ad-skip-btn').style.display='none';
   let t=5;
   const timer=document.getElementById('ad-timer');
@@ -5118,7 +5228,7 @@ function _setupScoreReward(s){
   const sub=document.getElementById('go-reward-sub');
   const badge=document.getElementById('go-reward-badge');
   if(btn) btn.classList.remove('claimed');
-  if(sub) sub.textContent=lang==='TR'?'1 reklam izle, coin ödülünü al':'Watch 1 ad and collect coins';
+  if(sub) sub.textContent=t('scoreRewardSub');
   if(badge) badge.innerHTML='<img src="assets/sky-harbor/coin.png" alt=""><span>+'+_pendingScoreCoins+'</span>';
 }
 function claimScoreCoins(){
@@ -5131,7 +5241,7 @@ function claimScoreCoins(){
   showRewardedAd(()=>{
     clearTimeout(_failsafe);
     _grantScoreCoins();
-  },adContext('score',{title:`+${_pendingScoreCoins} Coin`,copy:lang==='TR'?'Reklam bitince cüzdanına eklenir':'Added to your wallet after the ad'}));
+  },adContext('score',{title:`+${_pendingScoreCoins} Coin`,copy:t('watchToEnd')}));
 }
 function _grantScoreCoins(){
   if(_scoreCoinsClaimed||_pendingScoreCoins<=0)return;
@@ -7356,28 +7466,28 @@ function renderStoreBody(){
 
   if(storeTab==='themes'){
     _stopFlamePreviews();
-    el.innerHTML=`<div class="store-section-title">SKY HARBOR KOLEKSİYONU</div>
+    el.innerHTML=`<div class="store-section-title">${t('skyCollection')}</div>
       <div class="sky-store-hero">
         <img src="assets/sky-harbor/home.png" alt="">
-        <div><strong>Sky Harbor</strong><small>Aktif görsel dünya</small></div>
-        <span>AKTİF</span>
+        <div><strong>Sky Harbor</strong><small>${t('activeVisualWorld')}</small></div>
+        <span>${t('badgeActive')}</span>
       </div>
-      <div class="store-section-title palette-title">KARGO BLOK PALETLERİ</div>
+      <div class="store-section-title palette-title">${t('cargoPalettes')}</div>
       <div class="theme-grid palette-grid">${STORE_THEMES.map(themeCard).join('')}</div>
-      <div class="store-section-title">KOMBO KOLEKSİYONU</div>
+      <div class="store-section-title">${t('comboCollection')}</div>
       <button class="sky-store-effect combo-store-jump" onclick="setStoreTab('effects')">
         <img src="assets/sky-harbor/propeller.png" alt="">
-        <div><strong>6 Premium Kombo Efekti</strong><small>Coin ile aç, istediğini seç ve tablanın çevresinde kullan.</small></div>
-        <span>GÖR →</span>
+        <div><strong>${t('premiumComboEffects')}</strong><small>${t('premiumComboSub')}</small></div>
+        <span>${t('view')}</span>
       </button>`;
   } else if(storeTab==='effects'){
     _stopFlamePreviews();
     const current=COMBO_EFFECTS.find(f=>f.id===activeComboFxId);
-    el.innerHTML=`<div class="store-section-title">KOMBO EFEKTLERİ</div>
+    el.innerHTML=`<div class="store-section-title">${t('comboEffectsTitle')}</div>
       <div class="combo-fx-store-hero">
         <img src="assets/sky-harbor/propeller.png" alt="">
-        <div><small>AKTİF UÇUŞ EFEKTİ</small><strong>${current?(lang==='TR'?current.name:current.nameEN):(lang==='TR'?'Standart Hava Rayı':'Standard Air Rail')}</strong><span>Kombo yükseldikçe efekt hızlanır ve güçlenir.</span></div>
-        <button onclick="applyComboFx('combo_default');renderStoreBody();showStoreNotice('${lang==='TR'?'Standart efekt uygulandı':'Standard effect applied'}','ok')">STANDART</button>
+        <div><small>${t('activeFlightEffect')}</small><strong>${current?(lang==='TR'?current.name:current.nameEN):t('standardAirRail')}</strong><span>${t('comboPowerCopy')}</span></div>
+        <button onclick="applyStandardComboFx()">${t('standard')}</button>
       </div>
       <div class="combo-fx-grid">${COMBO_EFFECTS.map(comboFxCard).join('')}</div>`;
   } else if(storeTab==='power'){
@@ -7387,11 +7497,17 @@ function renderStoreBody(){
   }
 }
 
+function applyStandardComboFx(){
+  applyComboFx('combo_default');
+  renderStoreBody();
+  showStoreNotice(t('standardApplied'),'ok');
+}
+
 function comboFxCard(fx){
   const owned=tmOwns(fx.id),active=activeComboFxId===fx.id;
   const name=lang==='TR'?fx.name:fx.nameEN;
   const desc=lang==='TR'?fx.desc:fx.descEN;
-  const badge=active?t('badgeActive'):owned?t('badgeOwned'):fx.featured?(lang==='TR'?'ÖNERİLEN':'FEATURED'):'';
+  const badge=active?t('badgeActive'):owned?t('badgeOwned'):fx.featured?t('featured'):'';
   const btn=active?t('btnActive'):owned?t('btnApply'):`<img src="assets/sky-harbor/coin.png" alt=""><span>${fx.coins.toLocaleString()}</span>`;
   const cells=Array.from({length:16},(_,i)=>`<i style="--mini:${['#2baed8','#43bbae','#efbd43','#a268cf','#eb6859','#f4e2b8'][i%6]}"></i>`).join('');
   return`<article class="combo-fx-card${active?' active':''}${owned?' owned':' locked'}" onclick="storeComboFxClick('${fx.id}')">
@@ -7406,14 +7522,14 @@ function storeComboFxClick(id){
   const fx=COMBO_EFFECTS.find(f=>f.id===id);if(!fx)return;
   const name=lang==='TR'?fx.name:fx.nameEN;
   if(tmOwns(id)){
-    applyComboFx(id);renderStoreBody();showStoreNotice(name+' '+(lang==='TR'?'uygulandı':'applied'),'ok');vibrate(10);return;
+    applyComboFx(id);renderStoreBody();showStoreNotice(name+' '+t('applied'),'ok');vibrate(10);return;
   }
   if(!tmSpendCoins(fx.coins)){
     showStoreNotice(t('notEnoughCoins'),'error');vibrate([10,30,10]);return;
   }
   tmOwned.push(id);localStorage.setItem('tm_owned',JSON.stringify(tmOwned));
   applyComboFx(id);
-  renderStoreBody();showStoreNotice(name+' '+(lang==='TR'?'satın alındı':'purchased'),'ok');vibrate([20,10,40]);
+  renderStoreBody();showStoreNotice(name+' '+t('purchased'),'ok');vibrate([20,10,40]);
 }
 
 function themeCard(th){
@@ -8838,25 +8954,25 @@ function skipTutorial(){
 
 <!-- Native AdMob banner WebView'in üstünde çizilir; bu yatak yalnızca ekranın
      banner için ayırdığı alanı temaya bağlar ve reklam gelmezse görünmez. -->
-<div id="ad-banner-bed" aria-hidden="true"><span>REKLAM</span></div>
+<div id="ad-banner-bed" aria-hidden="true"><span data-t="ad">REKLAM</span></div>
 
 <!-- ── REKLAM OVERLAY ── -->
 <div id="ad-overlay">
   <div class="ad-shell" id="ad-shell" data-state="loading">
-    <div class="ad-shell-head"><span data-t="ad">REKLAM</span><small><i></i> GÜVENLİ ÖDÜL AKIŞI</small></div>
-    <div class="ad-reward-brief"><img id="ad-reward-icon" src="assets/sky-harbor/propeller.png" alt=""><div><small>REKLAM SONRASI</small><strong id="ad-reward-title">Ödülün etkinleşecek</strong><span id="ad-reward-copy">Reklamı sonuna kadar izle</span></div></div>
+    <div class="ad-shell-head"><span data-t="ad">REKLAM</span><small><i></i> <span data-t="safeRewardFlow">GÜVENLİ ÖDÜL AKIŞI</span></small></div>
+    <div class="ad-reward-brief"><img id="ad-reward-icon" src="assets/sky-harbor/propeller.png" alt=""><div><small data-t="afterAd">REKLAM SONRASI</small><strong id="ad-reward-title" data-t="rewardWillActivate">Ödülün etkinleşecek</strong><span id="ad-reward-copy" data-t="watchToEnd">Reklamı sonuna kadar izle</span></div></div>
     <div class="ad-stage">
       <div class="ad-loader" aria-hidden="true"><i></i><span class="ui-video-icon large"></span></div>
       <strong id="ad-state-title" data-t="adLoading">Reklam hazırlanıyor…</strong>
-      <small id="ad-state-copy">Bağlantı kuruluyor, bu ekran otomatik ilerler</small>
+      <small id="ad-state-copy" data-t="connectAuto">Bağlantı kuruluyor, bu ekran otomatik ilerler</small>
       <div class="ad-load-track"><i id="ad-load-fill"></i></div>
     </div>
     <div class="ad-progress-row">
       <div id="ad-timer" style="--ad-progress:0">5</div>
-      <div><strong id="ad-progress-title" data-t="adWatching">Reklam izleniyor…</strong><small id="ad-progress-copy">Tamamlanınca ödül otomatik verilecek</small></div>
+      <div><strong id="ad-progress-title" data-t="adWatching">Reklam izleniyor…</strong><small id="ad-progress-copy" data-t="completeAuto">Tamamlanınca ödül otomatik verilecek</small></div>
     </div>
-    <div class="ad-flow-steps" aria-hidden="true"><span class="active"><i>1</i>HAZIRLA</span><b></b><span><i>2</i>İZLE</span><b></b><span><i>3</i>ÖDÜL</span></div>
-    <button id="ad-skip-btn" onclick="closeAd(false)">Kapat</button>
+    <div class="ad-flow-steps" aria-hidden="true"><span class="active"><i>1</i><em data-t="prepare">HAZIRLA</em></span><b></b><span><i>2</i><em data-t="watch">İZLE</em></span><b></b><span><i>3</i><em data-t="reward">ÖDÜL</em></span></div>
+    <button id="ad-skip-btn" onclick="closeAd(false)" data-t="close">Kapat</button>
   </div>
 </div>
 
