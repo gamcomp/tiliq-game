@@ -167,3 +167,122 @@ workflows:
         # Testing incelemesini tetikliyor (Beta App Description şart koşar, günler sürer).
         # Build zaten yüklenip işlendikten sonra Internal test grubunda otomatik belirir.
         # submit_to_app_store: false  — App Store metadata hazır olunca true yapılır
+
+  app-store-metadata:
+    name: Tiliq App Store Metadata
+    max_build_duration: 45
+    instance_type: mac_mini_m2
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+      cancel_previous_builds: false
+    when:
+      changeset:
+        includes:
+          - codemagic.yaml
+          - store-assets/metadata/app-store/**
+          - store-assets/screenshots/app-store/**
+    integrations:
+      app_store_connect: tiliq_asc_key
+    environment:
+      vars:
+        BUNDLE_ID: com.tiliq.game
+        APP_VERSION: 1.3.88
+      xcode: latest
+    scripts:
+      - name: Stage and verify localized App Store assets
+        script: |
+          set -euo pipefail
+          screenshot_destination="$CM_BUILD_DIR/.app-store-upload/screenshots"
+          metadata_destination="$CM_BUILD_DIR/.app-store-upload/metadata"
+          mkdir -p "$screenshot_destination" "$metadata_destination"
+
+          for locale_path in store-assets/screenshots/app-store/*; do
+            [ -d "$locale_path/iphone-6.9" ] || continue
+            locale="$(basename "$locale_path")"
+            mkdir -p "$screenshot_destination/$locale"
+            cp "$locale_path/iphone-6.9/"*.jpg "$screenshot_destination/$locale/"
+          done
+
+          for locale_path in store-assets/metadata/app-store/*; do
+            [ -d "$locale_path" ] || continue
+            locale="$(basename "$locale_path")"
+            mkdir -p "$metadata_destination/$locale"
+            for filename in \
+              name.txt \
+              subtitle.txt \
+              promotional_text.txt \
+              description.txt \
+              keywords.txt \
+              release_notes.txt
+            do
+              cp "$locale_path/$filename" "$metadata_destination/$locale/$filename"
+            done
+          done
+
+          screenshot_locale_count="$(find "$screenshot_destination" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
+          screenshot_count="$(find "$screenshot_destination" -type f -name '*.jpg' | wc -l | tr -d ' ')"
+          metadata_locale_count="$(find "$metadata_destination" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')"
+          metadata_count="$(find "$metadata_destination" -type f -name '*.txt' | wc -l | tr -d ' ')"
+
+          if [ "$screenshot_locale_count" != "14" ] || [ "$screenshot_count" != "84" ]; then
+            echo "Expected 14 screenshot locales and 84 screenshots; found $screenshot_locale_count locales and $screenshot_count screenshots." >&2
+            exit 1
+          fi
+          if [ "$metadata_locale_count" != "14" ] || [ "$metadata_count" != "84" ]; then
+            echo "Expected 14 metadata locales and 84 metadata files; found $metadata_locale_count locales and $metadata_count files." >&2
+            exit 1
+          fi
+
+      - name: Upload localized metadata and replace screenshots
+        script: |
+          set -euo pipefail
+          for name in \
+            APP_STORE_CONNECT_KEY_IDENTIFIER \
+            APP_STORE_CONNECT_ISSUER_ID \
+            APP_STORE_CONNECT_PRIVATE_KEY
+          do
+            if [ -z "${!name:-}" ]; then
+              echo "App Store Connect integration did not provide $name" >&2
+              exit 1
+            fi
+          done
+
+          api_key_path="$(mktemp -t app-store-connect-api-key).json"
+          export API_KEY_PATH="$api_key_path"
+          trap 'rm -f "$api_key_path"' EXIT
+
+          python3 <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          key = os.environ["APP_STORE_CONNECT_PRIVATE_KEY"].replace("\\n", "\n")
+          payload = {
+              "key_id": os.environ["APP_STORE_CONNECT_KEY_IDENTIFIER"],
+              "issuer_id": os.environ["APP_STORE_CONNECT_ISSUER_ID"],
+              "key": key,
+              "duration": 1200,
+              "in_house": False,
+          }
+          path = Path(os.environ["API_KEY_PATH"])
+          path.write_text(json.dumps(payload), encoding="utf-8")
+          path.chmod(0o600)
+          PY
+
+          fastlane deliver \
+            --api_key_path "$api_key_path" \
+            --app_identifier "$BUNDLE_ID" \
+            --app_version "$APP_VERSION" \
+            --platform ios \
+            --metadata_path "$CM_BUILD_DIR/.app-store-upload/metadata" \
+            --screenshots_path "$CM_BUILD_DIR/.app-store-upload/screenshots" \
+            --skip_binary_upload true \
+            --overwrite_screenshots true \
+            --force true \
+            --submit_for_review false \
+            --run_precheck_before_submit false

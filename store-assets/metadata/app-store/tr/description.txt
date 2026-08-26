@@ -1,0 +1,25 @@
+Bir sonraki yüksek skorunu gökyüzünde yap.
+
+Tiliq, Sky Harbor dünyasında geçen stratejik bir blok bulmaca oyunudur. Parçaları 8×8 tahtaya yerleştir, tamamlanan satır ve sütunları temizle ve bir sonraki hamlen için alan aç. Kuralları öğrenmek kolaydır; yükselen bir skoru ayakta tutmak ise planlama ister.
+
+NASIL OYNANIR
+• Sunulan üç parçadan birini tahtaya sürükle
+• Tam bir satır veya sütun oluşturup temizle
+• Birden fazla hattı arka arkaya temizleyerek kombo çarpanını büyüt
+• Hiçbir parça sığmadığında oyun sona erer
+
+KOMBOLAR VE GÜÇLER
+Akıllı temizlemelerle kombo seviyeni yükselt ve daha fazla puan kazan. Sıkıştığında Bomba ile 3×3 alanı temizle, iki bomba harcayarak Süper Bomba ile bir satır ve sütunu aç veya Renk Patlat ile seçtiğin renkteki tüm blokları kaldır. Kurtarma hakkı sana devam etmek için bir şans daha verir.
+
+HER GÜN YENİ BİR UÇUŞ
+7 günlük ödül serini koru ve her gün yenilenen üç görevi tamamla: kombo yap, satır temizle ve hedef skora ulaş. Coin ve güç ödüllerini topla.
+
+YARIŞ VE İLERLE
+Dünya ve arkadaş sıralamalarında en iyi skorunu karşılaştır. Her oyunda XP kazan, 999. seviyeye doğru ilerle ve hesabınla giriş yaptığında ilerlemeni desteklenen cihazlar arasında eşitle.
+
+SKY HARBOR'I KENDİNE GÖRE TASARLA
+Oyunda kazandığın coinlerle yeni kargo renk paletleri ve kombo efektleri aç. Tahtanın görünümünü değiştirirken aynı okunaklı, hızlı bulmaca deneyimini koru.
+
+Tiliq; Türkçe, İngilizce, Almanca, Fransızca, İspanyolca, İtalyanca, Portekizce, Rusça, Japonca, Korece, Çince, Hintçe, Arapça ve Felemenkçe dillerini destekler.
+
+İnternet bağlantısı gereklidir.

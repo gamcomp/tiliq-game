@@ -1,0 +1,1 @@
+block puzzle,brain game,grid,tile,combo,strategy,casual,ranking,daily
