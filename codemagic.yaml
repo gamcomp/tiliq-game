@@ -274,15 +274,22 @@ workflows:
           path.chmod(0o600)
           PY
 
+          mkdir -p "$CM_BUILD_DIR/.app-store-upload/fastlane"
+          cat > "$CM_BUILD_DIR/.app-store-upload/fastlane/Deliverfile" <<'DELIVERFILE'
+          app_identifier("com.tiliq.game")
+          DELIVERFILE
+
+          cd "$CM_BUILD_DIR/.app-store-upload"
+
           fastlane deliver \
-            --api_key_path "$api_key_path" \
-            --app_identifier "$BUNDLE_ID" \
-            --app_version "$APP_VERSION" \
-            --platform ios \
-            --metadata_path "$CM_BUILD_DIR/.app-store-upload/metadata" \
-            --screenshots_path "$CM_BUILD_DIR/.app-store-upload/screenshots" \
-            --skip_binary_upload true \
-            --overwrite_screenshots true \
-            --force true \
-            --submit_for_review false \
-            --run_precheck_before_submit false
+            --api_key_path="$api_key_path" \
+            --app_identifier="$BUNDLE_ID" \
+            --app_version="$APP_VERSION" \
+            --platform=ios \
+            --metadata_path="$CM_BUILD_DIR/.app-store-upload/metadata" \
+            --screenshots_path="$CM_BUILD_DIR/.app-store-upload/screenshots" \
+            --skip_binary_upload=true \
+            --overwrite_screenshots=true \
+            --force=true \
+            --submit_for_review=false \
+            --run_precheck_before_submit=false
