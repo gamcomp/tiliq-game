@@ -39,6 +39,7 @@ const uploadRoot = mkdtempSync(join(tmpdir(), "tiliq-app-store-upload-"));
 const metadataDestination = join(uploadRoot, "metadata");
 const screenshotDestination = join(uploadRoot, "screenshots");
 const apiKeyPath = join(uploadRoot, "app-store-connect-api-key.json");
+const fastlaneDirectory = join(uploadRoot, "fastlane");
 const metadataSource = join(root, "store-assets", "metadata", "app-store");
 const screenshotSource = join(root, "store-assets", "screenshots", "app-store");
 const metadataFiles = [
@@ -50,13 +51,14 @@ const metadataFiles = [
   "release_notes.txt",
 ];
 
-function run(command, args) {
+function run(command, args, workingDirectory = root, extraEnvironment = {}) {
   const result = spawnSync(command, args, {
-    cwd: root,
+    cwd: workingDirectory,
     env: {
       ...process.env,
       FASTLANE_HIDE_CHANGELOG: "1",
       FASTLANE_SKIP_UPDATE_CHECK: "1",
+      ...extraEnvironment,
     },
     stdio: "inherit",
   });
@@ -70,6 +72,7 @@ function run(command, args) {
 try {
   mkdirSync(metadataDestination, { recursive: true });
   mkdirSync(screenshotDestination, { recursive: true });
+  mkdirSync(fastlaneDirectory, { recursive: true });
 
   const locales = readdirSync(metadataSource, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
@@ -134,36 +137,46 @@ try {
   );
   chmodSync(apiKeyPath, 0o600);
 
+  writeFileSync(
+    join(fastlaneDirectory, "Fastfile"),
+    `default_platform(:ios)
+
+platform :ios do
+  lane :store_metadata do
+    deliver(
+      api_key_path: ENV.fetch("TILIQ_ASC_API_KEY_PATH"),
+      app_identifier: "com.tiliq.game",
+      app_version: "1.3.88",
+      platform: "ios",
+      metadata_path: ENV.fetch("TILIQ_METADATA_PATH"),
+      screenshots_path: ENV.fetch("TILIQ_SCREENSHOTS_PATH"),
+      skip_binary_upload: true,
+      overwrite_screenshots: true,
+      force: true,
+      submit_for_review: false,
+      run_precheck_before_submit: false,
+    )
+  end
+end
+`,
+    "utf8",
+  );
+
   run("bash", [
     "-lc",
     "command -v fastlane >/dev/null 2>&1 || brew install fastlane",
   ]);
 
-  run("fastlane", [
-    "deliver",
-    "--api_key_path",
-    apiKeyPath,
-    "--app_identifier",
-    "com.tiliq.game",
-    "--app_version",
-    "1.3.88",
-    "--platform",
-    "ios",
-    "--metadata_path",
-    metadataDestination,
-    "--screenshots_path",
-    screenshotDestination,
-    "--skip_binary_upload",
-    "true",
-    "--overwrite_screenshots",
-    "true",
-    "--force",
-    "true",
-    "--submit_for_review",
-    "false",
-    "--run_precheck_before_submit",
-    "false",
-  ]);
+  run(
+    "fastlane",
+    ["ios", "store_metadata"],
+    uploadRoot,
+    {
+      TILIQ_ASC_API_KEY_PATH: apiKeyPath,
+      TILIQ_METADATA_PATH: metadataDestination,
+      TILIQ_SCREENSHOTS_PATH: screenshotDestination,
+    },
+  );
 
   console.log("App Store metadata and screenshot upload completed successfully.");
 } finally {
