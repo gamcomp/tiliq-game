@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1024,height=500,initial-scale=1">
+<style>
+  * { box-sizing: border-box; }
+  html, body { width: 1024px; height: 500px; margin: 0; overflow: hidden; }
+  body { font-family: "Trebuchet MS", "Segoe UI", sans-serif; background: #073c62; }
+  .canvas { position: relative; width: 1024px; height: 500px; overflow: hidden; isolation: isolate; }
+  .harbor { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; transform: scale(1.04); }
+  .shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(3,31,53,.96) 0%, rgba(4,47,76,.9) 37%, rgba(4,49,77,.44) 63%, rgba(3,31,52,.2) 100%); }
+  .glow { position: absolute; inset: 0; background: radial-gradient(circle at 78% 20%, rgba(255,244,199,.34), transparent 34%); }
+  .frame { position: absolute; inset: 20px; border: 3px solid #e8b856; border-radius: 26px; box-shadow: inset 0 0 0 2px rgba(255,247,215,.65), 0 12px 32px rgba(0,20,38,.35); }
+  .frame::before, .frame::after { content: ""; position: absolute; top: 50%; width: 74px; height: 2px; background: linear-gradient(90deg, transparent, #73d2df); }
+  .frame::before { left: 14px; }
+  .frame::after { right: 14px; transform: rotate(180deg); }
+  .brand { position: absolute; left: 74px; top: 58px; width: 470px; height: 384px; display: grid; align-content: center; justify-items: center; padding: 34px 38px 28px; border: 2px solid rgba(243,202,111,.78); border-radius: 38px; background: linear-gradient(145deg, rgba(255,248,224,.97), rgba(231,207,155,.94)); box-shadow: 0 20px 45px rgba(0,22,39,.4), inset 0 0 0 3px rgba(255,255,255,.5); }
+  .seal { width: 142px; height: 142px; display: grid; place-items: center; margin-bottom: -9px; border: 5px solid #e5af4d; border-radius: 50%; background: radial-gradient(circle, #fff9e6, #d9bc82 76%); box-shadow: 0 0 0 7px #0a5079, 0 11px 22px rgba(22,44,54,.24); }
+  .seal img { width: 128px; height: 128px; object-fit: contain; }
+  .kicker { margin-top: 24px; color: #197d9b; font-size: 14px; font-weight: 900; letter-spacing: .34em; text-indent: .34em; }
+  .wordmark { width: 330px; height: auto; margin-top: -7px; }
+  .subtitle { margin-top: -2px; color: #a3671d; font-size: 18px; font-weight: 1000; letter-spacing: .24em; text-indent: .24em; }
+  .blocks { position: absolute; left: 585px; bottom: 52px; display: grid; grid-template-columns: repeat(6, 44px); grid-template-rows: repeat(2, 44px); gap: 8px; filter: drop-shadow(0 8px 7px rgba(0,24,43,.5)); }
+  .block { border: 3px solid rgba(255,244,205,.86); border-radius: 11px; box-shadow: inset 0 4px rgba(255,255,255,.28), inset 0 -5px rgba(0,38,63,.23); }
+  .b1 { grid-column: 1; grid-row: 2; background: #ef6d56; }
+  .b2 { grid-column: 2; grid-row: 2; background: #36afd1; }
+  .b3 { grid-column: 3; grid-row: 2; background: #53b98b; }
+  .b4 { grid-column: 3; grid-row: 1; background: #e9b64c; }
+  .b5 { grid-column: 4; grid-row: 1; background: #9d78ce; }
+  .b6 { grid-column: 5; grid-row: 1; background: #ef6d56; }
+  .b7 { grid-column: 5; grid-row: 2; background: #36afd1; }
+  .b8 { grid-column: 6; grid-row: 2; background: #e9b64c; }
+</style>
+</head>
+<body>
+  <main class="canvas">
+    <img class="harbor" src="../../assets/sky-harbor/home-harbor.png" alt="">
+    <div class="shade"></div>
+    <div class="glow"></div>
+    <div class="frame"></div>
+    <section class="brand">
+      <div class="seal"><img src="../../assets/sky-harbor/propeller.png" alt=""></div>
+      <div class="kicker">SKY HARBOR</div>
+      <img class="wordmark" src="../../assets/sky-harbor/tiliq-wordmark.svg" alt="Tiliq">
+      <div class="subtitle">BLOCK PUZZLE</div>
+    </section>
+    <div class="blocks" aria-hidden="true">
+      <i class="block b1"></i><i class="block b2"></i><i class="block b3"></i><i class="block b4"></i>
+      <i class="block b5"></i><i class="block b6"></i><i class="block b7"></i><i class="block b8"></i>
+    </div>
+  </main>
+</body>
+</html>

@@ -7,7 +7,10 @@
     "cap:add:ios": "npx cap add ios",
     "cap:sync": "npx cap sync",
     "cap:open:ios": "npx cap open ios",
-    "cap:run:ios": "npx cap run ios"
+    "cap:run:ios": "npx cap run ios",
+    "store:metadata": "node store-assets/tools/generate-metadata.mjs",
+    "store:screenshots": "node store-assets/tools/capture-screenshots.mjs",
+    "store:validate": "node store-assets/tools/validate-store-assets.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^6.0.1",
@@ -24,7 +27,8 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^6.0.0",
-    "patch-package": "^8.0.1"
+    "patch-package": "^8.0.1",
+    "playwright-core": "^1.62.1"
   },
   "author": "BehzatBerk",
   "license": "UNLICENSED"

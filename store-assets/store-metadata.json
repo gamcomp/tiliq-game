@@ -1,0 +1,273 @@
+{
+  "version": "1.3.88",
+  "versionCode": 148,
+  "updatedAt": "2026-08-26",
+  "locales": {
+    "tr-TR": {
+      "appStoreLocale": "tr",
+      "gameCode": "TR",
+      "title": "Tiliq: Blok Bulmaca",
+      "shortDescription": "Blokları yerleştir, satırları temizle, kombo yap ve sıralamada yüksel.",
+      "subtitle": "Yerleştir, Temizle, Yüksel",
+      "promotionalText": "Blok bulmaca maceranı Sky Harbor'a taşı. Günlük görevleri tamamla, kombo yap, yeni görünümler aç ve sıralamada yüksel.",
+      "keywords": "blok bulmaca,zeka,ızgara,kombo,strateji,karo,günlük,sıralama",
+      "fullDescription": "Bir sonraki yüksek skorunu gökyüzünde yap.\n\nTiliq, Sky Harbor dünyasında geçen stratejik bir blok bulmaca oyunudur. Parçaları 8×8 tahtaya yerleştir, tamamlanan satır ve sütunları temizle ve bir sonraki hamlen için alan aç. Kuralları öğrenmek kolaydır; yükselen bir skoru ayakta tutmak ise planlama ister.\n\nNASIL OYNANIR\n• Sunulan üç parçadan birini tahtaya sürükle\n• Tam bir satır veya sütun oluşturup temizle\n• Birden fazla hattı arka arkaya temizleyerek kombo çarpanını büyüt\n• Hiçbir parça sığmadığında oyun sona erer\n\nKOMBOLAR VE GÜÇLER\nAkıllı temizlemelerle kombo seviyeni yükselt ve daha fazla puan kazan. Sıkıştığında Bomba ile 3×3 alanı temizle, iki bomba harcayarak Süper Bomba ile bir satır ve sütunu aç veya Renk Patlat ile seçtiğin renkteki tüm blokları kaldır. Kurtarma hakkı sana devam etmek için bir şans daha verir.\n\nHER GÜN YENİ BİR UÇUŞ\n7 günlük ödül serini koru ve her gün yenilenen üç görevi tamamla: kombo yap, satır temizle ve hedef skora ulaş. Coin ve güç ödüllerini topla.\n\nYARIŞ VE İLERLE\nDünya ve arkadaş sıralamalarında en iyi skorunu karşılaştır. Her oyunda XP kazan, 999. seviyeye doğru ilerle ve hesabınla giriş yaptığında ilerlemeni desteklenen cihazlar arasında eşitle.\n\nSKY HARBOR'I KENDİNE GÖRE TASARLA\nOyunda kazandığın coinlerle yeni kargo renk paletleri ve kombo efektleri aç. Tahtanın görünümünü değiştirirken aynı okunaklı, hızlı bulmaca deneyimini koru.\n\nTiliq; Türkçe, İngilizce, Almanca, Fransızca, İspanyolca, İtalyanca, Portekizce, Rusça, Japonca, Korece, Çince, Hintçe, Arapça ve Felemenkçe dillerini destekler.\n\nİnternet bağlantısı gereklidir.",
+      "releaseNotes": "Sky Harbor'a hoş geldin.\n• Ana ekran ve oyun dünyası tamamen yenilendi\n• Günlük görevler ve 7 günlük ödül serisi baştan tasarlandı\n• Sıralama, mağaza, güç kontrolleri ve kombo efektleri güncellendi\n• Performans, eşitleme güvenilirliği ve kararlılık iyileştirildi",
+      "screenshots": [
+        "Bulmaca maceran göklere çıkıyor",
+        "Yerleştir. Temizle. Uçmaya devam.",
+        "Kombo yap. Gücünü kullan.",
+        "Her gün yeni ödüller",
+        "Dünya sıralamasında yüksel",
+        "Sky Harbor'ı kendine göre tasarla"
+      ]
+    },
+    "en-US": {
+      "appStoreLocale": "en-US",
+      "gameCode": "EN",
+      "title": "Tiliq: Block Puzzle",
+      "shortDescription": "Place blocks, clear lines, chain combos, and climb the world rankings.",
+      "subtitle": "Place, Clear, Climb",
+      "promotionalText": "Take your block puzzle adventure to Sky Harbor. Complete daily missions, build combos, unlock new looks, and climb the rankings.",
+      "keywords": "block puzzle,brain game,grid,tile,combo,strategy,casual,ranking,daily",
+      "fullDescription": "Build your next high score in the skies.\n\nTiliq is a strategic block puzzle set in the world of Sky Harbor. Place pieces on an 8×8 board, clear completed rows and columns, and make room for your next move. The rules are easy to learn; keeping a great run alive takes planning.\n\nHOW TO PLAY\n• Drag one of three available pieces onto the board\n• Complete a full row or column to clear it\n• Chain line clears to grow your combo multiplier\n• The game ends when none of the pieces can fit\n\nCOMBOS AND POWER-UPS\nRaise your combo level with smart clears and score more points. When the board gets tight, use a Bomb to clear a 3×3 area, spend two bombs on a Super Bomb that opens a row and column, or use Color Blast to remove every block of a chosen color. Rescue gives you another chance to continue.\n\nA NEW FLIGHT EVERY DAY\nKeep your seven-day reward streak alive and complete three refreshed daily missions: build combos, clear lines, and reach the target score. Collect coin and power-up rewards along the way.\n\nCOMPETE AND PROGRESS\nCompare your best score on world and friends rankings. Earn XP in every game, progress toward level 999, and sign in to keep your progress synced across supported devices.\n\nMAKE SKY HARBOR YOURS\nUse coins earned in the game to unlock new cargo color palettes and combo effects. Change the look of your board while keeping the same clear, responsive puzzle experience.\n\nTiliq supports English, Turkish, German, French, Spanish, Italian, Portuguese, Russian, Japanese, Korean, Simplified Chinese, Hindi, Arabic, and Dutch.\n\nAn internet connection is required.",
+      "releaseNotes": "Welcome to the new Sky Harbor.\n• A completely refreshed home and game world\n• New daily missions and a redesigned seven-day reward track\n• Updated rankings, store, power-up controls, and combo effects\n• Improved performance, sync reliability, and stability",
+      "screenshots": [
+        "Your puzzle adventure takes flight",
+        "Place. Clear. Keep flying.",
+        "Build combos. Unleash power.",
+        "Fresh rewards every day",
+        "Rise through world rankings",
+        "Make Sky Harbor your own"
+      ]
+    },
+    "de-DE": {
+      "appStoreLocale": "de-DE",
+      "gameCode": "DE",
+      "title": "Tiliq: Blockpuzzle",
+      "shortDescription": "Platziere Blöcke, lösche Reihen, bilde Combos und steige im Ranking auf.",
+      "subtitle": "Blöcke, Combos, Bestlisten",
+      "promotionalText": "Bring dein Blockpuzzle-Abenteuer nach Sky Harbor. Erfülle Tagesaufgaben, bilde Combos, schalte neue Looks frei und steige im Ranking auf.",
+      "keywords": "Blockpuzzle,Gehirnspiel,Raster,Steine,Combo,Strategie,Rangliste,täglich",
+      "fullDescription": "Erspiele deinen nächsten Highscore über den Wolken.\n\nTiliq ist ein strategisches Blockpuzzle in der Welt von Sky Harbor. Platziere Teile auf einem 8×8-Brett, lösche vollständige Reihen und Spalten und schaffe Platz für den nächsten Zug. Die Regeln sind schnell gelernt, doch für eine lange Runde musst du vorausplanen.\n\nSO WIRD GESPIELT\n• Ziehe eines von drei verfügbaren Teilen auf das Brett\n• Vervollständige eine Reihe oder Spalte, um sie zu löschen\n• Verkette Linienlöschungen und erhöhe deinen Combo-Multiplikator\n• Die Runde endet, wenn kein Teil mehr passt\n\nCOMBOS UND POWER-UPS\nSteigere deine Combo mit klugen Löschungen und sammle mehr Punkte. Wenn es eng wird, räumt die Bombe ein 3×3-Feld frei. Zwei Bomben aktivieren die Superbombe für eine ganze Reihe und Spalte. Mit dem Farbknall entfernst du alle Blöcke einer gewählten Farbe. Die Rettung gibt dir eine weitere Chance.\n\nJEDEN TAG EIN NEUER FLUG\nHalte deine siebentägige Belohnungsserie am Leben und erfülle drei täglich erneuerte Aufgaben: Combos bilden, Linien löschen und den Zielscore erreichen. Sammle Münzen und Power-ups.\n\nMISS DICH UND KOMM VORAN\nVergleiche deinen Bestwert in Welt- und Freundesranglisten. Verdiene in jedem Spiel XP, arbeite dich bis Level 999 vor und melde dich an, um deinen Fortschritt auf unterstützten Geräten zu synchronisieren.\n\nGESTALTE DEIN SKY HARBOR\nSchalte mit erspielten Münzen neue Fracht-Farbpaletten und Combo-Effekte frei. Verändere den Look deines Bretts, ohne auf die klare und direkte Puzzle-Steuerung zu verzichten.\n\nTiliq unterstützt 14 Sprachen.\n\nEine Internetverbindung ist erforderlich.",
+      "releaseNotes": "Willkommen im neuen Sky Harbor.\n• Startseite und Spielwelt vollständig überarbeitet\n• Neue Tagesaufgaben und neu gestaltete 7-Tage-Belohnungen\n• Ranglisten, Shop, Power-up-Steuerung und Combo-Effekte aktualisiert\n• Leistung, Synchronisierung und Stabilität verbessert",
+      "screenshots": [
+        "Dein Puzzle-Abenteuer hebt ab",
+        "Platzieren. Löschen. Weiterfliegen.",
+        "Combos bauen. Kräfte entfesseln.",
+        "Jeden Tag neue Belohnungen",
+        "Steige in der Weltrangliste auf",
+        "Gestalte Sky Harbor nach deinem Stil"
+      ]
+    },
+    "fr-FR": {
+      "appStoreLocale": "fr-FR",
+      "gameCode": "FR",
+      "title": "Tiliq : Puzzle de blocs",
+      "shortDescription": "Placez les blocs, effacez les lignes, enchaînez les combos et progressez.",
+      "subtitle": "Placez, Effacez, Progressez",
+      "promotionalText": "Emmenez votre puzzle de blocs à Sky Harbor. Relevez les missions du jour, enchaînez les combos, débloquez de nouveaux styles et grimpez au classement.",
+      "keywords": "puzzle blocs,réflexion,grille,tuiles,combo,stratégie,classement,quotidien",
+      "fullDescription": "Visez votre prochain record au-dessus des nuages.\n\nTiliq est un puzzle de blocs stratégique situé dans l'univers de Sky Harbor. Placez des pièces sur un plateau 8×8, effacez les lignes et colonnes complètes, puis préparez votre prochain coup. Les règles sont simples, mais une longue partie demande de l'anticipation.\n\nCOMMENT JOUER\n• Faites glisser l'une des trois pièces disponibles sur le plateau\n• Complétez une ligne ou une colonne pour l'effacer\n• Enchaînez les lignes effacées pour augmenter le multiplicateur de combo\n• La partie se termine lorsqu'aucune pièce ne peut être placée\n\nCOMBOS ET POUVOIRS\nFaites monter votre combo avec des coups bien pensés pour gagner davantage de points. Quand le plateau se resserre, utilisez une Bombe pour nettoyer une zone 3×3, dépensez deux bombes pour activer une Super Bombe qui libère une ligne et une colonne, ou lancez Explosion Couleur pour retirer tous les blocs d'une couleur choisie. Le Sauvetage vous offre une nouvelle chance.\n\nUN NOUVEAU VOL CHAQUE JOUR\nEntretenez votre série de récompenses sur sept jours et terminez trois missions renouvelées quotidiennement : réaliser des combos, effacer des lignes et atteindre le score demandé. Récupérez des pièces et des pouvoirs.\n\nAFFRONTEZ ET PROGRESSEZ\nComparez votre meilleur score dans les classements mondiaux et entre amis. Gagnez de l'XP à chaque partie, progressez jusqu'au niveau 999 et connectez-vous pour synchroniser votre avancée sur les appareils compatibles.\n\nPERSONNALISEZ SKY HARBOR\nUtilisez les pièces gagnées en jeu pour débloquer de nouvelles palettes de cargaison et des effets de combo. Changez le style du plateau tout en conservant une expérience claire et réactive.\n\nTiliq est disponible en 14 langues.\n\nUne connexion Internet est requise.",
+      "releaseNotes": "Bienvenue dans le nouveau Sky Harbor.\n• Accueil et univers de jeu entièrement renouvelés\n• Nouvelles missions quotidiennes et série de récompenses sur 7 jours repensée\n• Classements, boutique, commandes des pouvoirs et effets de combo actualisés\n• Performances, synchronisation et stabilité améliorées",
+      "screenshots": [
+        "Votre aventure puzzle prend son envol",
+        "Placez. Effacez. Continuez à voler.",
+        "Enchaînez les combos. Libérez vos pouvoirs.",
+        "De nouvelles récompenses chaque jour",
+        "Grimpez au classement mondial",
+        "Façonnez Sky Harbor à votre image"
+      ]
+    },
+    "es-ES": {
+      "appStoreLocale": "es-ES",
+      "gameCode": "ES",
+      "title": "Tiliq: Puzle de bloques",
+      "shortDescription": "Coloca bloques, elimina líneas, encadena combos y sube en la clasificación.",
+      "subtitle": "Coloca, Elimina, Asciende",
+      "promotionalText": "Lleva tu aventura de bloques a Sky Harbor. Completa misiones diarias, encadena combos, desbloquea estilos y asciende en la clasificación.",
+      "keywords": "puzle bloques,ingenio,cuadrícula,fichas,combo,estrategia,ranking,diario",
+      "fullDescription": "Consigue tu próxima gran puntuación por encima de las nubes.\n\nTiliq es un puzle de bloques estratégico ambientado en Sky Harbor. Coloca piezas en un tablero de 8×8, elimina filas y columnas completas y deja espacio para tu próximo movimiento. Las reglas se aprenden rápido; mantener una buena partida exige planificación.\n\nCÓMO JUGAR\n• Arrastra una de las tres piezas disponibles al tablero\n• Completa una fila o columna para eliminarla\n• Encadena líneas eliminadas para aumentar el multiplicador de combo\n• La partida termina cuando ninguna pieza puede colocarse\n\nCOMBOS Y PODERES\nAumenta tu combo con jugadas inteligentes y consigue más puntos. Si el tablero se complica, usa una Bomba para limpiar una zona de 3×3, gasta dos bombas en una Super Bomba que abre una fila y una columna, o activa Explosión de Color para retirar todos los bloques del color elegido. Rescate te da otra oportunidad para continuar.\n\nUN NUEVO VUELO CADA DÍA\nMantén tu racha de recompensas de siete días y completa tres misiones que se renuevan a diario: crear combos, eliminar líneas y alcanzar la puntuación objetivo. Recoge monedas y poderes.\n\nCOMPITE Y PROGRESA\nCompara tu mejor puntuación en las clasificaciones mundial y de amigos. Gana XP en cada partida, avanza hasta el nivel 999 e inicia sesión para sincronizar tu progreso entre dispositivos compatibles.\n\nHAZ TUYO SKY HARBOR\nUsa las monedas ganadas en el juego para desbloquear nuevas paletas de carga y efectos de combo. Cambia el aspecto del tablero sin perder una experiencia clara y ágil.\n\nTiliq está disponible en 14 idiomas.\n\nSe necesita conexión a Internet.",
+      "releaseNotes": "Te damos la bienvenida al nuevo Sky Harbor.\n• Pantalla principal y mundo de juego totalmente renovados\n• Nuevas misiones diarias y recorrido de recompensas de 7 días rediseñado\n• Clasificaciones, tienda, controles de poderes y efectos de combo actualizados\n• Mejoras de rendimiento, sincronización y estabilidad",
+      "screenshots": [
+        "Tu aventura de puzles alza el vuelo",
+        "Coloca. Elimina. Sigue volando.",
+        "Crea combos. Desata poderes.",
+        "Nuevas recompensas cada día",
+        "Asciende en la clasificación mundial",
+        "Haz que Sky Harbor sea tuyo"
+      ]
+    },
+    "it-IT": {
+      "appStoreLocale": "it",
+      "gameCode": "IT",
+      "title": "Tiliq: Puzzle a blocchi",
+      "shortDescription": "Posiziona blocchi, elimina linee, crea combo e scala la classifica.",
+      "subtitle": "Posiziona, Elimina, Sali",
+      "promotionalText": "Porta il tuo puzzle a blocchi a Sky Harbor. Completa missioni giornaliere, crea combo, sblocca nuovi stili e scala la classifica.",
+      "keywords": "puzzle blocchi,logica,griglia,tessere,combo,strategia,classifica,quotidiano",
+      "fullDescription": "Costruisci il tuo prossimo record sopra le nuvole.\n\nTiliq è un puzzle a blocchi strategico ambientato nel mondo di Sky Harbor. Posiziona i pezzi su una tavola 8×8, elimina righe e colonne complete e crea spazio per la mossa successiva. Le regole sono facili da imparare; mantenere viva una grande partita richiede pianificazione.\n\nCOME SI GIOCA\n• Trascina uno dei tre pezzi disponibili sulla tavola\n• Completa una riga o una colonna per eliminarla\n• Collega più eliminazioni per aumentare il moltiplicatore combo\n• La partita termina quando nessun pezzo può essere posizionato\n\nCOMBO E POTERI\nFai salire la combo con eliminazioni intelligenti e guadagna più punti. Quando lo spazio scarseggia, usa una Bomba per liberare un'area 3×3, spendi due bombe per una Super Bomba che apre una riga e una colonna, oppure usa Esplosione Colore per rimuovere tutti i blocchi del colore scelto. Salvataggio ti offre un'altra possibilità di continuare.\n\nUN NUOVO VOLO OGNI GIORNO\nMantieni la serie di ricompense di sette giorni e completa tre missioni aggiornate ogni giorno: crea combo, elimina linee e raggiungi il punteggio obiettivo. Raccogli monete e poteri.\n\nCOMPETI E PROGREDISCI\nConfronta il tuo record nelle classifiche mondiale e amici. Guadagna XP in ogni partita, avanza fino al livello 999 e accedi per sincronizzare i progressi sui dispositivi supportati.\n\nRENDI SKY HARBOR UNICO\nUsa le monete guadagnate nel gioco per sbloccare nuove palette cargo ed effetti combo. Cambia l'aspetto della tavola mantenendo un'esperienza chiara e reattiva.\n\nTiliq è disponibile in 14 lingue.\n\nÈ necessaria una connessione Internet.",
+      "releaseNotes": "Benvenuto nel nuovo Sky Harbor.\n• Schermata principale e mondo di gioco completamente rinnovati\n• Nuove missioni giornaliere e percorso ricompense di 7 giorni ridisegnato\n• Classifiche, negozio, comandi dei poteri ed effetti combo aggiornati\n• Prestazioni, sincronizzazione e stabilità migliorate",
+      "screenshots": [
+        "La tua avventura puzzle prende il volo",
+        "Posiziona. Elimina. Continua a volare.",
+        "Crea combo. Scatena i poteri.",
+        "Nuove ricompense ogni giorno",
+        "Scala la classifica mondiale",
+        "Rendi Sky Harbor tutto tuo"
+      ]
+    },
+    "pt-BR": {
+      "appStoreLocale": "pt-BR",
+      "gameCode": "PT",
+      "title": "Tiliq: Puzzle de blocos",
+      "shortDescription": "Posicione blocos, elimine linhas, faça combos e suba no ranking mundial.",
+      "subtitle": "Posicione, Limpe, Suba",
+      "promotionalText": "Leve sua aventura de blocos a Sky Harbor. Complete missões diárias, faça combos, desbloqueie novos visuais e suba no ranking.",
+      "keywords": "puzzle blocos,raciocínio,grade,peças,combo,estratégia,ranking,diário",
+      "fullDescription": "Construa sua próxima grande pontuação acima das nuvens.\n\nTiliq é um puzzle de blocos estratégico no mundo de Sky Harbor. Posicione peças em um tabuleiro 8×8, elimine linhas e colunas completas e abra espaço para a próxima jogada. As regras são fáceis de aprender; manter uma ótima partida exige planejamento.\n\nCOMO JOGAR\n• Arraste uma das três peças disponíveis para o tabuleiro\n• Complete uma linha ou coluna para eliminá-la\n• Encadeie eliminações para aumentar o multiplicador de combo\n• A partida termina quando nenhuma peça pode ser posicionada\n\nCOMBOS E PODERES\nAumente seu combo com jogadas inteligentes e marque mais pontos. Quando o espaço apertar, use uma Bomba para limpar uma área 3×3, gaste duas bombas em uma Super Bomba que abre uma linha e uma coluna ou use Explosão de Cor para remover todos os blocos da cor escolhida. Resgate oferece outra chance de continuar.\n\nUM NOVO VOO TODOS OS DIAS\nMantenha sua sequência de recompensas de sete dias e conclua três missões renovadas diariamente: fazer combos, eliminar linhas e alcançar a pontuação-alvo. Colete moedas e poderes.\n\nCOMPITA E PROGRIDA\nCompare sua melhor pontuação nos rankings mundial e de amigos. Ganhe XP em cada partida, avance até o nível 999 e entre na conta para sincronizar seu progresso entre dispositivos compatíveis.\n\nDEIXE SKY HARBOR COM A SUA CARA\nUse as moedas ganhas no jogo para desbloquear novas paletas de carga e efeitos de combo. Mude o visual do tabuleiro sem perder a experiência clara e responsiva.\n\nTiliq está disponível em 14 idiomas.\n\nÉ necessária conexão com a Internet.",
+      "releaseNotes": "Boas-vindas ao novo Sky Harbor.\n• Tela inicial e mundo do jogo totalmente renovados\n• Novas missões diárias e trilha de recompensas de 7 dias redesenhada\n• Rankings, loja, controles de poderes e efeitos de combo atualizados\n• Melhorias de desempenho, sincronização e estabilidade",
+      "screenshots": [
+        "Sua aventura de puzzle ganha asas",
+        "Posicione. Limpe. Continue voando.",
+        "Faça combos. Libere poderes.",
+        "Novas recompensas todos os dias",
+        "Suba no ranking mundial",
+        "Deixe Sky Harbor com a sua cara"
+      ]
+    },
+    "ru-RU": {
+      "appStoreLocale": "ru",
+      "gameCode": "RU",
+      "title": "Tiliq: Блочная головоломка",
+      "shortDescription": "Размещайте блоки, очищайте линии, создавайте комбо и растите в рейтинге.",
+      "subtitle": "Блоки, комбо и рейтинги",
+      "promotionalText": "Отправляйтесь в Sky Harbor: выполняйте ежедневные задания, собирайте комбо, открывайте новые стили и поднимайтесь в рейтинге.",
+      "keywords": "блоки,пазл,логика,комбо,стратегия,рейтинг",
+      "fullDescription": "Поставьте новый рекорд над облаками.\n\nTiliq — стратегическая блочная головоломка в мире Sky Harbor. Размещайте фигуры на поле 8×8, очищайте заполненные ряды и столбцы и освобождайте место для следующего хода. Правила просты, но для долгой партии нужно планировать заранее.\n\nКАК ИГРАТЬ\n• Перетащите одну из трёх доступных фигур на поле\n• Заполните ряд или столбец, чтобы очистить его\n• Соединяйте очистки линий и увеличивайте множитель комбо\n• Партия заканчивается, когда ни одну фигуру нельзя разместить\n\nКОМБО И УСИЛЕНИЯ\nПовышайте уровень комбо продуманными ходами и набирайте больше очков. Если места мало, Бомба очистит область 3×3. Две бомбы активируют Супербомбу, которая освобождает ряд и столбец. Цветовой взрыв удаляет все блоки выбранного цвета, а Спасение даёт ещё один шанс продолжить.\n\nНОВЫЙ ПОЛЁТ КАЖДЫЙ ДЕНЬ\nПоддерживайте семидневную серию наград и выполняйте три ежедневных задания: создавайте комбо, очищайте линии и достигайте нужного счёта. Получайте монеты и усиления.\n\nСОРЕВНУЙТЕСЬ И РАЗВИВАЙТЕСЬ\nСравнивайте лучший результат в мировом рейтинге и среди друзей. Получайте опыт в каждой партии, продвигайтесь до 999-го уровня и войдите в аккаунт, чтобы синхронизировать прогресс на поддерживаемых устройствах.\n\nСОЗДАЙТЕ СВОЙ SKY HARBOR\nОткрывайте за заработанные монеты новые палитры грузов и эффекты комбо. Меняйте оформление поля, сохраняя понятный и отзывчивый игровой процесс.\n\nTiliq доступна на 14 языках.\n\nТребуется подключение к Интернету.",
+      "releaseNotes": "Добро пожаловать в новый Sky Harbor.\n• Полностью обновлены главный экран и игровой мир\n• Добавлены ежедневные задания и новая 7-дневная линейка наград\n• Обновлены рейтинги, магазин, управление усилениями и эффекты комбо\n• Улучшены производительность, синхронизация и стабильность",
+      "screenshots": [
+        "Ваше приключение взмывает в небо",
+        "Размещайте. Очищайте. Летите дальше.",
+        "Собирайте комбо. Применяйте силу.",
+        "Новые награды каждый день",
+        "Поднимайтесь в мировом рейтинге",
+        "Создайте свой Sky Harbor"
+      ]
+    },
+    "ja-JP": {
+      "appStoreLocale": "ja",
+      "gameCode": "JA",
+      "title": "Tiliq：ブロックパズル",
+      "shortDescription": "ブロックを置き、ラインを消し、コンボをつないで世界ランキングを目指そう。",
+      "subtitle": "置いて、消して、ランキングへ",
+      "promotionalText": "ブロックパズルの舞台はSky Harborへ。デイリーミッションを達成し、コンボをつなぎ、新しいスタイルを解放してランキングを上げよう。",
+      "keywords": "ブロック,パズル,脳トレ,盤面,コンボ,戦略,ランキング,デイリー",
+      "fullDescription": "雲の上で次のハイスコアを目指そう。\n\nTiliqは、Sky Harborの世界を舞台にした戦略ブロックパズルです。8×8のボードにピースを置き、そろった行や列を消して次の一手のスペースを作ります。ルールは簡単ですが、長く続けるには先を読む力が必要です。\n\n遊び方\n• 3つのピースから1つを選んでボードへドラッグ\n• 行または列を完成させて消去\n• ライン消去をつないでコンボ倍率をアップ\n• どのピースも置けなくなるとゲーム終了\n\nコンボとパワーアップ\n計画的にラインを消してコンボを高め、スコアを伸ばしましょう。盤面が苦しくなったら、ボムで3×3の範囲を消去。ボムを2個使うスーパーボムなら1行と1列を開けられます。カラーブラストは選んだ色のブロックをすべて消し、レスキューは続行のチャンスを与えます。\n\n毎日、新しいフライト\n7日間の報酬ストリークを続け、毎日更新される3つのミッションに挑戦。コンボ、ライン消去、目標スコアを達成して、コインやパワーアップを獲得できます。\n\n競争と成長\n世界ランキングとフレンドランキングでベストスコアを比較。プレイするたびにXPを獲得し、レベル999を目指しましょう。サインインすると、対応端末間で進行状況を同期できます。\n\n自分だけのSky Harbor\nゲームで獲得したコインを使い、新しいカーゴカラーパレットやコンボエフェクトを解放。遊びやすさを保ったまま、ボードの見た目を変えられます。\n\nTiliqは14言語に対応しています。\n\nインターネット接続が必要です。",
+      "releaseNotes": "新しいSky Harborへようこそ。\n• ホーム画面とゲーム世界を全面リニューアル\n• デイリーミッションと7日間報酬を再設計\n• ランキング、ストア、パワー操作、コンボ演出を更新\n• パフォーマンス、同期の信頼性、安定性を改善",
+      "screenshots": [
+        "パズルの冒険が空へ飛び立つ",
+        "置く。消す。さらに飛ぶ。",
+        "コンボをつなぎ、パワーを解放",
+        "毎日、新しい報酬",
+        "世界ランキングを駆け上がろう",
+        "Sky Harborを自分らしく"
+      ]
+    },
+    "ko-KR": {
+      "appStoreLocale": "ko",
+      "gameCode": "KO",
+      "title": "Tiliq: 블록 퍼즐",
+      "shortDescription": "블록을 놓고 줄을 지우며 콤보를 이어 세계 랭킹에 도전하세요.",
+      "subtitle": "놓고, 지우고, 순위를 올리세요",
+      "promotionalText": "Sky Harbor에서 블록 퍼즐 모험을 시작하세요. 일일 미션을 완료하고 콤보를 이어 새 스타일을 열며 랭킹을 올리세요.",
+      "keywords": "블록,퍼즐,두뇌,보드,콤보,전략,랭킹,데일리",
+      "fullDescription": "구름 위에서 새로운 최고 점수에 도전하세요.\n\nTiliq는 Sky Harbor 세계를 배경으로 한 전략 블록 퍼즐입니다. 8×8 보드에 조각을 놓고 완성된 가로줄과 세로줄을 지워 다음 수를 위한 공간을 만드세요. 규칙은 쉽지만 오래 이어 가려면 계획이 필요합니다.\n\n플레이 방법\n• 주어진 조각 3개 중 하나를 보드로 드래그하세요\n• 가로줄이나 세로줄을 완성해 지우세요\n• 줄 지우기를 이어 콤보 배수를 높이세요\n• 어떤 조각도 놓을 수 없으면 게임이 끝납니다\n\n콤보와 파워업\n영리하게 줄을 지워 콤보 단계를 올리고 더 높은 점수를 얻으세요. 공간이 부족할 때 폭탄은 3×3 영역을 지웁니다. 폭탄 2개를 사용하는 슈퍼 폭탄은 가로줄과 세로줄 하나씩을 열어 줍니다. 컬러 블라스트는 선택한 색의 블록을 모두 제거하고, 구조 기능은 계속할 기회를 한 번 더 줍니다.\n\n매일 새로운 비행\n7일 보상 연속 기록을 유지하고 매일 갱신되는 미션 3개를 완료하세요. 콤보 만들기, 줄 지우기, 목표 점수 달성으로 코인과 파워업 보상을 받을 수 있습니다.\n\n경쟁과 성장\n세계 및 친구 랭킹에서 최고 점수를 비교하세요. 게임마다 XP를 얻어 999레벨까지 성장하고, 로그인하면 지원되는 기기 사이에서 진행 상황을 동기화할 수 있습니다.\n\n나만의 SKY HARBOR\n게임에서 얻은 코인으로 새로운 화물 색상 팔레트와 콤보 효과를 잠금 해제하세요. 선명하고 빠른 퍼즐 경험을 유지하면서 보드의 모습을 바꿀 수 있습니다.\n\nTiliq는 14개 언어를 지원합니다.\n\n인터넷 연결이 필요합니다.",
+      "releaseNotes": "새로운 Sky Harbor에 오신 것을 환영합니다.\n• 홈 화면과 게임 세계를 완전히 새롭게 단장\n• 일일 미션과 7일 보상 트랙 재설계\n• 랭킹, 상점, 파워업 조작 및 콤보 효과 업데이트\n• 성능, 동기화 안정성 및 전반적인 안정성 개선",
+      "screenshots": [
+        "퍼즐 모험이 하늘로 날아오릅니다",
+        "놓고. 지우고. 계속 날아가세요.",
+        "콤보를 쌓고 파워를 펼치세요",
+        "매일 새로운 보상",
+        "세계 랭킹을 올라가세요",
+        "나만의 Sky Harbor를 만드세요"
+      ]
+    },
+    "zh-CN": {
+      "appStoreLocale": "zh-Hans",
+      "gameCode": "ZH",
+      "title": "Tiliq：方块拼图",
+      "shortDescription": "放置方块、消除行列、连续连击，冲击全球排行榜。",
+      "subtitle": "放置、消除、冲击排行",
+      "promotionalText": "前往Sky Harbor开启方块拼图冒险。完成每日任务、连续连击、解锁新外观并提升全球排名。",
+      "keywords": "方块,拼图,益智,棋盘,连击,策略,排行,每日",
+      "fullDescription": "在云端刷新你的最高分。\n\nTiliq 是一款以 Sky Harbor 为舞台的策略方块拼图游戏。将拼块放入 8×8 棋盘，消除填满的行与列，为下一步腾出空间。规则简单易学，但想让一局持续更久，需要提前规划。\n\n玩法\n• 将三个可用拼块之一拖到棋盘上\n• 填满一行或一列即可消除\n• 连续消除行列，提升连击倍数\n• 当所有拼块都无法放置时，游戏结束\n\n连击与能力\n通过巧妙消除提升连击等级，获得更多分数。棋盘拥挤时，炸弹可清除 3×3 区域；消耗两个炸弹可启动超级炸弹，打通一行和一列；色彩爆破会移除所选颜色的全部方块；救援则提供一次继续游戏的机会。\n\n每天都有新航程\n保持七天连续奖励，并完成每日刷新的三项任务：完成连击、消除行列并达到目标分数。一路收集金币和能力奖励。\n\n竞争与成长\n在全球排行榜和好友排行榜中比较最高分。每局获得经验值，向 999 级迈进。登录后可在支持的设备之间同步进度。\n\n打造你的 SKY HARBOR\n使用游戏中获得的金币解锁新的货舱配色与连击特效。在保持清晰流畅操作的同时，改变棋盘外观。\n\nTiliq 支持 14 种语言。\n\n需要互联网连接。",
+      "releaseNotes": "欢迎来到全新的 Sky Harbor。\n• 主界面与游戏世界全面焕新\n• 新增每日任务，重新设计七天奖励路线\n• 更新排行榜、商店、能力操作与连击特效\n• 提升性能、同步可靠性与稳定性",
+      "screenshots": [
+        "拼图冒险从云端起航",
+        "放置。消除。继续飞行。",
+        "连续连击，释放能力",
+        "每天都有新奖励",
+        "冲击全球排行榜",
+        "打造你的 Sky Harbor"
+      ]
+    },
+    "hi-IN": {
+      "appStoreLocale": "hi",
+      "gameCode": "HI",
+      "title": "Tiliq: ब्लॉक पज़ल",
+      "shortDescription": "ब्लॉक रखें, लाइन साफ़ करें, कॉम्बो बनाएं और विश्व रैंकिंग में चढ़ें।",
+      "subtitle": "रखें, मिटाएं, रैंक बढ़ाएं",
+      "promotionalText": "Sky Harbor में ब्लॉक पज़ल का सफ़र शुरू करें। दैनिक मिशन पूरे करें, कॉम्बो बनाएं, नए रूप खोलें और रैंकिंग में ऊपर जाएं।",
+      "keywords": "ब्लॉक,पज़ल,कॉम्बो,रणनीति,रैंक",
+      "fullDescription": "बादलों के ऊपर अपना अगला हाई स्कोर बनाएं।\n\nTiliq, Sky Harbor की दुनिया में बना एक रणनीतिक ब्लॉक पज़ल है। 8×8 बोर्ड पर टुकड़े रखें, पूरी पंक्तियां और कॉलम साफ़ करें और अगली चाल के लिए जगह बनाएं। नियम सीखना आसान है, लेकिन लंबी पारी के लिए आगे की योजना ज़रूरी है।\n\nकैसे खेलें\n• उपलब्ध तीन टुकड़ों में से एक को बोर्ड पर खींचें\n• पूरी पंक्ति या कॉलम बनाकर उसे साफ़ करें\n• लगातार लाइन साफ़ करके कॉम्बो गुणक बढ़ाएं\n• कोई भी टुकड़ा फिट न होने पर खेल समाप्त होता है\n\nकॉम्बो और पावर-अप\nसमझदारी से लाइन साफ़ करके कॉम्बो बढ़ाएं और अधिक अंक पाएं। जगह कम होने पर बम से 3×3 क्षेत्र साफ़ करें। दो बम खर्च करके सुपर बम चलाएं, जो एक पंक्ति और एक कॉलम खोलता है। कलर ब्लास्ट चुने गए रंग के सभी ब्लॉक हटाता है और रेस्क्यू आगे खेलने का एक और मौका देता है।\n\nहर दिन नई उड़ान\nसात दिन की इनाम श्रृंखला बनाए रखें और रोज़ बदलने वाले तीन मिशन पूरे करें: कॉम्बो बनाएं, लाइन साफ़ करें और लक्ष्य स्कोर तक पहुंचें। सिक्के और पावर-अप इनाम पाएं।\n\nप्रतिस्पर्धा और प्रगति\nविश्व और मित्र रैंकिंग में अपने सर्वश्रेष्ठ स्कोर की तुलना करें। हर खेल में XP कमाएं, स्तर 999 की ओर बढ़ें और समर्थित डिवाइसों के बीच प्रगति सिंक रखने के लिए साइन इन करें।\n\nSKY HARBOR को अपना बनाएं\nखेल में मिले सिक्कों से नए कार्गो रंग और कॉम्बो प्रभाव खोलें। साफ़ और तेज़ पज़ल अनुभव बनाए रखते हुए बोर्ड का रूप बदलें।\n\nTiliq 14 भाषाओं का समर्थन करता है।\n\nइंटरनेट कनेक्शन आवश्यक है।",
+      "releaseNotes": "नए Sky Harbor में आपका स्वागत है।\n• होम स्क्रीन और गेम की दुनिया पूरी तरह नई\n• नए दैनिक मिशन और फिर से बनाया गया 7-दिन का इनाम ट्रैक\n• रैंकिंग, स्टोर, पावर-अप नियंत्रण और कॉम्बो प्रभाव अपडेट\n• प्रदर्शन, सिंक विश्वसनीयता और स्थिरता में सुधार",
+      "screenshots": [
+        "आपकी पज़ल यात्रा उड़ान भरती है",
+        "रखें। मिटाएं। उड़ते रहें।",
+        "कॉम्बो बनाएं। शक्ति जगाएं।",
+        "हर दिन नए इनाम",
+        "विश्व रैंकिंग में ऊपर जाएं",
+        "Sky Harbor को अपना बनाएं"
+      ]
+    },
+    "ar": {
+      "appStoreLocale": "ar-SA",
+      "gameCode": "AR",
+      "title": "Tiliq: ألغاز المكعبات",
+      "shortDescription": "ضع المكعبات وامسح الصفوف واصنع سلاسل كومبو وتقدم في الترتيب العالمي.",
+      "subtitle": "ضع، امسح، وتقدم",
+      "promotionalText": "انطلق بمغامرة ألغاز المكعبات في Sky Harbor. أكمل المهام اليومية، واصنع الكومبو، وافتح المظاهر الجديدة، وتقدم في الترتيب.",
+      "keywords": "مكعبات,ألغاز,ذكاء,لوحة,كومبو,استراتيجية,ترتيب",
+      "fullDescription": "حقق نتيجتك القياسية التالية فوق السحاب.\n\nTiliq لعبة ألغاز مكعبات استراتيجية تدور في عالم Sky Harbor. ضع القطع على لوحة 8×8، وامسح الصفوف والأعمدة المكتملة، وافتح مساحة للحركة التالية. القواعد سهلة، لكن الحفاظ على جولة طويلة يحتاج إلى التخطيط.\n\nطريقة اللعب\n• اسحب واحدة من القطع الثلاث المتاحة إلى اللوحة\n• أكمل صفًا أو عمودًا لمسحه\n• اربط عمليات المسح لزيادة مضاعف الكومبو\n• تنتهي الجولة عندما لا يمكن وضع أي قطعة\n\nالكومبو والقدرات\nارفع مستوى الكومبو بحركات ذكية لتحصل على نقاط أكثر. عندما تضيق المساحة، استخدم القنبلة لمسح منطقة 3×3. أنفق قنبلتين لتفعيل القنبلة الخارقة التي تفتح صفًا وعمودًا. انفجار الألوان يزيل كل المكعبات من اللون المختار، والإنقاذ يمنحك فرصة أخرى للمتابعة.\n\nرحلة جديدة كل يوم\nحافظ على سلسلة مكافآت سبعة أيام وأكمل ثلاث مهام تتجدد يوميًا: اصنع الكومبو، وامسح الصفوف، وحقق النتيجة المطلوبة. اجمع العملات ومكافآت القدرات.\n\nنافس وتقدم\nقارن أفضل نتيجة لك في الترتيب العالمي وترتيب الأصدقاء. اكسب نقاط الخبرة في كل جولة، وتقدم نحو المستوى 999، وسجّل الدخول لمزامنة تقدمك بين الأجهزة المدعومة.\n\nاجعل SKY HARBOR عالمك\nاستخدم العملات التي تكسبها في اللعبة لفتح ألوان شحن جديدة وتأثيرات كومبو. غيّر مظهر اللوحة مع الحفاظ على تجربة ألغاز واضحة وسريعة.\n\nتدعم Tiliq أربع عشرة لغة.\n\nيلزم الاتصال بالإنترنت.",
+      "releaseNotes": "مرحبًا بك في Sky Harbor الجديدة.\n• تجديد كامل للشاشة الرئيسية وعالم اللعبة\n• مهام يومية جديدة ومسار مكافآت لسبعة أيام بتصميم جديد\n• تحديث الترتيب والمتجر وأدوات القدرات وتأثيرات الكومبو\n• تحسين الأداء وموثوقية المزامنة والاستقرار",
+      "screenshots": [
+        "مغامرة الألغاز تحلق عاليًا",
+        "ضع. امسح. واصل التحليق.",
+        "اصنع الكومبو. أطلق القوة.",
+        "مكافآت جديدة كل يوم",
+        "تقدم في الترتيب العالمي",
+        "اجعل Sky Harbor عالمك"
+      ]
+    },
+    "nl-NL": {
+      "appStoreLocale": "nl-NL",
+      "gameCode": "NL",
+      "title": "Tiliq: Blokpuzzel",
+      "shortDescription": "Plaats blokken, wis lijnen, maak combo's en klim op de wereldranglijst.",
+      "subtitle": "Plaats, Wis, Klim",
+      "promotionalText": "Breng je blokpuzzelavontuur naar Sky Harbor. Voltooi dagmissies, maak combo's, speel nieuwe stijlen vrij en klim op de ranglijst.",
+      "keywords": "blokpuzzel,brein,raster,tegels,combo,strategie,ranglijst,dagelijks",
+      "fullDescription": "Bouw je volgende topscore boven de wolken.\n\nTiliq is een strategische blokpuzzel in de wereld van Sky Harbor. Plaats stukken op een 8×8-bord, wis volledige rijen en kolommen en maak ruimte voor je volgende zet. De regels zijn snel geleerd, maar een lange ronde vraagt om vooruitdenken.\n\nZO SPEEL JE\n• Sleep een van de drie beschikbare stukken naar het bord\n• Maak een volledige rij of kolom om die te wissen\n• Koppel gewiste lijnen om je combovermenigvuldiger te verhogen\n• De ronde eindigt als geen enkel stuk meer past\n\nCOMBO'S EN KRACHTEN\nVerhoog je combo met slimme zetten en verdien meer punten. Als het bord vol raakt, wist een Bom een gebied van 3×3. Besteed twee bommen aan een Superbom die een rij en kolom opent. Kleurexplosie verwijdert alle blokken van een gekozen kleur en Redding geeft je nog een kans om door te gaan.\n\nELKE DAG EEN NIEUWE VLUCHT\nHoud je beloningenreeks van zeven dagen actief en voltooi drie dagelijks vernieuwde missies: maak combo's, wis lijnen en bereik de doelscore. Verzamel munten en krachten.\n\nSTRIJD EN GROEI\nVergelijk je beste score op de wereld- en vriendenranglijst. Verdien XP in elk spel, groei door tot level 999 en log in om je voortgang tussen ondersteunde apparaten te synchroniseren.\n\nMAAK SKY HARBOR VAN JOU\nGebruik munten die je in het spel verdient om nieuwe vrachtkleuren en combo-effecten vrij te spelen. Verander het uiterlijk van je bord zonder de heldere en snelle puzzelervaring te verliezen.\n\nTiliq is beschikbaar in 14 talen.\n\nEen internetverbinding is vereist.",
+      "releaseNotes": "Welkom in het nieuwe Sky Harbor.\n• Startscherm en spelwereld volledig vernieuwd\n• Nieuwe dagmissies en een opnieuw ontworpen beloningenreeks van 7 dagen\n• Ranglijsten, winkel, krachtbesturing en combo-effecten bijgewerkt\n• Prestaties, synchronisatie en stabiliteit verbeterd",
+      "screenshots": [
+        "Je puzzelavontuur stijgt op",
+        "Plaats. Wis. Blijf vliegen.",
+        "Maak combo's. Ontketen kracht.",
+        "Elke dag nieuwe beloningen",
+        "Klim op de wereldranglijst",
+        "Maak Sky Harbor helemaal van jou"
+      ]
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "appVersion": "1.3.88",
+  "versionCode": 148,
+  "updatedAt": "2026-08-26",
+  "localeCount": 14,
+  "screenshotCountPerLocale": 6,
+  "platforms": {
+    "googlePlay": {
+      "size": "1080x1920",
+      "format": "JPEG",
+      "directory": "screenshots/google-play/<locale>/phone"
+    },
+    "appStore": {
+      "size": "1260x2736",
+      "format": "JPEG",
+      "directory": "screenshots/app-store/<locale>/iphone-6.9"
+    }
+  },
+  "googleLocales": [
+    "tr-TR",
+    "en-US",
+    "de-DE",
+    "fr-FR",
+    "es-ES",
+    "it-IT",
+    "pt-BR",
+    "ru-RU",
+    "ja-JP",
+    "ko-KR",
+    "zh-CN",
+    "hi-IN",
+    "ar",
+    "nl-NL"
+  ],
+  "appStoreLocales": [
+    "tr",
+    "en-US",
+    "de-DE",
+    "fr-FR",
+    "es-ES",
+    "it",
+    "pt-BR",
+    "ru",
+    "ja",
+    "ko",
+    "zh-Hans",
+    "hi",
+    "ar-SA",
+    "nl-NL"
+  ]
+}

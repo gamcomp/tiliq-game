@@ -1,0 +1,1 @@
+Blokları yerleştir, satırları temizle, kombo yap ve sıralamada yüksel.
