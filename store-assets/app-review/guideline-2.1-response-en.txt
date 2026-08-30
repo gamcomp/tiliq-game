@@ -1,0 +1,71 @@
+Hello App Review Team,
+
+Thank you for your message. We have added the requested review information below and to the App Review Information notes for Tiliq 1.3.88.
+
+1. PHYSICAL-DEVICE SCREEN RECORDING
+
+Video URL: [INSERT PUBLIC HTTPS VIDEO URL]
+Access password (if any): [NONE / INSERT PASSWORD]
+Recorded on: [INSERT IPHONE MODEL], iOS 26.6.1
+Build shown: Tiliq 1.3.88 (build 84)
+
+The recording begins with a cold launch from the iPhone Home Screen and demonstrates language selection, the advertising consent/ATT prompts when applicable, guest account creation/login, profile setup, the tutorial, a normal game, line clearing, power-ups, daily rewards and missions, the in-game coin store, world/friends rankings, reporting and hiding a player, and in-app account deletion.
+
+2. TESTED DEVICES AND OPERATING SYSTEMS
+
+- [INSERT PHYSICAL IPHONE MODEL] — iOS 26.6.1
+- [INSERT ANY OTHER PHYSICAL DEVICE AND OS ACTUALLY TESTED, OR DELETE THIS LINE]
+
+We tested installation, cold launch, guest and account sign-in, gameplay, game-over/continue, background/foreground restoration, advertisements, rankings, profile synchronization, reporting/blocking, and account deletion on the physical device(s) listed above.
+
+3. FUNCTIONS, TARGET AUDIENCE, PROBLEM SOLVED, AND VALUE
+
+Tiliq is a casual strategic block-puzzle game for players aged 13 and older who enjoy short, replayable logic sessions. Players place one of three available pieces on an 8×8 board and clear completed rows or columns. The game provides an accessible way to practice spatial planning and score optimization in short sessions. Its value comes from easy-to-learn controls, progressively harder board decisions, combos, optional power-ups, daily missions and rewards, progression up to level 999, visual customization, and world/friends rankings.
+
+The App does not provide financial, medical, legal, gambling, dating, marketplace, or other regulated services.
+
+4. SETUP AND ACCESS INSTRUCTIONS
+
+No reviewer credentials or sample files are required. All core functionality is available through the fully featured guest flow:
+
+1. Launch Tiliq with an internet connection.
+2. On first launch, choose English and tap Continue.
+3. Respond to the Google consent form and App Tracking Transparency prompt if they are shown. Declining tracking does not block gameplay.
+4. Tap “Continue as Guest.” This creates an anonymous Firebase account for saving progress and enables the complete gameplay, profile, leaderboard, friends, reporting/blocking, settings, advertising, and account-deletion flows.
+5. Enter a nickname and optionally select a country, then complete the tutorial or skip it.
+6. Tap Play, drag pieces to the 8×8 board, and complete rows or columns. The Bomb, Super Bomb, Color Blast, Rescue, and Undo features appear in the normal game flow.
+7. From the main menu, open Daily Rewards, Daily Missions, Store, Rankings, Settings, and Account.
+8. Store items use only coins earned inside the game or from rewarded ads. There are no real-money purchases, subscriptions, paid content, or external payment flows.
+9. In Rankings, tap the flag next to another player and confirm to report and immediately hide that player. User-generated content is limited to a nickname, optional country, and score. There is no chat, messaging, posting, commenting, photo/video upload, or file sharing.
+10. To delete the account, open Account, tap “Delete Account,” and confirm. This deletes the Firebase Authentication identity, public profile, cloud progress, and associated friend links, then clears local account data.
+
+Sign in with Apple and Google Sign-In are optional alternatives to guest access. They allow a player to restore/synchronize progress on supported devices. They are not required to access the core game or complete the review.
+
+5. EXTERNAL SERVICES, TOOLS, AND PLATFORMS
+
+- Google Firebase Authentication: guest, Google, and Apple-linked account authentication.
+- Google Cloud Firestore: cloud game progress, profile, rankings, friend codes, and moderation reports.
+- Firebase Analytics and Firebase Crashlytics: aggregate app-use analytics and crash diagnostics.
+- Google Sign-In and Sign in with Apple: optional account sign-in and cross-device progress synchronization.
+- Google AdMob and Google User Messaging Platform (UMP): banner, interstitial, and rewarded ads, plus regional consent controls.
+- Apple App Tracking Transparency: optional permission for personalized advertising/measurement. Declining does not block gameplay.
+- Apache Capacitor and local secure storage: native application runtime and local account/session storage.
+
+The App does not use a payment processor, subscription service, AI service, external data provider, remote game-streaming service, or downloadable third-party gameplay content.
+
+6. REGIONAL DIFFERENCES
+
+Core functionality and content are consistent in all regions. Tiliq has no geographic restrictions and no region-exclusive gameplay or paid content. The interface supports English, Turkish, German, French, Spanish, Italian, Portuguese, Russian, Japanese, Korean, Simplified Chinese, Hindi, Arabic, and Dutch. Advertising availability and Google UMP consent messages may vary according to local law and ad inventory, but gameplay and rewards remain accessible if tracking is declined or a personalized ad cannot be requested.
+
+7. REGULATED INDUSTRY OR PROTECTED THIRD-PARTY MATERIAL
+
+Not applicable. Tiliq is a casual block-puzzle game and does not operate in a regulated industry. It does not deliver protected third-party media, licensed broadcasts, financial data, medical services, gambling services, or other content that requires professional or regulatory credentials.
+
+Additional review notes:
+
+- An internet connection is required.
+- There are no in-app purchases or auto-renewable subscriptions.
+- Public user content is limited to nickname, country, and score. Nicknames are filtered before upload. Other players can report and hide a profile directly from Rankings, and reports enter a private moderation queue.
+- Support and privacy contact: behzatberkincearap@gmail.com
+
+Please let us know if any additional information is required.

@@ -25,8 +25,9 @@ service cloud.firestore {
         && _validRankEligible(request.resource.data)
         && (resource.data.best == null  || request.resource.data.best  >= resource.data.best);
 
-      // Silme yasak — hesap silme yalnızca sunucu tarafından yapılmalı
-      allow delete: if false;
+      // Uygulama içindeki hesap silme akışı, yalnız kullanıcının kendi profil ve
+      // ilerleme belgesini silebilir (Apple Guideline 5.1.1(v)).
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
     // ── FRIEND LINKS ───────────────────────────────────────────────────────────
@@ -46,6 +47,35 @@ service cloud.firestore {
       // Değiştirme yasak (skor/isim buradan değiştirilemesin)
       allow update: if false;
       allow delete: if request.auth != null;
+    }
+
+    // ── CONTENT MODERATION REPORTS ───────────────────────────────────────────
+    // Public leaderboard nicknames are the app's only user-generated content.
+    // Any signed-in identity (including an intentional guest session) may report
+    // another player. Reports are write-only from clients and reviewed in the
+    // Firebase console; players cannot read, edit, or erase the moderation queue.
+    match /moderationReports/{reportId} {
+      allow create: if request.auth != null
+        && reportId.matches(request.auth.uid + '_.*')
+        && request.resource.data.keys().hasOnly([
+          'reporterUid','reportedUid','reportedName','reason','appVersion','ts'
+        ])
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.reportedUid is string
+        && request.resource.data.reportedUid.size() >= 1
+        && request.resource.data.reportedUid.size() <= 128
+        && request.resource.data.reportedUid != request.auth.uid
+        && request.resource.data.reportedName is string
+        && request.resource.data.reportedName.size() >= 1
+        && request.resource.data.reportedName.size() <= 40
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() >= 1
+        && request.resource.data.reason.size() <= 64
+        && request.resource.data.appVersion is string
+        && request.resource.data.appVersion.size() <= 20
+        && request.resource.data.ts is int;
+
+      allow read, update, delete: if false;
     }
 
     // ── GEÇİCİ TEŞHİS LOGU (2026-07-21) ─────────────────────────────────────────

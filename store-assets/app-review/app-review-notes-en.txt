@@ -1,0 +1,25 @@
+REVIEW ACCESS
+No credentials or sample files are required. Internet is required. Launch Tiliq, choose English, respond to consent/ATT prompts if shown, and tap “Continue as Guest.” Guest access includes all core features. Enter a nickname and optionally a country, complete or skip the tutorial, then tap Play. Store items use only coins earned in gameplay or rewarded ads; there are no purchases or subscriptions. Apple/Google sign-in is optional for cross-device sync.
+
+PHYSICAL-DEVICE VIDEO
+[INSERT PUBLIC HTTPS VIDEO URL]
+Recorded on [INSERT ACTUAL IPHONE MODEL], iOS 26.6.1, Tiliq 1.3.88 (build 84). It begins with a cold launch and shows consent/ATT when presented, guest registration, profile setup, tutorial, gameplay/line clearing/power-ups, rewards/missions, coin store, rankings/friends, report-and-hide, settings, and account deletion.
+
+TESTED DEVICES
+- [INSERT ACTUAL IPHONE MODEL] — iOS 26.6.1
+[ADD ONLY OTHER PHYSICAL DEVICES ACTUALLY TESTED]
+We tested installation, launch, sign-in, gameplay, continue/game-over, background/foreground restoration, ads, rankings, sync, reporting/hiding, and deletion.
+
+APP PURPOSE/AUDIENCE
+Tiliq is a casual strategic 8x8 block-puzzle game for users aged 13+. It offers short spatial-planning sessions with row/column clearing, combos, optional power-ups, daily activities, progression, customization, and rankings.
+
+USER CONTENT/DELETION
+User content is limited to nickname, optional country, and score; there is no chat, messaging, posts, comments, or media upload. Nicknames are filtered. In Rankings, tap the flag beside another player to report and immediately hide them. In Account, tap Delete Account and confirm to delete the authentication identity, profile, cloud progress, friend links, and local account data.
+
+EXTERNAL SERVICES
+Firebase Authentication; Cloud Firestore; Firebase Analytics/Crashlytics; Google Sign-In; Sign in with Apple; Google AdMob/UMP; Apple ATT; Apache Capacitor; local secure storage. No payment processor, subscription platform, AI service, external data provider, or downloadable third-party gameplay content is used.
+
+REGIONS/REGULATED CONTENT
+Core features are consistent worldwide. The UI supports EN, TR, DE, FR, ES, IT, PT, RU, JA, KO, ZH-Hans, HI, AR, and NL. Ads/consent may vary by law/inventory; declining tracking does not block gameplay. The app is not a regulated service and contains no protected third-party media requiring authorization.
+
+Support/privacy contact: behzatberkincearap@gmail.com

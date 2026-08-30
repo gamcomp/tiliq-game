@@ -1,0 +1,31 @@
+Hello App Review Team,
+
+Thank you. We have provided all requested information below and in App Review Information.
+
+1. PHYSICAL-DEVICE RECORDING
+Recording: [ATTACHED TO THIS REPLY / INSERT PUBLIC HTTPS URL]
+Device: [INSERT ACTUAL IPHONE MODEL], iOS 26.6.1
+App: Tiliq 1.3.88 (build 84)
+The uncut recording starts from the iPhone Home Screen with a cold launch and shows consent/ATT prompts when presented, guest registration/sign-in, profile setup, tutorial, core block-puzzle gameplay, line clearing, power-ups, rewards/missions, coin store, rankings/friends, reporting and hiding a player, settings, and in-app account deletion. There are no purchases or subscriptions.
+
+2. TESTED DEVICES
+- [INSERT ACTUAL IPHONE MODEL] — iOS 26.6.1
+[ADD ONLY OTHER PHYSICAL DEVICES ACTUALLY TESTED]
+Tested: installation, cold launch, guest and optional account sign-in, gameplay, continue/game-over, background/foreground restoration, ads, rankings, profile sync, report/hide, and deletion.
+
+3. PURPOSE AND AUDIENCE
+Tiliq is a casual strategic 8x8 block-puzzle game for users aged 13+. Players place three offered pieces, clear rows/columns, plan combos, use optional power-ups, complete daily activities, progress through levels, customize visuals, and compare scores. It provides short, replayable spatial-planning and score-optimization sessions.
+
+4. ACCESS
+No credentials or sample files are required. Internet is required. Launch the app, choose English, answer consent prompts if shown, then tap “Continue as Guest.” Enter a nickname and optionally a country. Guest access includes the tutorial, Play, Daily Rewards/Missions, Store, Rankings, Friends, Settings, Account, report/hide, and deletion. Store items use coins earned through gameplay or rewarded ads; no real-money content exists. Apple/Google sign-in is optional for sync. To report/hide, open Rankings and tap the flag beside another player. To delete, open Account > Delete Account and confirm.
+
+5. EXTERNAL SERVICES
+Firebase Authentication (guest/Apple/Google identity), Cloud Firestore (progress, profiles, rankings, friends, moderation reports), Firebase Analytics/Crashlytics, Google Sign-In, Sign in with Apple, Google AdMob/UMP, Apple ATT, Apache Capacitor, and local secure storage. No payment processor, subscription platform, AI service, external data provider, or downloadable third-party gameplay content is used.
+
+6. REGIONS
+Core features/content are consistent worldwide. The UI supports English, Turkish, German, French, Spanish, Italian, Portuguese, Russian, Japanese, Korean, Simplified Chinese, Hindi, Arabic, and Dutch. Only ad availability and consent presentation may vary by local law/inventory; declining tracking does not block gameplay.
+
+7. REGULATED/PROTECTED CONTENT
+Not applicable. Tiliq is not a regulated service and contains no protected third-party media or licensed content requiring credentials.
+
+User content is limited to nickname, optional country, and score; there is no chat, messaging, posts, comments, or media upload. Nicknames are filtered, and Rankings provides report-and-hide. Support/privacy contact: behzatberkincearap@gmail.com
