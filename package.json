@@ -3,7 +3,7 @@
   "version": "1.3.88",
   "description": "Tiliq — Mobil Blok Puzzle Oyunu",
   "scripts": {
-    "postinstall": "patch-package && node store-assets/tools/ci-app-store-support-url.mjs",
+    "postinstall": "patch-package",
     "cap:add:ios": "npx cap add ios",
     "cap:sync": "npx cap sync",
     "cap:open:ios": "npx cap open ios",
