@@ -5,7 +5,7 @@ Apple bu videonun simülatörde değil, fiziksel bir iPhone’da ve güncel işl
 ## Çekimden önce
 
 1. iPhone’u iOS 26.6.1’e güncelle.
-2. TestFlight’tan Tiliq 1.3.88 (84) paketini yükle.
+2. TestFlight’tan Tiliq 1.3.88 (85) paketini yükle.
 3. Eski Tiliq kurulumunu silip TestFlight’tan yeniden kur; böylece ilk açılış, dil, UMP ve ATT akışları görünür.
 4. İnternet bağlantısının çalıştığını ve dünya sıralamasında raporlanabilecek bir test oyuncusu bulunduğunu kontrol et.
 5. Bildirimleri ve kişisel bildirim önizlemelerini kapat.
@@ -20,6 +20,7 @@ Apple bu videonun simülatörde değil, fiziksel bir iPhone’da ve güncel işl
 5. Uygun bir takma ad gir, ülke seç ve profil kurulumunu tamamla.
 6. Eğitimin birkaç adımını göster; ardından oyuna geç.
 7. Parça sürükle, satır/sütun temizle ve mümkünse Bomba veya Renk Patlat gücünü göster.
+   Ödüllü reklam bulunamazsa hata panelindeki “Continue without ad” düğmesine dokunup oyunun kilitlenmeden devam ettiğini göster.
 8. Ana menüye dön; Daily Rewards ve Daily Missions ekranlarını aç.
 9. Store’u aç; yalnız oyun içi coin kullanıldığını ve gerçek para fiyatı/abonelik bulunmadığını göster.
 10. Rankings’i aç. Başka bir oyuncunun yanındaki bayrak düğmesine dokun; “Report & hide” onayını ver ve oyuncunun listeden kaybolduğunu göster.

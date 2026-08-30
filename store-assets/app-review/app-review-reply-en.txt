@@ -5,7 +5,7 @@ Thank you. We have provided all requested information below and in App Review In
 1. PHYSICAL-DEVICE RECORDING
 Recording: [ATTACHED TO THIS REPLY / INSERT PUBLIC HTTPS URL]
 Device: [INSERT ACTUAL IPHONE MODEL], iOS 26.6.1
-App: Tiliq 1.3.88 (build 84)
+App: Tiliq 1.3.88 (build 85)
 The uncut recording starts from the iPhone Home Screen with a cold launch and shows consent/ATT prompts when presented, guest registration/sign-in, profile setup, tutorial, core block-puzzle gameplay, line clearing, power-ups, rewards/missions, coin store, rankings/friends, reporting and hiding a player, settings, and in-app account deletion. There are no purchases or subscriptions.
 
 2. TESTED DEVICES
@@ -17,7 +17,7 @@ Tested: installation, cold launch, guest and optional account sign-in, gameplay,
 Tiliq is a casual strategic 8x8 block-puzzle game for users aged 13+. Players place three offered pieces, clear rows/columns, plan combos, use optional power-ups, complete daily activities, progress through levels, customize visuals, and compare scores. It provides short, replayable spatial-planning and score-optimization sessions.
 
 4. ACCESS
-No credentials or sample files are required. Internet is required. Launch the app, choose English, answer consent prompts if shown, then tap “Continue as Guest.” Enter a nickname and optionally a country. Guest access includes the tutorial, Play, Daily Rewards/Missions, Store, Rankings, Friends, Settings, Account, report/hide, and deletion. Store items use coins earned through gameplay or rewarded ads; no real-money content exists. Apple/Google sign-in is optional for sync. To report/hide, open Rankings and tap the flag beside another player. To delete, open Account > Delete Account and confirm.
+No credentials or sample files are required. Internet is required. Launch the app, choose English, answer consent prompts if shown, then tap “Continue as Guest.” Enter a nickname and optionally a country. Guest access includes the tutorial, Play, Daily Rewards/Missions, Store, Rankings, Friends, Settings, Account, report/hide, and deletion. Store items use coins earned through gameplay or rewarded ads; no real-money content exists. If ad inventory is unavailable, the essential game-rescue flow offers “Continue without ad”; optional coin/power-up rewards remain locked. Apple/Google sign-in is optional for sync. To report/hide, open Rankings and tap the flag beside another player. To delete, open Account > Delete Account and confirm.
 
 5. EXTERNAL SERVICES
 Firebase Authentication (guest/Apple/Google identity), Cloud Firestore (progress, profiles, rankings, friends, moderation reports), Firebase Analytics/Crashlytics, Google Sign-In, Sign in with Apple, Google AdMob/UMP, Apple ATT, Apache Capacitor, and local secure storage. No payment processor, subscription platform, AI service, external data provider, or downloadable third-party gameplay content is used.
