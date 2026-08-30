@@ -218,7 +218,8 @@ workflows:
               promotional_text.txt \
               description.txt \
               keywords.txt \
-              release_notes.txt
+              release_notes.txt \
+              support_url.txt
             do
               cp "$locale_path/$filename" "$metadata_destination/$locale/$filename"
             done
@@ -233,8 +234,8 @@ workflows:
             echo "Expected 14 screenshot locales and 84 screenshots; found $screenshot_locale_count locales and $screenshot_count screenshots." >&2
             exit 1
           fi
-          if [ "$metadata_locale_count" != "14" ] || [ "$metadata_count" != "84" ]; then
-            echo "Expected 14 metadata locales and 84 metadata files; found $metadata_locale_count locales and $metadata_count files." >&2
+          if [ "$metadata_locale_count" != "14" ] || [ "$metadata_count" != "98" ]; then
+            echo "Expected 14 metadata locales and 98 metadata files; found $metadata_locale_count locales and $metadata_count files." >&2
             exit 1
           fi
 

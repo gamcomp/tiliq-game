@@ -81,11 +81,15 @@ for (const [googleLocale, entry] of entries) {
     path.join(appStoreMetadataDir, 'description.txt'),
     path.join(appStoreMetadataDir, 'keywords.txt'),
     path.join(appStoreMetadataDir, 'release_notes.txt'),
+    path.join(appStoreMetadataDir, 'support_url.txt'),
   ];
   for (const filePath of requiredMetadata) {
     try {
       const value = await fs.readFile(filePath, 'utf8');
       if (/�|Ã.|â€/u.test(value)) failures.push(`${filePath}: replacement or mojibake characters detected.`);
+      if (filePath.endsWith('support_url.txt') && value.trim() !== metadata.supportUrl) {
+        failures.push(`${filePath}: support URL does not match store-metadata.json.`);
+      }
     } catch (error) {
       failures.push(`${filePath}: ${error.message}`);
     }
@@ -100,4 +104,3 @@ if (failures.length) {
 console.log(`Validated ${entries.length} locales.`);
 console.log(`Validated ${checkedScreenshots} final JPEG screenshots (${checkedScreenshots / 2} per platform).`);
 console.log('All dimensions, file sizes, required metadata files, and encoding checks passed.');
-

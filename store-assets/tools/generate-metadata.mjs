@@ -18,6 +18,15 @@ if (localeEntries.length !== 14) {
   problems.push(`Expected 14 locales, found ${localeEntries.length}.`);
 }
 
+try {
+  const supportUrl = new URL(source.supportUrl);
+  if (supportUrl.protocol !== 'https:') {
+    problems.push('supportUrl must use HTTPS.');
+  }
+} catch {
+  problems.push('supportUrl must be a valid URL.');
+}
+
 for (const [googleLocale, locale] of localeEntries) {
   const checks = [
     ['title', chars(locale.title), 30],
@@ -70,6 +79,7 @@ for (const [googleLocale, locale] of localeEntries) {
   await writeText(path.join(appStoreDir, 'description.txt'), locale.fullDescription);
   await writeText(path.join(appStoreDir, 'keywords.txt'), locale.keywords);
   await writeText(path.join(appStoreDir, 'release_notes.txt'), locale.releaseNotes);
+  await writeText(path.join(appStoreDir, 'support_url.txt'), source.supportUrl);
   await writeText(path.join(appStoreDir, 'screenshot_taglines.txt'), locale.screenshots.join('\n'));
 
   googleListings.push({
@@ -86,6 +96,7 @@ for (const [googleLocale, locale] of localeEntries) {
     description: locale.fullDescription,
     keywords: locale.keywords,
     releaseNotes: locale.releaseNotes,
+    supportUrl: source.supportUrl,
   });
 }
 
@@ -108,6 +119,7 @@ const manifest = {
   appVersion: source.version,
   versionCode: source.versionCode,
   updatedAt: source.updatedAt,
+  supportUrl: source.supportUrl,
   localeCount: localeEntries.length,
   screenshotCountPerLocale: 6,
   platforms: {
@@ -134,4 +146,3 @@ await fs.writeFile(
 console.log(`Generated metadata for ${localeEntries.length} locales.`);
 console.log(`Google Play: ${path.join(storeAssetsDir, 'metadata', 'google-play')}`);
 console.log(`App Store:   ${path.join(storeAssetsDir, 'metadata', 'app-store')}`);
-
