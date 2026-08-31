@@ -3871,7 +3871,7 @@ body {
   background:radial-gradient(circle,#fff9e7,#d9bd90 72%);
   box-shadow:inset 0 2px 0 #fff,0 0 0 5px #073b63,0 8px 18px rgba(1,20,39,.36);
 }
-.splash-flight-seal img { width:60px; height:60px; object-fit:contain; animation:sky-propeller 5s linear infinite; }
+.splash-flight-seal img { width:60px; height:60px; object-fit:contain; }
 .splash-kicker { color:#82d8eb; font-size:8px; font-weight:650; letter-spacing:.24em; }
 #screen-loading .splash-title { margin-top:2px; color:#fff8e9; font-size:clamp(38px,11vw,52px) !important; line-height:.98; text-shadow:0 3px 0 #083e68,0 8px 16px rgba(1,18,38,.38); }
 #screen-loading .splash-sub { margin-top:4px; color:#f6d991; font-size:11px; font-weight:650; letter-spacing:.16em; text-transform:uppercase; }
@@ -5069,8 +5069,10 @@ body {
   top:50%;
   margin:0;
   transform:translateY(-50%);
+  overflow:hidden;
   border-color:#d9a44b;
-  background:radial-gradient(circle,#fffdf1,#e2c997 72%);
+  border-radius:17px;
+  background:#fff9e7;
   box-shadow:inset 0 2px 0 #fff,0 0 0 5px #f4ead0,0 8px 18px rgba(41,65,67,.25);
 }
 
@@ -5133,8 +5135,9 @@ body {
   place-items:center;
   transform:translateY(-50%);
   border:2px solid #d6a048;
-  border-radius:50%;
-  background:radial-gradient(circle,#fffdf1,#e0c38b 72%);
+  overflow:hidden;
+  border-radius:15px;
+  background:#fff9e7;
   box-shadow:inset 0 2px 0 #fff,0 0 0 2px rgba(11,78,111,.22),0 5px 10px rgba(57,66,54,.22);
 }
 
@@ -5142,7 +5145,6 @@ body {
   width:49px;
   height:49px;
   object-fit:contain;
-  animation:brand-seal-float 3.8s ease-in-out infinite;
 }
 
 .menu-brand-copy {

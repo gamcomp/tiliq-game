@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  * { box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+  body { background: #6aaed4; font-family: "Trebuchet MS", "Segoe UI", sans-serif; }
+  .stage { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  .harbor { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 43%; }
+  .shade { position: absolute; inset: 0; background: rgba(8,47,77,.24); }
+  .card {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 78vw;
+    height: min(29vw,45vh);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5%;
+    padding: 3.2%;
+    transform: translate(-50%,-50%);
+    border: max(3px,.55vw) solid #cf8e30;
+    border-radius: 4.4vw;
+    background: linear-gradient(145deg,rgba(255,253,239,.98),rgba(239,220,181,.98));
+    box-shadow: inset 0 max(2px,.25vw) 0 #fff,0 2.2vw 5vw rgba(3,30,51,.38);
+  }
+  .card::before, .card::after { content: ""; position: absolute; left: 7%; right: 7%; height: max(2px,.28vw); border-radius: 99px; background: linear-gradient(90deg,#1680a2,#e4b259,#cf8428); }
+  .card::before { top: 12%; }
+  .card::after { bottom: 12%; }
+  .mark { width: min(22vw,31vh); height: min(22vw,31vh); flex: 0 0 auto; object-fit: contain; border-radius: 20%; filter: drop-shadow(0 1.2vw 1.5vw rgba(37,54,54,.2)); }
+  .copy { width: 52%; display: grid; justify-items: center; align-content: center; }
+  .kicker { color: #21829d; font-size: clamp(9px,2.15vw,58px); font-weight: 900; letter-spacing: .24em; text-indent: .24em; }
+  .wordmark { width: 100%; height: auto; margin: -1.6% 0 -4%; }
+  .subtitle { color: #9d611c; font-size: clamp(8px,2vw,52px); font-weight: 900; letter-spacing: .18em; text-indent: .18em; }
+
+  @media (orientation: portrait) {
+    .harbor { object-position: 50% 44%; }
+    .card { width: 84vw; height: min(34vw,24vh); gap: 5%; padding: 4%; border-radius: 5.5vw; }
+    .mark { width: min(24vw,17vh); height: min(24vw,17vh); }
+    .copy { width: 55%; }
+    .kicker { font-size: clamp(8px,2.4vw,42px); }
+    .subtitle { font-size: clamp(7px,2.1vw,38px); }
+  }
+</style>
+</head>
+<body>
+  <main class="stage">
+    <img class="harbor" src="home-harbor.png" alt="">
+    <div class="shade"></div>
+    <section class="card">
+      <img class="mark" src="tiliq-app-icon.png" alt="">
+      <div class="copy">
+        <div class="kicker">SKY HARBOR</div>
+        <img class="wordmark" src="tiliq-wordmark.svg" alt="Tiliq">
+        <div class="subtitle">BLOCK PUZZLE</div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

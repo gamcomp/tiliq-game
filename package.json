@@ -10,6 +10,7 @@
     "cap:run:ios": "npx cap run ios",
     "test:rewarded": "node store-assets/tools/test-rewarded-ad-flow.mjs",
     "store:metadata": "node store-assets/tools/generate-metadata.mjs",
+    "store:brand": "node store-assets/tools/generate-google-brand-assets.mjs && node store-assets/tools/generate-native-splashes.mjs",
     "store:screenshots": "node store-assets/tools/capture-screenshots.mjs",
     "store:validate": "node store-assets/tools/validate-store-assets.mjs"
   },

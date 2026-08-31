@@ -16,8 +16,8 @@
   .frame::before { left: 14px; }
   .frame::after { right: 14px; transform: rotate(180deg); }
   .brand { position: absolute; left: 74px; top: 58px; width: 470px; height: 384px; display: grid; align-content: center; justify-items: center; padding: 34px 38px 28px; border: 2px solid rgba(243,202,111,.78); border-radius: 38px; background: linear-gradient(145deg, rgba(255,248,224,.97), rgba(231,207,155,.94)); box-shadow: 0 20px 45px rgba(0,22,39,.4), inset 0 0 0 3px rgba(255,255,255,.5); }
-  .seal { width: 142px; height: 142px; display: grid; place-items: center; margin-bottom: -9px; border: 5px solid #e5af4d; border-radius: 50%; background: radial-gradient(circle, #fff9e6, #d9bc82 76%); box-shadow: 0 0 0 7px #0a5079, 0 11px 22px rgba(22,44,54,.24); }
-  .seal img { width: 128px; height: 128px; object-fit: contain; }
+  .seal { width: 142px; height: 142px; display: grid; place-items: center; margin-bottom: -9px; overflow: hidden; border: 5px solid #e5af4d; border-radius: 34px; background: #fff9e6; box-shadow: 0 0 0 7px #0a5079, 0 11px 22px rgba(22,44,54,.24); }
+  .seal img { width: 100%; height: 100%; object-fit: cover; }
   .kicker { margin-top: 24px; color: #197d9b; font-size: 14px; font-weight: 900; letter-spacing: .34em; text-indent: .34em; }
   .wordmark { width: 330px; height: auto; margin-top: -7px; }
   .subtitle { margin-top: -2px; color: #a3671d; font-size: 18px; font-weight: 1000; letter-spacing: .24em; text-indent: .24em; }
@@ -40,7 +40,7 @@
     <div class="glow"></div>
     <div class="frame"></div>
     <section class="brand">
-      <div class="seal"><img src="../../assets/sky-harbor/propeller.png" alt=""></div>
+      <div class="seal"><img src="../../assets/sky-harbor/tiliq-app-icon.png" alt=""></div>
       <div class="kicker">SKY HARBOR</div>
       <img class="wordmark" src="../../assets/sky-harbor/tiliq-wordmark.svg" alt="Tiliq">
       <div class="subtitle">BLOCK PUZZLE</div>

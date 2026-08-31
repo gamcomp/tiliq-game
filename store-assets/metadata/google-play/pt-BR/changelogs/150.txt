@@ -1,0 +1,6 @@
+Boas-vindas ao novo Sky Harbor.
+• Tela inicial e mundo do jogo totalmente renovados
+• Novas missões diárias e trilha de recompensas de 7 dias redesenhada
+• Rankings, loja, controles de poderes e efeitos de combo atualizados
+• Corrigido o bloqueio do resgate quando não há anúncio premiado
+• Melhorias de desempenho, sincronização e estabilidade

@@ -1,0 +1,6 @@
+Welcome to the new Sky Harbor.
+• A completely refreshed home and game world
+• New daily missions and a redesigned seven-day reward track
+• Updated rankings, store, power-up controls, and combo effects
+• Fixed the rescue flow locking when no rewarded ad is available
+• Improved performance, sync reliability, and stability

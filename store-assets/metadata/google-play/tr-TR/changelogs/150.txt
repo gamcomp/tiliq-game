@@ -1,0 +1,6 @@
+Sky Harbor'a hoş geldin.
+• Ana ekran ve oyun dünyası tamamen yenilendi
+• Günlük görevler ve 7 günlük ödül serisi baştan tasarlandı
+• Sıralama, mağaza, güç kontrolleri ve kombo efektleri güncellendi
+• Reklam bulunamadığında kurtarma akışının kilitlenmesi düzeltildi
+• Performans, eşitleme güvenilirliği ve kararlılık iyileştirildi

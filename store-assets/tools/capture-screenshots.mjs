@@ -150,6 +150,10 @@ const captureRawLocale = async (locale, entry) => {
   await fs.mkdir(rawDir, { recursive: true });
   const take = async (number) => {
     await waitForVisuals(page);
+    // Authentication initializes asynchronously on the first fresh browser context.
+    // Keep store captures on the seeded gameplay UI instead of allowing the login
+    // gate to race back over the requested screen just before the screenshot.
+    await page.evaluate(() => document.getElementById('login-gate')?.classList.remove('show'));
     await page.screenshot({
       path: path.join(rawDir, `${String(number).padStart(2, '0')}-${shotNames[number - 1]}.png`),
       type: 'png',
