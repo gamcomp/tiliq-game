@@ -2474,7 +2474,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.08.25-safe-hud-i18n';
+const BUILD_VER='v2026.09.01-testflight-ad-fix';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2489,6 +2489,7 @@ let _bannerSizeListenerAdded=false;
 let _bannerNativeExists=false,_bannerDesired=false,_bannerState='idle';
 let _bannerRetryTimer=null,_bannerRetryAttempt=0,_bannerHeight=0,_bannerLastHeight=0;
 let _adMobReady=false,_adsCanRequest=false,_privacyOptionsRequired=false,_adMobInitPromise=null;
+let _useAdMobTestAds=false,_adEnvironmentResolved=false;
 const BANNER_RESERVE_PX=64; // boyut eventi gecikirse kullanılan toplam güvenli alan
 const trayGap=()=>12;
 function outerUiHeight(el,fallback){
@@ -3218,6 +3219,7 @@ async function showBanner(){
     _bannerState='loading';_bannerNativeExists=true;
     await AdMob.showBanner({
       adId:ADMOB_BANNER_ID,
+      isTesting:_useAdMobTestAds,
       adSize:'ADAPTIVE_BANNER',
       position:'BOTTOM_CENTER',
       margin:0,
@@ -3245,7 +3247,7 @@ async function _prepareInterstitial(){
   _interPreparing=true;
   try{
     await Promise.race([
-      AdMob.prepareInterstitial({adId:ADMOB_INTERSTITIAL_ID}),
+      AdMob.prepareInterstitial({adId:ADMOB_INTERSTITIAL_ID,isTesting:_useAdMobTestAds}),
       new Promise((_,reject)=>setTimeout(()=>reject(new Error('interstitial timeout')),12000)),
     ]);
     _interReady=true;
@@ -3309,7 +3311,22 @@ async function initAdMob(){
   if(!AdMob)return;
   _adMobInitPromise=(async()=>{
     try{
-      await AdMob.initialize({initializeForTesting:false,maxAdContentRating:'General'});
+      // TestFlight is a sandbox distribution. Real AdMob units for a new,
+      // unpublished app can legitimately return no-fill until Google's app
+      // readiness review finishes, so beta/review builds use Google's official
+      // demo inventory. The same binary automatically returns to live units when
+      // installed from the production App Store.
+      if(!_adEnvironmentResolved){
+        _adEnvironmentResolved=true;
+        if(_isIOS){
+          try{
+            const AppPlugin=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.App;
+            const appInfo=AppPlugin&&AppPlugin.getInfo?await AppPlugin.getInfo():null;
+            _useAdMobTestAds=appInfo&&appInfo.distributionEnvironment==='sandbox';
+          }catch(e){console.warn('Ad environment:',e);}
+        }
+      }
+      await AdMob.initialize({initializeForTesting:_useAdMobTestAds,maxAdContentRating:'General'});
       _adMobReady=true;
       await _installBannerListeners(AdMob);
 
@@ -3388,6 +3405,8 @@ async function openAdPrivacyOptions(){
 // Şimdi reklam, ihtiyaç duyulmadan ÖNCE (oyun açılışında ve her izlemeden sonra) arka
 // planda hazırlanıyor; buton tıklandığında genelde zaten hazır, anında açılıyor.
 let _rewardReady=false,_rewardPreparing=false,_rewardFlowActive=false,_rewardPreparePromise=null;
+const REWARDED_LOAD_TIMEOUT_MS=20000;
+const REWARDED_LOAD_ATTEMPTS=2;
 async function _prepareRewardedAd(){
   const AdMob=_getAdMob();
   if(_rewardReady)return true;
@@ -3397,16 +3416,25 @@ async function _prepareRewardedAd(){
   if(_rewardPreparePromise)return _rewardPreparePromise;
   _rewardPreparing=true;
   _rewardPreparePromise=(async()=>{
+    let lastError=null;
     try{
-      await Promise.race([
-        AdMob.prepareRewardVideoAd({adId:ADMOB_REWARDED_ID}),
-        new Promise((_,reject)=>setTimeout(()=>reject(new Error('rewarded timeout')),12000)),
-      ]);
-      _rewardReady=true;
-      return true;
-    }catch(e){
-      _rewardReady=false;
-      console.warn('Rewarded prepare:',e);
+      for(let attempt=1;attempt<=REWARDED_LOAD_ATTEMPTS;attempt++){
+        try{
+          await Promise.race([
+            AdMob.prepareRewardVideoAd({adId:ADMOB_REWARDED_ID,isTesting:_useAdMobTestAds}),
+            new Promise((_,reject)=>setTimeout(()=>reject(new Error('rewarded timeout')),REWARDED_LOAD_TIMEOUT_MS)),
+          ]);
+          _rewardReady=true;
+          return true;
+        }catch(e){
+          lastError=e;
+          _rewardReady=false;
+          if(attempt<REWARDED_LOAD_ATTEMPTS&&navigator.onLine!==false){
+            await new Promise(resolve=>setTimeout(resolve,900*attempt));
+          }
+        }
+      }
+      console.warn('Rewarded prepare:',lastError);
       return false;
     }finally{
       _rewardPreparing=false;
@@ -3474,7 +3502,10 @@ function _clearRewardedListeners(){
 function _showAdUnavailable(onUnavailable){
   _clearRewardedListeners();_rewardFlowActive=false;_fullScreenAdOpen=false;_rewardReady=false;
   _showAdOverlay(_adContext||adContext('default'),'error');
-  const canContinue=!!(_adContext&&_adContext.allowNoFill&&typeof onUnavailable==='function');
+  // Sandbox/TestFlight is never allowed to block functional review when Google
+  // inventory is temporarily unavailable. Production still grants a fallback
+  // only for the explicit game-rescue path.
+  const canContinue=!!(typeof onUnavailable==='function'&&(_useAdMobTestAds||(_adContext&&_adContext.allowNoFill)));
   _adUnavailableCb=canContinue?onUnavailable:null;
   _setAdOverlayState('error',t('adUnavailable'),t(canContinue?'adUnavailableContinueCopy':'adUnavailableCopy'));
   const timer=document.getElementById('ad-timer');if(timer){timer.textContent='!';timer.style.setProperty('--ad-progress','0');}

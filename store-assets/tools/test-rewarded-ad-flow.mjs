@@ -59,12 +59,14 @@ try {
     const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     const listeners = new Map();
     let prepareMode = 'delayed-success';
+    let lastPrepareOptions = null;
     const AdMob = {
       addListener: async (name, callback) => {
         listeners.set(name, callback);
         return {remove: () => listeners.delete(name)};
       },
-      prepareRewardVideoAd: async () => {
+      prepareRewardVideoAd: async (options) => {
+        lastPrepareOptions = options;
         await wait(120);
         if (prepareMode === 'failure') throw new Error('no fill');
         return {adUnitId: 'test'};
@@ -78,6 +80,7 @@ try {
     window.Capacitor = {Plugins: {AdMob}};
     _adMobReady = true;
     _adsCanRequest = true;
+    _useAdMobTestAds = true;
 
     // Regression: a tap during an existing preload must await that same request.
     _rewardReady = false;
@@ -87,9 +90,11 @@ try {
     showRewardedAd(() => { normalReward += 1; }, adContext('rescue', {allowNoFill: true}));
     await preload;
     await wait(900);
+    const testInventoryRequested = lastPrepareOptions?.isTesting === true;
 
     // No-fill: only the game-rescue context may continue without an ad.
     prepareMode = 'failure';
+    _useAdMobTestAds = false;
     _rewardReady = false;
     let fallbackReward = 0;
     await showRewardedAd(() => { fallbackReward += 1; }, adContext('rescue', {allowNoFill: true}));
@@ -104,12 +109,23 @@ try {
     const optionalLabel = document.getElementById('ad-skip-btn').textContent;
     document.getElementById('ad-skip-btn').click();
 
-    return {normalReward, fallbackReward, optionalReward, fallbackLabel, optionalLabel};
+    // TestFlight must remain reviewable even if Google's demo inventory has a
+    // transient failure. Production optional rewards remain locked above.
+    _useAdMobTestAds = true;
+    _rewardReady = false;
+    let testFlightFallbackReward = 0;
+    await showRewardedAd(() => { testFlightFallbackReward += 1; }, adContext('color'));
+    document.getElementById('ad-skip-btn').click();
+    await wait(50);
+
+    return {normalReward, fallbackReward, optionalReward, testFlightFallbackReward, testInventoryRequested, fallbackLabel, optionalLabel};
   });
 
   if (result.normalReward !== 1) throw new Error(`preload reward failed: ${JSON.stringify(result)}`);
+  if (!result.testInventoryRequested) throw new Error(`TestFlight did not request demo inventory: ${JSON.stringify(result)}`);
   if (result.fallbackReward !== 1) throw new Error(`rescue fallback failed: ${JSON.stringify(result)}`);
   if (result.optionalReward !== 0) throw new Error(`optional reward leaked: ${JSON.stringify(result)}`);
+  if (result.testFlightFallbackReward !== 1) throw new Error(`TestFlight fallback failed: ${JSON.stringify(result)}`);
   if (!result.fallbackLabel || result.fallbackLabel === result.optionalLabel) throw new Error(`fallback label failed: ${JSON.stringify(result)}`);
   console.log(`Rewarded ad flow passed: ${JSON.stringify(result)}`);
 } finally {

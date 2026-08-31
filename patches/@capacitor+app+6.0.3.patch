@@ -1,0 +1,25 @@
+diff --git a/node_modules/@capacitor/app/ios/Sources/AppPlugin/AppPlugin.swift b/node_modules/@capacitor/app/ios/Sources/AppPlugin/AppPlugin.swift
+index 0f60865..36dd22a 100644
+--- a/node_modules/@capacitor/app/ios/Sources/AppPlugin/AppPlugin.swift
++++ b/node_modules/@capacitor/app/ios/Sources/AppPlugin/AppPlugin.swift
+@@ -81,10 +81,19 @@ public class AppPlugin: CAPPlugin, CAPBridgedPlugin {
+     @objc func getInfo(_ call: CAPPluginCall) {
+         if let info = Bundle.main.infoDictionary {
++            #if DEBUG
++            let distributionEnvironment = "sandbox"
++            #else
++            // TestFlight installs use a sandbox App Store receipt. Expose only the
++            // environment classification so web code can request Google's demo ads
++            // while beta testing without shipping test inventory to production.
++            let distributionEnvironment = Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" ? "sandbox" : "production"
++            #endif
+             call.resolve([
+                 "name": info["CFBundleDisplayName"] as? String ?? "",
+                 "id": info["CFBundleIdentifier"] as? String ?? "",
+                 "build": info["CFBundleVersion"] as? String ?? "",
+-                "version": info["CFBundleShortVersionString"] as? String ?? ""
++                "version": info["CFBundleShortVersionString"] as? String ?? "",
++                "distributionEnvironment": distributionEnvironment
+             ])
+         } else {
+             call.reject("Unable to get App Info")
