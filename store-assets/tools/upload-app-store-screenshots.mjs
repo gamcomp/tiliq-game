@@ -11,6 +11,9 @@ const valueAfter = (flag) => {
   return index >= 0 ? args[index + 1] : undefined;
 };
 const shouldCommit = args.includes('--commit');
+const shouldCancelReview = args.includes('--cancel-review');
+const shouldResubmit = args.includes('--resubmit');
+const buildNumber = valueAfter('--build-number');
 const appId = valueAfter('--app-id') || process.env.APP_ID;
 const keyId = process.env.ASC_KEY_ID || process.env.APP_STORE_CONNECT_KEY_IDENTIFIER;
 const issuerId = process.env.ASC_ISSUER_ID || process.env.APP_STORE_CONNECT_ISSUER_ID;
@@ -142,9 +145,129 @@ async function waitForScreenshot(screenshotId) {
   throw new Error(`Screenshot ${screenshotId} did not finish processing within three minutes.`);
 }
 
+const lockedVersionStates = new Set(['READY_FOR_REVIEW', 'WAITING_FOR_REVIEW', 'IN_REVIEW']);
+
+async function cancelActiveReview(version) {
+  const submissions = await listAll(`/apps/${encodeURIComponent(appId)}/reviewSubmissions?limit=200`);
+  const activeSubmission = submissions.find((entry) =>
+    ['WAITING_FOR_REVIEW', 'IN_REVIEW'].includes(entry.attributes.state));
+  if (!activeSubmission) {
+    throw new Error(`App Store version ${versionString} is locked, but no cancelable review submission was found.`);
+  }
+  await apiRequest('PATCH', `/reviewSubmissions/${activeSubmission.id}`, {
+    body: {
+      data: {
+        type: 'reviewSubmissions',
+        id: activeSubmission.id,
+        attributes: { canceled: true },
+      },
+    },
+  });
+  console.log(`Cancellation requested for review submission ${activeSubmission.id}.`);
+
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    const [submissionPayload, versionPayload] = await Promise.all([
+      apiRequest('GET', `/reviewSubmissions/${activeSubmission.id}`),
+      apiRequest('GET', `/appStoreVersions/${version.id}`),
+    ]);
+    const submissionState = submissionPayload.data.attributes.state;
+    const versionState = versionPayload.data.attributes.appStoreState;
+    if (submissionState === 'COMPLETE' && !lockedVersionStates.has(versionState)) {
+      console.log(`Review cancellation completed; App Store version state is ${versionState}.`);
+      return versionPayload.data;
+    }
+    await delay(5000);
+  }
+  throw new Error('The review submission did not finish canceling within ten minutes.');
+}
+
+async function waitForValidBuild(requestedBuildNumber) {
+  for (let attempt = 0; attempt < 90; attempt += 1) {
+    const builds = await listAll(`/builds?filter%5Bapp%5D=${encodeURIComponent(appId)}&filter%5Bversion%5D=${encodeURIComponent(requestedBuildNumber)}&limit=50`);
+    const validBuild = builds.find((entry) => entry.attributes.processingState === 'VALID');
+    if (validBuild) return validBuild;
+    const failedBuild = builds.find((entry) => ['FAILED', 'INVALID'].includes(entry.attributes.processingState));
+    if (failedBuild) throw new Error(`App Store build ${requestedBuildNumber} is ${failedBuild.attributes.processingState}.`);
+    await delay(10000);
+  }
+  throw new Error(`App Store build ${requestedBuildNumber} did not become valid within fifteen minutes.`);
+}
+
+async function attachBuildAndResubmit(version, requestedBuildNumber) {
+  if (!requestedBuildNumber) throw new Error('--build-number is required with --resubmit.');
+  const build = await waitForValidBuild(requestedBuildNumber);
+  await apiRequest('PATCH', `/appStoreVersions/${version.id}/relationships/build`, {
+    body: { data: { type: 'builds', id: build.id } },
+  });
+  const buildLinkage = await apiRequest('GET', `/appStoreVersions/${version.id}/relationships/build`);
+  if (buildLinkage?.data?.id !== build.id) throw new Error(`Build ${requestedBuildNumber} was not attached to the App Store version.`);
+  console.log(`Attached App Store build ${requestedBuildNumber} to version ${versionString}.`);
+
+  const existingSubmissions = await listAll(`/apps/${encodeURIComponent(appId)}/reviewSubmissions?limit=200`);
+  let submission = existingSubmissions.find((entry) =>
+    entry.attributes.state === 'READY_FOR_REVIEW' && entry.attributes.platform === 'IOS');
+  if (!submission) {
+    const created = await apiRequest('POST', '/reviewSubmissions', {
+      body: {
+        data: {
+          type: 'reviewSubmissions',
+          attributes: { platform: 'IOS' },
+          relationships: { app: { data: { type: 'apps', id: appId } } },
+        },
+      },
+    });
+    submission = created.data;
+  }
+
+  const existingItems = await apiRequest('GET', `/reviewSubmissions/${submission.id}/items?include=appStoreVersion&limit=200`);
+  const hasVersionItem = (existingItems.included || []).some((entry) =>
+    entry.type === 'appStoreVersions' && entry.id === version.id);
+  if (!hasVersionItem) {
+    await apiRequest('POST', '/reviewSubmissionItems', {
+      body: {
+        data: {
+          type: 'reviewSubmissionItems',
+          relationships: {
+            reviewSubmission: { data: { type: 'reviewSubmissions', id: submission.id } },
+            appStoreVersion: { data: { type: 'appStoreVersions', id: version.id } },
+          },
+        },
+      },
+    });
+  }
+
+  await apiRequest('PATCH', `/reviewSubmissions/${submission.id}`, {
+    body: {
+      data: {
+        type: 'reviewSubmissions',
+        id: submission.id,
+        attributes: { submitted: true },
+      },
+    },
+  });
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const submitted = await apiRequest('GET', `/reviewSubmissions/${submission.id}`);
+    const state = submitted.data.attributes.state;
+    if (['WAITING_FOR_REVIEW', 'IN_REVIEW'].includes(state)) {
+      console.log(`Review submission ${submission.id} is ${state} with build ${requestedBuildNumber}.`);
+      return;
+    }
+    if (state === 'UNRESOLVED_ISSUES') throw new Error(`Review submission ${submission.id} has unresolved issues.`);
+    await delay(5000);
+  }
+  throw new Error('The new review submission did not enter the review queue within five minutes.');
+}
+
 const versions = await listAll(`/apps/${encodeURIComponent(appId)}/appStoreVersions?filter%5Bplatform%5D=IOS&limit=200`);
-const version = versions.find((entry) => entry.attributes.versionString === versionString);
+let version = versions.find((entry) => entry.attributes.versionString === versionString);
 if (!version) throw new Error(`iOS App Store version ${versionString} was not found for app ${appId}.`);
+
+if (shouldCommit && lockedVersionStates.has(version.attributes.appStoreState)) {
+  if (!shouldCancelReview) {
+    throw new Error(`App Store version ${versionString} is ${version.attributes.appStoreState}; pass --cancel-review to update screenshots.`);
+  }
+  version = await cancelActiveReview(version);
+}
 
 const remoteLocalizations = await listAll(`/appStoreVersions/${version.id}/appStoreVersionLocalizations?limit=200`);
 const localizationByLocale = new Map(remoteLocalizations.map((entry) => [entry.attributes.locale, entry]));
@@ -220,3 +343,5 @@ for (const [index, { locale }] of localeEntries.entries()) {
 console.log(shouldCommit
   ? `Committed ${localeEntries.length * 6} App Store screenshots across ${localeEntries.length} locales.`
   : 'Check-only mode completed; no App Store changes were made.');
+
+if (shouldCommit && shouldResubmit) await attachBuildAndResubmit(version, buildNumber);

@@ -23,7 +23,14 @@ if (!commitMessage.includes('[app-store-assets]')) {
 
 const toolsDir = path.dirname(fileURLToPath(import.meta.url));
 const uploader = path.join(toolsDir, 'upload-app-store-screenshots.mjs');
-const result = spawnSync(process.execPath, [uploader, '--commit'], { stdio: 'inherit' });
+const result = spawnSync(process.execPath, [
+  uploader,
+  '--commit',
+  '--cancel-review',
+  '--build-number',
+  '86',
+  '--resubmit',
+], { stdio: 'inherit' });
 if (result.error) throw result.error;
 if (result.status !== 0) {
   console.warn('App Store screenshots were not changed; continuing the independent iOS binary build.');
