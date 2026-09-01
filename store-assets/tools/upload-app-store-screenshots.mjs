@@ -13,6 +13,7 @@ const valueAfter = (flag) => {
 const shouldCommit = args.includes('--commit');
 const shouldCancelReview = args.includes('--cancel-review');
 const shouldResubmit = args.includes('--resubmit');
+const shouldResubmitOnly = args.includes('--resubmit-only');
 const buildNumber = valueAfter('--build-number');
 const appId = valueAfter('--app-id') || process.env.APP_ID;
 const keyId = process.env.ASC_KEY_ID || process.env.APP_STORE_CONNECT_KEY_IDENTIFIER;
@@ -261,6 +262,18 @@ async function attachBuildAndResubmit(version, requestedBuildNumber) {
 const versions = await listAll(`/apps/${encodeURIComponent(appId)}/appStoreVersions?filter%5Bplatform%5D=IOS&limit=200`);
 let version = versions.find((entry) => entry.attributes.versionString === versionString);
 if (!version) throw new Error(`iOS App Store version ${versionString} was not found for app ${appId}.`);
+
+if (shouldResubmitOnly) {
+  if (!shouldCancelReview || !shouldResubmit || !buildNumber) {
+    throw new Error('--resubmit-only requires --cancel-review, --resubmit, and --build-number.');
+  }
+  if (lockedVersionStates.has(version.attributes.appStoreState)) {
+    version = await cancelActiveReview(version);
+  }
+  await attachBuildAndResubmit(version, buildNumber);
+  console.log(`App Store review now uses build ${buildNumber}; screenshots were not changed.`);
+  process.exit(0);
+}
 
 if (shouldCommit && lockedVersionStates.has(version.attributes.appStoreState)) {
   if (!shouldCancelReview) {
