@@ -2490,6 +2490,9 @@ let _bannerNativeExists=false,_bannerDesired=false,_bannerState='idle';
 let _bannerRetryTimer=null,_bannerRetryAttempt=0,_bannerHeight=0,_bannerLastHeight=0;
 let _adMobReady=false,_adsCanRequest=false,_privacyOptionsRequired=false,_adMobInitPromise=null;
 let _useAdMobTestAds=false,_adEnvironmentResolved=false;
+// Google Play production access is not open yet. These version codes are
+// test-track-only and must always use Google's demo inventory.
+const ANDROID_TEST_AD_BUILD_CODES=new Set(['152']);
 const BANNER_RESERVE_PX=64; // boyut eventi gecikirse kullanılan toplam güvenli alan
 const trayGap=()=>12;
 function outerUiHeight(el,fallback){
@@ -3318,13 +3321,14 @@ async function initAdMob(){
       // installed from the production App Store.
       if(!_adEnvironmentResolved){
         _adEnvironmentResolved=true;
-        if(_isIOS){
-          try{
-            const AppPlugin=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.App;
-            const appInfo=AppPlugin&&AppPlugin.getInfo?await AppPlugin.getInfo():null;
-            _useAdMobTestAds=appInfo&&appInfo.distributionEnvironment==='sandbox';
-          }catch(e){console.warn('Ad environment:',e);}
-        }
+        try{
+          const AppPlugin=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.App;
+          const appInfo=AppPlugin&&AppPlugin.getInfo?await AppPlugin.getInfo():null;
+          const platform=window.Capacitor&&window.Capacitor.getPlatform?window.Capacitor.getPlatform():'web';
+          _useAdMobTestAds=platform==='ios'
+            ? !!(appInfo&&appInfo.distributionEnvironment==='sandbox')
+            : platform==='android'&&ANDROID_TEST_AD_BUILD_CODES.has(String(appInfo&&appInfo.build||''));
+        }catch(e){console.warn('Ad environment:',e);}
       }
       await AdMob.initialize({initializeForTesting:_useAdMobTestAds,maxAdContentRating:'General'});
       _adMobReady=true;

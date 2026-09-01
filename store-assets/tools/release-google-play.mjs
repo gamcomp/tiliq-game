@@ -19,6 +19,7 @@ const existingVersionCode = valueAfter('--version-code');
 const track = valueAfter('--track') || 'production';
 const shouldCommit = args.includes('--commit');
 const shouldCheckPermission = args.includes('--check-permission');
+const TEST_TRACK_ONLY_VERSION_CODES = new Set([152]);
 
 if (!credentialsPath) throw new Error('Pass --credentials <service-account.json>.');
 if (!shouldCheckPermission && ((!bundlePath && !existingVersionCode) || !shouldCommit)) {
@@ -130,6 +131,9 @@ try {
   }
   if (versionCode !== Number(metadata.versionCode)) {
     throw new Error(`Uploaded bundle versionCode ${versionCode} does not match metadata ${metadata.versionCode}.`);
+  }
+  if (track === 'production' && TEST_TRACK_ONLY_VERSION_CODES.has(versionCode)) {
+    throw new Error(`versionCode ${versionCode} uses test ads and cannot be released to production.`);
   }
 
   const releaseNotes = Object.entries(metadata.locales).map(([language, locale]) => ({
