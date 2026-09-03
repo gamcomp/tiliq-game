@@ -8,6 +8,7 @@
     "cap:sync": "npx cap sync",
     "cap:open:ios": "npx cap open ios",
     "cap:run:ios": "npx cap run ios",
+    "test:att": "node store-assets/tools/test-ios-att-order.mjs",
     "test:rewarded": "node store-assets/tools/test-rewarded-ad-flow.mjs",
     "store:metadata": "node store-assets/tools/generate-metadata.mjs",
     "store:brand": "node store-assets/tools/generate-google-brand-assets.mjs && node store-assets/tools/generate-native-splashes.mjs",

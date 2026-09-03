@@ -1,0 +1,18 @@
+Hello App Review Team,
+
+Thank you for identifying the issue. In version 1.3.88 (build 88), an early return in the advertising-consent flow could prevent the App Tracking Transparency request from being reached when `canRequestAds` was false.
+
+We corrected this in a new build. On a fresh installation, Tiliq now requests App Tracking Transparency after the application becomes active and before Firebase Analytics, Google Mobile Ads, UMP, or any advertising request is initialized. If tracking is declined, the game remains fully usable and ads operate without tracking-based personalization.
+
+Physical-device recording: [ATTACH OR PASTE THE APP STORE CONNECT ATTACHMENT/URL HERE]
+
+The unedited recording was captured on [IPHONE MODEL], running iOS [IOS VERSION], and demonstrates:
+1. Deleting Tiliq and reinstalling the new TestFlight build.
+2. Launching Tiliq from the Home Screen.
+3. The App Tracking Transparency system permission request appearing on first launch.
+4. Choosing “Ask App Not to Track.”
+5. Continuing through language selection, guest access, and core gameplay, confirming that declining tracking does not block the app.
+
+The same information and recording have been added to the App Review Information Notes field.
+
+Best regards

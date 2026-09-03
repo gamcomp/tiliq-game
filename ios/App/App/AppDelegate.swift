@@ -1,10 +1,12 @@
 import UIKit
 import Capacitor
+import AppTrackingTransparency
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
+    private var trackingAuthorizationRequestScheduled = false
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
@@ -26,7 +28,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        // Ask on the first active launch, before the web layer initializes AdMob or
+        // Firebase Analytics. Requesting from an active app is important on current
+        // iOS releases; calls made while the launch transition is still inactive can
+        // be ignored without presenting the system dialog.
+        requestTrackingAuthorizationIfNeeded(application)
+    }
+
+    private func requestTrackingAuthorizationIfNeeded(_ application: UIApplication) {
+        guard #available(iOS 14, *) else { return }
+        guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else { return }
+        guard !trackingAuthorizationRequestScheduled else { return }
+
+        trackingAuthorizationRequestScheduled = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            guard application.applicationState == .active else {
+                self?.trackingAuthorizationRequestScheduled = false
+                return
+            }
+            guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else { return }
+            ATTrackingManager.requestTrackingAuthorization { _ in }
+        }
     }
 
     func applicationWillTerminate(_ application: UIApplication) {

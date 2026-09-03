@@ -2474,7 +2474,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.09.01-testflight-ad-fix';
+const BUILD_VER='v2026.09.03-ios-att-fix';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -2493,6 +2493,24 @@ let _useAdMobTestAds=false,_adEnvironmentResolved=false;
 // Google Play production access is not open yet. These version codes are
 // test-track-only and must always use Google's demo inventory.
 const ANDROID_TEST_AD_BUILD_CODES=new Set(['152']);
+async function _resolveIosTrackingAuthorization(AdMob){
+  if(!_isIOS)return 'notApplicable';
+  if(!AdMob.trackingAuthorizationStatus||!AdMob.requestTrackingAuthorization){
+    throw new Error('ATT bridge is unavailable');
+  }
+  let info=await AdMob.trackingAuthorizationStatus();
+  let status=info&&info.status;
+  if(status==='notDetermined'){
+    // AppDelegate also schedules this request after applicationDidBecomeActive.
+    // Calling through the bridge here makes the ad/analytics startup wait for the
+    // user's answer even when the native request is already on screen.
+    await AdMob.requestTrackingAuthorization();
+    info=await AdMob.trackingAuthorizationStatus();
+    status=info&&info.status;
+  }
+  if(!status||status==='notDetermined')throw new Error('ATT authorization was not resolved');
+  return status;
+}
 const BANNER_RESERVE_PX=64; // boyut eventi gecikirse kullanılan toplam güvenli alan
 const trayGap=()=>12;
 function outerUiHeight(el,fallback){
@@ -3330,6 +3348,11 @@ async function initAdMob(){
             : platform==='android'&&ANDROID_TEST_AD_BUILD_CODES.has(String(appInfo&&appInfo.build||''));
         }catch(e){console.warn('Ad environment:',e);}
       }
+      // ATT must resolve before initializing either the advertising SDK or
+      // Firebase Analytics. Previously this block ran after UMP and after an
+      // early `canRequestAds` return, so a fresh install could never show ATT.
+      if(_isIOS)await _resolveIosTrackingAuthorization(AdMob);
+      await initFirebaseAnalytics();
       await AdMob.initialize({initializeForTesting:_useAdMobTestAds,maxAdContentRating:'General'});
       _adMobReady=true;
       await _installBannerListeners(AdMob);
@@ -3352,14 +3375,6 @@ async function initAdMob(){
       _privacyOptionsRequired=consentInfo.privacyOptionsRequirementStatus==='REQUIRED';
       _updateAdPrivacyUI();
       if(!_adsCanRequest)return;
-
-      if(_isIOS&&AdMob.requestTrackingAuthorization){
-        try{
-          const att=AdMob.trackingAuthorizationStatus?await AdMob.trackingAuthorizationStatus():null;
-          const status=att&&(att.status||att.value);
-          if(!status||status==='notDetermined'||status==='NOT_DETERMINED')await AdMob.requestTrackingAuthorization();
-        }catch(e){console.warn('ATT request:',e);}
-      }
       _syncAdAudioPolicy();
       _prepareInterstitial();
       _prepareRewardedAd();
@@ -6559,6 +6574,20 @@ const FB_WEB_CLIENT_ID = '158314507461-gok3ji1mum1kofm3g674sm3cn0hl3of8.apps.goo
 
 let _fbApp=null, _fbAuth=null;
 let _fbAnalytics=null, _fbLogEventFn=null; // gerçek Firebase Analytics (2026-07-08 — bkz. logEvent())
+let _fbAnalyticsInitPromise=null;
+function initFirebaseAnalytics(){
+  if(_fbAnalyticsInitPromise)return _fbAnalyticsInitPromise;
+  _fbAnalyticsInitPromise=(async()=>{
+    try{
+      const {getAnalytics,isSupported,logEvent:_fle}=await import('./assets/firebase/firebase-analytics.js');
+      if(await isSupported()){
+        _fbAnalytics=getAnalytics(_fbApp);
+        _fbLogEventFn=_fle;
+      }
+    }catch(e){console.warn('Analytics init:',e);}
+  })();
+  return _fbAnalyticsInitPromise;
+}
 // "Auth durumu belli oldu mu" sinyali — RACE CONDITION FIX (2026-07-08, devam):
 // initFirebaseAuth() dinamik import + network gerektirir (yüzlerce ms-birkaç sn
 // sürebilir). Kullanıcı sayfa açılır açılmaz "Oyna"ya basarsa, onAuthStateChanged
@@ -6592,17 +6621,9 @@ async function initFirebaseAuth(){
     // "hiç bitmiyor"du). LB manager'ın SADECE _fbApp'e ihtiyacı var — riskli
     // çağrılardan TAMAMEN bağımsız olması için hemen burada, en başta çağrılıyor.
     _initLeaderboardManager();
-    // Gerçek analytics — daha önce logEvent() sadece console.log yapıyordu, hiçbir
-    // yere veri gitmiyordu (BÜYÜT/ÖLDÜR kararları CPI+elde-tutma verisine dayanıyor
-    // ama bu veri hiç toplanmıyordu). isSupported() kontrolü önerilen resmi desen —
-    // bazı kısıtlı WebView ortamlarında Analytics SDK'sı sessizce çökmesin diye.
-    try{
-      const {getAnalytics,isSupported,logEvent:_fle}=await import('./assets/firebase/firebase-analytics.js');
-      if(await isSupported()){
-        _fbAnalytics=getAnalytics(_fbApp);
-        _fbLogEventFn=_fle;
-      }
-    }catch(e){console.warn('Analytics init:',e);}
+    // iOS'ta Analytics, AppDelegate/AdMob köprüsü ATT sonucunu kesinleştirene kadar
+    // başlamaz. Diğer platformlarda ATT uygulanmadığı için hemen başlatılır.
+    if(!_isIOS)await initFirebaseAnalytics();
     onAuthStateChanged(_fbAuth, user=>{
       if(user){
         // Bu listener sadece JS SDK'nın KENDİ kalıcılık katmanından (Android/web)
