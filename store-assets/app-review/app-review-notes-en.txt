@@ -3,7 +3,7 @@ No credentials or sample files are required. Internet is required. Launch Tiliq,
 
 PHYSICAL-DEVICE VIDEO
 [INSERT PUBLIC HTTPS VIDEO URL]
-Recorded on [INSERT ACTUAL IPHONE MODEL], iOS 26.6.1, Tiliq 1.3.88 (build 85). It begins with a cold launch and shows consent/ATT when presented, guest registration, profile setup, tutorial, gameplay/line clearing/power-ups, rewards/missions, coin store, rankings/friends, report-and-hide, settings, and account deletion.
+Recorded on [INSERT ACTUAL IPHONE MODEL], iOS [INSERT ACTUAL IOS VERSION], Tiliq 1.3.88 (build 89). It begins with a fresh-install launch and shows the ATT request before analytics/advertising initialization, followed by guest registration, profile setup, tutorial, gameplay/line clearing/power-ups, rewards/missions, coin store, rankings/friends, report-and-hide, settings, and account deletion.
 
 TESTED DEVICES
 - [INSERT ACTUAL IPHONE MODEL] — iOS 26.6.1
