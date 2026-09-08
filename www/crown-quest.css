@@ -4386,9 +4386,24 @@ body {
   box-shadow:inset 0 2px 0 #fff,0 0 0 2px rgba(143,230,244,.24),0 5px 13px rgba(4,48,75,.3);
 }
 #bomb-btn.lit-super { border-color:#ef8061; }
-#bomb-btn.attention { animation:sky-bomb-attention .62s ease-in-out 2; }
-@keyframes sky-bomb-attention {
-  50% { transform:translateY(-2px); box-shadow:inset 0 2px 0 #fff,0 0 0 3px rgba(241,200,105,.35),0 0 18px rgba(241,200,105,.5); }
+#bomb-btn.last-chance {
+  border-color:#ff4054;
+  box-shadow:inset 0 2px 0 #fff,0 0 0 2px rgba(255,43,67,.42),0 5px 13px rgba(75,4,18,.35);
+}
+#bomb-btn.last-chance::after {
+  content:"";
+  position:absolute;
+  inset:-5px;
+  border:3px solid #ff2b43;
+  border-radius:24px;
+  box-shadow:0 0 16px rgba(255,43,67,.85),0 0 28px rgba(255,43,67,.42);
+  pointer-events:none;
+  animation:sky-bomb-last-chance .72s ease-in-out infinite;
+  will-change:opacity,transform;
+}
+@keyframes sky-bomb-last-chance {
+  0%,100% { opacity:.3; transform:scale(.985); }
+  50% { opacity:1; transform:scale(1.035); }
 }
 
 #bomb-target-bar {
@@ -4690,7 +4705,7 @@ body {
 }
 
 @media (prefers-reduced-motion:reduce) {
-  #bomb-btn.attention,.ad-loader i,.ad-load-track i,#bomb-target-bar.active { animation:none; }
+  #bomb-btn.last-chance::after,.ad-loader i,.ad-load-track i,#bomb-target-bar.active { animation:none; opacity:1; transform:none; }
 }
 
 /* ── Sky Harbor hammer impact + turbine combo ring ───────────────────────── */

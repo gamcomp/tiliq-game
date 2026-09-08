@@ -125,7 +125,31 @@ try {
     document.getElementById('ad-skip-btn').click();
     await wait(50);
 
-    return {accountDisabledReward, accountDisabledOverlay, normalReward, fallbackReward, optionalReward, testFlightFallbackReward, testInventoryRequested, fallbackLabel, optionalLabel};
+    // Last-chance state: no normal piece fits, but a bomb can still save the run.
+    grid = Array.from({length: GRID}, () => Array(GRID).fill(1));
+    pieces = [{shape: {cells: [[0, 0]]}, placed: false}];
+    bombCount = 1;
+    bombMode = false;
+    dead = false;
+    _bombHintT = performance.now();
+    updateBombBar();
+    checkDead();
+    const bombButton = document.getElementById('bomb-btn');
+    const lastChanceShown = bombButton.classList.contains('last-chance');
+    const lastChanceAnimation = getComputedStyle(bombButton, '::after').animationName;
+
+    grid = Array.from({length: GRID}, () => Array(GRID).fill(0));
+    checkDead();
+    const lastChanceCleared = !bombButton.classList.contains('last-chance');
+
+    grid = Array.from({length: GRID}, () => Array(GRID).fill(1));
+    bombCount = 0;
+    updateBombBar();
+    checkDead();
+    const noBombWarningHidden = !bombButton.classList.contains('last-chance');
+    dead = true;
+
+    return {accountDisabledReward, accountDisabledOverlay, normalReward, fallbackReward, optionalReward, testFlightFallbackReward, testInventoryRequested, fallbackLabel, optionalLabel, lastChanceShown, lastChanceAnimation, lastChanceCleared, noBombWarningHidden};
   });
 
   if (result.accountDisabledReward !== 1 || result.accountDisabledOverlay !== 'none') throw new Error(`disabled-account fallback failed: ${JSON.stringify(result)}`);
@@ -135,7 +159,10 @@ try {
   if (result.optionalReward !== 0) throw new Error(`optional reward leaked: ${JSON.stringify(result)}`);
   if (result.testFlightFallbackReward !== 1) throw new Error(`TestFlight fallback failed: ${JSON.stringify(result)}`);
   if (!result.fallbackLabel || result.fallbackLabel === result.optionalLabel) throw new Error(`fallback label failed: ${JSON.stringify(result)}`);
-  console.log(`Rewarded ad flow passed: ${JSON.stringify(result)}`);
+  if (!result.lastChanceShown || result.lastChanceAnimation !== 'sky-bomb-last-chance' || !result.lastChanceCleared || !result.noBombWarningHidden) {
+    throw new Error(`bomb last-chance warning failed: ${JSON.stringify(result)}`);
+  }
+  console.log(`Rewarded ad and bomb last-chance flows passed: ${JSON.stringify(result)}`);
 } finally {
   await browser.close();
   await new Promise((resolve) => server.close(resolve));

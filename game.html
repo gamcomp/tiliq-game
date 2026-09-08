@@ -3648,6 +3648,7 @@ function updateBombBar(){
   // Sadece bomba hakkın varsa buton aktif (bomba puanla kazanılır)
   btn.disabled=(bombCount===0);
   btn.classList.toggle('ready',bombCount>0&&!bombMode);
+  if(bombCount===0||bombMode)btn.classList.remove('last-chance');
   if(adIcon) adIcon.style.display='none';   // reklamla bomba kazanma kaldırıldı
   if(cntEl){cntEl.style.display='';cntEl.textContent='×'+bombCount;}
   // İkon ve label
@@ -3721,7 +3722,7 @@ function cancelBombMode(){
   bombMode=false;_bombTarget=null;hov=null;
   const btn=document.getElementById('bomb-btn');if(btn)btn.classList.remove('lit-normal','lit-super');
   const bar=document.getElementById('bomb-target-bar');if(bar)bar.classList.remove('active','super');
-  updateBombBar();vibrate(10);
+  updateBombBar();vibrate(10);checkDead();
 }
 function selectBombTarget(row,col){
   if(!bombMode||row<0||col<0||row>=GRID||col>=GRID)return;
@@ -3762,7 +3763,7 @@ function activateBomb(type='normal'){
     let tp=type;
     if(tp==='super'&&bombCount<2)tp='normal';
     bombMode=true;bombType=tp;_bombTarget=null;hov=null;
-    btn.classList.remove('lit-normal','lit-super');
+    btn.classList.remove('lit-normal','lit-super','last-chance');
     btn.classList.add(tp==='super'?'lit-super':'lit-normal');
     updateBombBar();
     vibrate(tp==='super'?[20,10,30]:20);
@@ -3825,6 +3826,7 @@ function useBomb(row,col){
   const isSuper=usedType==='super';
   bombCount-=cost;
   _syncBombInventory();
+  _setBombLastChance(false);
   updateBombBar();
   const btn=document.getElementById('bomb-btn');
   btn.classList.remove('lit-normal','lit-super');
@@ -4237,7 +4239,7 @@ function continueGame(){
   document.getElementById('bestDisplay').textContent=best;
   document.getElementById('comboDisplay').textContent=String(Math.min(combo+1,5));
   document.getElementById('overlay').classList.remove('active');
-  document.getElementById('bomb-btn').classList.remove('lit-normal','lit-super');
+  document.getElementById('bomb-btn').classList.remove('lit-normal','lit-super','last-chance');
   document.getElementById('colorblast-btn')?.classList.remove('lit-color');
   colorBlastMode=false;
   updateBombBar(); updateColorBlastBtn();
@@ -4299,7 +4301,7 @@ function startGame(){
   _invBombsInPlay=bombCount;
   bombMode=false;bombXP=0;_bombTarget=null;
   colorBlastMode=false;colorBlastXP=0;
-  document.getElementById('bomb-btn').classList.remove('lit-normal','lit-super');
+  document.getElementById('bomb-btn').classList.remove('lit-normal','lit-super','last-chance');
   document.getElementById('bomb-target-bar')?.classList.remove('active','super');
   document.getElementById('colorblast-btn')?.classList.remove('lit-color');
   updateBombBar();
@@ -5245,27 +5247,35 @@ function _canAnyFit(){
   });
 }
 let _bombHintT=0;
+function _setBombLastChance(active){
+  const bombBtn=document.getElementById('bomb-btn');
+  if(!bombBtn)return;
+  bombBtn.classList.toggle('last-chance',!!active&&bombCount>0&&!dead&&!bombMode);
+}
 function checkDead(){
-  if(_canAnyFit())return;
+  if(_canAnyFit()){
+    _setBombLastChance(false);
+    return;
+  }
   // Bomban varsa oyunu bitirme — bombayı kullanıp yer aç ve devam et
   if(bombCount>0){
+    _setBombLastChance(true);
     const now=performance.now();
     if(now-_bombHintT>1500){
       _bombHintT=now;
-      const bombBtn=document.getElementById('bomb-btn');
-      if(bombBtn){bombBtn.classList.add('attention');setTimeout(()=>bombBtn.classList.remove('attention'),1400);}
       const cx=canvas.width/2,cy=GOY+CELL*GRID*.28;
       floats.push({kind:'skyTag',icon:'bomb',label:t('useBombHint'),x:cx,y:cy,a:1,vy:-.18,fade:.018,accent:'#e4b35e'});
       vibrate([20,10,30]);
     }
     return;
   }
+  _setBombLastChance(false);
   // Satır temizleme animasyonu (260ms) bitsin diye 350ms bekle, sonra tekrar kontrol et
   setTimeout(()=>{
     if(dead)return; // zaten game over olduysa tekrar tetikleme
     if(_canAnyFit())return; // satırlar temizlendi, parça sığıyor — iptal
     if(bombCount>0)return;  // bu sırada bomba kazandıysa bitirme
-    dead=true;playOver();vibrate([80,40,120]);setTimeout(showOver,420);
+    _setBombLastChance(false);dead=true;playOver();vibrate([80,40,120]);setTimeout(showOver,420);
   },350);
 }
 
@@ -7998,7 +8008,7 @@ function backToMenu(){
   }
   dead=true;bombMode=false;colorBlastMode=false;_bombTarget=null;
   document.getElementById('overlay').classList.remove('active');
-  document.getElementById('bomb-btn').classList.remove('lit-normal','lit-super');
+  document.getElementById('bomb-btn').classList.remove('lit-normal','lit-super','last-chance');
   document.getElementById('bomb-target-bar')?.classList.remove('active','super');
   document.getElementById('colorblast-btn')?.classList.remove('lit-color');
   showScreen('menu');
