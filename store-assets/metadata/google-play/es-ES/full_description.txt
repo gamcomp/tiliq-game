@@ -9,7 +9,7 @@ CÓMO JUGAR
 • La partida termina cuando ninguna pieza puede colocarse
 
 COMBOS Y PODERES
-Aumenta tu combo con jugadas inteligentes y consigue más puntos. Si el tablero se complica, usa una Bomba para limpiar una zona de 3×3, gasta dos bombas en una Super Bomba que abre una fila y una columna, o activa Explosión de Color para retirar todos los bloques del color elegido. Rescate te da otra oportunidad para continuar.
+Aumenta tu combo con jugadas inteligentes y consigue más puntos. Si el tablero se complica, usa una Martillo para limpiar una zona de 3×3, gasta dos martillos en una Super Martillo que abre una fila y una columna, o activa Explosión de Color para retirar todos los bloques del color elegido. Rescate te da otra oportunidad para continuar.
 
 UN NUEVO VUELO CADA DÍA
 Mantén tu racha de recompensas de siete días y completa tres misiones que se renuevan a diario: crear combos, eliminar líneas y alcanzar la puntuación objetivo. Recoge monedas y poderes.

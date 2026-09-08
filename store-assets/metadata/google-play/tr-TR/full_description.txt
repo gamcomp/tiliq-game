@@ -9,7 +9,7 @@ NASIL OYNANIR
 • Hiçbir parça sığmadığında oyun sona erer
 
 KOMBOLAR VE GÜÇLER
-Akıllı temizlemelerle kombo seviyeni yükselt ve daha fazla puan kazan. Sıkıştığında Bomba ile 3×3 alanı temizle, iki bomba harcayarak Süper Bomba ile bir satır ve sütunu aç veya Renk Patlat ile seçtiğin renkteki tüm blokları kaldır. Kurtarma hakkı sana devam etmek için bir şans daha verir.
+Akıllı temizlemelerle kombo seviyeni yükselt ve daha fazla puan kazan. Sıkıştığında Çekiç ile 3×3 alanı temizle, iki çekiç harcayarak Süper Çekiç ile bir satır ve sütunu aç veya Renk Patlat ile seçtiğin renkteki tüm blokları kaldır. Kurtarma hakkı sana devam etmek için bir şans daha verir.
 
 HER GÜN YENİ BİR UÇUŞ
 7 günlük ödül serini koru ve her gün yenilenen üç görevi tamamla: kombo yap, satır temizle ve hedef skora ulaş. Coin ve güç ödüllerini topla.

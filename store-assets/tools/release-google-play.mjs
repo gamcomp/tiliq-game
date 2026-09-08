@@ -19,10 +19,11 @@ const existingVersionCode = valueAfter('--version-code');
 const track = valueAfter('--track') || 'production';
 const shouldCommit = args.includes('--commit');
 const shouldCheckPermission = args.includes('--check-permission');
+const shouldReadStatus = args.includes('--status');
 const TEST_TRACK_ONLY_VERSION_CODES = new Set([152]);
 
 if (!credentialsPath) throw new Error('Pass --credentials <service-account.json>.');
-if (!shouldCheckPermission && ((!bundlePath && !existingVersionCode) || !shouldCommit)) {
+if (!shouldReadStatus && !shouldCheckPermission && ((!bundlePath && !existingVersionCode) || !shouldCommit)) {
   throw new Error('A release requires --bundle <app.aab> or --version-code <code>, plus --commit.');
 }
 
@@ -93,6 +94,11 @@ async function deleteEdit() {
 try {
   const tracks = await request('GET', `${API_ROOT}/${appPath}/edits/${encodeURIComponent(editId)}/tracks`);
   const currentTrack = (tracks?.tracks || []).find((entry) => entry.track === track) || { track, releases: [] };
+  if(shouldReadStatus){
+    const bundles=await request('GET',`${API_ROOT}/${appPath}/edits/${encodeURIComponent(editId)}/bundles`);
+    console.log(JSON.stringify({tracks:tracks.tracks?.map(t=>({track:t.track,releases:t.releases?.map(r=>({name:r.name,status:r.status,versionCodes:r.versionCodes}))})),bundles:bundles.bundles?.map(b=>({versionCode:b.versionCode}))},null,2));
+    await deleteEdit();process.exit(0);
+  }
 
   if (shouldCheckPermission) {
     let permissionCheckReleases = currentTrack.releases || [];

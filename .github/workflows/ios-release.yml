@@ -3,6 +3,10 @@ name: iOS Release
 on:
   workflow_dispatch: {}
 
+concurrency:
+  group: tiliq-ios-release
+  cancel-in-progress: false
+
 jobs:
   build:
     # KÖK NEDEN (2026-07-21, dördüncü hata): FirebaseSharedSwift pod'u Swift 6'nın
@@ -41,6 +45,9 @@ jobs:
 
       - name: Install npm dependencies
         run: npm install
+
+      - name: Audit store version and prepare localized release notes
+        run: node store-assets/tools/prepare-ios-release.mjs
 
       # HIZLANDIRMA (2026-07-22, "güncelleme çok geç" isteği): CocoaPods'un pod
       # KAYNAKLARINI indirdiği önbellek klasörü — Podfile aynı kalırsa her run'da
@@ -194,10 +201,17 @@ jobs:
             --workspace "ios/App/App.xcworkspace" \
             --scheme "App"
 
-      - name: Publish to TestFlight
+      - name: Upload and submit App Store update
         run: |
+          VERSION=$(node -p "require('./package.json').version")
           app-store-connect publish \
-            --path "$(find . -name '*.ipa' | head -1)"
+            --path "$(find . -name '*.ipa' | head -1)" \
+            --app-store \
+            --version-string "$VERSION" \
+            --release-type AFTER_APPROVAL \
+            --app-store-version-localizations "@file:$RUNNER_TEMP/tiliq-ios-release-localizations.json" \
+            --max-find-build-wait 15 \
+            --max-build-processing-wait 20
 
       - uses: actions/upload-artifact@v4
         if: always()

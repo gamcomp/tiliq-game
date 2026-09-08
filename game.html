@@ -37,6 +37,9 @@
 </script>
 <link rel="icon" type="image/png" href="assets/sky-harbor/tiliq-app-icon.png">
 <link rel="stylesheet" href="crown-quest.css?v=20260825-safe-hud-i18n">
+<link rel="stylesheet" href="harbor-polish.css?v=20260909">
+<script src="harbor-polish.js?v=20260909"></script>
+<script src="hammer-i18n.js?v=20260909"></script>
 </head>
 <body data-theme="dark" data-vibe="kingdom" data-visual="sky-harbor">
 <div id="vfx-flash"></div>
@@ -177,7 +180,6 @@
       </button>
       <div class="kingdom-wallets">
         <button class="kingdom-wallet kingdom-coin" onclick="showTmStoreModal()" aria-label="Altın"><img alt=""><b id="kingdom-coins">0</b><i>+</i></button>
-        <button class="kingdom-wallet kingdom-gem" onclick="showTmStoreModal()" aria-label="Elmas"><img alt=""><b id="kingdom-gems">0</b><i>+</i></button>
         <button class="kingdom-wallet kingdom-flight" onclick="showMissions()" aria-label="Uçuş serisi"><img alt=""><b id="kingdom-best">1</b></button>
         <div class="home-level-strip" aria-label="Oyuncu seviyesi">
           <strong id="home-level-label">LV 1</strong>
@@ -209,7 +211,7 @@
       <button class="kingdom-card sky-missions" onclick="showMissions()"><small data-t="missions">GÖREVLER</small><strong id="mission-card-status">3 yeni rota</strong></button>
       <button class="kingdom-card sky-ranking" onclick="toggleLB()"><small data-t="leaderboard">SIRALAMA</small><strong data-t="skyLeague">Gökyüzü ligi</strong></button>
       <div id="daily-card" class="sky-mail-card">
-        <div class="treasure-box" id="treasure-box" onclick="showModal('daily')">
+        <div class="treasure-box" id="treasure-box" role="button" tabindex="0" onclick="showModal('daily')" onkeydown="if(event.target===this&&(event.key==='Enter'||event.key===' ')){event.preventDefault();showModal('daily')}">
           <div class="tb-icon" id="tb-icon" aria-hidden="true"></div>
           <div class="tb-body"><div class="tb-label" id="tb-label" data-t="dailyBonus">GÜNLÜK BONUS</div><div class="tb-amount" id="tb-amount">15</div><div class="tb-streak" id="tb-streak"></div></div>
           <button class="tb-cta" id="tb-cta" onclick="event.stopPropagation();showModal('daily')" data-t="dailyView">Gör</button>
@@ -309,7 +311,7 @@
       disabled>
       <span id="bomb-icon"><img alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></span>
       <div class="bomb-info">
-        <span><span id="bomb-type-lbl">Bomba</span><span id="bomb-cnt" style="margin-left:3px">×0</span><span id="bomb-ad-icon" class="ui-video-icon mini" style="margin-left:3px;opacity:.75;display:none" aria-hidden="true"></span></span>
+        <span><span id="bomb-type-lbl">Çekiç</span><span id="bomb-cnt" style="margin-left:3px">×0</span><span id="bomb-ad-icon" class="ui-video-icon mini" style="margin-left:3px;opacity:.75;display:none" aria-hidden="true"></span></span>
         <div id="bomb-bar"><div id="bomb-bar-fill"></div></div>
       <div id="bomb-hold-ring"><div id="bomb-hold-fill"></div></div>
       </div>
@@ -334,7 +336,7 @@
     <canvas id="fireCanvas"></canvas>
     <div id="combo-board-fx" data-fx="combo_default" data-tier="0" aria-hidden="true"></div>
     <div id="bomb-target-bar" role="status" aria-live="polite">
-      <button class="bomb-target-cancel" onclick="cancelBombMode()" aria-label="Bomba hedeflemesini iptal et">×</button>
+      <button class="bomb-target-cancel" onclick="cancelBombMode()" data-t-aria="hammerCancelTarget" aria-label="Çekiç hedeflemesini iptal et">×</button>
       <div class="bomb-target-emblem"><span></span></div>
       <div class="bomb-target-copy"><strong id="bomb-target-title" data-t="targetSelect">Hedef seç</strong><small id="bomb-target-copy" data-t="targetCopy">Tahtada patlatmak istediğin hücreye dokun</small></div>
       <button id="bomb-target-confirm" onclick="confirmBombTarget()" disabled data-t="blast">Patlat</button>
@@ -461,24 +463,26 @@
           <div class="setting-label" data-t="soundEffects">Ses Efektleri</div>
           <label class="toggle"><input type="checkbox" id="snd-toggle" checked onchange="updateSound()"><span class="tog-track"><span class="tog-thumb"></span></span></label>
         </div>
+        <div class="audio-level-row">
+          <label for="fx-level" data-t="volume">Ses Seviyesi</label>
+          <input type="range" id="fx-level" min="0" max="100" value="85" oninput="updateMix('effects',this.value)" onchange="playTick()">
+          <output id="fx-level-value" for="fx-level">85%</output>
+        </div>
         <div class="setting-group">
           <div class="setting-label" data-t="music">Müzik</div>
           <label class="toggle"><input type="checkbox" id="music-toggle" checked onchange="updateMusic()"><span class="tog-track"><span class="tog-thumb"></span></span></label>
         </div>
+        <div class="audio-level-row">
+          <label for="music-level" data-t="volume">Ses Seviyesi</label>
+          <input type="range" id="music-level" min="0" max="100" value="65" oninput="updateMix('music',this.value)">
+          <output id="music-level-value" for="music-level">65%</output>
+        </div>
         <div class="setting-group" id="vol-row">
-          <div class="setting-label" data-t="volume">Ses Seviyesi</div>
+          <div class="setting-label" data-t="audio">Ses ve Müzik</div>
           <div class="slider-wrap"><input type="range" id="vol-slider" min="0" max="100" value="70" oninput="updateVol(this.value)"></div>
         </div>
         <div class="setting-group"><div class="setting-label"><span class="setting-mini-icon vibration" aria-hidden="true"></span><span data-t="haptic">Titreşim</span></div>
           <label class="toggle"><input type="checkbox" id="hap-toggle" checked onchange="updateHaptic()"><span class="tog-track"><span class="tog-thumb"></span></span></label>
-        </div>
-      </div>
-      <!-- GÖRÜNÜM kartı -->
-      <div class="set-card">
-        <div class="set-title"><img src="assets/sky-harbor/home.png" alt=""> <span data-t="theme">Tema</span></div>
-        <div class="theme-row">
-          <button class="theme-btn active" id="btn-dark" onclick="setTheme('dark')" data-t="dark">Koyu</button>
-          <button class="theme-btn" id="btn-light" onclick="setTheme('light')" data-t="light">Açık</button>
         </div>
       </div>
       <!-- Tüm ekranlar tek, tutarlı Crown Quest sanat yönetimini kullanır. -->
@@ -955,7 +959,7 @@ setupTitle:'🎮 完善个人资料',setupDesc:'输入信息以出现在世界�
 
 // ── SETTINGS STATE ────────────────────────────────────────────────────────────
 let lang  = localStorage.getItem('tm_lang')  || 'TR';
-let theme = localStorage.getItem('tm_theme') || 'dark';
+let theme = 'dark'; // Single Sky Harbor appearance; legacy theme preferences are ignored.
 let sndOn = localStorage.getItem('tm_snd') !== 'off';
 let musicOn = localStorage.getItem('tm_music') !== 'off';
 let sndVol= parseFloat(localStorage.getItem('tm_vol') || '.7');
@@ -1094,7 +1098,7 @@ function _skyWords(key,values){
   ['purchased',["satın alındı","purchased","購入済み","구매 완료","gekauft","acheté","comprado","acquistato","comprado","куплено","खरीदा गया","gekocht","تم الشراء","已购买"]]
 ].forEach(([key,values])=>_skyWords(key,values));
 
-function t(k){ return (SKY_TEXT[lang]&&SKY_TEXT[lang][k]) || (AUDIO_TEXT[lang]&&AUDIO_TEXT[lang][k]) || (T[lang]&&T[lang][k]) || (SKY_TEXT.EN&&SKY_TEXT.EN[k]) || (AUDIO_TEXT.EN&&AUDIO_TEXT.EN[k]) || (T.EN&&T.EN[k]) || ''; }
+function t(k){ return (HAMMER_TEXT[lang]&&HAMMER_TEXT[lang][k]) || (SKY_TEXT[lang]&&SKY_TEXT[lang][k]) || (AUDIO_TEXT[lang]&&AUDIO_TEXT[lang][k]) || (T[lang]&&T[lang][k]) || HAMMER_TEXT.EN[k] || (SKY_TEXT.EN&&SKY_TEXT.EN[k]) || (AUDIO_TEXT.EN&&AUDIO_TEXT.EN[k]) || (T.EN&&T.EN[k]) || ''; }
 function ts(k,fb){ const v=t(k); return v||fb; }
 
 // ── YÜKLEME + DİL SEÇİMİ AKIŞI ──────────────────────────────────────────────
@@ -1176,6 +1180,7 @@ function applyLang(){
     const v=t(el.getAttribute('data-t-ph'));
     if(v) el.placeholder=v;
   });
+  document.querySelectorAll('[data-t-aria]').forEach(el=>el.setAttribute('aria-label',t(el.getAttribute('data-t-aria'))));
   document.querySelectorAll('.lang-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-lang')===lang));
   localStorage.setItem('tm_lang',lang);
   renderDailyCard();
@@ -1192,12 +1197,10 @@ function applyLang(){
 function setLang(l){lang=l;applyLang();if(typeof syncWallet==='function')syncWallet();}
 
 function applyTheme(){
+  theme='dark';
   document.body.setAttribute('data-theme',theme);
-  document.getElementById('btn-dark').classList.toggle('active',theme==='dark');
-  document.getElementById('btn-light').classList.toggle('active',theme==='light');
   localStorage.setItem('tm_theme',theme);
 }
-function setTheme(v){theme=v;applyTheme();if(typeof syncWallet==='function')syncWallet();}
 
 // ── VIBE (2026-08-12, deneme aşaması) — koyu/açık temadan bağımsız, üzerine
 // binen görsel atmosfer katmanı (Neon Psikedelik, ileride Derin Uzay/Aurora,
@@ -1262,6 +1265,24 @@ function mascotReact(){
 
 // ── SOUND ────────────────────────────────────────────────────────────────────
 let AC=null;
+const _mixValue=(key,fallback)=>{const raw=localStorage.getItem(key),n=raw===null?fallback:Number(raw);return Number.isFinite(n)?Math.max(0,Math.min(1,n)):fallback;};
+let effectsLevel=_mixValue('tm_fx_level',.85),musicLevel=_mixValue('tm_music_level',.65);
+let _musicDuckUntil=0;
+function updateMix(channel,value){
+  const level=Math.max(0,Math.min(100,Number(value)||0))/100;
+  if(channel==='effects'){effectsLevel=level;localStorage.setItem('tm_fx_level',String(level));}
+  else{musicLevel=level;localStorage.setItem('tm_music_level',String(level));}
+  _updateAudioSettingsUI();_setSkyMusicLevel(.1);
+}
+function _harborCue(name,n=1,cm=1){
+  if(!sndOn||document.hidden)return;
+  const a=getAC();if(!a)return;
+  HarborSound.level(a,effectsLevel);
+  HarborSound.play(name,a,sndVol,n,cm);
+  if(['clear','bomb','color','over'].includes(name)){
+    _musicDuckUntil=a.currentTime+.65;_setSkyMusicLevel(.025);
+  }
+}
 function getAC(){if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}return AC;}
 function updateSound(){
   sndOn=document.getElementById('snd-toggle').checked;
@@ -1280,6 +1301,12 @@ function updateMusic(){
 function _updateAudioSettingsUI(){
   const row=document.getElementById('vol-row');
   if(row)row.style.opacity=(sndOn||musicOn)?'1':'.4';
+  for(const[id,value,enabled]of[['fx',effectsLevel,sndOn],['music',musicLevel,musicOn]]){
+    const slider=document.getElementById(id+'-level');
+    if(slider){slider.value=Math.round(value*100);slider.disabled=!enabled;slider.style.setProperty('--pct',slider.value+'%');}
+    const output=document.getElementById(id+'-level-value');if(output)output.value=Math.round(value*100)+'%';
+  }
+  if(AC)HarborSound.level(AC,sndOn?effectsLevel:0);
 }
 function updateVol(v){
   sndVol=v/100;
@@ -1304,112 +1331,41 @@ function updateHaptic(){
 // eklendi: sweep() (perde kayması — whoosh/sihir hissi) ve thump() (hızlı
 // perde düşüşlü bas vuruş — patlama/darbe ağırlığı, gerçek bir "kick drum"
 // gibi). Aşağıdaki tüm playXxx() fonksiyonları bunlarla zenginleştirildi.
-function tone(freq,dur,vol,type='sine',decay=.85){
-  if(!sndOn)return;const a=getAC();if(!a)return;
-  const o=a.createOscillator(),g=a.createGain();
-  o.connect(g);g.connect(a.destination);
-  o.type=type;o.frequency.value=freq;
-  const now=a.currentTime,v=vol*sndVol;
-  g.gain.setValueAtTime(0,now);
-  g.gain.linearRampToValueAtTime(v,now+.006);
-  g.gain.exponentialRampToValueAtTime(.001,now+dur*decay);
-  o.start(now);o.stop(now+dur);
+function _harborSynth(freq,dur,vol,type='sine',end=null){
+  if(!sndOn||sndVol<=0||effectsLevel<=0||document.hidden)return;
+  const a=getAC();if(!a)return;
+  HarborSound.level(a,effectsLevel);
+  HarborSound.synth(a,freq,dur,vol*sndVol,type,end);
 }
-function noise(dur,vol,loFreq=200,hiFreq=2000){
-  if(!sndOn)return;const a=getAC();if(!a)return;
-  const buf=a.createBuffer(1,a.sampleRate*dur,a.sampleRate);
-  const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
-  const src=a.createBufferSource(),bp=a.createBiquadFilter(),g=a.createGain();
-  src.buffer=buf;
-  bp.type='bandpass';bp.frequency.value=(loFreq+hiFreq)/2;bp.Q.value=.8;
-  src.connect(bp);bp.connect(g);g.connect(a.destination);
-  const now=a.currentTime,v=vol*sndVol;
-  g.gain.setValueAtTime(v,now);
-  g.gain.exponentialRampToValueAtTime(.001,now+dur*.7);
-  src.start(now);src.stop(now+dur);
-}
-// Perde kayması (freq1→freq2) — sihirli/"whoosh" hissi (Renk Patlat, sparkle sweep'leri).
-function sweep(freq1,freq2,dur,vol,type='sine'){
-  if(!sndOn)return;const a=getAC();if(!a)return;
-  const o=a.createOscillator(),g=a.createGain();
-  o.connect(g);g.connect(a.destination);
-  o.type=type;
-  const now=a.currentTime,v=vol*sndVol;
-  o.frequency.setValueAtTime(Math.max(freq1,1),now);
-  o.frequency.exponentialRampToValueAtTime(Math.max(freq2,1),now+dur);
-  g.gain.setValueAtTime(0,now);
-  g.gain.linearRampToValueAtTime(v,now+.012);
-  g.gain.exponentialRampToValueAtTime(.001,now+dur);
-  o.start(now);o.stop(now+dur);
-}
-// Hızlı perde-düşüşlü bas vuruş ("kick drum" tarzı) — patlama/darbe ağırlığı için.
-function thump(startFreq,dur,vol){
-  if(!sndOn)return;const a=getAC();if(!a)return;
-  const o=a.createOscillator(),g=a.createGain();
-  o.connect(g);g.connect(a.destination);
-  o.type='sine';
-  const now=a.currentTime,v=vol*sndVol;
-  o.frequency.setValueAtTime(startFreq,now);
-  o.frequency.exponentialRampToValueAtTime(30,now+dur);
-  g.gain.setValueAtTime(v,now);
-  g.gain.exponentialRampToValueAtTime(.001,now+dur);
-  o.start(now);o.stop(now+dur);
-}
+function tone(freq,dur,vol,type='sine',decay=.85){_harborSynth(freq,dur,vol,type);}
+function noise(dur,vol,loFreq=200,hiFreq=2000){_harborSynth('noise',dur,vol,'sine',(loFreq+hiFreq)/2);}
+function sweep(freq1,freq2,dur,vol,type='sine'){_harborSynth(Math.max(1,freq1),dur,vol,type,Math.max(1,freq2));}
+function thump(startFreq,dur,vol){_harborSynth(startFreq,dur,vol,'sine',30);}
 // Seramik karo yerleştirme: hafif "tık" + rezonans
-function playTick(){
-  noise(.07,.095,800,3200);
-  tone(1200,0.09,.07,'sine');
-}
+function playTick(){_harborCue('place');}
 // Satır/sütun temizleme: tatmin edici "çıtır" + melodik ding dizisi + bas darbe
 function playPling(n,cm){
-  noise(.22,.16,300,2200);
-  // Ağırlık: gerçek bas "thump" (çoklu temizlikte daha derin/güçlü)
-  if(n>=2) thump(140+n*10,.3,.17);
-  const base=[880,1100,1320,1540,1760];
-  for(let i=0;i<Math.min(n,5);i++){
-    const f=base[i]*(1+(cm-1)*.05);
-    setTimeout(()=>{
-      tone(f,.24,.14*(1+(cm-1)*.14),'sine');
-      tone(f*2,.16,.06,'sine');
-      tone(f*1.5,.14,.04,'triangle'); // ekstra harmoni — daha zengin/dolgun ton
-    },i*55);
-  }
-  // Yüksek kombo: parlak sparkle + yükselen sihirli sweep
-  if(cm>=5)setTimeout(()=>{
-    tone(2093,.2,.075,'sine');tone(2637,.16,.05,'sine');
-    sweep(1200,2800,.28,.06,'sine');
-  },n*55+40);
-  if(cm>=3)setTimeout(()=>noise(.16,.09,500,2600),n*55+10);
+  _harborCue('clear',n,cm);
 }
 // Oyun bitti: bas darbe + cam kırılması / seramik düşüşü
 function playOver(){
-  thump(160,.5,.15);
-  noise(.4,.18,150,900);
-  tone(320,.5,.09,'sawtooth');
-  setTimeout(()=>tone(220,.4,.06,'sawtooth'),180);
+  _harborCue('over');
 }
 // Bomba: derin bas patlama + gürleme + kıvılcım/döküntü kuyruğu — çok daha büyük ve dolgun
 function playBomb(){
-  thump(90,.55,.24);
-  noise(.55,.3,50,500);
-  setTimeout(()=>{ noise(.3,.17,400,1600); sweep(900,150,.28,.09,'sawtooth'); },90);
-  setTimeout(()=>{ noise(.2,.09,1000,3200); },220); // yüksek frekans kıvılcım kuyruğu
+  _harborCue('bomb');
 }
 // Renk Patlat: sihirli/parlak "whoosh" — bombadan bilinçli olarak farklı karakterde
 // (patlama yerine renkli enerji dalgası hissi), artık playBomb() ile paylaşılmıyor.
 function playColorBlast(){
-  sweep(400,1700,.32,.14,'sine');
-  noise(.32,.16,800,3600);
-  setTimeout(()=>{ tone(1568,.24,.085,'sine'); tone(1976,.2,.06,'sine'); },80);
-  setTimeout(()=>{ noise(.22,.1,1200,4200); },150);
+  _harborCue('color');
 }
 // Zincir reaksiyon bonusu: kısa yükselen pırıltı arpej (önceden hiç sesi yoktu)
 function playChain(){
-  [1568,1976,2349].forEach((f,i)=>setTimeout(()=>tone(f,.18,.07,'sine'),i*45));
-  sweep(1000,2400,.2,.05,'sine');
+  _harborCue('chain');
 }
 // Menü/UI dokunuşu: hafif tık (CLAUDE.md 8.5 — Buton dokunuşu → Light)
-function playTapLight(){tone(700,.05,.045,'sine');}
+function playTapLight(){_harborCue('tap');}
 
 // ── SKY HARBOR MÜZİK — "BULUT ROTASI" ───────────────────────────────────────
 // İlk sürümdeki keskin sinüs zilleri kaldırıldı. Bu özgün 8 ölçülük tema; fiziksel
@@ -1564,6 +1520,7 @@ function _scheduleSkyStep(step,when,scoreDef,mode){
 function _runSkyMusicScheduler(){
   const graph=_skyMusic.graph,scoreDef=SKY_MUSIC_SCORES[_skyMusic.mode];
   if(!graph||!scoreDef)return;
+  if(_musicDuckUntil&&graph.a.currentTime>=_musicDuckUntil){_musicDuckUntil=0;_setSkyMusicLevel(.3);}
   const eighth=(60/scoreDef.bpm)/2,horizon=graph.a.currentTime+.55;
   while(_skyMusic.next<horizon){
     _scheduleSkyStep(_skyMusic.step,_skyMusic.next,scoreDef,_skyMusic.mode);
@@ -1574,7 +1531,7 @@ function _runSkyMusicScheduler(){
 function _setSkyMusicLevel(fade=.35){
   const graph=_skyMusic.graph;if(!graph)return;
   const volume=Number.isFinite(sndVol)?Math.max(0,Math.min(1,sndVol)):.7;
-  const now=graph.a.currentTime,target=musicOn&&!_skyMusic.paused&&_skyMusic.timer?Math.max(.0001,volume*.16):.0001;
+  const now=graph.a.currentTime,target=musicOn&&!_skyMusic.paused&&_skyMusic.timer?Math.max(.0001,volume*musicLevel*.22*(now<_musicDuckUntil?.4:1)):.0001;
   graph.master.gain.cancelScheduledValues(now);
   graph.master.gain.setValueAtTime(Math.max(.0001,graph.master.gain.value),now);
   graph.master.gain.exponentialRampToValueAtTime(target,now+fade);
@@ -1592,7 +1549,7 @@ function _startSkyMusic(mode){
     if(_skyMusic.timer)clearInterval(_skyMusic.timer);
     _skyMusic.timer=null;_skyMusic.mode=mode;_skyMusic.step=0;_skyMusic.next=graph.a.currentTime+.08;
   }
-  if(!_skyMusic.timer){_runSkyMusicScheduler();_skyMusic.timer=setInterval(_runSkyMusicScheduler,120);}
+  if(!_skyMusic.timer){_skyMusic.next=Math.max(_skyMusic.next,graph.a.currentTime+.04);_runSkyMusicScheduler();_skyMusic.timer=setInterval(_runSkyMusicScheduler,120);}
   _setSkyMusicLevel(1.15);
 }
 
@@ -1611,7 +1568,12 @@ function _setSkyMusicScreen(id){
 }
 
 function _setSkyMusicPaused(paused){_skyMusic.paused=!!paused;_syncSkyMusic();}
-function _unlockSkyMusic(){_skyMusic.unlocked=true;_syncSkyMusic();}
+function _unlockSkyMusic(){
+  const first=!_skyMusic.unlocked;_skyMusic.unlocked=true;
+  const a=(sndOn||musicOn)?getAC():null;
+  if(a?.state==='suspended')a.resume().then(()=>_syncSkyMusic()).catch(()=>{});
+  else if(first||(!_skyMusic.timer&&musicOn))_syncSkyMusic();
+}
 
 // Tarayıcıların otomatik oynatma kuralı nedeniyle ilk gerçek kullanıcı etkileşimi
 // ses motorunu açar; sonraki ekran geçişlerinde müzik kendiliğinden devam eder.
@@ -1985,14 +1947,11 @@ function updateMenuAvatar(){
 // gösterir. Böylece yeni görünüm için ayrı bir ekonomi/profil durumu oluşmaz.
 function refreshKingdomHUD(level,pct){
   const coinEl=document.getElementById('kingdom-coins');
-  const gemEl=document.getElementById('kingdom-gems');
   const bestEl=document.getElementById('kingdom-best');
   const levelEl=document.getElementById('kingdom-level');
   const xpEl=document.getElementById('kingdom-xp-fill');
   const coins=parseInt(localStorage.getItem('tm_coins')||'0');
-  const gems=parseInt(localStorage.getItem('tm_gems')||'0');
   if(coinEl)coinEl.textContent=coins.toLocaleString();
-  if(gemEl)gemEl.textContent=gems.toLocaleString();
   if(bestEl)bestEl.textContent=typeof loadStreak==='function'?loadStreak():1;
   const x=typeof getXP==='function'?getXP():0;
   if(level===undefined)level=typeof calcLevel==='function'?calcLevel(x):1;
@@ -2133,7 +2092,7 @@ function dailyReward(streak){
 function rewardStr(r){
   const parts=[];
   if(r.coins) parts.push(`+${r.coins} 🪙`);
-  if(r.bombs) parts.push(`+${r.bombs} 💣`);
+  if(r.bombs) parts.push(`+${r.bombs} ${t('invBombs')}`);
   if(r.undos) parts.push(`+${r.undos} ↩️`);
   return parts.join('  ');
 }
@@ -2273,6 +2232,7 @@ function renderDailyModal(){
 
 function renderDailyCard(){
   const claimed=isTreasureClaimed();
+  updateRewardIndicators();
   const streak=loadStreak();
   const reward=dailyReward(streak);
   const xp=getXP();
@@ -2379,7 +2339,33 @@ function updateMissionCardStatus(state=skyMissionState()){
   const ready=SKY_MISSIONS.filter(m=>(state[m.id]||0)>=m.goal&&!state.claimed[m.id]).length;
   const done=SKY_MISSIONS.filter(m=>state.claimed[m.id]).length;
   el.textContent=ready?t('rewardReadyCount').replace('{n}',ready):done===SKY_MISSIONS.length?t('allRoutesDone'):t('dailyFlightPlan');
+  updateRewardIndicators(state);
 }
+
+// Only earned/unclaimed rewards, never incomplete missions or unread-looking fake counts.
+function updateRewardIndicators(state=skyMissionState()){
+  const missions=SKY_MISSIONS.filter(m=>(state[m.id]||0)>=m.goal&&!state.claimed[m.id]).length;
+  const daily=isTreasureClaimed()?0:1;
+  const mark=(el,count,label,compact=false)=>{
+    if(!el)return;
+    let badge=el.querySelector(':scope > .reward-badge');
+    if(!badge){badge=document.createElement('span');badge.className='reward-badge'+(compact?' reward-badge-compact':'');badge.setAttribute('aria-hidden','true');el.appendChild(badge);}
+    badge.hidden=count===0;badge.textContent='! '+count;
+    el.classList.toggle('reward-ready',count>0);
+    const hint=count?t('rewardReadyCount').replace('{n}',count):'';
+    el.setAttribute('aria-label',label+(hint?' — '+hint:''));
+    if(count)el.setAttribute('title',hint);else el.removeAttribute('title');
+  };
+  mark(document.querySelector('.sky-missions'),missions,t('missions'));
+  mark(document.getElementById('treasure-box'),daily,t('mailbox'));
+  document.querySelectorAll('#menu-nav .btn-menu:first-child,.game-nav button:first-child').forEach(el=>mark(el,missions+daily,t('navHome'),true));
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){updateMissionCardStatus();renderDailyCard();}
+});
+window.addEventListener('storage',e=>{
+  if(e.key==='tm_sky_missions'||e.key==='tm_treasure_date'){updateMissionCardStatus();renderDailyCard();}
+});
 
 function missionTimeLeft(){
   const now=new Date(),end=new Date(now);end.setHours(24,0,0,0);
@@ -4051,22 +4037,33 @@ function doRescue(){
 // Skor sayısı artık anlık sıçramak yerine kısa bir sayaç animasyonuyla akarak
 // yükselir (brief 2026-08-12, "sayı artışları anlık değil, sayaç animasyonuyla
 // akarak yükselir" — Candy Crush/Royal Match hissi).
-let _scoreDispVal=0,_scoreDispRaf=null;
+let _scoreDispVal=0,_scoreDispRaf=null,_scoreTargetVal=0;
+function _setScoreImmediate(v){
+  if(_scoreDispRaf!==null)cancelAnimationFrame(_scoreDispRaf);
+  _scoreDispRaf=null;
+  _scoreDispVal=_scoreTargetVal=v;
+  const el=document.getElementById('scoreDisplay');
+  if(el)el.textContent=Math.round(v).toLocaleString();
+}
 function setScoreDisplay(v){
   const el=document.getElementById('scoreDisplay');
   if(!el)return;
-  const from=_scoreDispVal,to=v,dur=280,t0=performance.now();
-  _scoreDispVal=to;
-  if(_scoreDispRaf) cancelAnimationFrame(_scoreDispRaf);
+  if(_reducedMotion.matches||document.hidden||v<=_scoreDispVal){_setScoreImmediate(v);return;}
+  const from=_scoreDispVal,to=v,dur=Math.min(700,420+Math.sqrt(to-from)*8),t0=performance.now();
+  _scoreTargetVal=to;
+  if(_scoreDispRaf!==null)cancelAnimationFrame(_scoreDispRaf);
   function step(now){
+    if(_reducedMotion.matches||document.hidden){_setScoreImmediate(to);return;}
     const p=Math.min(1,(now-t0)/dur);
-    const eased=1-Math.pow(1-p,3);
-    el.textContent=Math.round(from+(to-from)*eased).toLocaleString();
+    const eased=p*p*(3-2*p);
+    _scoreDispVal=Math.round(from+(to-from)*eased);
+    el.textContent=_scoreDispVal.toLocaleString();
     if(p<1) _scoreDispRaf=requestAnimationFrame(step);
     else _scoreDispRaf=null;
   }
   _scoreDispRaf=requestAnimationFrame(step);
 }
+document.addEventListener('visibilitychange',()=>{if(document.hidden)_setScoreImmediate(_scoreTargetVal);});
 
 // ── GRID HELPERS ──────────────────────────────────────────────────────────────
 function initGrid(){grid=Array.from({length:GRID},()=>new Array(GRID).fill(0));}
@@ -4234,8 +4231,7 @@ function continueGame(){
 
   best=parseInt(localStorage.getItem('tiliq_best')||'0');
   _lastMoveAt=performance.now();
-  _scoreDispVal=score; // Devam Et: bu bir kazanım değil, geri yükleme — animasyonsuz anlık göster
-  document.getElementById('scoreDisplay').textContent=score.toLocaleString();
+  _setScoreImmediate(score); // Restore without replaying a previous round's animation.
   document.getElementById('bestDisplay').textContent=best;
   document.getElementById('comboDisplay').textContent=String(Math.min(combo+1,5));
   document.getElementById('overlay').classList.remove('active');
@@ -4282,6 +4278,7 @@ function resume2Ad(){
 
 // ── OYUN BAŞLATMA ─────────────────────────────────────────────────────────────
 function startGame(){
+  HarborCombo.clear();_harborClearWaves=[];
   clearGameState();
   _boardIdxCur=0;
   initGrid();genPieces();
@@ -4307,8 +4304,7 @@ function startGame(){
   updateBombBar();
   updateColorBlastBtn();
   best=parseInt(localStorage.getItem('tiliq_best')||'0');
-  _scoreDispVal=0;_newBestCelebratedThisGame=false;_lastMoveAt=performance.now();
-  document.getElementById('scoreDisplay').textContent='0';
+  _setScoreImmediate(0);_newBestCelebratedThisGame=false;_lastMoveAt=performance.now();
   document.getElementById('bestDisplay').textContent=best;
   document.getElementById('comboDisplay').textContent='1';
   document.getElementById('overlay').classList.remove('active');
@@ -4430,11 +4426,14 @@ function flashScreen(type,ms=350){
   setTimeout(()=>el.className='',ms);
 }
 
+let _scorePulseTimer=null;
 function punchScore(){
   const el=document.getElementById('scoreDisplay');
+  if(!el||_reducedMotion.matches)return;
+  clearTimeout(_scorePulseTimer);
   el.classList.remove('score-punch');void el.offsetWidth;
   el.classList.add('score-punch');
-  setTimeout(()=>el.classList.remove('score-punch'),450);
+  _scorePulseTimer=setTimeout(()=>el.classList.remove('score-punch'),600);
 }
 
 function spawnSparks(x,y,c,n=14){
@@ -4762,104 +4761,12 @@ function _updateComboFxVisual(active,tier,timerPct){
 }
 
 function _drawSkyWindAura(gx,gy,now){
-  const active=combo>=1&&comboTimeLeft>0;
-  const timerPct=active?comboTimeLeft/COMBO_DURATION:0;
+  const active=combo>=1&&comboTimeLeft>0&&!dead;
+  const life=active?comboTimeLeft/COMBO_DURATION:0;
   const tier=active?(combo>=10?4:combo>=6?3:combo>=3?2:1):0;
-  _updateComboFxVisual(active,tier,timerPct);
-  if(activeComboFxId!=='combo_default'){
-    // Premium DOM efekti seçiliyken eski yan rayları üst üste bindirme. WebGL/tabla
-    // parıltısını çok düşük seviyede tutup asıl görsel dili satın alınan efekte bırak.
-    const customFireTarget=active?0.08:0;
-    _fire.scale+=(customFireTarget-_fire.scale)*.12;
-    _fireTier=tier;
-    _applyBoardGlow(tier);
-    return;
-  }
-  const target=active?Math.min(1,.36+tier*.16):0;
-  _fire.scale+=(target-_fire.scale)*.1;
-  _fireTier=tier;
-  _applyBoardGlow(tier);
-  if(_fire.scale<.01)return;
-  const gs=CELL*GRID,pulse=.88+Math.sin(now*.006)*.12;
-  const energy=_fire.scale*(.72+timerPct*.28);
-  const accent=CLR[(tier+1)%CLR.length]||'#69cce8';
-  ctx.save();
-  ctx.globalCompositeOperation='lighter';
-  ctx.lineCap='round';
-  const rr=(pad,r)=>{
-    ctx.beginPath();
-    if(ctx.roundRect)ctx.roundRect(gx-pad,gy-pad,gs+pad*2,gs+pad*2,r);
-    else ctx.rect(gx-pad,gy-pad,gs+pad*2,gs+pad*2);
-  };
-  ctx.globalAlpha=energy*.66*pulse;
-  ctx.strokeStyle='#6fd6ef';ctx.lineWidth=4+tier*1.15;
-  ctx.setLineDash([18,12]);ctx.lineDashOffset=-(now*.045*(1+tier*.2));rr(5,16);ctx.stroke();
-  ctx.globalAlpha=energy*.68;
-  ctx.strokeStyle='#f4d58e';ctx.lineWidth=1.5+tier*.45;
-  ctx.setLineDash([5,17]);ctx.lineDashOffset=now*.032;rr(9,20);ctx.stroke();
-  ctx.setLineDash([]);
-  // Tahtanın iki yanında görünür enerji rayları ve mini türbin düğümleri.
-  const railTop=gy+14,railBottom=gy+gs-14,railInset=9;
-  for(const side of [-1,1]){
-    const x=side<0?gx+railInset:gx+gs-railInset;
-    ctx.globalCompositeOperation='source-over';
-    ctx.globalAlpha=energy*.9;
-    ctx.strokeStyle='rgba(3,39,67,.94)';ctx.lineWidth=11+tier*1.3;
-    ctx.beginPath();ctx.moveTo(x,railTop);ctx.lineTo(x,railBottom);ctx.stroke();
-    ctx.globalCompositeOperation='lighter';
-    ctx.globalAlpha=energy*.42*pulse;
-    ctx.strokeStyle='#69cce8';ctx.lineWidth=9+tier*1.5;
-    ctx.beginPath();ctx.moveTo(x,railTop);ctx.lineTo(x,railBottom);ctx.stroke();
-    ctx.globalCompositeOperation='source-over';
-    ctx.globalAlpha=Math.min(1,energy*.98);
-    ctx.strokeStyle=side<0?'#9af0f7':accent;ctx.lineWidth=2.8+tier*.42;
-    ctx.setLineDash([11,8]);ctx.lineDashOffset=(side<0?-1:1)*now*.07;
-    ctx.beginPath();ctx.moveTo(x,railTop);ctx.lineTo(x,railBottom);ctx.stroke();
-    ctx.setLineDash([]);
-    const nodes=Math.min(4,2+tier);
-    for(let n=0;n<nodes;n++){
-      const y=railTop+(railBottom-railTop)*(n+.5)/nodes;
-      const a=now*.008*(side<0?-1:1)+n;
-      const nodeR=6+tier*.7;
-      ctx.globalCompositeOperation='lighter';ctx.globalAlpha=energy*.4;
-      ctx.fillStyle='#69d5ec';ctx.beginPath();ctx.arc(x,y,nodeR+4,0,Math.PI*2);ctx.fill();
-      ctx.globalCompositeOperation='source-over';ctx.globalAlpha=Math.min(1,energy*1.08);
-      ctx.fillStyle='#062f50';ctx.strokeStyle=side<0?'#9af0f7':'#f4d58e';ctx.lineWidth=2;
-      ctx.beginPath();ctx.arc(x,y,nodeR,0,Math.PI*2);ctx.fill();ctx.stroke();
-      ctx.strokeStyle='#b8f5fa';ctx.lineWidth=1.6;
-      ctx.beginPath();
-      for(let blade=0;blade<4;blade++){
-        const ba=a+blade*Math.PI/2;
-        ctx.moveTo(x+Math.cos(ba)*1.4,y+Math.sin(ba)*1.4);
-        ctx.lineTo(x+Math.cos(ba)*(nodeR-1),y+Math.sin(ba)*(nodeR-1));
-      }
-      ctx.stroke();
-      ctx.fillStyle=side<0?'#f4d58e':'#9af0f7';ctx.beginPath();ctx.arc(x,y,1.8,0,Math.PI*2);ctx.fill();
-    }
-  }
-  ctx.globalCompositeOperation='lighter';
-  // Köşelerde pervane akış halkaları.
-  const corners=[[gx,gy],[gx+gs,gy],[gx,gy+gs],[gx+gs,gy+gs]];
-  for(let i=0;i<corners.length;i++){
-    const [x,y]=corners[i],a=now*.004*(i%2?1:-1);
-    ctx.globalAlpha=energy*.68;
-    ctx.strokeStyle=i%2?'#fff6d9':'#7de0f2';ctx.lineWidth=2.2;
-    ctx.beginPath();ctx.arc(x,y,8+tier*2,a,a+Math.PI*1.25);ctx.stroke();
-  }
-  ctx.restore();ctx.globalAlpha=1;
-  if(active&&now-_cellFireT>Math.max(55,120-tier*15)&&sparks.length<(_FIRE_MOBILE?65:110)){
-    _cellFireT=now;
-    const n=tier+1;
-    for(let i=0;i<n;i++){
-      const edge=(Math.random()*4)|0;
-      let x,y,vx,vy;
-      if(edge===0){x=gx+Math.random()*gs;y=gy;vx=(Math.random()-.5)*1.6;vy=-1.2-Math.random()*1.6;}
-      else if(edge===1){x=gx+gs;y=gy+Math.random()*gs;vx=1.2+Math.random()*1.6;vy=(Math.random()-.5)*1.6;}
-      else if(edge===2){x=gx+Math.random()*gs;y=gy+gs;vx=(Math.random()-.5)*1.6;vy=1.2+Math.random()*1.6;}
-      else{x=gx;y=gy+Math.random()*gs;vx=-1.2-Math.random()*1.6;vy=(Math.random()-.5)*1.6;}
-      sparks.push({x,y,vx,vy,a:.9,c:i%3===2?'#f4d58e':i%2?accent:'#8fe6f4',sz:1.4+Math.random()*1.8,type:i%2?'streak':'dot',fade:.022});
-    }
-  }
+  _updateComboFxVisual(active,tier,life);
+  _fire.scale=active?.08:0;_fireTier=tier;_applyBoardGlow(tier);
+  if(activeComboFxId==='combo_default')HarborCombo.aura(ctx,gx,gy,CELL*GRID,now,active?combo:0,life,_reducedMotion.matches,_LOW_FX);
 }
 
 function _drawCellFire(gx,gy,now){
@@ -5165,14 +5072,14 @@ function perfectClear(){
   playPerfect();
 }
 function playPerfect(){
-  if(!sndOn)return;
-  const notes=[523,659,784,1047,1319]; // C-E-G-C-E yükselen zafer
-  notes.forEach((f,i)=>setTimeout(()=>{tone(f,.35,.11,'sine');tone(f*2,.2,.045,'sine');},i*95));
-  noise(.25,.14,300,2600);
+  _harborCue('perfect');
 }
 
 // Satır/sütun temizleme efekti — satır yatay, sütun dikey
 function spawnLineClear(cells, clearRows, clearCols, comboMult){
+  HarborCombo.trigger(comboMult,t('combo'),performance.now());
+  _harborClearWaves.push({at:performance.now(),lines:[...clearRows.map(r=>[r,null]),...clearCols.map(c=>[null,c])]});
+  if(_harborClearWaves.length>3)_harborClearWaves.shift();
   const tot=clearRows.length+clearCols.length;
   const isMulti=tot>=2;
   flashScreen(comboMult>=3?'combo':'line',350);
@@ -5692,6 +5599,45 @@ function drawMini(cells,ci,ox,oy,cs,alpha){
 }
 
 // Rastgele dolu bir taşın üzerinden kayan çapraz ışık şeridi — "yaşayan mücevher" hissi
+const _reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+let _harborClearWaves=[];
+function _drawHarborPlacement(gx,gy,pre,valid,now){
+  if(!pre.size)return;
+  ctx.save();ctx.strokeStyle=valid?'#0d4a7b':'#ff4054';ctx.lineWidth=1.6;
+  ctx.setLineDash(valid?[4,3]:[2,3]);
+  for(const key of pre){
+    const[r,c]=key.split(',').map(Number);
+    if(r<0||r>=GRID||c<0||c>=GRID)continue;
+    rrect(gx+c*CELL+3,gy+r*CELL+3,CELL-6,CELL-6,5,null,ctx.strokeStyle,1.6);
+  }
+  ctx.setLineDash([]);
+  if(valid){
+    const filled=(r,c)=>grid[r][c]||pre.has(`${r},${c}`);
+    ctx.globalAlpha=_reducedMotion.matches?.8:.7+Math.sin(now*.005)*.13;
+    for(let i=0;i<GRID;i++){
+      if(grid[i].every((_,c)=>filled(i,c)))rrect(gx+1,gy+i*CELL+1,GRID*CELL-2,CELL-2,5,'rgba(248,226,170,.17)','#8a5422',2.5);
+      if(grid.every((_,r)=>filled(r,i)))rrect(gx+i*CELL+1,gy+1,CELL-2,GRID*CELL-2,5,'rgba(248,226,170,.17)','#8a5422',2.5);
+    }
+  }
+  ctx.restore();
+}
+function _drawHarborClearWaves(now){
+  _harborClearWaves=_harborClearWaves.filter(w=>now-w.at<440);
+  if(_reducedMotion.matches)return;
+  const gx=GOX(),gy=GOY,span=CELL*GRID;
+  ctx.save();ctx.beginPath();ctx.rect(gx,gy,span,span);ctx.clip();
+  for(const wave of _harborClearWaves){
+    const p=(now-wave.at)/440;ctx.globalAlpha=Math.sin(p*Math.PI)*.8;
+    for(const[r,c]of wave.lines){
+      const vertical=c!==null,center=p*span,width=CELL*.72;
+      const x=vertical?gx+c*CELL:gx+center-width,y=vertical?gy+center-width:gy+r*CELL;
+      const gradient=ctx.createLinearGradient(x,y,vertical?x:x+width*2,vertical?y+width*2:y);
+      gradient.addColorStop(0,'rgba(255,246,229,0)');gradient.addColorStop(.5,'#fff6e5');gradient.addColorStop(1,'rgba(112,198,233,0)');
+      ctx.fillStyle=gradient;ctx.fillRect(x,y,vertical?CELL:width*2,vertical?width*2:CELL);
+    }
+  }
+  ctx.restore();
+}
 let _glint=null,_glintNext=0;
 function _drawGlint(gx,gy,now){
   if(!_glint&&now>=_glintNext){
@@ -5840,6 +5786,7 @@ function drawBoard(now){
 
   // Hücreler çizildikten sonra hedef alanı üst katmanda göster; böylece taşlar
   // vurguyu örtemez ve etki bölgesi ilk bakışta okunur.
+  _drawHarborPlacement(gx,gy,pre,preOK,now);
   _drawBombTargetPreview(gx,gy,now);
 
   // İpucu parıltısı (brief madde 4, 2026-08-12): uzun süre hamle yapılmazsa
@@ -5869,7 +5816,7 @@ function drawBoard(now){
     // parça hemen "oturmuş" hissi veriyor, bir sonraki hamle beklemeden yapılabiliyor
     // (mantık zaten anındaydı, bu sadece görsel gecikme hissini azaltıyor).
     const el=now-bounce.t0;
-    if(el<170){
+    if(el<170&&!_reducedMotion.matches){
       const sc=1+.13*Math.sin((el/170)*Math.PI);
       for(const[r,c]of bounce.cells){
         const ci=grid[r][c];if(!ci)continue;
@@ -5923,9 +5870,13 @@ function drawTray(){
     }
 
     if(!l.p.placed){
+      const arrival=HarborMotion.arrival(l.p,now2);
+      const b=bounds(l.p.shape.cells),cx=l.x+b.cols*l.mc/2,cy=l.y+b.rows*l.mc/2;
+      ctx.save();
+      ctx.translate(cx,cy+(1-arrival)*5);ctx.scale(.96+.04*arrival,.96+.04*arrival);ctx.translate(-cx,-cy);
       // Döndürme pulse animasyonu
       const dt=now2-(l.p.rotT||0),animDur=260;
-      if(dt<animDur){
+      if(dt<animDur&&!HarborMotion.minimal()){
         const t=dt/animDur;
         const scale=1+0.18*Math.sin(Math.PI*t);
         const b2=bounds(l.p.shape.cells);
@@ -5936,6 +5887,13 @@ function drawTray(){
         ctx.restore();
       } else {
         drawMini(l.p.shape.cells,l.p.ci,l.x,l.y,l.mc,kingdom?1:(sel?1:.72));
+      }
+      ctx.restore();
+      if(sel&&kingdom){
+        ctx.save();ctx.strokeStyle='#f8e2aa';ctx.lineWidth=2;ctx.lineCap='round';
+        const w=l.sw*.24,center=l.sx+l.sw*.5;
+        ctx.globalAlpha=HarborMotion.minimal()?1:.7+Math.sin(now2*.004)*.2;
+        ctx.beginPath();ctx.moveTo(center-w/2,l.ty+TRAY()-9);ctx.lineTo(center+w/2,l.ty+TRAY()-9);ctx.stroke();ctx.restore();
       }
     } else {
       ctx.save();ctx.globalAlpha=.22;ctx.fillStyle='#6BCB77';
@@ -5991,7 +5949,7 @@ function _drawSkyVfxIcon(icon,x,y,r,accent,age){
   ctx.restore();
 }
 
-// Satır/sütun puanı: önceki büyük kartın yerine 0.7 sn görünen küçük gösterge.
+// Satır/sütun puanı: 1.1 saniyelik, yumuşak yükselen küçük gösterge.
 function _drawSkyLineScore(f,age,ease){
   const h=Math.max(27,Math.min(32,CELL*.6)),hasCombo=f.combo>1;
   const w=hasCombo?Math.max(104,CELL*2.05):Math.max(78,CELL*1.52);
@@ -6053,15 +6011,16 @@ function drawFloats(){
     const pop=_popEase(Math.min(1,age/160)); // klasik bildirimler için juicy pop
     const skyEase=1-Math.pow(1-Math.min(1,age/120),3);
     ctx.save();ctx.globalAlpha=f.a;
-    if(f.kind==='lineScore'){
-      _drawSkyLineScore(f,age,skyEase);
+    if(f.kind==='lineScore'||f.kind==='scoreTick'){
+      if(f._originY===undefined)f._originY=f.y;
+      const progress=Math.min(1,age/1100);
+      const settle=1-Math.pow(1-Math.min(1,age/300),3);
+      f.y=f._originY-(_reducedMotion.matches?0:14*(1-Math.pow(1-progress,2)));
+      f.a=age>=1100?0:Math.max(.001,Math.min(1,age/100)*Math.min(1,(1100-age)/450));
+      ctx.globalAlpha=f.a;
+      if(f.kind==='lineScore')_drawSkyLineScore(f,age,_reducedMotion.matches?1:settle);
+      else _drawSkyScoreTick(f,age,_reducedMotion.matches?1:settle);
       ctx.restore();
-      f.y+=f.vy;f.a-=f.fade||.025;
-      continue;
-    }
-    if(f.kind==='scoreTick'){
-      _drawSkyScoreTick(f,age,skyEase);
-      ctx.restore();f.y+=f.vy;f.a-=f.fade||.025;
       continue;
     }
     if(f.kind==='skyTag'){
@@ -6205,7 +6164,10 @@ function drawDrag(){
 function draw(){
   const now=performance.now();
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  const _sparksCap=_FIRE_MOBILE?80:140; // mobilde partikül tavanı düşürüldü ("Android'de kasıyor" raporu, 2026-07-08)
+  const particleBudget=(_LOW_FX||_reducedMotion.matches)?30:100;
+  const flameBudget=Math.min(_fireCap,Math.floor(particleBudget*.3));
+  if(flames.length>flameBudget)flames.splice(0,flames.length-flameBudget);
+  const _sparksCap=particleBudget-flames.length;
   if(sparks.length>_sparksCap)sparks.splice(0,sparks.length-_sparksCap);
   if(shockwaves.length>12)shockwaves.splice(0,shockwaves.length-12);
   if(floats.length>10)floats.splice(0,floats.length-10);
@@ -6214,7 +6176,8 @@ function draw(){
   tickComboTimer(now);
   // Oyun alanı önce çizilir; darbe/enerji katmanı onun üstüne gelir. Eski sıra
   // efektleri hücre zeminlerinin arkasında bırakıyor, yalnızca yazıyı görünür kılıyordu.
-  drawBoard(now);drawShockwaves();drawSparks();drawFlames(now);drawDrag();drawTray();drawFloats();drawCelebrations(now);
+  drawBoard(now);_drawHarborClearWaves(now);drawShockwaves();drawSparks();drawFlames(now);drawDrag();drawTray();drawFloats();drawCelebrations(now);
+  if(!dead&&!bombMode&&!colorBlastMode)HarborCombo.announce(ctx,GOX(),GOY,CELL*GRID,now,_reducedMotion.matches);
   _renderFireGL(now); // WebGL ateş katmanı (aktifse)
   if(!_fireGLOK && combo>=10 && comboTimeLeft>0)_drawInfernoFlash(now); // fallback: 2D beyaz-altın flash
 }
@@ -6419,6 +6382,7 @@ function showScreen(id){
 // yol açtı (ADAPTIVE_BANNER tekrar yüklenirken bazen geri gelmiyordu). DÜZELTME: banner
 // artık HİÇ kapatılmıyor — çakışma `.modal-card`'ın `--banner-h` CSS değişkeni kadar alt
 // boşluk almasıyla (bkz. _setBannerSpacers) çözülüyor, banner sürekli açık kalıyor.
+let _friendModalReturn=null,_friendLBInert=false;
 function showModal(id){
   playTapLight();vibrate(10);
   if(id==='account'){openAccountModal();syncMyCodeUI();}
@@ -6427,14 +6391,36 @@ function showModal(id){
   if(id==='missions'){renderMissionModal();}
   if(id==='settings'&&typeof _updateAdPrivacyUI==='function')_updateAdPrivacyUI();
   document.getElementById('modal-'+id).classList.add('active');
+  if(id==='add-friend'){
+    if(!_friendModalReturn){
+      _friendModalReturn=document.activeElement;
+      const lb=document.getElementById('lb-panel');_friendLBInert=lb.inert;lb.inert=true;
+    }
+    const modal=document.getElementById('modal-add-friend');
+    modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label',t('addFriend'));
+    modal.querySelector('.modal-head button').focus({preventScroll:true});
+  }
 }
 function hideModal(id){
   document.getElementById('modal-'+id).classList.remove('active');
   if(id==='add-friend'){
+    document.getElementById('lb-panel').inert=_friendLBInert;
     renderFriendsLB();
-    setLBTab('friends');
+    if(isLoggedIn())setLBTab('friends');
+    const returnTo=_friendModalReturn;_friendModalReturn=null;
+    if(returnTo?.isConnected)returnTo.focus({preventScroll:true});
   }
 }
+document.addEventListener('keydown',e=>{
+  const modal=document.getElementById('modal-add-friend');
+  if(!modal?.classList.contains('active'))return;
+  if(e.key==='Escape'){e.preventDefault();hideModal('add-friend');return;}
+  if(e.key!=='Tab')return;
+  const focusable=[...modal.querySelectorAll('button:not(:disabled),input:not(:disabled),a[href],[tabindex="0"]')].filter(el=>el.getClientRects().length);
+  const first=focusable[0],last=focusable.at(-1);if(!first)return;
+  if(e.shiftKey&&(document.activeElement===first||!modal.contains(document.activeElement))){e.preventDefault();last.focus();}
+  else if(!e.shiftKey&&(document.activeElement===last||!modal.contains(document.activeElement))){e.preventDefault();first.focus();}
+});
 function bgClick(e){if(e.target===document.getElementById('lb-panel'))toggleLB();}
 
 // ── MAĞAZA ───────────────────────────────────────────────────────────────────
@@ -6536,8 +6522,8 @@ function applyComboFx(id,shouldSync=true){
 }
 
 const STORE_POWERUPS=[
-  {id:'bomb3',name:'3 Bomba',icon:'hammer.png',pack:'3×',tone:'coral',coins:500,desc:'Sıkışınca işe yarar',action:()=>addInventory('bombs',3)},
-  {id:'bomb10',name:'10 Bomba',icon:'hammer.png',pack:'10×',tone:'gold',tag:'%25 AVANTAJ',coins:950,desc:'Büyük stok — %25 indirim',action:()=>addInventory('bombs',10)},
+  {id:'bomb3',name:'3 Çekiç',icon:'hammer.png',pack:'3×',tone:'coral',coins:500,desc:'Sıkışınca işe yarar',action:()=>addInventory('bombs',3)},
+  {id:'bomb10',name:'10 Çekiç',icon:'hammer.png',pack:'10×',tone:'gold',tag:'%25 AVANTAJ',coins:950,desc:'Büyük stok — %25 indirim',action:()=>addInventory('bombs',10)},
   {id:'xp2',name:'2× XP (1 Oyun)',icon:'propeller.png',pack:'2×',tone:'cyan',coins:350,desc:'Sonraki oyunda çift XP',action:()=>activateXPBoost()},
   {id:'colorblast1',name:'Renk Patlat',icon:'refresh.png',pack:'1×',tone:'violet',coins:1400,desc:'Herhangi bir rengi tahtadan komple siler',
     canBuy:()=>getColorBlast()<COLOR_BLAST_MAX,
@@ -6589,7 +6575,7 @@ function addInventory(type,n){
   const cur=parseInt(localStorage.getItem(k)||'0');
   localStorage.setItem(k,String(cur+n));
   if(typeof syncWallet==='function') syncWallet();
-  showCelebration(`+${n} ${type==='bombs'?'💣':'↩️'} ${t('pwAdded')}`,'#6BCB77');
+  showCelebration(type==='bombs'?`+${n} ${t('invBombs')}`:`+${n} ↩️ ${t('pwAdded')}`,'#6BCB77');
 }
 let xpBoostNext=false;
 function activateXPBoost(){xpBoostNext=true;localStorage.setItem('tm_xp_boost','1');showCelebration(t('xpBoostAct'),'#FFD93D');}
@@ -8282,7 +8268,7 @@ async function _firestoreSync(uid,_isRetry){
       if(typeof d.vol==='number'){const nv=d.vol/100;if(nv!==sndVol){sndVol=nv;localStorage.setItem('tm_vol',String(sndVol));}}
       if(typeof d.hapticOn==='boolean' && d.hapticOn!==hapOn){hapOn=d.hapticOn;localStorage.setItem('tm_hap',hapOn?'on':'off');}
       if(d.lang && d.lang!==lang){lang=d.lang;applyLang();}
-      if(d.uiTheme && d.uiTheme!==theme){theme=d.uiTheme;applyTheme();}
+      // Legacy cloud light/dark preference no longer changes the fixed art direction.
       // Ekrandaki ses/titreşim toggle'larını taze değerle senkronla (Ayarlar açıksa)
       {const st2=document.getElementById('snd-toggle');if(st2)st2.checked=sndOn;
        const mt2=document.getElementById('music-toggle');if(mt2)mt2.checked=musicOn;
