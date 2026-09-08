@@ -15,6 +15,7 @@ const shouldCommit = args.includes('--commit');
 const shouldVerify = args.includes('--verify');
 const shouldShowStatus = args.includes('--status');
 const shouldUploadBrandAssets = args.includes('--brand-assets');
+const metadataOnly = args.includes('--metadata-only');
 
 if (!credentialsPath) {
   throw new Error('Pass --credentials <service-account.json> or set GOOGLE_APPLICATION_CREDENTIALS.');
@@ -238,6 +239,7 @@ try {
     for (const [localeIndex, locale] of locales.entries()) {
       const localeBase = `${API_ROOT}/${appPath}/edits/${encodeURIComponent(editId)}/listings/${encodeURIComponent(locale.language)}`;
       await request('PUT', localeBase, { body: locale.listing });
+      if(metadataOnly){console.log(`[${localeIndex+1}/${locales.length}] ${locale.language}: listing updated; screenshots retained.`);continue;}
       await request('DELETE', `${localeBase}/phoneScreenshots`);
 
       for (const screenshotPath of locale.screenshots) {

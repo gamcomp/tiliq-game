@@ -9,7 +9,7 @@ COMMENT JOUER
 • La partie se termine lorsqu'aucune pièce ne peut être placée
 
 COMBOS ET POUVOIRS
-Faites monter votre combo avec des coups bien pensés pour gagner davantage de points. Quand le plateau se resserre, utilisez une Marteau pour nettoyer une zone 3×3, dépensez deux marteaux pour activer une Super Marteau qui libère une ligne et une colonne, ou lancez Explosion Couleur pour retirer tous les blocs d'une couleur choisie. Le Sauvetage vous offre une nouvelle chance.
+Faites monter votre combo avec des coups bien pensés pour gagner davantage de points. Quand le plateau se resserre, utilisez un Marteau pour nettoyer une zone 3×3, dépensez deux marteaux pour activer un Super Marteau qui libère une ligne et une colonne, ou lancez Explosion Couleur pour retirer tous les blocs d'une couleur choisie. Le Sauvetage vous offre une nouvelle chance.
 
 UN NOUVEAU VOL CHAQUE JOUR
 Entretenez votre série de récompenses sur sept jours et terminez trois missions renouvelées quotidiennement : réaliser des combos, effacer des lignes et atteindre le score demandé. Récupérez des pièces et des pouvoirs.

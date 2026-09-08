@@ -172,14 +172,8 @@ workflows:
     name: Tiliq App Store Metadata
     max_build_duration: 45
     instance_type: mac_mini_m2
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
-          source: true
-      cancel_previous_builds: false
+    # Manual only: binary release CI owns current-version metadata. Do not
+    # overwrite an older App Store version automatically on every metadata push.
     when:
       changeset:
         includes:
@@ -191,7 +185,7 @@ workflows:
     environment:
       vars:
         BUNDLE_ID: com.tiliq.game
-        APP_VERSION: 1.3.88
+        APP_VERSION: 1.3.91
       xcode: latest
     scripts:
       - name: Stage and verify localized App Store assets
