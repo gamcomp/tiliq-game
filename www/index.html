@@ -2170,7 +2170,7 @@ function isTreasureClaimed(){
 // için tekrar reklam izletmek adil olmaz, ödül direkt verilir.
 function claimTreasure(sourceEl){
   if(isTreasureClaimed()) return;
-  if(isNoAds()){ _grantTreasureReward(sourceEl); return; }
+  if(isNoAds()||!adServiceAvailable()){ _grantTreasureReward(sourceEl); return; }
   const btn=sourceEl||document.getElementById('tb-cta')||document.getElementById('dr-claim-btn');
   const _resetBtn=()=>{if(btn){btn.disabled=false;if(btn.dataset._origHtml)btn.innerHTML=btn.dataset._origHtml;}};
   if(btn){btn.disabled=true;btn.dataset._origHtml=btn.innerHTML;btn.innerHTML=`<span class="ui-video-icon" aria-hidden="true"></span><span>${t('adLoading')}</span>`;}
@@ -2258,7 +2258,7 @@ function renderDailyModal(){
   const ctaHtml=claimed
     ? `<button class="dr-cta-big" disabled>${t('dailyClaimedToday')}</button>
        <div class="dr-next-preview"><span class="ui-clock-icon" aria-hidden="true"></span><span>${t('tomorrow')}</span>${rewardChips(dailyReward(streak+1))}</div>`
-    : `<button class="dr-cta-big" id="dr-claim-btn" onclick="claimTreasure(this)">${isNoAds()?'':'<span class="ui-video-icon" aria-hidden="true"></span>'}<span>${t('dailyCollect')}</span><span class="dr-cta-reward">${rewardChips(todayReward)}</span></button>`;
+    : `<button class="dr-cta-big" id="dr-claim-btn" onclick="claimTreasure(this)">${isNoAds()||!adServiceAvailable()?'':'<span class="ui-video-icon" aria-hidden="true"></span>'}<span>${t('dailyCollect')}</span><span class="dr-cta-reward">${rewardChips(todayReward)}</span></button>`;
 
   body.innerHTML=`
     <div class="dr-hero">
@@ -3148,6 +3148,11 @@ const ADMOB_REWARDED_ID=_isIOS?'ca-app-pub-1366817286080705/8274070242':'ca-app-
 const ADMOB_INTERSTITIAL_ID=_isIOS?'ca-app-pub-1366817286080705/2069991062':'ca-app-pub-1366817286080705/5666042603';
 // Gerçek banner ad unit ID (com.tiliq.game)
 const ADMOB_BANNER_ID=_isIOS?'ca-app-pub-1366817286080705/7286658728':'ca-app-pub-1366817286080705/5782005360';
+// AdMob hesabı 2026-09-08 tarihinde devre dışı bırakıldı. Hesap yeniden
+// etkinleştirilene kadar SDK'ya istek göndermeyip reklamla açılan oyun içeriğini
+// ücretsiz geçiriyoruz; böylece oyuncu "reklam hazır değil" ekranında kilitlenmez.
+const ADMOB_ACCOUNT_ACTIVE=false;
+function adServiceAvailable(){return ADMOB_ACCOUNT_ACTIVE;}
 let _adCb=null,_adTick=null,_adUnavailableCb=null,_admobListeners=[],_bannerListeners=[];
 let _interReady=false,_interPreparing=false,_fullScreenAdOpen=false,_lastInterstitialAt=0;
 // Banner artık oyun içinde de gösteriliyor (kullanıcı isteği, 2026-07-09) — önceden
@@ -3224,7 +3229,7 @@ async function _installBannerListeners(AdMob){
 // ── BANNER (alt şerit — menü VE oyun ekranında, tepsi/HUD ile çakışmaz) ──────
 async function showBanner(){
   _bannerDesired=true;
-  if(!BANNER_ENABLED||isNoAds())return;
+  if(!adServiceAvailable()||!BANNER_ENABLED||isNoAds())return;
   const AdMob=_getAdMob();
   if(!AdMob||!_adMobReady||!_adsCanRequest)return;
   if(_bannerState==='loading'||_bannerState==='shown')return;
@@ -3264,7 +3269,7 @@ window.addEventListener('online',()=>{if(_screenWantsBanner()){_bannerDesired=tr
 // ── INTERSTITIAL (tam ekran, oyun bitişinde) ─────────────────────────────────
 async function _prepareInterstitial(){
   const AdMob=_getAdMob();
-  if(!AdMob||!_adMobReady||!_adsCanRequest||isNoAds()||_interReady||_interPreparing)return;
+  if(!adServiceAvailable()||!AdMob||!_adMobReady||!_adsCanRequest||isNoAds()||_interReady||_interPreparing)return;
   _interPreparing=true;
   try{
     await Promise.race([
@@ -3276,7 +3281,7 @@ async function _prepareInterstitial(){
   finally{_interPreparing=false;}
 }
 async function showInterstitial(){
-  if(isNoAds()||!_adsCanRequest||_fullScreenAdOpen||Date.now()-_lastInterstitialAt<90000)return;
+  if(!adServiceAvailable()||isNoAds()||!_adsCanRequest||_fullScreenAdOpen||Date.now()-_lastInterstitialAt<90000)return;
   const AdMob=_getAdMob();
   if(!AdMob||!_adMobReady)return;
   try{
@@ -3326,6 +3331,12 @@ async function _resumeBannerAfterForeground(){
 }
 
 async function initAdMob(){
+  if(!adServiceAvailable()){
+    const AdMob=_getAdMob();
+    if(_isIOS&&AdMob)await _resolveIosTrackingAuthorization(AdMob);
+    await initFirebaseAnalytics();
+    return;
+  }
   if(_adMobInitPromise)return _adMobInitPromise;
   if(_adMobReady)return;
   const AdMob=_getAdMob();
@@ -3427,6 +3438,7 @@ let _rewardReady=false,_rewardPreparing=false,_rewardFlowActive=false,_rewardPre
 const REWARDED_LOAD_TIMEOUT_MS=20000;
 const REWARDED_LOAD_ATTEMPTS=2;
 async function _prepareRewardedAd(){
+  if(!adServiceAvailable())return false;
   const AdMob=_getAdMob();
   if(_rewardReady)return true;
   if(!AdMob||!_adMobReady||!_adsCanRequest)return false;
@@ -3544,6 +3556,11 @@ function continueAfterUnavailable(){
 }
 
 async function showRewardedAd(onRewarded,meta){
+  if(!adServiceAvailable()){
+    logEvent('ad_reward_fallback',{ad_format:'rewarded',context:meta&&meta.kind||'default',reason:'account_disabled'});
+    if(typeof onRewarded==='function')onRewarded();
+    return;
+  }
   if(_rewardFlowActive||_fullScreenAdOpen)return;
   _rewardFlowActive=true;
   _showAdOverlay(meta||adContext('default'),'loading');
@@ -3754,7 +3771,7 @@ function activateBomb(type='normal'){
     _showBombTargetBar();
   };
   // Her bomba kullanımında reklam izlet (VIP/reklamsız kullanıcılar hariç)
-  if(isNoAds()) _enter();
+  if(isNoAds()||!adServiceAvailable()) _enter();
   else showRewardedAd(_enter,adContext('bomb'));
 }
 
@@ -3938,7 +3955,7 @@ function activateColorBlast(){
     updateColorBlastBtn();
   };
   // Her kullanımda reklam izlet (VIP/reklamsız kullanıcılar hariç) — bombayla aynı desen
-  if(isNoAds()) _enterMode();
+  if(isNoAds()||!adServiceAvailable()) _enterMode();
   else showRewardedAd(_enterMode,adContext('color'));
 }
 
@@ -5296,6 +5313,10 @@ function showOver(){
   const canContinue=!(_rescueShownThisGame||_r2adUsedThisGame);
   const cp=document.getElementById('continue-prompt');
   const grb=document.getElementById('go-reward-btn');
+  const adsRequired=adServiceAvailable()&&!isNoAds();
+  const adNote=cp&&cp.querySelector('.continue-ad-note');if(adNote)adNote.style.display=adsRequired?'':'none';
+  const yesIcon=cp&&cp.querySelector('.cp-yes .ui-video-icon');if(yesIcon)yesIcon.style.display=adsRequired?'':'none';
+  const yesLabel=cp&&cp.querySelector('.cp-yes [data-t="watchAd"]');if(yesLabel)yesLabel.textContent=t(adsRequired?'watchAd':'continueFlight');
   if(canContinue){
     if(cp) cp.style.display='block';
     if(grb) grb.style.display='none';
@@ -5340,15 +5361,17 @@ function _setupScoreReward(s){
   const btn=document.getElementById('go-reward-btn');
   const sub=document.getElementById('go-reward-sub');
   const badge=document.getElementById('go-reward-badge');
+  const rewardIcon=btn&&btn.querySelector('.r2-icon');
   if(btn) btn.classList.remove('claimed');
-  if(sub) sub.textContent=t('scoreRewardSub');
+  if(sub) sub.textContent=t(adServiceAvailable()&&!isNoAds()?'scoreRewardSub':'dailyCollect');
+  if(rewardIcon) rewardIcon.style.display=adServiceAvailable()&&!isNoAds()?'':'none';
   if(badge) badge.innerHTML='<img src="assets/sky-harbor/coin.png" alt=""><span>+'+_pendingScoreCoins+'</span>';
 }
 function claimScoreCoins(){
   if(_scoreCoinsClaimed||_pendingScoreCoins<=0)return;
   const btn=document.getElementById('go-reward-btn');
   const _resetBtn=()=>{if(btn)btn.classList.remove('claimed');};
-  if(isNoAds()){_grantScoreCoins();return;}
+  if(isNoAds()||!adServiceAvailable()){_grantScoreCoins();return;}
   if(btn){btn.classList.add('claimed');}
   const _failsafe=setTimeout(_resetBtn,45000);
   showRewardedAd(()=>{

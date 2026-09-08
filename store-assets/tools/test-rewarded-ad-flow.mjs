@@ -57,6 +57,13 @@ try {
 
   const result = await page.evaluate(async () => {
     const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    let accountDisabledReward = 0;
+    await showRewardedAd(() => { accountDisabledReward += 1; }, adContext('color'));
+    const accountDisabledOverlay = getComputedStyle(document.getElementById('ad-overlay')).display;
+
+    // The remaining cases exercise the provider path independently from the
+    // temporary production kill switch used while the account is disabled.
+    adServiceAvailable = () => true;
     const listeners = new Map();
     let prepareMode = 'delayed-success';
     let lastPrepareOptions = null;
@@ -118,9 +125,10 @@ try {
     document.getElementById('ad-skip-btn').click();
     await wait(50);
 
-    return {normalReward, fallbackReward, optionalReward, testFlightFallbackReward, testInventoryRequested, fallbackLabel, optionalLabel};
+    return {accountDisabledReward, accountDisabledOverlay, normalReward, fallbackReward, optionalReward, testFlightFallbackReward, testInventoryRequested, fallbackLabel, optionalLabel};
   });
 
+  if (result.accountDisabledReward !== 1 || result.accountDisabledOverlay !== 'none') throw new Error(`disabled-account fallback failed: ${JSON.stringify(result)}`);
   if (result.normalReward !== 1) throw new Error(`preload reward failed: ${JSON.stringify(result)}`);
   if (!result.testInventoryRequested) throw new Error(`TestFlight did not request demo inventory: ${JSON.stringify(result)}`);
   if (result.fallbackReward !== 1) throw new Error(`rescue fallback failed: ${JSON.stringify(result)}`);
