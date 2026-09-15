@@ -22,3 +22,6 @@ project(':capacitor-firebase-firestore').projectDir = new File('../node_modules/
 
 include ':capacitor-app'
 project(':capacitor-app').projectDir = new File('../node_modules/@capacitor/app/android')
+
+include ':tiliq-unity-ads'
+project(':tiliq-unity-ads').projectDir = new File('../plugins/tiliq-unity-ads/android')

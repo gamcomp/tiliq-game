@@ -40,6 +40,8 @@
 <link rel="stylesheet" href="harbor-polish.css?v=20260909">
 <script src="harbor-polish.js?v=20260909"></script>
 <script src="hammer-i18n.js?v=20260909"></script>
+<script src="unity-ads-config.js"></script>
+<script src="unity-ads-provider.js"></script>
 </head>
 <body data-theme="dark" data-vibe="kingdom" data-visual="sky-harbor">
 <div id="vfx-flash"></div>
@@ -3134,11 +3136,13 @@ const ADMOB_REWARDED_ID=_isIOS?'ca-app-pub-1366817286080705/8274070242':'ca-app-
 const ADMOB_INTERSTITIAL_ID=_isIOS?'ca-app-pub-1366817286080705/2069991062':'ca-app-pub-1366817286080705/5666042603';
 // Gerçek banner ad unit ID (com.tiliq.game)
 const ADMOB_BANNER_ID=_isIOS?'ca-app-pub-1366817286080705/7286658728':'ca-app-pub-1366817286080705/5782005360';
-// AdMob hesabı 2026-09-08 tarihinde devre dışı bırakıldı. Hesap yeniden
-// etkinleştirilene kadar SDK'ya istek göndermeyip reklamla açılan oyun içeriğini
-// ücretsiz geçiriyoruz; böylece oyuncu "reklam hazır değil" ekranında kilitlenmez.
+// AdMob hesabı 2026-09-08 tarihinde devre dışı bırakıldı. Unity Game ID ve
+// yerleşimleri girilince doğrudan Unity Ads sağlayıcısı devreye girer.
+// O zamana kadar ödüller reklam bekletmeden verilir.
 const ADMOB_ACCOUNT_ACTIVE=false;
-function adServiceAvailable(){return ADMOB_ACCOUNT_ACTIVE;}
+function adServiceAvailable(){
+  return ADMOB_ACCOUNT_ACTIVE || window.TiliqUnityAdsProvider?.active === true;
+}
 let _adCb=null,_adTick=null,_adUnavailableCb=null,_admobListeners=[],_bannerListeners=[];
 let _interReady=false,_interPreparing=false,_fullScreenAdOpen=false,_lastInterstitialAt=0;
 // Banner artık oyun içinde de gösteriliyor (kullanıcı isteği, 2026-07-09) — önceden
@@ -3291,6 +3295,7 @@ async function showInterstitial(){
 }
 
 function _getAdMob(){
+  if(window.TiliqUnityAdsProvider?.active)return window.TiliqUnityAdsProvider;
   return window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.AdMob||null;
 }
 
@@ -8002,9 +8007,12 @@ function backToMenu(){
   renderDailyCard();
   updateContinueBtn();
 }
-// Oyun bitince "Ana Menü"ye dönerken 1 reklam göster (VIP/reklamsız hariç)
+// Oyun sonu menüye dönüşlerinde en fazla her üç seferde bir tam ekran reklam.
 function menuWithAd(){
-  showInterstitial();
+  const key='tiliq_interstitial_opportunities';
+  const count=Math.max(0,parseInt(localStorage.getItem(key)||'0',10)||0)+1;
+  localStorage.setItem(key,String(count));
+  if(count%3===0)showInterstitial();
   backToMenu();
 }
 

@@ -149,7 +149,61 @@ try {
     const noBombWarningHidden = !bombButton.classList.contains('last-chance');
     dead = true;
 
-    return {accountDisabledReward, accountDisabledOverlay, normalReward, fallbackReward, optionalReward, testFlightFallbackReward, testInventoryRequested, fallbackLabel, optionalLabel, lastChanceShown, lastChanceAnimation, lastChanceCleared, noBombWarningHidden};
+    // Exercise the Unity Capacitor adapter with platform-specific IDs and
+    // native reward events: closing early must not grant an optional reward.
+    const unityListeners = new Map();
+    const unityLoads = [];
+    const unityBridge = {
+      addListener: async (name, callback) => {
+        unityListeners.set(name, callback);
+        return {remove: () => unityListeners.delete(name)};
+      },
+      initialize: async ({gameId}) => { unityLoads.push(`game:${gameId}`); },
+      prepareRewardVideoAd: async ({adId}) => { unityLoads.push(`rewarded:${adId}`); },
+      prepareInterstitial: async ({adId}) => { unityLoads.push(`interstitial:${adId}`); },
+      showBanner: async ({adId}) => { unityLoads.push(`banner:${adId}`); },
+      showRewardVideoAd: async () => {
+        if (unityBridge.earned) unityListeners.get('onRewardedVideoAdReward')?.();
+        unityListeners.get('onRewardedVideoAdDismissed')?.();
+      },
+    };
+    window.Capacitor.getPlatform = () => 'android';
+    window.Capacitor.Plugins.TiliqUnityAds = unityBridge;
+    Object.assign(window.TILIQ_UNITY_ADS.android, {
+      gameId: 'android-game', interstitial: 'android-inter',
+      rewarded: 'android-reward', banner: 'android-banner',
+    });
+    const unityActive = window.TiliqUnityAdsProvider.active;
+    await window.TiliqUnityAdsProvider.initialize();
+    _useAdMobTestAds = false;
+    _adMobReady = true;
+    _adsCanRequest = true;
+    _rewardReady = false;
+    let unitySkippedReward = 0;
+    unityBridge.earned = false;
+    await showRewardedAd(() => { unitySkippedReward += 1; }, adContext('score'));
+    await wait(50);
+    _rewardReady = false;
+    let unityEarnedReward = 0;
+    unityBridge.earned = true;
+    await showRewardedAd(() => { unityEarnedReward += 1; }, adContext('score'));
+    await wait(900);
+    localStorage.removeItem('tiliq_interstitial_opportunities');
+    let interstitialShows = 0;
+    showInterstitial = () => { interstitialShows += 1; };
+    backToMenu = () => {};
+    menuWithAd();
+    menuWithAd();
+    const firstTwoInterstitialShows = interstitialShows;
+    menuWithAd();
+    window.Capacitor.getPlatform = () => 'ios';
+    const iosUnityActive = window.TiliqUnityAdsProvider.active;
+    await window.TiliqUnityAdsProvider.initialize();
+    await window.TiliqUnityAdsProvider.prepareRewardVideoAd();
+    await window.TiliqUnityAdsProvider.prepareInterstitial();
+    await window.TiliqUnityAdsProvider.showBanner();
+
+    return {accountDisabledReward, accountDisabledOverlay, normalReward, fallbackReward, optionalReward, testFlightFallbackReward, testInventoryRequested, fallbackLabel, optionalLabel, lastChanceShown, lastChanceAnimation, lastChanceCleared, noBombWarningHidden, unityActive, unityLoads, unitySkippedReward, unityEarnedReward, firstTwoInterstitialShows, interstitialShows, iosUnityActive};
   });
 
   if (result.accountDisabledReward !== 1 || result.accountDisabledOverlay !== 'none') throw new Error(`disabled-account fallback failed: ${JSON.stringify(result)}`);
@@ -158,6 +212,18 @@ try {
   if (result.fallbackReward !== 1) throw new Error(`rescue fallback failed: ${JSON.stringify(result)}`);
   if (result.optionalReward !== 0) throw new Error(`optional reward leaked: ${JSON.stringify(result)}`);
   if (result.testFlightFallbackReward !== 1) throw new Error(`TestFlight fallback failed: ${JSON.stringify(result)}`);
+  if (!result.unityActive || !result.unityLoads.includes('game:android-game') || !result.unityLoads.includes('rewarded:android-reward')) {
+    throw new Error(`Unity platform mapping failed: ${JSON.stringify(result)}`);
+  }
+  if (result.unitySkippedReward !== 0 || result.unityEarnedReward !== 1) {
+    throw new Error(`Unity native reward event failed: ${JSON.stringify(result)}`);
+  }
+  if (result.firstTwoInterstitialShows !== 0 || result.interstitialShows !== 1) {
+    throw new Error(`interstitial pacing failed: ${JSON.stringify(result)}`);
+  }
+  if (!result.iosUnityActive || !['game:800374323', 'rewarded:BP_Rewarded_iOS', 'interstitial:BP_Interstitial_iOS', 'banner:BP_Banner_iOS'].every((id) => result.unityLoads.includes(id))) {
+    throw new Error(`iOS Unity placement mapping failed: ${JSON.stringify(result)}`);
+  }
   if (!result.fallbackLabel || result.fallbackLabel === result.optionalLabel) throw new Error(`fallback label failed: ${JSON.stringify(result)}`);
   if (!result.lastChanceShown || result.lastChanceAnimation !== 'sky-bomb-last-chance' || !result.lastChanceCleared || !result.noBombWarningHidden) {
     throw new Error(`bomb last-chance warning failed: ${JSON.stringify(result)}`);

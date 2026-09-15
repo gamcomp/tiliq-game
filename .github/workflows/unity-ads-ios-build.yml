@@ -1,0 +1,49 @@
+name: Unity Ads iOS build check
+
+on:
+  push:
+    branches:
+      - codex/unity-ads-ios-test-20260915
+
+permissions:
+  contents: read
+
+jobs:
+  simulator-build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify ad and ATT flows
+        run: |
+          npm run test:rewarded
+          npm run test:att
+      - name: Sync Capacitor iOS project
+        run: npx cap sync ios
+      - name: Install iOS pods
+        working-directory: ios/App
+        run: pod install --repo-update
+      - name: Build iOS simulator app without signing
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/tiliq-unity-ads-derived-data" \
+            CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee "$RUNNER_TEMP/tiliq-unity-ads-xcodebuild.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unity-ads-ios-build-log
+          path: ${{ runner.temp }}/tiliq-unity-ads-xcodebuild.log
+          retention-days: 14
