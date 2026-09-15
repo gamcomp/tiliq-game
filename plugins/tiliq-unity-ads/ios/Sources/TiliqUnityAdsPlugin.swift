@@ -9,6 +9,8 @@ private final class InterstitialShowHandler: NSObject, UADSInterstitialShowDeleg
     init(plugin: TiliqUnityAdsPlugin) { self.plugin = plugin }
 
     func showDidStart(_ unityAd: UADSInterstitialAd) {
+        plugin?.interstitialStarted = true
+        plugin?.interstitialWatchdog?.cancel()
         plugin?.notifyListeners("interstitialAdShowed", data: [:])
     }
     func showDidClick(_ unityAd: UADSInterstitialAd) {
@@ -18,7 +20,7 @@ private final class InterstitialShowHandler: NSObject, UADSInterstitialShowDeleg
         plugin?.interstitialDidComplete()
     }
     func showDidFail(_ unityAd: UADSInterstitialAd, error: UnityAdsError) {
-        plugin?.interstitialDidFail(error)
+        plugin?.interstitialDidFail(error.message)
     }
 }
 
@@ -28,6 +30,8 @@ private final class RewardedShowHandler: NSObject, UADSRewardedShowDelegate {
     init(plugin: TiliqUnityAdsPlugin) { self.plugin = plugin }
 
     func showDidStart(_ unityAd: UADSRewardedAd) {
+        plugin?.rewardedStarted = true
+        plugin?.rewardedWatchdog?.cancel()
         plugin?.notifyListeners("onRewardedVideoAdShowed", data: [:])
     }
     func showDidClick(_ unityAd: UADSRewardedAd) {
@@ -40,7 +44,7 @@ private final class RewardedShowHandler: NSObject, UADSRewardedShowDelegate {
         plugin?.rewardedDidComplete()
     }
     func showDidFail(_ unityAd: UADSRewardedAd, error: UnityAdsError) {
-        plugin?.rewardedDidFail(error)
+        plugin?.rewardedDidFail(error.message)
     }
 }
 
@@ -73,6 +77,42 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     private var rewardedCall: CAPPluginCall?
     private lazy var interstitialDelegate = InterstitialShowHandler(plugin: self)
     private lazy var rewardedDelegate = RewardedShowHandler(plugin: self)
+
+    // Watchdog: Unity Ads'in show() çağrısı çok nadiren (creative fetch sırasında
+    // network kopması, ya da load() ile show() arasında reklamın sessizce expire
+    // olması) ne showDidStart ne showDidFail çağırmadan tam ekran, siyah, kapatma
+    // butonu olmayan bir view controller'ı ekranda asılı bırakabiliyor — kullanıcı
+    // uygulamayı zorla kapatmak zorunda kalıyor (TestFlight raporu, 2026-09-15).
+    // Bu durumda SDK'nın kendi kurtarma mekanizması yok; biz zorla kapatıyoruz.
+    private static let showStartTimeout: TimeInterval = 8
+    fileprivate var interstitialWatchdog: DispatchWorkItem?
+    fileprivate var rewardedWatchdog: DispatchWorkItem?
+    fileprivate var interstitialStarted = false
+    fileprivate var rewardedStarted = false
+
+    /// CAPPluginCall metotları Capacitor'ın kendi arka plan kuyruğunda çalışabilir;
+    /// DispatchWorkItem/asyncAfter kullanmak Timer'ın gerektirdiği aktif RunLoop
+    /// bağımlılığını (ve olası ana thread deadlock'unu) ortadan kaldırır.
+    private func armWatchdog(started: @escaping () -> Bool, forceDismiss: @escaping (String) -> Void) -> DispatchWorkItem {
+        let work = DispatchWorkItem {
+            if !started() {
+                forceDismiss("Ad show timed out before starting (frozen black screen)")
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.showStartTimeout, execute: work)
+        return work
+    }
+
+    /// Bulunabilirse en üstteki sunulan (presented) view controller'ı kapatır —
+    /// Unity'nin kendi view'ı `bridge.viewController` üzerinden modal sunulur.
+    private func forceDismissPresentedAd(_ vc: UIViewController, reason: String) {
+        DispatchQueue.main.async {
+            guard let presented = vc.presentedViewController else { return }
+            presented.dismiss(animated: false) {
+                NSLog("[TiliqUnityAds] Force-dismissed hung ad view: \(reason)")
+            }
+        }
+    }
 
     private func placement(_ call: CAPPluginCall) -> String? {
         guard let id = call.getString("adId"), !id.isEmpty else {
@@ -138,6 +178,13 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         guard let vc = bridge?.viewController else { call.reject("View controller is unavailable"); return }
         interstitial = nil
         interstitialCall = call
+        interstitialStarted = false
+        interstitialWatchdog?.cancel()
+        interstitialWatchdog = armWatchdog(started: { [weak self] in self?.interstitialStarted ?? false }) { [weak self] reason in
+            guard let self = self else { return }
+            self.forceDismissPresentedAd(vc, reason: reason)
+            self.interstitialDidFail(reason)
+        }
         let config = UADSShowConfigurationBuilder().with(viewController: vc).build()
         DispatchQueue.main.async { ad.show(config, delegate: self.interstitialDelegate) }
     }
@@ -169,29 +216,40 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         guard let vc = bridge?.viewController else { call.reject("View controller is unavailable"); return }
         rewarded = nil
         rewardedCall = call
+        rewardedStarted = false
+        rewardedWatchdog?.cancel()
+        rewardedWatchdog = armWatchdog(started: { [weak self] in self?.rewardedStarted ?? false }) { [weak self] reason in
+            guard let self = self else { return }
+            self.forceDismissPresentedAd(vc, reason: reason)
+            self.rewardedDidFail(reason)
+        }
         let config = UADSShowConfigurationBuilder().with(viewController: vc).build()
         DispatchQueue.main.async { ad.show(config, delegate: self.rewardedDelegate) }
     }
 
     fileprivate func interstitialDidComplete() {
+        interstitialWatchdog?.cancel()
         notifyListeners("interstitialAdDismissed", data: [:])
         interstitialCall?.resolve()
         interstitialCall = nil
     }
-    fileprivate func interstitialDidFail(_ error: UnityAdsError) {
-        notifyListeners("interstitialAdFailedToShow", data: ["message": error.message])
-        interstitialCall?.reject(error.message)
+    fileprivate func interstitialDidFail(_ message: String) {
+        interstitialWatchdog?.cancel()
+        notifyListeners("interstitialAdFailedToShow", data: ["message": message])
+        interstitialCall?.reject(message)
         interstitialCall = nil
     }
 
     fileprivate func rewardedDidComplete() {
+        rewardedWatchdog?.cancel()
         notifyListeners("onRewardedVideoAdDismissed", data: [:])
         rewardedCall?.resolve()
         rewardedCall = nil
     }
-    fileprivate func rewardedDidFail(_ error: UnityAdsError) {
-        notifyListeners("onRewardedVideoAdFailedToShow", data: ["message": error.message])
-        rewardedCall?.reject(error.message)
+    fileprivate func rewardedDidFail(_ message: String) {
+        rewardedWatchdog?.cancel()
+        notifyListeners("onRewardedVideoAdFailedToShow", data: ["message": message])
+        rewardedCall?.reject(message)
         rewardedCall = nil
     }
 
