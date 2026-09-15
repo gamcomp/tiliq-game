@@ -20,8 +20,11 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Install Chromium for browser tests
+        run: node node_modules/playwright-core/cli.js install chromium
       - name: Verify ad and ATT flows
         run: |
+          export CHROME_PATH="$(node -p "require('playwright-core').chromium.executablePath()")"
           npm run test:rewarded
           npm run test:att
       - name: Sync Capacitor iOS project
