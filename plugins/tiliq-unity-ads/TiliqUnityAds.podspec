@@ -12,5 +12,8 @@ Pod::Spec.new do |s|
   s.swift_version = '5.1'
   s.static_framework = true
   s.dependency 'Capacitor'
-  s.dependency 'UnityAds', '4.20.0'
+  # 2026-09-16: 4.20.1 çıktı (bir önceki günde) — "çekiç" ödüllü reklamı siyah
+  # ekranda donan/hiç render olmayan sorununa olası bir SDK yaması ihtimaline
+  # karşı güncellendi.
+  s.dependency 'UnityAds', '4.20.1'
 end
