@@ -6,6 +6,7 @@ on:
       - codex/unity-ads-ios-test-20260915
     paths:
       - .github/workflows/unity-ads-ios-testflight.yml
+      - plugins/tiliq-unity-ads/ios/Sources/TiliqUnityAdsPlugin.swift
 
 concurrency:
   group: tiliq-unity-ads-testflight

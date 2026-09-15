@@ -3,9 +3,50 @@ import UIKit
 import Capacitor
 import UnityAds
 
+private final class InterstitialShowHandler: NSObject, UADSInterstitialShowDelegate {
+    weak var plugin: TiliqUnityAdsPlugin?
+
+    init(plugin: TiliqUnityAdsPlugin) { self.plugin = plugin }
+
+    func showDidStart(_ unityAd: UADSInterstitialAd) {
+        plugin?.notifyListeners("interstitialAdShowed", data: [:])
+    }
+    func showDidClick(_ unityAd: UADSInterstitialAd) {
+        plugin?.notifyListeners("interstitialAdClicked", data: [:])
+    }
+    func showDidComplete(_ unityAd: UADSInterstitialAd, with state: UADSShowFinishState) {
+        plugin?.interstitialDidComplete()
+    }
+    func showDidFail(_ unityAd: UADSInterstitialAd, error: UnityAdsError) {
+        plugin?.interstitialDidFail(error)
+    }
+}
+
+private final class RewardedShowHandler: NSObject, UADSRewardedShowDelegate {
+    weak var plugin: TiliqUnityAdsPlugin?
+
+    init(plugin: TiliqUnityAdsPlugin) { self.plugin = plugin }
+
+    func showDidStart(_ unityAd: UADSRewardedAd) {
+        plugin?.notifyListeners("onRewardedVideoAdShowed", data: [:])
+    }
+    func showDidClick(_ unityAd: UADSRewardedAd) {
+        plugin?.notifyListeners("onRewardedVideoAdClicked", data: [:])
+    }
+    func showDidReceiveReward(_ unityAd: UADSRewardedAd) {
+        plugin?.notifyListeners("onRewardedVideoAdReward", data: [:])
+    }
+    func showDidComplete(_ unityAd: UADSRewardedAd, with state: UADSShowFinishState) {
+        plugin?.rewardedDidComplete()
+    }
+    func showDidFail(_ unityAd: UADSRewardedAd, error: UnityAdsError) {
+        plugin?.rewardedDidFail(error)
+    }
+}
+
 @objc(TiliqUnityAdsPlugin)
 public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
-    UADSInterstitialShowDelegate, UADSRewardedShowDelegate, UADSBannerAdDelegate {
+    UADSBannerAdDelegate {
 
     public let identifier = "TiliqUnityAdsPlugin"
     public let jsName = "TiliqUnityAds"
@@ -30,6 +71,8 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     private var rewardedLoading = false
     private var interstitialCall: CAPPluginCall?
     private var rewardedCall: CAPPluginCall?
+    private lazy var interstitialDelegate = InterstitialShowHandler(plugin: self)
+    private lazy var rewardedDelegate = RewardedShowHandler(plugin: self)
 
     private func placement(_ call: CAPPluginCall) -> String? {
         guard let id = call.getString("adId"), !id.isEmpty else {
@@ -96,7 +139,7 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         interstitial = nil
         interstitialCall = call
         let config = UADSShowConfigurationBuilder().with(viewController: vc).build()
-        DispatchQueue.main.async { ad.show(config, delegate: self) }
+        DispatchQueue.main.async { ad.show(config, delegate: self.interstitialDelegate) }
     }
 
     @objc func prepareRewardVideoAd(_ call: CAPPluginCall) {
@@ -127,41 +170,26 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         rewarded = nil
         rewardedCall = call
         let config = UADSShowConfigurationBuilder().with(viewController: vc).build()
-        DispatchQueue.main.async { ad.show(config, delegate: self) }
+        DispatchQueue.main.async { ad.show(config, delegate: self.rewardedDelegate) }
     }
 
-    public func showDidStart(_ unityAd: UADSInterstitialAd) {
-        notifyListeners("interstitialAdShowed", data: [:])
-    }
-    public func showDidClick(_ unityAd: UADSInterstitialAd) {
-        notifyListeners("interstitialAdClicked", data: [:])
-    }
-    public func showDidComplete(_ unityAd: UADSInterstitialAd, with state: UADSShowFinishState) {
+    fileprivate func interstitialDidComplete() {
         notifyListeners("interstitialAdDismissed", data: [:])
         interstitialCall?.resolve()
         interstitialCall = nil
     }
-    public func showDidFail(_ unityAd: UADSInterstitialAd, error: UnityAdsError) {
+    fileprivate func interstitialDidFail(_ error: UnityAdsError) {
         notifyListeners("interstitialAdFailedToShow", data: ["message": error.message])
         interstitialCall?.reject(error.message)
         interstitialCall = nil
     }
 
-    public func showDidStart(_ unityAd: UADSRewardedAd) {
-        notifyListeners("onRewardedVideoAdShowed", data: [:])
-    }
-    public func showDidClick(_ unityAd: UADSRewardedAd) {
-        notifyListeners("onRewardedVideoAdClicked", data: [:])
-    }
-    public func showDidReceiveReward(_ unityAd: UADSRewardedAd) {
-        notifyListeners("onRewardedVideoAdReward", data: [:])
-    }
-    public func showDidComplete(_ unityAd: UADSRewardedAd, with state: UADSShowFinishState) {
+    fileprivate func rewardedDidComplete() {
         notifyListeners("onRewardedVideoAdDismissed", data: [:])
         rewardedCall?.resolve()
         rewardedCall = nil
     }
-    public func showDidFail(_ unityAd: UADSRewardedAd, error: UnityAdsError) {
+    fileprivate func rewardedDidFail(_ error: UnityAdsError) {
         notifyListeners("onRewardedVideoAdFailedToShow", data: ["message": error.message])
         rewardedCall?.reject(error.message)
         rewardedCall = nil
