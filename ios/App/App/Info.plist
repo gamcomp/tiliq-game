@@ -46,7 +46,11 @@
 	     olmadan gerçek talep sahibi (paralı) reklam ağlarının çoğu ihaleye hiç
 	     girmiyor, geriye sadece Google'ın düşük değerli dolgu reklamları kalıyor
 	     ("reklamlar gerçek reklam değil" raporu, 2026-07-13). Google'ın resmi
-	     AdMob iOS entegrasyon dokümanındaki standart liste. -->
+	     AdMob iOS entegrasyon dokümanındaki standart liste.
+	     2026-09-16: Unity Ads Monetization panosu bu listede "Missing SKAdNetwork
+	     IDs" uyarısı verdi (mediation üzerinden gelen üçüncü parti ağ reklamları
+	     SKAdNetwork beyanı olmadan reddedilip render edilemiyor, "çekiç reklamı
+	     siyah ekran" raporu) — panonun verdiği eksik ID'ler aşağı eklendi. -->
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict><key>SKAdNetworkIdentifier</key><string>cstr6suwn9.skadnetwork</string></dict>
@@ -99,6 +103,46 @@
 		<dict><key>SKAdNetworkIdentifier</key><string>3rd42ekr43.skadnetwork</string></dict>
 		<dict><key>SKAdNetworkIdentifier</key><string>97r2b46745.skadnetwork</string></dict>
 		<dict><key>SKAdNetworkIdentifier</key><string>3qcr597p9d.skadnetwork</string></dict>
+		<!-- Unity Ads Monetization panosunun "Missing SKAdNetwork IDs" listesi (2026-09-16) -->
+		<dict><key>SKAdNetworkIdentifier</key><string>238da6jt44.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>294l99pt4k.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>32z4fx6l9h.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>424m5254lk.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>488r3q3dtq.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>4pfyvq9l8r.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>4w7y6s5ca2.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>5a6flpkh64.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>5f5u5tfb26.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>5l3tpt7t6e.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>5lm9lj6jb7.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>5tjdwbrq8w.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>6yxyv74ff7.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>77y3x8wds4.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>9nlqeag3gk.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>9rd848q2bz.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>a8cz6cu7e5.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>av6w8kgt66.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>f73kdq92p3.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>f7s53z58qe.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>feyaarzu9v.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>g6gcrrvk4p.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>glqzh8vgby.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>k6y4y55b64.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>lr83yxwka7.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>m8dbw4sv7c.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>mj797d8u6f.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>mp6xlyr22a.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>mqn7fxpca7.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>n9x2a789qt.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>prcb7njmu6.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>pwa73g5rt2.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>v79kvwwj4g.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>vhf287vqwu.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>w9q455wk68.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>x44k69ngh6.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>xga6mpmplv.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>zmvfpc5aq8.skadnetwork</string></dict>
+		<dict><key>SKAdNetworkIdentifier</key><string>zq492l623r.skadnetwork</string></dict>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
