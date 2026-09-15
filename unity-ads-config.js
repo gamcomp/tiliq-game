@@ -1,7 +1,11 @@
 // Fill these values from Unity Monetization > Apps > Tiliq > Network/Placements.
 // Empty IDs keep the existing ad-disabled fallback active.
 window.TILIQ_UNITY_ADS = {
-  testMode: true,
+  // 2026-09-16: Geçici olarak false — test kreatifi hiç render olmadan donuyordu
+  // (watchdog dışında Unity'den hiçbir callback gelmiyordu), gerçek reklamla
+  // aynı davranış olup olmadığını görmek için kapatıldı. Teşhis bitince true'ya
+  // geri al.
+  testMode: false,
   android: {
     gameId: '',
     interstitial: '',

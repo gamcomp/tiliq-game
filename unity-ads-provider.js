@@ -22,9 +22,16 @@
     async initialize(options={}){
       const config = ids();
       if(!provider.active) throw new Error('Unity Ads IDs or native bridge are missing');
+      // 2026-09-16: `options.initializeForTesting` OR'landığı için buradaki
+      // `testMode` her zaman true'ya sabitleniyordu — TestFlight/sandbox
+      // dağıtımında game.html sandbox algılayınca _useAdMobTestAds'i (AdMob'un
+      // kendi mantığı) true yapıyor ve bu OR sayesinde unity-ads-config.js'teki
+      // testMode değeri hiçbir zaman etkili olamıyordu ("gerçek reklamla test
+      // edelim" denemesi bu yüzden config'i false yapmak yeterli olmazdı).
+      // Unity için testMode artık YALNIZCA bizim config dosyamızdan geliyor.
       await native().initialize({
         gameId: config.gameId,
-        testMode: window.TILIQ_UNITY_ADS.testMode !== false || options.initializeForTesting === true,
+        testMode: window.TILIQ_UNITY_ADS.testMode !== false,
       });
     },
     // Unity handles its own default consent flow when Developer Consent is not enabled.
