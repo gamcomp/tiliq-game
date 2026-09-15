@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/unity-ads-ios-testflight.yml
       - plugins/tiliq-unity-ads/ios/Sources/TiliqUnityAdsPlugin.swift
+      - ios/App/App.xcodeproj/project.pbxproj
 
 concurrency:
   group: tiliq-unity-ads-testflight
