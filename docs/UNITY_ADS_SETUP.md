@@ -12,6 +12,12 @@ Tiliq, Capacitor ile Android ve iOS için paketlenir. Reklam köprüsü resmi Un
 6. Mağaza yayını öncesinde Unity'nin uygulama gizliliği/veri açıklama rehberine göre App Store Privacy ve Google Play Data Safety alanlarını gözden geçir. `privacy-policy.html` için Unity Ads metni yerel olarak hazırlandı; yayınlanmış sayfa henüz eski AdMob metnini gösteriyor. Unity'nin panelindeki `app-ads.txt` satırlarını mağaza kaydındaki geliştirici alan adı `gamcomp.github.io` köküne yayınla. Bu repo şu anda Unity satırlarını içermez.
 7. Gerçek reklamları açarken `testMode: false` yap, dosyayı tekrar `www/` içine kopyala, `npx cap sync android` ve `npx cap sync ios` çalıştır, ardından iki platformda cihaz testi yap.
 
+## iPhone test buildi
+
+**Tiliq 1.3.92 (build 91)**, App Store Connect'e 2026-09-15 tarihinde hatasız yüklendi: [CI sonucu](https://github.com/gamcomp/tiliq-game/actions/runs/35015899059). Apple TestFlight işlemesi bitince iPhone'da TestFlight uygulamasından bu sürümü yükle. Dahili tester erişimi yoksa App Store Connect > Tiliq > TestFlight > Internal Testing bölümünde tester grubunu kontrol et.
+
+Ödüllü reklamı bir kez sonuna kadar izleyip ödülün yalnızca tamamlandığında verildiğini, bir kez erken kapatıp ödül verilmediğini doğrula. Oyun sonundan ana menüye üç kez dönerek tam ekran reklam sınırını, banner'ın oyun tepsisi ve HUD'la çakışmadığını kontrol et. Bu test buildinde `testMode: true`; gerçek reklam geliri ölçülemez. FPS, açılış süresi ve RAM gerçek iPhone'da ayrıca kaydedilmelidir.
+
 `index.html` kaynak sayfadır; `game.html` ve `www/index.html` aynı içerikte kalmalıdır. Yerel eklenti `plugins/tiliq-unity-ads/` altındadır. Codemagic iOS Podfile'ını yeniden yazdığı için pod kaydı `codemagic.yaml` şablonunda da bulunur.
 
 Unity'nin varsayılan consent akışı kullanılır; uygulama SDK'ya kullanıcıdan alınmamış bir kişiselleştirme onayı göndermez. Bölgesel gizlilik gereksinimleri ve oyunun mağaza açıklamaları yayından önce ayrıca gözden geçirilmelidir.
