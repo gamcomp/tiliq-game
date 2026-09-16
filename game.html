@@ -3527,7 +3527,10 @@ function _showAdUnavailable(onUnavailable){
   // Sandbox/TestFlight is never allowed to block functional review when Google
   // inventory is temporarily unavailable. Production still grants a fallback
   // only for the explicit game-rescue path.
-  const canContinue=!!(typeof onUnavailable==='function'&&(_useAdMobTestAds||(_adContext&&_adContext.allowNoFill)));
+  // A Unity show/render failure is not a watched ad. TestFlight's AdMob sandbox
+  // fallback must not leak into the Unity provider and unlock optional rewards.
+  const unityActive=window.TiliqUnityAdsProvider?.active===true;
+  const canContinue=!!(typeof onUnavailable==='function'&&((!unityActive&&_useAdMobTestAds)||(_adContext&&_adContext.allowNoFill)));
   _adUnavailableCb=canContinue?onUnavailable:null;
   _setAdOverlayState('error',t('adUnavailable'),t(canContinue?'adUnavailableContinueCopy':'adUnavailableCopy'));
   const timer=document.getElementById('ad-timer');if(timer){timer.textContent='!';timer.style.setProperty('--ad-progress','0');}
@@ -3568,10 +3571,11 @@ async function showRewardedAd(onRewarded,meta){
     _clearRewardedListeners();
     let rewarded=false;
     const l1=await AdMob.addListener('onRewardedVideoAdReward',()=>{rewarded=true;});
-    const l2=await AdMob.addListener('onRewardedVideoAdDismissed',()=>{
+    const l2=await AdMob.addListener('onRewardedVideoAdDismissed',(info)=>{
       _clearRewardedListeners();_fullScreenAdOpen=false;_rewardFlowActive=false;
       _rewardReady=false;
       _prepareRewardedAd(); // sonraki için hemen yeniden hazırla
+      if(info&&info.completed===false)rewarded=false;
       if(rewarded)_completeRewardedAd(onRewarded);
       else _hideAdOverlay();
     });

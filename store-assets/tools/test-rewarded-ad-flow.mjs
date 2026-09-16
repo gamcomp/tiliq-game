@@ -164,7 +164,7 @@ try {
       showBanner: async ({adId}) => { unityLoads.push(`banner:${adId}`); },
       showRewardVideoAd: async () => {
         if (unityBridge.earned) unityListeners.get('onRewardedVideoAdReward')?.();
-        unityListeners.get('onRewardedVideoAdDismissed')?.();
+        unityListeners.get('onRewardedVideoAdDismissed')?.({completed: unityBridge.completed});
       },
     };
     window.Capacitor.getPlatform = () => 'android';
@@ -180,12 +180,16 @@ try {
     _adsCanRequest = true;
     _rewardReady = false;
     let unitySkippedReward = 0;
-    unityBridge.earned = false;
+    // A stale reward callback followed by a skipped/failed completion must not
+    // unlock the reward (the black-screen regression reported on TestFlight).
+    unityBridge.earned = true;
+    unityBridge.completed = false;
     await showRewardedAd(() => { unitySkippedReward += 1; }, adContext('score'));
     await wait(50);
     _rewardReady = false;
     let unityEarnedReward = 0;
     unityBridge.earned = true;
+    unityBridge.completed = true;
     await showRewardedAd(() => { unityEarnedReward += 1; }, adContext('score'));
     await wait(900);
     localStorage.removeItem('tiliq_interstitial_opportunities');

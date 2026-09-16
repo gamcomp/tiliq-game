@@ -37,6 +37,10 @@ public class TiliqUnityAdsPlugin extends Plugin {
         notifyListeners(event, new JSObject());
     }
 
+    private void emit(String event, JSObject data) {
+        notifyListeners(event, data);
+    }
+
     private void emitError(String event, UnityAdsError error) {
         JSObject data = new JSObject();
         data.put("message", error == null ? "Unity Ads error" : error.getMessage());
@@ -147,10 +151,18 @@ public class TiliqUnityAdsPlugin extends Plugin {
             @Override public void onRewarded(RewardedAd current) {
                 if (earned) return;
                 earned = true;
-                emit("onRewardedVideoAdReward");
             }
             @Override public void onCompleted(RewardedAd current, ShowFinishState state) {
-                emit("onRewardedVideoAdDismissed");
+                boolean completed = state == ShowFinishState.COMPLETED;
+                if (earned && completed) {
+                    JSObject reward = new JSObject();
+                    reward.put("completed", true);
+                    emit("onRewardedVideoAdReward", reward);
+                }
+                JSObject dismissal = new JSObject();
+                dismissal.put("completed", completed);
+                dismissal.put("earned", earned);
+                emit("onRewardedVideoAdDismissed", dismissal);
                 call.resolve();
             }
             @Override public void onFailed(RewardedAd current, UnityAdsError error) {
@@ -200,6 +212,7 @@ public class TiliqUnityAdsPlugin extends Plugin {
             getActivity().runOnUiThread(() -> {
                 FrameLayout root = getActivity().findViewById(android.R.id.content);
                 bannerContainer = new FrameLayout(getActivity());
+                bannerContainer.setBackgroundColor(android.graphics.Color.TRANSPARENT);
                 int height = Math.round(50 * getActivity().getResources().getDisplayMetrics().density);
                 FrameLayout.LayoutParams containerParams =
                     new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, height, Gravity.BOTTOM);

@@ -14,6 +14,7 @@
     return window.Capacitor?.Plugins?.AdMob || null;
   }
   const provider = {
+    kind: 'unity',
     get active(){
       const config = ids();
       return !!(native() && config?.gameId && config?.interstitial &&
@@ -22,13 +23,9 @@
     async initialize(options={}){
       const config = ids();
       if(!provider.active) throw new Error('Unity Ads IDs or native bridge are missing');
-      // 2026-09-16: `options.initializeForTesting` OR'landığı için buradaki
-      // `testMode` her zaman true'ya sabitleniyordu — TestFlight/sandbox
-      // dağıtımında game.html sandbox algılayınca _useAdMobTestAds'i (AdMob'un
-      // kendi mantığı) true yapıyor ve bu OR sayesinde unity-ads-config.js'teki
-      // testMode değeri hiçbir zaman etkili olamıyordu ("gerçek reklamla test
-      // edelim" denemesi bu yüzden config'i false yapmak yeterli olmazdı).
-      // Unity için testMode artık YALNIZCA bizim config dosyamızdan geliyor.
+      // Unity test mode is controlled only by our own config. Capacitor's
+      // distribution environment belongs to the old AdMob path and must not
+      // silently change Unity's inventory mode.
       await native().initialize({
         gameId: config.gameId,
         testMode: window.TILIQ_UNITY_ADS.testMode !== false,

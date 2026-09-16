@@ -15,5 +15,5 @@ repositories { google(); mavenCentral() }
 dependencies {
     implementation project(':capacitor-android')
     implementation "androidx.appcompat:appcompat:$rootProject.ext.androidxAppCompatVersion"
-    implementation 'com.unity3d.ads:unity-ads:4.20.0'
+    implementation 'com.unity3d.ads:unity-ads:4.20.1'
 }
