@@ -229,7 +229,7 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         }
     }
 
-    public func unityAdsAdFailedToLoad(_ placementId: String, withError error: UnityAdsLoadError, withMessage message: String) {
+    public func unityAdsAdFailed(toLoad placementId: String, withError error: UnityAdsLoadError, withMessage message: String) {
         if placementId == interstitialPlacement {
             interstitialLoading = false
             interstitialReady = false
