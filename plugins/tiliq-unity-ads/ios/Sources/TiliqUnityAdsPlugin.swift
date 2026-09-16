@@ -3,50 +3,9 @@ import UIKit
 import Capacitor
 import UnityAds
 
-private final class InterstitialShowHandler: NSObject, UADSInterstitialShowDelegate {
-    weak var plugin: TiliqUnityAdsPlugin?
-
-    init(plugin: TiliqUnityAdsPlugin) { self.plugin = plugin }
-
-    func showDidStart(_ unityAd: UADSInterstitialAd) {
-        plugin?.interstitialDidStart()
-    }
-    func showDidClick(_ unityAd: UADSInterstitialAd) {
-        plugin?.notifyListeners("interstitialAdClicked", data: [:])
-    }
-    func showDidComplete(_ unityAd: UADSInterstitialAd, with state: UADSShowFinishState) {
-        plugin?.interstitialDidComplete(state)
-    }
-    func showDidFail(_ unityAd: UADSInterstitialAd, error: UnityAdsError) {
-        plugin?.interstitialDidFail(error.message)
-    }
-}
-
-private final class RewardedShowHandler: NSObject, UADSRewardedShowDelegate {
-    weak var plugin: TiliqUnityAdsPlugin?
-
-    init(plugin: TiliqUnityAdsPlugin) { self.plugin = plugin }
-
-    func showDidStart(_ unityAd: UADSRewardedAd) {
-        plugin?.rewardedDidStart()
-    }
-    func showDidClick(_ unityAd: UADSRewardedAd) {
-        plugin?.notifyListeners("onRewardedVideoAdClicked", data: [:])
-    }
-    func showDidReceiveReward(_ unityAd: UADSRewardedAd) {
-        plugin?.rewardedDidEarn()
-    }
-    func showDidComplete(_ unityAd: UADSRewardedAd, with state: UADSShowFinishState) {
-        plugin?.rewardedDidComplete(state)
-    }
-    func showDidFail(_ unityAd: UADSRewardedAd, error: UnityAdsError) {
-        plugin?.rewardedDidFail(error.message)
-    }
-}
-
 @objc(TiliqUnityAdsPlugin)
 public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
-    UADSBannerAdDelegate {
+    UADSBannerAdDelegate, UnityAdsLoadDelegate, UnityAdsShowDelegate {
 
     public let identifier = "TiliqUnityAdsPlugin"
     public let jsName = "TiliqUnityAds"
@@ -64,15 +23,17 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     ]
 
     private var initialized = false
-    private var interstitial: UADSInterstitialAd?
-    private var rewarded: UADSRewardedAd?
     private var banner: UADSBannerAd?
+    private var interstitialPlacement: String?
+    private var rewardedPlacement: String?
+    private var interstitialReady = false
+    private var rewardedReady = false
     private var interstitialLoading = false
     private var rewardedLoading = false
+    private var interstitialLoadCall: CAPPluginCall?
+    private var rewardedLoadCall: CAPPluginCall?
     private var interstitialCall: CAPPluginCall?
     private var rewardedCall: CAPPluginCall?
-    private lazy var interstitialDelegate = InterstitialShowHandler(plugin: self)
-    private lazy var rewardedDelegate = RewardedShowHandler(plugin: self)
 
     // Watchdog: Unity Ads'in show() çağrısı çok nadiren (creative fetch sırasında
     // network kopması, ya da load() ile show() arasında reklamın sessizce expire
@@ -182,30 +143,22 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     @objc func prepareInterstitial(_ call: CAPPluginCall) {
         guard let id = placement(call) else { return }
         guard initialized else { call.reject("Unity Ads is not initialized"); return }
-        if interstitial != nil { call.resolve(); return }
+        if interstitialReady && interstitialPlacement == id { call.resolve(); return }
         if interstitialLoading { call.reject("Interstitial load is already running"); return }
+        interstitialPlacement = id
         interstitialLoading = true
-        let config = UADSLoadConfigurationBuilder(placementId: id).build()
-        UADSInterstitialAd.load(config) { [weak self] ad, error in
+        interstitialLoadCall = call
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else { call.reject("Ads bridge was released"); return }
-            self.interstitialLoading = false
-            guard let ad = ad, error == nil else {
-                call.reject(error?.message ?? "No interstitial fill")
-                return
-            }
-            self.interstitial = ad
-            ad.onAdExpired = { [weak self] expired in
-                if self?.interstitial === expired { self?.interstitial = nil }
-            }
-            call.resolve()
+            UnityAds.load(id, loadDelegate: self)
         }
     }
 
     @objc func showInterstitial(_ call: CAPPluginCall) {
-        guard let ad = interstitial else { call.reject("Interstitial is not loaded"); return }
+        guard interstitialReady, let id = interstitialPlacement else { call.reject("Interstitial is not loaded"); return }
         guard interstitialCall == nil && rewardedCall == nil else { call.reject("Another full-screen ad is already active"); return }
         guard let vc = topViewController(from: bridge?.viewController) else { call.reject("View controller is unavailable"); return }
-        interstitial = nil
+        interstitialReady = false
         interstitialCall = call
         interstitialPresenter = vc
         interstitialStarted = false
@@ -215,37 +168,31 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
             self.forceDismissPresentedAd(vc, reason: reason)
             self.interstitialDidFail(reason)
         }
-        let config = UADSShowConfigurationBuilder().with(viewController: vc).build()
-        DispatchQueue.main.async { ad.show(config, delegate: self.interstitialDelegate) }
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { call.reject("Ads bridge was released"); return }
+            UnityAds.show(vc, placementId: id, showDelegate: self)
+        }
     }
 
     @objc func prepareRewardVideoAd(_ call: CAPPluginCall) {
         guard let id = placement(call) else { return }
         guard initialized else { call.reject("Unity Ads is not initialized"); return }
-        if rewarded != nil { call.resolve(); return }
+        if rewardedReady && rewardedPlacement == id { call.resolve(); return }
         if rewardedLoading { call.reject("Rewarded load is already running"); return }
+        rewardedPlacement = id
         rewardedLoading = true
-        let config = UADSLoadConfigurationBuilder(placementId: id).build()
-        UADSRewardedAd.load(config) { [weak self] ad, error in
+        rewardedLoadCall = call
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else { call.reject("Ads bridge was released"); return }
-            self.rewardedLoading = false
-            guard let ad = ad, error == nil else {
-                call.reject(error?.message ?? "No rewarded fill")
-                return
-            }
-            self.rewarded = ad
-            ad.onAdExpired = { [weak self] expired in
-                if self?.rewarded === expired { self?.rewarded = nil }
-            }
-            call.resolve()
+            UnityAds.load(id, loadDelegate: self)
         }
     }
 
     @objc func showRewardVideoAd(_ call: CAPPluginCall) {
-        guard let ad = rewarded else { call.reject("Rewarded ad is not loaded"); return }
+        guard rewardedReady, let id = rewardedPlacement else { call.reject("Rewarded ad is not loaded"); return }
         guard interstitialCall == nil && rewardedCall == nil else { call.reject("Another full-screen ad is already active"); return }
         guard let vc = topViewController(from: bridge?.viewController) else { call.reject("View controller is unavailable"); return }
-        rewarded = nil
+        rewardedReady = false
         rewardedCall = call
         rewardedPresenter = vc
         rewardedStarted = false
@@ -256,8 +203,75 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
             self.forceDismissPresentedAd(vc, reason: reason)
             self.rewardedDidFail(reason)
         }
-        let config = UADSShowConfigurationBuilder().with(viewController: vc).build()
-        DispatchQueue.main.async { ad.show(config, delegate: self.rewardedDelegate) }
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { call.reject("Ads bridge was released"); return }
+            UnityAds.show(vc, placementId: id, showDelegate: self)
+        }
+    }
+
+    // Full-screen ads intentionally use Unity's placement-based load/show path.
+    // Banner rendering succeeds through UADSBannerAd, while the object-based
+    // UADSInterstitialAd/UADSRewardedAd path produced an opaque black controller
+    // on the same iPhone and Game ID. Keeping the formats on separate paths makes
+    // the failing renderer the only changed variable in the device retest.
+    public func unityAdsAdLoaded(_ placementId: String) {
+        if placementId == interstitialPlacement {
+            interstitialLoading = false
+            interstitialReady = true
+            interstitialLoadCall?.resolve()
+            interstitialLoadCall = nil
+        }
+        if placementId == rewardedPlacement {
+            rewardedLoading = false
+            rewardedReady = true
+            rewardedLoadCall?.resolve()
+            rewardedLoadCall = nil
+        }
+    }
+
+    public func unityAdsAdFailedToLoad(_ placementId: String, withError error: UnityAdsLoadError, withMessage message: String) {
+        if placementId == interstitialPlacement {
+            interstitialLoading = false
+            interstitialReady = false
+            interstitialLoadCall?.reject(message)
+            interstitialLoadCall = nil
+        }
+        if placementId == rewardedPlacement {
+            rewardedLoading = false
+            rewardedReady = false
+            rewardedLoadCall?.reject(message)
+            rewardedLoadCall = nil
+        }
+        NSLog("[TiliqUnityAds] Load failed %d for %@: %@", error.rawValue, placementId, message)
+    }
+
+    public func unityAdsShowStart(_ placementId: String) {
+        if placementId == interstitialPlacement { interstitialDidStart() }
+        if placementId == rewardedPlacement { rewardedDidStart() }
+    }
+
+    public func unityAdsShowClick(_ placementId: String) {
+        if placementId == interstitialPlacement {
+            notifyListeners("interstitialAdClicked", data: [:])
+        }
+        if placementId == rewardedPlacement {
+            notifyListeners("onRewardedVideoAdClicked", data: [:])
+        }
+    }
+
+    public func unityAdsShowComplete(_ placementId: String, withFinishState state: UnityAdsShowCompletionState) {
+        let completed = state.rawValue == 1
+        if placementId == interstitialPlacement { interstitialDidComplete(completed) }
+        if placementId == rewardedPlacement {
+            if completed { rewardedDidEarn() }
+            rewardedDidComplete(completed)
+        }
+    }
+
+    public func unityAdsShowFailed(_ placementId: String, withError error: UnityAdsShowError, withMessage message: String) {
+        let detail = "[\(error.rawValue)] \(message)"
+        if placementId == interstitialPlacement { interstitialDidFail(detail) }
+        if placementId == rewardedPlacement { rewardedDidFail(detail) }
     }
 
     fileprivate func interstitialDidStart() {
@@ -274,10 +288,10 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         interstitialWatchdog = work
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.showCompletionTimeout, execute: work)
     }
-    fileprivate func interstitialDidComplete(_ state: UADSShowFinishState) {
+    fileprivate func interstitialDidComplete(_ completed: Bool) {
         guard interstitialCall != nil else { return }
         interstitialWatchdog?.cancel()
-        notifyListeners("interstitialAdDismissed", data: ["completed": state == .completed])
+        notifyListeners("interstitialAdDismissed", data: ["completed": completed])
         interstitialCall?.resolve()
         interstitialCall = nil
         interstitialPresenter = nil
@@ -309,13 +323,12 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         guard rewardedStarted && rewardedCall != nil else { return }
         rewardedEarned = true
     }
-    fileprivate func rewardedDidComplete(_ state: UADSShowFinishState) {
+    fileprivate func rewardedDidComplete(_ completed: Bool) {
         guard rewardedCall != nil else { return }
         rewardedWatchdog?.cancel()
         // Emit the reward immediately before dismissal only when the same show
         // both earned a reward and reached Unity's completed state. This blocks
         // stale/partial callbacks from granting a reward after a failed black view.
-        let completed = state == .completed
         if rewardedStarted && rewardedEarned && completed {
             notifyListeners("onRewardedVideoAdReward", data: ["completed": true])
         }

@@ -1,6 +1,6 @@
 {
   "name": "tiliq",
-  "version": "1.3.94",
+  "version": "1.3.95",
   "description": "Tiliq — Mobil Blok Puzzle Oyunu",
   "scripts": {
     "postinstall": "patch-package",
