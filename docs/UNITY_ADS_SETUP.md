@@ -1,6 +1,6 @@
 # Tiliq — Unity Ads doğrudan entegrasyon
 
-Tiliq, Capacitor ile Android ve iOS için paketlenir. Reklam köprüsü resmi Unity Ads 4.20.0 SDK'sını kullanır; AdMob hesabı devre dışı olduğu için AdMob reklam isteği gönderilmez. Mevcut AdMob eklentisi yalnızca iOS ATT yetkilendirme akışı için korunur.
+Tiliq, Capacitor ile Android ve iOS için paketlenir. Reklam köprüsü resmi Unity Ads 4.20.1 SDK'sını kullanır; AdMob hesabı devre dışı olduğu için AdMob reklam isteği gönderilmez. Mevcut AdMob eklentisi yalnızca iOS ATT yetkilendirme akışı için korunur.
 
 ## Unity paneli
 
@@ -14,7 +14,9 @@ Tiliq, Capacitor ile Android ve iOS için paketlenir. Reklam köprüsü resmi Un
 
 ## iPhone test buildi
 
-**Tiliq 1.3.92 (build 91)**, App Store Connect'e 2026-09-15 tarihinde hatasız yüklendi: [CI sonucu](https://github.com/gamcomp/tiliq-game/actions/runs/35015899059). Apple TestFlight işlemesi bitince iPhone'da TestFlight uygulamasından bu sürümü yükle. Dahili tester erişimi yoksa App Store Connect > Tiliq > TestFlight > Internal Testing bölümünde tester grubunu kontrol et.
+**Tiliq 1.3.94**, App Store Connect'e 2026-09-16 tarihinde hatasız yüklendi: [CI sonucu](https://github.com/gamcomp/tiliq-game/actions/runs/35141751054). Apple TestFlight işlemesi bitince iPhone'da TestFlight uygulamasından bu sürümü yükle. Dahili tester erişimi yoksa App Store Connect > Tiliq > TestFlight > Internal Testing bölümünde tester grubunu kontrol et.
+
+1.3.94 reklam doğrulama buildinde Unity test envanteri aktiftir. Tam ekran reklam görünür view controller üzerinden açılır; reklam 8 saniye içinde başlamazsa veya 75 saniye içinde tamamlanmazsa siyah ekran zorla kapatılır. Ödül, aynı reklam oturumu hem Unity ödül callback'ini hem de `completed` sonucunu üretirse verilir. Banner 15 saniye içinde impression üretmezse boş şerit kaldırılır ve kontrollü yeniden yükleme yapılır.
 
 Ödüllü reklamı bir kez sonuna kadar izleyip ödülün yalnızca tamamlandığında verildiğini, bir kez erken kapatıp ödül verilmediğini doğrula. Oyun sonundan ana menüye üç kez dönerek tam ekran reklam sınırını, banner'ın oyun tepsisi ve HUD'la çakışmadığını kontrol et. Bu test buildinde `testMode: true`; gerçek reklam geliri ölçülemez. FPS, açılış süresi ve RAM gerçek iPhone'da ayrıca kaydedilmelidir.
 
