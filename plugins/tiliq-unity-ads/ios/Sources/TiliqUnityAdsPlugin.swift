@@ -259,7 +259,7 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         }
     }
 
-    public func unityAdsShowComplete(_ placementId: String, withFinishState state: UnityAdsShowCompletionState) {
+    public func unityAdsShowComplete(_ placementId: String, withFinish state: UnityAdsShowCompletionState) {
         let completed = state.rawValue == 1
         if placementId == interstitialPlacement { interstitialDidComplete(completed) }
         if placementId == rewardedPlacement {
