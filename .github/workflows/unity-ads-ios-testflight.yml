@@ -213,11 +213,36 @@ jobs:
             --path "$IPA_PATH" \
             --max-find-build-wait 15
 
+      # GitHub's public Actions API exposes artifact names but requires an
+      # authenticated request for artifact contents. Keep the compiler's first
+      # useful error in the failure artifact name so a failed remote macOS build
+      # remains diagnosable without exposing credentials or downloading logs.
+      - name: Summarize compiler error for public diagnostics
+        id: build_diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          SUMMARY="$(grep -hE 'error:|does not conform to protocol|candidate has non-matching type' /tmp/xcodebuild_logs/*.log 2>/dev/null \
+            | sed -E 's/^.*(error:|does not conform to protocol|candidate has non-matching type)/\1/' \
+            | head -n 3 \
+            | tr '\n' '-' \
+            | tr -cs '[:alnum:]_.-' '-' \
+            | cut -c1-190)"
+          if [ -z "$SUMMARY" ]; then SUMMARY="unknown-build-error"; fi
+          echo "artifact_name=ios-build-error-$SUMMARY" >> "$GITHUB_OUTPUT"
+
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: success()
         with:
           name: ipa-and-logs
           path: |
             **/*.ipa
             /tmp/xcodebuild_logs/*.log
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: ${{ steps.build_diagnostics.outputs.artifact_name }}
+          path: /tmp/xcodebuild_logs/*.log
           retention-days: 14
