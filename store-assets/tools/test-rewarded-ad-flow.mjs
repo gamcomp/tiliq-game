@@ -149,7 +149,112 @@ try {
     const noBombWarningHidden = !bombButton.classList.contains('last-chance');
     dead = true;
 
-    return {accountDisabledReward, accountDisabledOverlay, normalReward, fallbackReward, optionalReward, testFlightFallbackReward, testInventoryRequested, fallbackLabel, optionalLabel, lastChanceShown, lastChanceAnimation, lastChanceCleared, noBombWarningHidden};
+    // Exercise the Unity Capacitor adapter with platform-specific IDs and
+    // native reward events: closing early must not grant an optional reward.
+    const unityListeners = new Map();
+    const unityLoads = [];
+    const unityBridge = {
+      addListener: async (name, callback) => {
+        unityListeners.set(name, callback);
+        return {remove: () => unityListeners.delete(name)};
+      },
+      initialize: async ({gameId}) => { unityLoads.push(`game:${gameId}`); },
+      prepareRewardVideoAd: async ({adId}) => { unityLoads.push(`rewarded:${adId}`); },
+      prepareInterstitial: async ({adId}) => { unityLoads.push(`interstitial:${adId}`); },
+      showBanner: async ({adId}) => { unityLoads.push(`banner:${adId}`); },
+      showRewardVideoAd: async () => {
+        if (unityBridge.earned) unityListeners.get('onRewardedVideoAdReward')?.();
+        unityListeners.get('onRewardedVideoAdDismissed')?.({completed: unityBridge.completed});
+      },
+    };
+    window.Capacitor.getPlatform = () => 'android';
+    window.Capacitor.Plugins.TiliqUnityAds = unityBridge;
+    Object.assign(window.TILIQ_UNITY_ADS.android, {
+      gameId: 'android-game', interstitial: 'android-inter',
+      rewarded: 'android-reward', banner: 'android-banner',
+    });
+    const unityActive = window.TiliqUnityAdsProvider.active;
+    await window.TiliqUnityAdsProvider.initialize();
+    _useAdMobTestAds = false;
+    _adMobReady = true;
+    _adsCanRequest = true;
+    _rewardReady = false;
+    let unitySkippedReward = 0;
+    // A stale reward callback followed by a skipped/failed completion must not
+    // unlock the reward (the black-screen regression reported on TestFlight).
+    unityBridge.earned = true;
+    unityBridge.completed = false;
+    await showRewardedAd(() => { unitySkippedReward += 1; }, adContext('score'));
+    await wait(50);
+    _rewardReady = false;
+    let unityEarnedReward = 0;
+    unityBridge.earned = true;
+    unityBridge.completed = true;
+    await showRewardedAd(() => { unityEarnedReward += 1; }, adContext('score'));
+    await wait(900);
+    // Completion carries its own earned bit; delivery order must not lose rewards.
+    let immediateReward=0;
+    unityBridge.showRewardVideoAd=async()=>{
+      const dismissed=unityListeners.get('onRewardedVideoAdDismissed');
+      dismissed?.({completed:true,earned:true});
+      dismissed?.({completed:true,earned:true});
+      if(immediateReward!==1)throw new Error('Reward was delayed or duplicated');
+      return {completed:true,earned:true};
+    };
+    await showRewardedAd(()=>{immediateReward++;},adContext('score'));
+    let promiseReward=0;
+    unityBridge.showRewardVideoAd=async()=>({completed:true,earned:true});
+    await showRewardedAd(()=>{promiseReward++;},adContext('score'));
+    if(promiseReward!==1)throw new Error('Native completion result lost');
+
+    // Cancelling a target or tapping empty space must retain the watched use.
+    dead=false;bombCount=2;bombMode=false;_bombAdCredit=false;
+    let toolShows=0;
+    unityBridge.showRewardVideoAd=async()=>{toolShows++;return {completed:true,earned:true};};
+    activateBomb();await wait(250);
+    if(!bombMode)throw new Error('Hammer did not activate after ad');
+    activateBomb();activateBomb();await wait(250);
+    if(toolShows!==1||!bombMode)throw new Error('Unused hammer requested another ad');
+    colorBlastMode=false;setColorBlast(1);_colorAdCredit=false;
+    activateColorBlast();await wait(250);
+    grid=Array.from({length:GRID},()=>Array(GRID).fill(0));
+    useColorBlast(0,0);activateColorBlast();await wait(250);
+    if(toolShows!==2||!colorBlastMode)throw new Error('Empty target consumed watched color use');
+    dead=true;
+    localStorage.removeItem('tiliq_interstitial_opportunities');
+    let interstitialShows = 0;
+    showInterstitial = () => { interstitialShows += 1; };
+    backToMenu = () => {};
+    menuWithAd();
+    menuWithAd();
+    const firstTwoInterstitialShows = interstitialShows;
+    menuWithAd();
+    window.Capacitor.getPlatform = () => 'ios';
+    const iosUnityActive = window.TiliqUnityAdsProvider.active;
+    await window.TiliqUnityAdsProvider.initialize();
+    await window.TiliqUnityAdsProvider.prepareRewardVideoAd();
+    await window.TiliqUnityAdsProvider.prepareInterstitial();
+    await window.TiliqUnityAdsProvider.showBanner();
+
+    // A resumed native banner must stay hidden if the screen changed mid-await.
+    let releaseResume;
+    unityBridge.resumeBanner=()=>new Promise(resolve=>{releaseResume=resolve;});
+    unityBridge.hideBanner=async()=>{};
+    isNoAds=()=>false;
+    document.querySelectorAll('.screen.active').forEach(el=>el.classList.remove('active'));
+    document.getElementById('screen-menu').classList.add('active');
+    _rewardFlowActive=false;_fullScreenAdOpen=false;
+    _bannerNativeExists=true;_bannerState='hidden';
+    const pendingBanner=showBanner();
+    if(!releaseResume)throw new Error('Banner resume did not start');
+    await hideBanner();releaseResume();await pendingBanner;
+    if(_bannerShown||_bannerState!=='hidden')throw new Error('Stale banner resume became visible');
+    _rewardFlowActive=true;
+    await showBanner();
+    if(_bannerDesired)throw new Error('Banner appeared over reward flow');
+    _rewardFlowActive=false;
+
+    return {accountDisabledReward, accountDisabledOverlay, normalReward, fallbackReward, optionalReward, testFlightFallbackReward, testInventoryRequested, fallbackLabel, optionalLabel, lastChanceShown, lastChanceAnimation, lastChanceCleared, noBombWarningHidden, unityActive, unityLoads, unitySkippedReward, unityEarnedReward, firstTwoInterstitialShows, interstitialShows, iosUnityActive};
   });
 
   if (result.accountDisabledReward !== 1 || result.accountDisabledOverlay !== 'none') throw new Error(`disabled-account fallback failed: ${JSON.stringify(result)}`);
@@ -158,6 +263,18 @@ try {
   if (result.fallbackReward !== 1) throw new Error(`rescue fallback failed: ${JSON.stringify(result)}`);
   if (result.optionalReward !== 0) throw new Error(`optional reward leaked: ${JSON.stringify(result)}`);
   if (result.testFlightFallbackReward !== 1) throw new Error(`TestFlight fallback failed: ${JSON.stringify(result)}`);
+  if (!result.unityActive || !result.unityLoads.includes('game:android-game') || !result.unityLoads.includes('rewarded:android-reward')) {
+    throw new Error(`Unity platform mapping failed: ${JSON.stringify(result)}`);
+  }
+  if (result.unitySkippedReward !== 0 || result.unityEarnedReward !== 1) {
+    throw new Error(`Unity native reward event failed: ${JSON.stringify(result)}`);
+  }
+  if (result.firstTwoInterstitialShows !== 0 || result.interstitialShows !== 1) {
+    throw new Error(`interstitial pacing failed: ${JSON.stringify(result)}`);
+  }
+  if (!result.iosUnityActive || !['game:800374323', 'rewarded:BP_Rewarded_iOS', 'interstitial:BP_Interstitial_iOS', 'banner:BP_Banner_iOS'].every((id) => result.unityLoads.includes(id))) {
+    throw new Error(`iOS Unity placement mapping failed: ${JSON.stringify(result)}`);
+  }
   if (!result.fallbackLabel || result.fallbackLabel === result.optionalLabel) throw new Error(`fallback label failed: ${JSON.stringify(result)}`);
   if (!result.lastChanceShown || result.lastChanceAnimation !== 'sky-bomb-last-chance' || !result.lastChanceCleared || !result.noBombWarningHidden) {
     throw new Error(`bomb last-chance warning failed: ${JSON.stringify(result)}`);

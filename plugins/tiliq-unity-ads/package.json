@@ -1,0 +1,11 @@
+{
+  "name": "tiliq-unity-ads",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tiliq Capacitor bridge for the official Unity Ads SDK",
+  "main": "index.js",
+  "capacitor": {
+    "ios": { "src": "ios" },
+    "android": { "src": "android" }
+  }
+}

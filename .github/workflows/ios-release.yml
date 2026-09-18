@@ -123,6 +123,7 @@ jobs:
             pod 'CapacitorFirebaseFirestore', :path => '../../node_modules/@capacitor-firebase/firestore'
             pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
             pod 'AparajitaCapacitorSecureStorage', :path => '../../node_modules/@aparajita/capacitor-secure-storage'
+            pod 'TiliqUnityAds', :path => '../../plugins/tiliq-unity-ads'
           end
 
           target 'App' do

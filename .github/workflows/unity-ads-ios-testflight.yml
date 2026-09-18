@@ -1,0 +1,252 @@
+name: Unity Ads iOS TestFlight build
+
+on:
+  push:
+    branches:
+      - codex/unity-ads-ios-test-20260915
+    paths:
+      - .github/workflows/unity-ads-ios-testflight.yml
+      - plugins/tiliq-unity-ads/ios/Sources/TiliqUnityAdsPlugin.swift
+      - ios/App/App.xcodeproj/project.pbxproj
+      - game.html
+      - crown-quest.css
+      - harbor-polish.css
+  workflow_dispatch: {}
+
+concurrency:
+  group: tiliq-unity-ads-testflight
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # KÖK NEDEN (2026-07-21, dördüncü hata): FirebaseSharedSwift pod'u Swift 6'nın
+    # 'sending' anahtar kelimesini kullanıyor — macos-14 runner'ının varsayılan Xcode'u
+    # (15.4) bunu tanımıyordu ("cannot find type 'sending' in scope"). codemagic.yaml
+    # zaten xcode:latest kullanıyordu (bilerek en güncel sürüm) — macos-15'e geçip
+    # aynı davranışı sağlıyoruz.
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      APP_ID: 6789283001
+      BUNDLE_ID: com.tiliq.game
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.ASC_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # KÖK NEDEN (2026-07-21, beşinci hata — TestFlight yükleme reddi): Apple artık
+      # iOS 26 SDK (Xcode 26+) ile derlenmemiş yüklemeleri kabul etmiyor. Runner
+      # varsayılan olarak Xcode 16.4 seçiyordu (iOS 18.5 SDK). Kurulu en yeni Xcode'u
+      # otomatik seçip kullanıyoruz — hangi sürümlerin gerçekten kurulu olduğunu da
+      # burada görebiliriz.
+      - name: List installed Xcode versions and select the newest
+        run: |
+          ls -d /Applications/Xcode*.app
+          LATEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Selecting: $LATEST"
+          sudo xcode-select -s "$LATEST"
+          xcodebuild -version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm install
+
+      # HIZLANDIRMA (2026-07-22, "güncelleme çok geç" isteği): CocoaPods'un pod
+      # KAYNAKLARINI indirdiği önbellek klasörü — Podfile aynı kalırsa her run'da
+      # Firebase/GoogleSignIn/RevenueCat gibi büyük paketleri tekrar tekrar internetten
+      # indirmek yerine önbellekten alır. DerivedData/derlenmiş çıktı ÖNBELLEKLENMİYOR
+      # (release imzalama için her seferinde temiz derleme daha güvenli) — bu sadece
+      # indirme süresini kısaltır, derleme süresini değil.
+      - name: Cache CocoaPods sources
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/CocoaPods
+          key: pods-v1-${{ runner.os }}-firebase11-googlesignin7.1.0-revenuecat
+
+      # TEŞHİS: Google Sign-In'in sessiz askıda kalmasını görünür hataya çevir
+      # (bkz. codemagic.yaml — aynı yama, aynı kök neden)
+      - name: Patch GoogleAuthProviderHandler.swift (visible errors)
+        run: |
+          FILE="node_modules/@capacitor-firebase/authentication/ios/Plugin/Handlers/GoogleAuthProviderHandler.swift"
+          perl -0777 -pi -e 's/guard let clientId = FirebaseApp\.app\(\)\?\.options\.clientID else \{ return \}/guard let clientId = FirebaseApp.app()?.options.clientID else { call.reject("Google ile giriş şu anda kullanılamıyor"); return }/' "$FILE"
+          perl -0777 -pi -e 's/guard let controller = self\.pluginImplementation\.getPlugin\(\)\.bridge\?\.viewController else \{ return \}/guard let controller = self.pluginImplementation.getPlugin().bridge?.viewController else { call.reject("Google ile giriş şu anda kullanılamıyor"); return }/' "$FILE"
+          perl -0777 -pi -e 's/guard let user = result\?\.user,\s*let idToken = user\.idToken\?\.tokenString\s*else \{\s*return\s*\}/guard let user = result?.user,\n                      let idToken = user.idToken?.tokenString\n                else {\n                    call.reject("Google ile giriş şu anda kullanılamıyor")\n                    return\n                }/' "$FILE"
+          perl -0777 -pi -e 's/        #endif\n    }\n}\n?\z/        #else\n        call.reject("Google ile giriş şu anda kullanılamıyor")\n        #endif\n    }\n}\n/' "$FILE"
+
+      # GOOGLE GİRİŞ ÇÖZÜMÜ: podspec'i subspec'siz üst-seviye zorunlu bağımlılık yap
+      - name: Patch CapacitorFirebaseAuthentication.podspec
+        run: |
+          PSFILE="node_modules/@capacitor-firebase/authentication/CapacitorFirebaseAuthentication.podspec"
+          cat > "$PSFILE" <<'PODSPEC_EOF'
+          require 'json'
+
+          package = JSON.parse(File.read(File.join(__dir__, 'package.json')))
+
+          Pod::Spec.new do |s|
+            s.name = 'CapacitorFirebaseAuthentication'
+            s.version = package['version']
+            s.summary = package['description']
+            s.license = package['license']
+            s.homepage = package['repository']['url']
+            s.author = package['author']
+            s.source = { :git => package['repository']['url'], :tag => s.version.to_s }
+            s.source_files = 'ios/Plugin/**/*.{swift,h,m,c,cc,mm,cpp}'
+            s.ios.deployment_target  = '13.0'
+            s.dependency 'Capacitor'
+            s.dependency 'FirebaseAuth', '~> 11.0'
+            s.swift_version = '5.1'
+            s.static_framework = true
+            s.xcconfig = { 'OTHER_SWIFT_FLAGS' => '$(inherited) -DRGCFA_INCLUDE_GOOGLE' }
+            s.dependency 'GoogleSignIn', '7.1.0'
+          end
+          PODSPEC_EOF
+
+      - name: Sync Capacitor web assets into native iOS project
+        run: npx cap sync ios
+
+      # KRİTİK: Podfile'ı cap sync'ten sonra bilinen-doğru içerikle TAMAMEN yeniden yaz
+      - name: Rewrite Podfile
+        run: |
+          cat > ios/App/Podfile <<'PODFILE_EOF'
+          require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+          platform :ios, '15.0'
+          use_frameworks!
+
+          install! 'cocoapods', :disable_input_output_paths => true
+
+          def capacitor_pods
+            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+            pod 'AparajitaCapacitorSecureStorage', :path => '../../node_modules/@aparajita/capacitor-secure-storage'
+            pod 'CapacitorCommunityAdmob', :path => '../../node_modules/@capacitor-community/admob'
+            pod 'CapacitorCommunityInAppReview', :path => '../../node_modules/@capacitor-community/in-app-review'
+            pod 'CapacitorFirebaseAuthentication', :path => '../../node_modules/@capacitor-firebase/authentication'
+            pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
+            pod 'CapacitorFirebaseFirestore', :path => '../../node_modules/@capacitor-firebase/firestore'
+            pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+            pod 'TiliqUnityAds', :path => '../../plugins/tiliq-unity-ads'
+          end
+
+          target 'App' do
+            capacitor_pods
+          end
+
+          post_install do |installer|
+            assertDeploymentTarget(installer)
+          end
+          PODFILE_EOF
+
+      - name: Install CocoaPods dependencies
+        run: |
+          rm -rf ios/App/Pods
+          cd ios/App && pod install
+
+      - name: Install codemagic-cli-tools
+        run: pip3 install --break-system-packages codemagic-cli-tools
+
+      - name: Initialize temporary keychain
+        run: keychain initialize
+
+      # KALICI SERTİFİKA KEY'İ (2026-07-21, ÜÇÜNCÜ hata — "You already have a current
+      # Distribution certificate"): İlk denemede her run'da openssl ile TAZE bir key
+      # üretip --create ile yeni sertifika oluşturuyorduk — bu, HER RUN'DA Apple'da
+      # yeni bir Distribution sertifikası talep ediyordu ve Apple'ın izin verdiği
+      # sertifika sayısı sınırına (2) çok hızlı çarpıyorduk (409 Conflict). Artık TEK
+      # SEFERLİK oluşturulmuş, ASC_CERT_KEY secret'ında KALICI olarak saklanan aynı
+      # private key her run'da tekrar kullanılıyor — fetch-signing-files bu key'e ait
+      # sertifikayı zaten hesapta bulur, --create'e hiç gerek kalmadan onu kullanır.
+      - name: Write persistent certificate private key
+        run: echo "$CERTIFICATE_PRIVATE_KEY" > $RUNNER_TEMP/cert.key
+        env:
+          CERTIFICATE_PRIVATE_KEY: ${{ secrets.ASC_CERT_KEY }}
+
+      - name: Fetch/create signing files (auto certificate + provisioning profile)
+        run: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key "@file:$RUNNER_TEMP/cert.key" \
+            --create
+
+      # KÖK NEDEN (2026-07-21, ikinci hata): fetch-signing-files profili varsayılan
+      # olarak ~/Library/Developer/Xcode/UserData/Provisioning Profiles'e kaydediyor;
+      # use-profiles bu profili doğru okuyup proje ayarlarına (PROVISIONING_PROFILE_SPECIFIER
+      # vb.) doğru yazıyor AMA gerçek `xcodebuild archive` komutu profil DOSYASININ
+      # KENDİSİNİ SADECE ~/Library/MobileDevice/Provisioning Profiles/ klasöründe arıyor —
+      # "No profile ... found" hatası buradan geliyordu. Profili iki konuma da kopyalayıp
+      # garantiye alıyoruz.
+      - name: Install provisioning profile where Xcode actually looks for it
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp -f ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || true
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+
+      - name: Add certificates to keychain
+        run: keychain add-certificates
+
+      - name: Use fetched profiles for code signing
+        run: xcode-project use-profiles
+
+      - name: Increment build number
+        working-directory: ios/App
+        run: |
+          LATEST_STORE=$(app-store-connect get-latest-app-store-build-number "$APP_ID" 2>/dev/null || echo "0")
+          LATEST_TESTFLIGHT=$(app-store-connect get-latest-testflight-build-number "$APP_ID" 2>/dev/null || echo "0")
+          if [ -z "$LATEST_STORE" ]; then LATEST_STORE=0; fi
+          if [ -z "$LATEST_TESTFLIGHT" ]; then LATEST_TESTFLIGHT=0; fi
+          LATEST=$LATEST_STORE
+          if [ "$LATEST_TESTFLIGHT" -gt "$LATEST" ]; then LATEST=$LATEST_TESTFLIGHT; fi
+          agvtool new-version -all $((LATEST + 1))
+
+      - name: Build ipa for distribution
+        run: |
+          xcode-project build-ipa \
+            --workspace "ios/App/App.xcworkspace" \
+            --scheme "App"
+
+      - name: Upload test build to App Store Connect for internal TestFlight
+        run: |
+          IPA_PATH="$(find . -name '*.ipa' | head -1)"
+          test -n "$IPA_PATH"
+          app-store-connect publish \
+            --path "$IPA_PATH" \
+            --max-find-build-wait 15
+
+      # GitHub's public Actions API exposes artifact names but requires an
+      # authenticated request for artifact contents. Keep the compiler's first
+      # useful error in the failure artifact name so a failed remote macOS build
+      # remains diagnosable without exposing credentials or downloading logs.
+      - name: Summarize compiler error for public diagnostics
+        id: build_diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          SUMMARY="$(grep -hE 'error:|does not conform to protocol|candidate has non-matching type' /tmp/xcodebuild_logs/*.log 2>/dev/null \
+            | sed -E 's/^.*(error:|does not conform to protocol|candidate has non-matching type)/\1/' \
+            | head -n 3 \
+            | tr '\n' '-' \
+            | tr -cs '[:alnum:]_.-' '-' \
+            | cut -c1-190)"
+          if [ -z "$SUMMARY" ]; then SUMMARY="unknown-build-error"; fi
+          echo "artifact_name=ios-build-error-$SUMMARY" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ipa-and-logs
+          path: |
+            **/*.ipa
+            /tmp/xcodebuild_logs/*.log
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: ${{ steps.build_diagnostics.outputs.artifact_name }}
+          path: /tmp/xcodebuild_logs/*.log
+          retention-days: 14
