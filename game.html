@@ -236,14 +236,14 @@
         <button class="btn-menu active" onclick="showScreen('menu')">
           <span class="m-icon"><img alt=""></span><span data-t="navHome">Ana Sayfa</span>
         </button>
-        <button class="btn-menu" onclick="toggleLB()">
-          <span class="m-icon"><img alt=""></span><span data-t="navPalace">Saray</span>
+        <button class="btn-menu" onclick="openLeaderboardTab('global')">
+          <span class="m-icon"><img alt=""></span><span data-t="navPalace">Dünya Sıralaması</span>
         </button>
         <button class="btn-menu" onclick="onPlayPressed()">
           <span class="m-icon"><img alt=""></span><span data-t="navLounge">Salon</span>
         </button>
-        <button class="btn-menu" onclick="toggleLB()">
-          <span class="m-icon"><img alt=""></span><span data-t="navTeam">Takım</span>
+        <button class="btn-menu" onclick="openLeaderboardTab('friends')">
+          <span class="m-icon"><img alt=""></span><span data-t="navTeam">Arkadaşlar</span>
         </button>
         <button class="btn-menu" onclick="showTmStoreModal()">
           <span class="m-icon"><img alt=""></span><span data-t="navShop">Dükkan</span>
@@ -390,9 +390,9 @@
   </div>
   <nav class="game-nav" aria-label="Oyun navigasyonu">
     <button onclick="backToMenu()"><img alt=""><span data-t="navHome">Ana Sayfa</span></button>
-    <button onclick="backToMenu()"><img alt=""><span data-t="navPalace">Saray</span></button>
+    <button onclick="openLeaderboardTab('global')"><img alt=""><span data-t="navPalace">Dünya Sıralaması</span></button>
     <button class="game-nav-play" onclick="document.getElementById('gameCanvas').focus()"><img alt=""><span data-t="navLounge">Salon</span></button>
-    <button onclick="toggleLB()"><img alt=""><span data-t="navTeam">Takım</span></button>
+    <button onclick="openLeaderboardTab('friends')"><img alt=""><span data-t="navTeam">Arkadaşlar</span></button>
     <button onclick="showTmStoreModal()"><img alt=""><span data-t="navShop">Dükkan</span></button>
   </nav>
   <div id="banner-spacer-game" style="width:100%;flex-shrink:0;height:0;"></div>
@@ -426,7 +426,7 @@
   <div class="modal-card dr-card-modal">
     <div class="modal-head">
       <button class="btn-icon" onclick="hideModal('daily')">‹</button>
-      <h3 data-t="dailyRewardsTitle">Günlük Ödüller</h3>
+      <h3 data-t="dailyMailStreak">Günlük Posta Serisi</h3>
       <div style="width:32px"></div>
     </div>
     <div class="modal-body" id="daily-modal-body"></div>
@@ -1005,11 +1005,13 @@ function _skyWords(key,values){
   ['flightSystemReady',["UÇUŞ SİSTEMİ HAZIRLANIYOR","PREPARING FLIGHT SYSTEM","フライトシステムを準備中","비행 시스템 준비 중","FLUGSYSTEM WIRD VORBEREITET","PRÉPARATION DU SYSTÈME DE VOL","PREPARANDO SISTEMA DE VUELO","PREPARAZIONE SISTEMA DI VOLO","PREPARANDO SISTEMA DE VOO","ПОДГОТОВКА СИСТЕМЫ ПОЛЁТА","उड़ान प्रणाली तैयार हो रही है","VLUCHTSYSTEEM VOORBEREIDEN","جارٍ تجهيز نظام الطيران","正在准备飞行系统"]],
   ['missions',["GÖREVLER","MISSIONS","ミッション","미션","MISSIONEN","MISSIONS","MISIONES","MISSIONI","MISSÕES","ЗАДАНИЯ","मिशन","MISSIES","المهام","任务"]],
   ['skyLeague',["Gökyüzü ligi","Sky League","スカイリーグ","스카이 리그","Himmelsliga","Ligue du ciel","Liga del cielo","Lega del cielo","Liga do céu","Небесная лига","स्काई लीग","Luchtliga","دوري السماء","天空联赛"]],
+  ['you',["Sen","You","あなた","나","Du","Vous","Tú","Tu","Você","Вы","आप","Jij","أنت","你"]],
+  ['dailyMailStreak',["Günlük Posta Serisi","Daily Mail Streak","デイリーメール連続記録","일일 우편 연속 보상","Tägliche Postserie","Série de courrier quotidien","Racha de correo diario","Serie di posta giornaliera","Sequência de correio diário","Серия ежедневной почты","दैनिक डाक सिलसिला","Dagelijkse postreeks","سلسلة البريد اليومي","每日邮件连续奖励"]],
   ['mailbox',["POSTA KUTUSU","MAILBOX","メールボックス","우편함","POSTFACH","BOÎTE AUX LETTRES","BUZÓN","POSTA","CAIXA DE CORREIO","ПОЧТА","डाक पेटी","POSTVAK","صندوق البريد","邮箱"]],
   ['navHome',["Ana Sayfa","Home","ホーム","홈","Start","Accueil","Inicio","Home","Início","Главная","मुख्य पृष्ठ","Home","الرئيسية","主页"]],
-  ['navPalace',["Saray","Palace","宮殿","궁전","Palast","Palais","Palacio","Palazzo","Palácio","Дворец","महल","Paleis","القصر","宫殿"]],
+  ['navPalace',["Dünya Sıralaması","World Rankings","世界ランキング","세계 순위","Weltrangliste","Classement mondial","Clasificación mundial","Classifica mondiale","Ranking mundial","Мировой рейтинг","विश्व रैंकिंग","Wereldranglijst","الترتيب العالمي","世界排名"]],
   ['navLounge',["Salon","Lounge","ラウンジ","라운지","Lounge","Salon","Salón","Salone","Salão","Зал","लाउंज","Salon","الصالة","大厅"]],
-  ['navTeam',["Takım","Team","チーム","팀","Team","Équipe","Equipo","Squadra","Equipe","Команда","टीम","Team","الفريق","团队"]],
+  ['navTeam',["Arkadaşlar","Friends","フレンド","친구","Freunde","Amis","Amigos","Amici","Amigos","Друзья","मित्र","Vrienden","الأصدقاء","好友"]],
   ['navShop',["Dükkan","Shop","ショップ","상점","Shop","Boutique","Tienda","Negozio","Loja","Магазин","दुकान","Winkel","المتجر","商店"]],
   ['flightPreparing',["Uçuş hazırlanıyor…","Preparing flight…","フライトを準備中…","비행 준비 중…","Flug wird vorbereitet…","Préparation du vol…","Preparando vuelo…","Preparazione del volo…","Preparando voo…","Подготовка полёта…","उड़ान तैयार हो रही है…","Vlucht voorbereiden…","جارٍ تجهيز الرحلة…","正在准备飞行…"]],
   ['flightSaveReady',["Uçuş kaydın hazır","Your flight save is ready","フライト記録の準備完了","비행 저장 준비 완료","Dein Flugstand ist bereit","Votre sauvegarde de vol est prête","Tu partida está lista","Il salvataggio del volo è pronto","Seu voo salvo está pronto","Сохранение полёта готово","आपकी उड़ान सेव तैयार है","Je vluchtopslag is klaar","حفظ رحلتك جاهز","飞行存档已就绪"]],
@@ -2225,7 +2227,7 @@ function renderDailyModal(){
     <div class="dr-hero">
       <div class="dr-hero-icon">${claimed?'<span class="daily-check hero">✓</span>':_dailyImg(todayReward.bombs?'bomb':'open',64)}</div>
       <div class="dr-streak-row"><img src="assets/sky-harbor/streak.png" alt=""><span class="n">${streak}</span><span>${t('statStreak')}</span></div>
-      <div class="dr-hero-sub">${t('dailyNote')}</div>
+      <div class="dr-hero-sub">${t('dailyMailStreak')} · ${t('dailyNote')}</div>
     </div>
     <div class="dr-grid">${dayCards}</div>
     ${ctaHtml}
@@ -8147,6 +8149,14 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
   list.innerHTML=`<div style="text-align:center;padding:24px;opacity:.5;font-size:13px;cursor:pointer" onclick="renderLB(${ps},'${field}','${listId}','${rankId}','${scoreId}')">${_retryMsg}</div>`;
 }
 
+function openLeaderboardTab(tab){
+  if(tab==='friends'&&!requireAccount('loginForFriends'))return;
+  currentLBTab=tab;
+  const panel=document.getElementById('lb-panel');
+  if(!panel.classList.contains('open'))toggleLB();
+  setLBTab(tab);
+  if(tab==='global')renderLB(Math.max(score,acct.best||0));
+}
 function toggleLB(){
   playTapLight();vibrate(10);
   const p=document.getElementById('lb-panel');
@@ -8589,7 +8599,7 @@ async function searchFriendByCode(){
       const res=await Promise.race([_fsQueryCollection('users',[{type:'where',fieldPath:'code',opStr:'==',value:code.toUpperCase()}]),_searchTimeout]);
       if(res.length){
         const d=res[0];
-        _friendSearchData={code:code.toUpperCase(),name:d.name||t('guest'),score:d.best||0,uid:d.id};
+        _friendSearchData={code:code.toUpperCase(),name:d.name||t('guest'),score:d.best||0,uid:d.id,mascot:d.mascot||'ruby'};
       }
     }catch(_){}
   }
@@ -8607,7 +8617,7 @@ async function searchFriendByCode(){
     document.getElementById('fsr-score').textContent=_friendSearchData.score.toLocaleString()+' '+t('pts');
     const colors=['#C4714A','#D4A843','#8AB89A','#6B9EB8','#C77DFF'];
     document.getElementById('fsr-avatar').style.background=colors[_friendSearchData.name.charCodeAt(0)%colors.length];
-    document.getElementById('fsr-avatar').textContent=_friendSearchData.name[0].toUpperCase();
+    document.getElementById('fsr-avatar').innerHTML=friendPortrait(_friendSearchData.mascot);
     res.classList.add('visible');
   } else {
     inp.style.borderColor='#FF6B6B';
@@ -8707,8 +8717,8 @@ function buildFriendBoard(){
   // kaldırıldı — artık dünya sıralaması gibi KALICI en iyi skora göre sıralanıyor.
   const myBest=Math.max(acct.best||0, (typeof score!=='undefined'?score:0));
   const board=[
-    ...getFriends().map(f=>({n:f.name,s:f.score||0,code:f.code,friend:true,lv:f.level||0})),
-    {n:playerLabel(),s:myBest,code:myCode,me:true,lv:calcLevel(getXP())},
+    ...getFriends().map(f=>({n:f.name,s:f.score||0,code:f.code,friend:true,mascot:f.mascot,lv:f.level||0})),
+    {n:playerLabel(),s:myBest,code:myCode,me:true,mascot:acct.mascot,lv:calcLevel(getXP())},
   ];
   board.sort((a,b)=>b.s-a.s);
   return board;
@@ -8740,7 +8750,7 @@ function renderFriendsLB(){
   if(board.length<=1){
     list.innerHTML=`<div class="friends-empty friends-empty-flight">
       <div class="friends-empty-art"><img src="assets/sky-harbor/team.png" alt=""></div>
-      <div class="friends-empty-kicker">SKY HARBOR EKİBİ</div>
+      <div class="friends-empty-kicker">${t('friendsTitle')}</div>
       <div class="friends-empty-txt">${t('noFriendsYet')}</div>
       <div class="friends-empty-sub">${t('shareOrEnter')}</div>
     </div>`;
@@ -8755,7 +8765,7 @@ function renderFriendsLB(){
       :'';
     return`<div class="lb-row${p.me?' me':''}">
       <div class="lb-rn ${rc}">${med}</div>
-      <div class="lb-player"><div class="friend-avatar" style="--avatar-color:${avatarColor(name)}">${name[0].toUpperCase()}</div><div class="lb-player-copy"><div class="lb-nm">${name}${_lvBadge(p.lv)}${p.me?'<span class="lb-me-tag">SEN</span>':''}</div><small>${p.friend?p.code:'SKY HARBOR KAPTANI'}</small></div></div>
+      <div class="lb-player"><div class="friend-avatar" style="--avatar-color:${avatarColor(name)}">${friendPortrait(p.mascot)}</div><div class="lb-player-copy"><div class="lb-nm">${name}${_lvBadge(p.lv)}${p.me?'<span class="lb-me-tag">'+t('you')+'</span>':''}</div><small>${p.friend?p.code:t('you')}</small></div></div>
       <div class="lb-score-stack"><div class="lb-sc">${p.s.toLocaleString()}</div><small>${t('statBest')}</small></div>
       ${del}
     </div>`;
@@ -8809,12 +8819,13 @@ function syncMyCodeUI(){
 }
 
 const AVATAR_COLORS=['#C4714A','#D4A843','#8AB89A','#6B9EB8','#C77DFF','#FF6B9D','#6BCB77'];
+function friendPortrait(mascot){return '<img src="'+avatarImg(mascot)+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">';}
 function avatarColor(name){return AVATAR_COLORS[(name||'?').charCodeAt(0)%AVATAR_COLORS.length];}
 
 function renderFriendCards(){
   const friends=getFriends();
   const myBest=parseInt(localStorage.getItem('tm_best'))||0;
-  const all=[...friends,{name:playerLabel(),score:myBest,code:myCode,me:true}];
+  const all=[...friends,{name:playerLabel(),score:myBest,code:myCode,me:true,mascot:acct.mascot}];
   all.sort((a,b)=>b.score-a.score);
 
   document.getElementById('friend-count').textContent=friends.length;
@@ -8827,13 +8838,13 @@ function renderFriendCards(){
   }
   el.innerHTML=all.map((f,i)=>{
     const rank=i+1,rc=rank===1?'g':rank===2?'s':rank===3?'b':'',medal=rank<=3?`<span class="lb-medal ${rc}">${rank}</span>`:'#'+rank;
-    const name=f.name||'Misafir';
+    const name=f.name||t('guest');
     return`<div class="friend-card">
       <div class="friend-rank">${medal}</div>
-      <div class="friend-avatar" style="--avatar-color:${avatarColor(name)}">${name[0].toUpperCase()}</div>
+      <div class="friend-avatar" style="--avatar-color:${avatarColor(name)}">${friendPortrait(f.mascot)}</div>
       <div class="friend-card-copy">
-        <div class="friend-name">${name}${f.me?'<span class="lb-me-tag">SEN</span>':''}</div>
-        <div class="friend-score">${f.score.toLocaleString()} puan</div>
+        <div class="friend-name">${name}${f.me?'<span class="lb-me-tag">'+t('you')+'</span>':''}</div>
+        <div class="friend-score">${f.score.toLocaleString()} ${t('pts')}</div>
       </div>
       ${!f.me?`<button class="friend-remove" onclick="removeFriend('${f.code}')" title="${t('removeLabel')}">✕</button>`:''}
     </div>`;
@@ -8871,6 +8882,7 @@ async function fetchFriendScores(){
     await Promise.race([_fetchFriendScoresWork(), new Promise((_,rej)=>setTimeout(()=>rej(new Error('fetchFriendScores timeout')),7000))]);
   }catch(e){console.warn('fetchFriendScores:',e);}
   renderFriendsLB();
+  renderFriendCards();
 }
 async function _fetchFriendScoresWork(){
   try{
@@ -8912,6 +8924,7 @@ async function _fetchFriendScoresWork(){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
             friends[idx].weeklyScore=(fd.weeklyReset===ws)?(fd.weeklyScore||0):0;
             friends[idx].name=fd.name||friends[idx].name;
+            friends[idx].mascot=fd.mascot||'ruby';
             friends[idx].level=calcLevel(fd.xp||0);
           }
         });
@@ -8947,6 +8960,7 @@ async function _fetchFriendScoresWork(){
             friends[idx].score=Math.max(friends[idx].score||0,fd.best||0);
             friends[idx].weeklyScore=(fd.weeklyReset===ws2)?(fd.weeklyScore||0):friends[idx].weeklyScore||0;
             friends[idx].name=fd.name||friends[idx].name;
+            friends[idx].mascot=fd.mascot||'ruby';
             friends[idx].level=calcLevel(fd.xp||0);
           }
         });
