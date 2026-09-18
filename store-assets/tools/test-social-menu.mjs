@@ -65,5 +65,16 @@ try {
   openLeaderboardTab('global');if(currentLBTab!=='global')throw Error('World route');
   for(const code of SKY_LANGS){lang=code;applyLang();for(const key of ['navTeam','navPalace','dailyMailStreak'])if(!SKY_TEXT[code][key])throw Error('Translation missing '+code+key);renderDailyModal();if(document.querySelectorAll('#daily-modal-body .dr-day').length!==7)throw Error('Mail series');}
   return {languages:SKY_LANGS.length,portraits:sources.length,mailDays:7};
- });console.log(JSON.stringify(result));
+ });
+ for(const width of [320,375,390,430,820]){
+  await page.setViewportSize({width,height:width===820?1180:844});
+  await page.evaluate(()=>{lang='TR';applyLang();document.getElementById('lb-panel').classList.remove('open');showScreen('menu');});
+  await page.waitForTimeout(100);
+  const overflow=await page.evaluate(()=>[...document.querySelectorAll('#menu-nav [data-t]')].filter(el=>el.scrollWidth>el.clientWidth+2).map(el=>el.textContent));
+  if(overflow.length)throw Error('Nav overflow '+width+': '+overflow.join(','));
+ }
+ await page.setViewportSize({width:390,height:844});
+ await page.evaluate(()=>openLeaderboardTab('friends'));
+ await page.screenshot({path:'store-assets/raw/friends-qa.png'});
+ console.log(JSON.stringify({...result,screenWidths:[320,375,390,430,820]}));
 }finally{await browser.close();await new Promise(r=>server.close(r));}
