@@ -8,6 +8,10 @@ on:
       - .github/workflows/unity-ads-ios-testflight.yml
       - plugins/tiliq-unity-ads/ios/Sources/TiliqUnityAdsPlugin.swift
       - ios/App/App.xcodeproj/project.pbxproj
+      - game.html
+      - crown-quest.css
+      - harbor-polish.css
+  workflow_dispatch: {}
 
 concurrency:
   group: tiliq-unity-ads-testflight
