@@ -2354,7 +2354,7 @@ function updateRewardIndicators(state=skyMissionState()){
     if(!el)return;
     let badge=el.querySelector(':scope > .reward-badge');
     if(!badge){badge=document.createElement('span');badge.className='reward-badge'+(compact?' reward-badge-compact':'');badge.setAttribute('aria-hidden','true');el.appendChild(badge);}
-    badge.hidden=count===0;badge.textContent='! '+count;
+    badge.hidden=count===0;badge.textContent='';
     el.classList.toggle('reward-ready',count>0);
     const hint=count?t('rewardReadyCount').replace('{n}',count):'';
     el.setAttribute('aria-label',label+(hint?' — '+hint:''));
