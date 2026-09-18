@@ -3177,7 +3177,7 @@ function _setBannerSpacers(px){
 }
 
 function _screenWantsBanner(){
-  if(document.visibilityState==='hidden')return false;
+  if(document.visibilityState==='hidden'||_fullScreenAdOpen||_rewardFlowActive)return false;
   return !!document.querySelector('#screen-menu.active,#screen-game.active');
 }
 function _clearBannerRetry(){
@@ -3218,6 +3218,7 @@ async function _installBannerListeners(AdMob){
 
 // ── BANNER (alt şerit — menü VE oyun ekranında, tepsi/HUD ile çakışmaz) ──────
 async function showBanner(){
+  if(!_screenWantsBanner())return;
   _bannerDesired=true;
   if(!adServiceAvailable()||!BANNER_ENABLED||isNoAds())return;
   const AdMob=_getAdMob();
@@ -3228,6 +3229,7 @@ async function showBanner(){
     if(_bannerNativeExists&&_bannerState==='hidden'){
       _bannerState='loading';
       await AdMob.resumeBanner();
+      if(!_bannerDesired||!_screenWantsBanner()){await hideBanner();return;}
       _bannerState='shown';_bannerShown=true;
       _setBannerSpacers(_bannerLastHeight||BANNER_RESERVE_PX-8);
       return;
@@ -3313,6 +3315,7 @@ async function _resumeBannerAfterForeground(){
   if(AdMob&&_bannerNativeExists){
     try{
       await AdMob.resumeBanner();
+      if(!_bannerDesired||!_screenWantsBanner()){await hideBanner();return;}
       _bannerState='shown';_bannerShown=true;
       if(!_bannerHeight)_setBannerSpacers(_bannerLastHeight||BANNER_RESERVE_PX-8);
       return;
@@ -3511,10 +3514,10 @@ function _hideAdOverlay(resumeMusic=true,resumeBanner=true){
 }
 function _completeRewardedAd(onRewarded){
   _adUnavailableCb=null;
-  _showAdOverlay(_adContext,'done');
-  _setAdOverlayState('done',t('rewardReadyTitle'),t('applyingReward'));
-  const timer=document.getElementById('ad-timer');if(timer){timer.textContent='✓';timer.style.setProperty('--ad-progress','100');}
-  setTimeout(()=>{_rewardFlowActive=false;_fullScreenAdOpen=false;_hideAdOverlay();logEvent('ad_rewarded',{ad_format:'rewarded'});onRewarded&&onRewarded();},720);
+  _rewardFlowActive=false;_fullScreenAdOpen=false;
+  _hideAdOverlay();
+  if(typeof onRewarded==='function')onRewarded();
+  logEvent('ad_rewarded',{ad_format:'rewarded'});
 }
 
 function _clearRewardedListeners(){
@@ -3566,20 +3569,27 @@ async function showRewardedAd(onRewarded,meta){
     try{await initAdMob();}catch(e){console.warn('AdMob reward init:',e);}
   }
   if(!_adMobReady||!_adsCanRequest){_showAdUnavailable(onRewarded);return;}
+  let settled=false;
   try{
     // Önceki listener'ları temizle
     _clearRewardedListeners();
     let rewarded=false;
     const l1=await AdMob.addListener('onRewardedVideoAdReward',()=>{rewarded=true;});
-    const l2=await AdMob.addListener('onRewardedVideoAdDismissed',(info)=>{
+    const finish=(info)=>{
+      if(settled)return;
+      settled=true;
       _clearRewardedListeners();_fullScreenAdOpen=false;_rewardFlowActive=false;
       _rewardReady=false;
-      _prepareRewardedAd(); // sonraki için hemen yeniden hazırla
-      if(info&&info.completed===false)rewarded=false;
-      if(rewarded)_completeRewardedAd(onRewarded);
+      const earned=info?.completed!==false&&(rewarded||info?.earned===true);
+      if(earned)_completeRewardedAd(onRewarded);
       else _hideAdOverlay();
+      _prepareRewardedAd();
+    };
+    const l2=await AdMob.addListener('onRewardedVideoAdDismissed',finish);
+    const l3=await AdMob.addListener('onRewardedVideoAdFailedToShow',()=>{
+      if(settled)return;
+      settled=true;_showAdUnavailable(onRewarded);
     });
-    const l3=await AdMob.addListener('onRewardedVideoAdFailedToShow',()=>_showAdUnavailable(onRewarded));
     _admobListeners=[l1,l2,l3];
     if(!_rewardReady) await _prepareRewardedAd(); // hazır değilse (nadir) burada bekle
     // Native no-fill/failure durumunda sahte reklamla ödül VERME. Tarayıcıdaki
@@ -3589,10 +3599,11 @@ async function showRewardedAd(onRewarded,meta){
     await new Promise(resolve=>setTimeout(resolve,180));
     _fullScreenAdOpen=true;
     _hideAdOverlay(false,false);
-    await AdMob.showRewardVideoAd();
+    const result=await AdMob.showRewardVideoAd();
+    if(AdMob.kind==='unity'&&typeof result?.completed==='boolean')finish(result);
   }catch(e){
     console.warn('AdMob rewarded error:',e);
-    _showAdUnavailable(onRewarded);
+    if(!settled){settled=true;_showAdUnavailable(onRewarded);}
   }
 }
 
@@ -3744,6 +3755,7 @@ function clearBombHold(){
   if(ring) ring.style.display='none';
 }
 
+let _bombAdCredit=false,_colorAdCredit=false;
 function activateBomb(type='normal'){
   if(dead)return;
   if(bombCount<=0)return;   // sadece bomba hakkın varsa kullanılır
@@ -3768,7 +3780,8 @@ function activateBomb(type='normal'){
   };
   // Her bomba kullanımında reklam izlet (VIP/reklamsız kullanıcılar hariç)
   if(isNoAds()||!adServiceAvailable()) _enter();
-  else showRewardedAd(_enter,adContext('bomb'));
+  else if(_bombAdCredit)_enter();
+  else showRewardedAd(()=>{_bombAdCredit=true;_enter();},adContext('bomb'));
 }
 
 function _bombCells(row,col,type){
@@ -3820,6 +3833,7 @@ function useBomb(row,col){
   const usedType=bombType;
   const isSuper=usedType==='super';
   bombCount-=cost;
+  _bombAdCredit=false;
   _syncBombInventory();
   _setBombLastChance(false);
   updateBombBar();
@@ -3953,7 +3967,8 @@ function activateColorBlast(){
   };
   // Her kullanımda reklam izlet (VIP/reklamsız kullanıcılar hariç) — bombayla aynı desen
   if(isNoAds()||!adServiceAvailable()) _enterMode();
-  else showRewardedAd(_enterMode,adContext('color'));
+  else if(_colorAdCredit)_enterMode();
+  else showRewardedAd(()=>{_colorAdCredit=true;_enterMode();},adContext('color'));
 }
 
 function useColorBlast(row,col){
@@ -3967,6 +3982,7 @@ function useColorBlast(row,col){
     vibrate(10);
     return;
   }
+  _colorAdCredit=false;
   setColorBlast(0);
   colorBlastXP=0; // çubuk sıfırdan tekrar dolmaya başlar
   if(typeof syncWallet==='function') syncWallet();

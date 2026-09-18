@@ -53,6 +53,8 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     private weak var rewardedPresenter: UIViewController?
     private var bannerImpressionWatchdog: DispatchWorkItem?
     private var bannerImpressionReceived = false
+    private var bannerDesired = false
+    private var bannerLoading = false
 
     /// CAPPluginCall metotları Capacitor'ın kendi arka plan kuyruğunda çalışabilir;
     /// DispatchWorkItem/asyncAfter kullanmak Timer'ın gerektirdiği aktif RunLoop
@@ -333,7 +335,7 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
             notifyListeners("onRewardedVideoAdReward", data: ["completed": true])
         }
         notifyListeners("onRewardedVideoAdDismissed", data: ["completed": completed, "earned": rewardedEarned])
-        rewardedCall?.resolve()
+        rewardedCall?.resolve(["completed": completed, "earned": rewardedStarted && rewardedEarned && completed])
         rewardedCall = nil
         rewardedPresenter = nil
         rewardedEarned = false
@@ -349,19 +351,31 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     }
 
     @objc func showBanner(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { self.showBannerOnMain(call) }
+    }
+
+    private func showBannerOnMain(_ call: CAPPluginCall) {
         guard let id = placement(call) else { return }
         guard initialized else { call.reject("Unity Ads is not initialized"); return }
         guard let vc = bridge?.viewController else { call.reject("View controller is unavailable"); return }
+        bannerDesired = true
         if let banner = banner {
-            DispatchQueue.main.async { banner.view.isHidden = false; call.resolve() }
+            DispatchQueue.main.async {
+                banner.view.isHidden = false
+                if !self.bannerImpressionReceived { self.armBannerImpressionWatchdog(banner) }
+                call.resolve()
+            }
             return
         }
+        guard !bannerLoading else { call.resolve(); return }
+        bannerLoading = true
         let config = UADSBannerLoadConfigurationBuilder(
             placementId: id, bannerSize: CGSize(width: 320, height: 50), delegate: self
         ).build()
         DispatchQueue.main.async {
             UADSBannerAd.load(config) { [weak self] ad, error in
                 guard let self = self else { call.reject("Ads bridge was released"); return }
+                self.bannerLoading = false
                 guard let ad = ad, error == nil else {
                     let message = error?.message ?? "No banner fill"
                     self.notifyListeners("bannerAdFailedToLoad", data: self.errorData(message, code: error?.code))
@@ -377,6 +391,7 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
                 }
                 DispatchQueue.main.async {
                     let view = ad.view
+                    view.isHidden = !self.bannerDesired
                     view.isOpaque = false
                     view.backgroundColor = .clear
                     view.translatesAutoresizingMaskIntoConstraints = false
@@ -390,7 +405,7 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
                     self.notifyListeners("bannerAdSizeChanged", data: ["height": 50])
                     self.notifyListeners("bannerAdLoaded", data: [:])
                     call.resolve()
-                    self.armBannerImpressionWatchdog(ad)
+                    if self.bannerDesired { self.armBannerImpressionWatchdog(ad) }
                 }
             }
         }
@@ -400,7 +415,8 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         bannerImpressionWatchdog?.cancel()
         let work = DispatchWorkItem { [weak self, weak ad] in
             guard let self = self, let ad = ad,
-                  self.banner === ad, !self.bannerImpressionReceived else { return }
+                  self.banner === ad, self.bannerDesired, !ad.view.isHidden,
+                  !self.bannerImpressionReceived else { return }
             self.removeBannerView()
             self.notifyListeners("bannerAdFailedToLoad", data: ["message": "Banner loaded but produced no impression"])
         }
@@ -412,10 +428,9 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         bannerImpressionWatchdog?.cancel()
         bannerImpressionWatchdog = nil
         bannerImpressionReceived = false
-        DispatchQueue.main.async { [weak self] in
-            self?.banner?.view.removeFromSuperview()
-            self?.banner = nil
-        }
+        let oldBanner = banner
+        banner = nil
+        DispatchQueue.main.async { oldBanner?.view.removeFromSuperview() }
     }
 
     public func bannerImpression(_ banner: UADSBannerAd) {
@@ -435,12 +450,19 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     }
 
     @objc func hideBanner(_ call: CAPPluginCall) {
-        DispatchQueue.main.async { self.banner?.view.isHidden = true; call.resolve() }
+        DispatchQueue.main.async {
+            self.bannerDesired = false
+            self.bannerImpressionWatchdog?.cancel()
+            self.banner?.view.isHidden = true
+            call.resolve()
+        }
     }
     @objc func resumeBanner(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             guard let banner = self.banner else { call.reject("Banner is not loaded"); return }
+            self.bannerDesired = true
             banner.view.isHidden = false
+            if !self.bannerImpressionReceived { self.armBannerImpressionWatchdog(banner) }
             call.resolve()
         }
     }
