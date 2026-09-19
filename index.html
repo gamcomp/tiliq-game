@@ -3142,7 +3142,7 @@ const ADMOB_ACCOUNT_ACTIVE=false;
 function adServiceAvailable(){
   return ADMOB_ACCOUNT_ACTIVE || window.TiliqUnityAdsProvider?.active === true;
 }
-let _adCb=null,_adTick=null,_adUnavailableCb=null,_admobListeners=[],_bannerListeners=[];
+let _admobListeners=[],_bannerListeners=[];
 let _interReady=false,_interPreparing=false,_fullScreenAdOpen=false,_lastInterstitialAt=0;
 // Banner artık oyun içinde de gösteriliyor (kullanıcı isteği, 2026-07-09) — önceden
 // sadece menüde açıktı ("HUD'u kapatmaz" kuralı gereği tepsi/HUD ile çakışmasın diye
@@ -3494,44 +3494,21 @@ function adContext(kind,extra={}){
   };
   return Object.assign({kind},contexts[kind]||contexts.default,extra);
 }
-function _setAdOverlayState(state,title,copy){
-  const shell=document.getElementById('ad-shell');
-  if(!shell)return;
-  shell.dataset.state=state;
-  const titleEl=document.getElementById('ad-state-title');if(titleEl&&title)titleEl.textContent=title;
-  const copyEl=document.getElementById('ad-state-copy');if(copyEl&&copy)copyEl.textContent=copy;
-  const steps=[...shell.querySelectorAll('.ad-flow-steps span')];
-  const active=state==='done'?2:state==='watching'?1:0;
-  steps.forEach((s,i)=>s.classList.toggle('active',i<=active));
-}
-function _showAdOverlay(meta,state='loading'){
-  _setSkyMusicPaused(true);
-  // Ödüllü reklamın hazırlık/hata paneli açıkken alt banner ayrı bir reklam gibi
-  // görünmesin ve kapatma alanına binmesin. Akış kapanınca kaldığı ekranda geri gelir.
-  hideBanner();
+function _beginRewardedFlow(meta){
   _adContext=meta||adContext('default');
-  const ov=document.getElementById('ad-overlay');
-  const icon=document.getElementById('ad-reward-icon');if(icon)icon.src=_adContext.icon;
-  const title=document.getElementById('ad-reward-title');if(title)title.textContent=_adContext.title;
-  const copy=document.getElementById('ad-reward-copy');if(copy)copy.textContent=_adContext.copy;
-  _adUnavailableCb=null;
-  const skip=document.getElementById('ad-skip-btn');if(skip){skip.style.display='none';skip.textContent=t('close');skip.onclick=()=>closeAd(false);}
-  const timer=document.getElementById('ad-timer');if(timer){timer.textContent='…';timer.style.setProperty('--ad-progress','0');}
-  _setAdOverlayState(state,t('adPreparing'),t('connectAuto'));
-  ov.style.display='flex';
+  _setSkyMusicPaused(true);
+  hideBanner();
 }
-function _hideAdOverlay(resumeMusic=true,resumeBanner=true){
-  const ov=document.getElementById('ad-overlay');if(ov)ov.style.display='none';
+function _restoreAfterAd(resumeMusic=true,resumeBanner=true){
   if(resumeMusic)_setSkyMusicPaused(false);
   if(resumeBanner&&_screenWantsBanner()){_bannerDesired=true;showBanner();}
 }
 function _completeRewardedAd(onRewarded){
-  _adUnavailableCb=null;
   // Reward application must not depend on banner, audio or analytics cleanup.
   try{if(typeof onRewarded==='function')onRewarded();}
   finally{
     _rewardFlowActive=false;_fullScreenAdOpen=false;
-    try{_hideAdOverlay();}catch(e){console.warn('Reward overlay cleanup:',e);}
+    try{_restoreAfterAd();}catch(e){console.warn('Reward cleanup:',e);}
     try{logEvent('ad_rewarded',{ad_format:'rewarded'});}catch(e){console.warn('Reward analytics:',e);}
   }
 }
@@ -3553,7 +3530,7 @@ function _runRewardedSession(AdMob,onRewarded){
         try{_completeRewardedAd(onRewarded);}catch(e){console.error('Reward application:',e);}
       }else if(status==='skipped'){
         _rewardFlowActive=false;_fullScreenAdOpen=false;
-        try{_hideAdOverlay();}catch(e){console.warn(e);}
+        try{_restoreAfterAd();}catch(e){console.warn(e);}
       }else{
         try{_showAdUnavailable(onRewarded);}catch(e){console.warn(e);_rewardFlowActive=false;_fullScreenAdOpen=false;}
       }
@@ -3582,7 +3559,6 @@ function _runRewardedSession(AdMob,onRewarded){
         await listen('onRewardedVideoAdFailedToShow',()=>{if(!settled&&started)finish('unavailable');});
         if(settled)return;
         started=true;_fullScreenAdOpen=true;
-        try{_hideAdOverlay(false,false);}catch(e){console.warn(e);}
         watchdog=setTimeout(()=>finish('unavailable'),90000);
         const result=await AdMob.showRewardVideoAd();
         if(settled)return;
@@ -3605,30 +3581,21 @@ function _clearRewardedListeners(){
 }
 function _showAdUnavailable(onUnavailable){
   _clearRewardedListeners();_rewardFlowActive=false;_fullScreenAdOpen=false;_rewardReady=false;
-  _showAdOverlay(_adContext||adContext('default'),'error');
-  // Sandbox/TestFlight is never allowed to block functional review when Google
-  // inventory is temporarily unavailable. Production still grants a fallback
-  // only for the explicit game-rescue path.
-  // A Unity show/render failure is not a watched ad. TestFlight's AdMob sandbox
-  // fallback must not leak into the Unity provider and unlock optional rewards.
+  // Preserve the existing rescue/sandbox policy, but apply it immediately:
+  // no second confirmation or post-ad screen. Optional Unity rewards still
+  // require the SDK's earned result.
   const unityActive=window.TiliqUnityAdsProvider?.active===true;
-  const canContinue=!!(typeof onUnavailable==='function'&&((!unityActive&&_useAdMobTestAds)||(_adContext&&_adContext.allowNoFill)));
-  _adUnavailableCb=canContinue?onUnavailable:null;
-  _setAdOverlayState('error',t('adUnavailable'),t(canContinue?'adUnavailableContinueCopy':'adUnavailableCopy'));
-  const timer=document.getElementById('ad-timer');if(timer){timer.textContent='!';timer.style.setProperty('--ad-progress','0');}
-  const skip=document.getElementById('ad-skip-btn');if(skip){skip.textContent=t(canContinue?'continueWithoutAd':'close');skip.onclick=canContinue?continueAfterUnavailable:()=>closeAd(false);skip.style.display='flex';}
-  _setSkyMusicPaused(false);
-  setTimeout(()=>_prepareRewardedAd(),15000);
-}
-
-function continueAfterUnavailable(){
-  const cb=_adUnavailableCb;
-  _adUnavailableCb=null;
-  _clearRewardedListeners();_rewardFlowActive=false;_fullScreenAdOpen=false;
-  _hideAdOverlay();
-  if(!cb)return;
-  logEvent('ad_reward_fallback',{ad_format:'rewarded',context:_adContext&&_adContext.kind||'default'});
-  cb();
+  const canContinue=typeof onUnavailable==='function'&&
+    ((!unityActive&&_useAdMobTestAds)||(_adContext&&_adContext.allowNoFill));
+  try{
+    if(canContinue){
+      try{onUnavailable();}catch(e){console.error('Fallback application:',e);}
+      try{logEvent('ad_reward_fallback',{ad_format:'rewarded',context:_adContext?.kind||'default'});}catch(e){console.warn(e);}
+    }
+  }finally{
+    try{_restoreAfterAd();}catch(e){console.warn('Ad cleanup:',e);}
+    setTimeout(()=>_prepareRewardedAd(),15000);
+  }
 }
 
 async function showRewardedAd(onRewarded,meta){
@@ -3639,7 +3606,7 @@ async function showRewardedAd(onRewarded,meta){
   }
   if(_rewardFlowActive||_fullScreenAdOpen)return {status:'busy'};
   _rewardFlowActive=true;
-  _showAdOverlay(meta||adContext('default'),'loading');
+  _beginRewardedFlow(meta);
   const AdMob=_getAdMob();
   if(!AdMob){_showMockAd(onRewarded,meta);return;}
   // Kullanıcı dil/izin ekranlarından çok hızlı geldiyse devam eden AdMob/UMP
@@ -3660,27 +3627,9 @@ async function showRewardedAd(onRewarded,meta){
   }
 }
 
-// Tarayıcı/test ortamı için mock reklam
-function _showMockAd(onRewarded,meta){
-  _adCb=onRewarded;
-  _showAdOverlay(meta||_adContext||adContext('default'),'watching');
-  _setAdOverlayState('watching',t('adWatching'),t('completeAuto'));
-  document.getElementById('ad-skip-btn').style.display='none';
-  let t=5;
-  const timer=document.getElementById('ad-timer');
-  timer.textContent=t;timer.style.setProperty('--ad-progress','0');
-  _adTick=setInterval(()=>{
-    t--;
-    timer.textContent=Math.max(0,t);timer.style.setProperty('--ad-progress',String((5-t)*20));
-    if(t<=0){clearInterval(_adTick);closeAd(true);}
-  },1000);
-}
-function closeAd(rewarded){
-  clearInterval(_adTick);
-  const cb=_adCb;
-  _adCb=null;_adUnavailableCb=null;_rewardFlowActive=false;_fullScreenAdOpen=false;
-  if(rewarded&&cb)_completeRewardedAd(cb);
-  else _hideAdOverlay();
+// Browser preview has no native ad SDK and no simulated transition screen.
+function _showMockAd(onRewarded){
+  _completeRewardedAd(onRewarded);
 }
 
 // ── BOMB ─────────────────────────────────────────────────────────────────────
@@ -9230,26 +9179,6 @@ function skipTutorial(){
 <!-- Native AdMob banner WebView'in üstünde çizilir; bu yatak yalnızca ekranın
      banner için ayırdığı alanı temaya bağlar ve reklam gelmezse görünmez. -->
 <div id="ad-banner-bed" aria-hidden="true"><span data-t="ad">REKLAM</span></div>
-
-<!-- ── REKLAM OVERLAY ── -->
-<div id="ad-overlay">
-  <div class="ad-shell" id="ad-shell" data-state="loading">
-    <div class="ad-shell-head"><span data-t="ad">REKLAM</span><small><i></i> <span data-t="safeRewardFlow">GÜVENLİ ÖDÜL AKIŞI</span></small></div>
-    <div class="ad-reward-brief"><img id="ad-reward-icon" src="assets/sky-harbor/propeller.png" alt=""><div><small data-t="afterAd">REKLAM SONRASI</small><strong id="ad-reward-title" data-t="rewardWillActivate">Ödülün etkinleşecek</strong><span id="ad-reward-copy" data-t="watchToEnd">Reklamı sonuna kadar izle</span></div></div>
-    <div class="ad-stage">
-      <div class="ad-loader" aria-hidden="true"><i></i><span class="ui-video-icon large"></span></div>
-      <strong id="ad-state-title" data-t="adLoading">Reklam hazırlanıyor…</strong>
-      <small id="ad-state-copy" data-t="connectAuto">Bağlantı kuruluyor, bu ekran otomatik ilerler</small>
-      <div class="ad-load-track"><i id="ad-load-fill"></i></div>
-    </div>
-    <div class="ad-progress-row">
-      <div id="ad-timer" style="--ad-progress:0">5</div>
-      <div><strong id="ad-progress-title" data-t="adWatching">Reklam izleniyor…</strong><small id="ad-progress-copy" data-t="completeAuto">Tamamlanınca ödül otomatik verilecek</small></div>
-    </div>
-    <div class="ad-flow-steps" aria-hidden="true"><span class="active"><i>1</i><em data-t="prepare">HAZIRLA</em></span><b></b><span><i>2</i><em data-t="watch">İZLE</em></span><b></b><span><i>3</i><em data-t="reward">ÖDÜL</em></span></div>
-    <button id="ad-skip-btn" onclick="closeAd(false)" data-t="close">Kapat</button>
-  </div>
-</div>
 
 </body>
 </html>

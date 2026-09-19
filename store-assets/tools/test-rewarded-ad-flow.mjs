@@ -59,7 +59,7 @@ try {
     const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     let accountDisabledReward = 0;
     await showRewardedAd(() => { accountDisabledReward += 1; }, adContext('color'));
-    const accountDisabledOverlay = getComputedStyle(document.getElementById('ad-overlay')).display;
+    const accountDisabledOverlay = document.getElementById('ad-overlay')?'present':'none';
 
     // The remaining cases exercise the provider path independently from the
     // temporary production kill switch used while the account is disabled.
@@ -105,16 +105,14 @@ try {
     _rewardReady = false;
     let fallbackReward = 0;
     await showRewardedAd(() => { fallbackReward += 1; }, adContext('rescue', {allowNoFill: true}));
-    const fallbackLabel = document.getElementById('ad-skip-btn').textContent;
-    document.getElementById('ad-skip-btn').click();
+    const fallbackDirect = !document.getElementById('ad-overlay') && fallbackReward === 1;
     await wait(50);
 
     // Optional coin rewards must stay locked when inventory is unavailable.
     _rewardReady = false;
     let optionalReward = 0;
     await showRewardedAd(() => { optionalReward += 1; }, adContext('score'));
-    const optionalLabel = document.getElementById('ad-skip-btn').textContent;
-    document.getElementById('ad-skip-btn').click();
+    const optionalDirect = !document.getElementById('ad-overlay') && !_rewardFlowActive;
 
     // TestFlight must remain reviewable even if Google's demo inventory has a
     // transient failure. Production optional rewards remain locked above.
@@ -122,7 +120,7 @@ try {
     _rewardReady = false;
     let testFlightFallbackReward = 0;
     await showRewardedAd(() => { testFlightFallbackReward += 1; }, adContext('color'));
-    document.getElementById('ad-skip-btn').click();
+
     await wait(50);
 
     // Last-chance state: no normal piece fits, but a bomb can still save the run.
@@ -254,7 +252,7 @@ try {
     if(_bannerDesired)throw new Error('Banner appeared over reward flow');
     _rewardFlowActive=false;
 
-    return {accountDisabledReward, accountDisabledOverlay, normalReward, fallbackReward, optionalReward, testFlightFallbackReward, testInventoryRequested, fallbackLabel, optionalLabel, lastChanceShown, lastChanceAnimation, lastChanceCleared, noBombWarningHidden, unityActive, unityLoads, unitySkippedReward, unityEarnedReward, firstTwoInterstitialShows, interstitialShows, iosUnityActive};
+    return {accountDisabledReward, accountDisabledOverlay, normalReward, fallbackReward, optionalReward, testFlightFallbackReward, testInventoryRequested, fallbackDirect, optionalDirect, lastChanceShown, lastChanceAnimation, lastChanceCleared, noBombWarningHidden, unityActive, unityLoads, unitySkippedReward, unityEarnedReward, firstTwoInterstitialShows, interstitialShows, iosUnityActive};
   });
 
   if (result.accountDisabledReward !== 1 || result.accountDisabledOverlay !== 'none') throw new Error(`disabled-account fallback failed: ${JSON.stringify(result)}`);
@@ -275,7 +273,7 @@ try {
   if (!result.iosUnityActive || !['game:800374323', 'rewarded:BP_Rewarded_iOS', 'interstitial:BP_Interstitial_iOS', 'banner:BP_Banner_iOS'].every((id) => result.unityLoads.includes(id))) {
     throw new Error(`iOS Unity placement mapping failed: ${JSON.stringify(result)}`);
   }
-  if (!result.fallbackLabel || result.fallbackLabel === result.optionalLabel) throw new Error(`fallback label failed: ${JSON.stringify(result)}`);
+  if (!result.fallbackDirect || !result.optionalDirect) throw new Error(`Unexpected post-ad screen: ${JSON.stringify(result)}`);
   if (!result.lastChanceShown || result.lastChanceAnimation !== 'sky-bomb-last-chance' || !result.lastChanceCleared || !result.noBombWarningHidden) {
     throw new Error(`bomb last-chance warning failed: ${JSON.stringify(result)}`);
   }

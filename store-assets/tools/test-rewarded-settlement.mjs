@@ -82,10 +82,10 @@ try{
   for(const m of ['late-result','late-event','duplicate','missing-event','slow-result']){mode=m;const before=applied;const out=await showRewardedAd(()=>applied++,adContext('score'));if(out.status!=='earned'||applied!==before+1)throw Error(m+' lost or duplicated reward');if(listeners.size)throw Error('Leaked listeners');}
   const stale=retainedDismiss;
   mode='skip';const skipped=await showRewardedAd(()=>applied++,adContext('score'));stale({completed:true,earned:true});if(skipped.status!=='skipped'||applied!==5)throw Error('Skipped or stale reward granted');
-  mode='no-proof';const absent=await showRewardedAd(()=>applied++,adContext('score'));if(absent.status!=='unavailable'||applied!==5)throw Error('Unconfirmed reward granted');closeAd(false);
-  mode='fail';const failed=await showRewardedAd(()=>applied++,adContext('score'));if(failed.status!=='unavailable'||applied!==5||listeners.size)throw Error('Failed show granted or leaked');closeAd(false);
+  mode='no-proof';const absent=await showRewardedAd(()=>applied++,adContext('score'));if(absent.status!=='unavailable'||applied!==5)throw Error('Unconfirmed reward granted');
+  mode='fail';const failed=await showRewardedAd(()=>applied++,adContext('score'));if(failed.status!=='unavailable'||applied!==5||listeners.size)throw Error('Failed show granted or leaked');
   mode='late-result';const one=showRewardedAd(()=>applied++,adContext('score'));const busy=await showRewardedAd(()=>applied++,adContext('score'));if(busy.status!=='busy')throw Error('Concurrent show allowed');await one;
-  const hide=_hideAdOverlay;_hideAdOverlay=()=>{throw Error('Simulated cosmetic failure');};mode='missing-event';const before=applied;await showRewardedAd(()=>applied++,adContext('score'));_hideAdOverlay=hide;if(applied!==before+1)throw Error('UI failure blocked reward');
+  const hide=_restoreAfterAd;_restoreAfterAd=()=>{throw Error('Simulated cosmetic failure');};mode='missing-event';const before=applied;await showRewardedAd(()=>applied++,adContext('score'));_restoreAfterAd=hide;if(applied!==before+1)throw Error('UI failure blocked reward');
 
   // Exercise real game actions against out-of-order native notifications.
   mode='late-event';dead=false;bombCount=2;bombMode=false;_bombAdCredit=false;
@@ -101,6 +101,7 @@ try{
   claimTreasure(document.getElementById('tb-cta'));claimTreasure(document.getElementById('tb-cta'));await wait(200);
   if(!isTreasureClaimed()||credited!==37+expected)throw Error('Daily bonus not applied once');
   localStorage.removeItem('tm_treasure_date');mode='skip';const btn=document.getElementById('tb-cta');claimTreasure(btn);await wait(100);if(btn.disabled||isTreasureClaimed())throw Error('Skipped daily claim button not restored');
-  return {outOfOrder:true,duplicates:true,skipped:true,missingProof:true,concurrent:true,cleanupFailure:true,hammer:true,continue:true,coins:true,daily:true,shows};
+  if(document.getElementById('ad-overlay')||document.getElementById('ad-skip-btn'))throw Error('Post-ad transition screen still exists');
+  return {noPostAdScreen:true,outOfOrder:true,duplicates:true,skipped:true,missingProof:true,concurrent:true,cleanupFailure:true,hammer:true,continue:true,coins:true,daily:true,shows};
  });console.log(JSON.stringify(result));
 }finally{await browser.close();await new Promise(r=>server.close(r));}
