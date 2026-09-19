@@ -3,6 +3,34 @@ import UIKit
 import Capacitor
 import UnityAds
 
+// Each request has its own delegate; late callbacks cannot settle a newer ad.
+private final class TiliqLoadDelegate: NSObject, UnityAdsLoadDelegate {
+    let loaded: (String) -> Void
+    let failed: (String, UnityAdsLoadError, String) -> Void
+    init(loaded: @escaping (String) -> Void, failed: @escaping (String, UnityAdsLoadError, String) -> Void) {
+        self.loaded = loaded; self.failed = failed
+    }
+    func unityAdsAdLoaded(_ placementId: String) {
+        DispatchQueue.main.async { self.loaded(placementId) }
+    }
+    func unityAdsAdFailed(toLoad placementId: String, withError error: UnityAdsLoadError, withMessage message: String) {
+        DispatchQueue.main.async { self.failed(placementId, error, message) }
+    }
+}
+private final class TiliqShowDelegate: NSObject, UnityAdsShowDelegate {
+    weak var owner: TiliqUnityAdsPlugin?
+    let valid: () -> Bool
+    init(owner: TiliqUnityAdsPlugin, valid: @escaping () -> Bool) { self.owner = owner; self.valid = valid }
+    func unityAdsShowStart(_ id: String) { DispatchQueue.main.async { if self.valid() { self.owner?.unityAdsShowStart(id) } } }
+    func unityAdsShowClick(_ id: String) { DispatchQueue.main.async { if self.valid() { self.owner?.unityAdsShowClick(id) } } }
+    func unityAdsShowComplete(_ id: String, withFinish state: UnityAdsShowCompletionState) {
+        DispatchQueue.main.async { if self.valid() { self.owner?.unityAdsShowComplete(id, withFinish: state) } }
+    }
+    func unityAdsShowFailed(_ id: String, withError error: UnityAdsShowError, withMessage message: String) {
+        DispatchQueue.main.async { if self.valid() { self.owner?.unityAdsShowFailed(id, withError: error, withMessage: message) } }
+    }
+}
+
 @objc(TiliqUnityAdsPlugin)
 public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     UADSBannerAdDelegate, UnityAdsLoadDelegate, UnityAdsShowDelegate {
@@ -23,6 +51,7 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     ]
 
     private var initialized = false
+    private var initializationGeneration = 0
     private var banner: UADSBannerAd?
     private var interstitialPlacement: String?
     private var rewardedPlacement: String?
@@ -31,7 +60,17 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     private var interstitialLoading = false
     private var rewardedLoading = false
     private var interstitialLoadCall: CAPPluginCall?
+    private var interstitialLoadDelegate: TiliqLoadDelegate?
+    private var interstitialLoadGeneration = 0
+    private var interstitialLoadWatchdog: DispatchWorkItem?
+    private var interstitialShowDelegate: TiliqShowDelegate?
+    private var interstitialShowGeneration = 0
     private var rewardedLoadCall: CAPPluginCall?
+    private var rewardedLoadDelegate: TiliqLoadDelegate?
+    private var rewardedLoadGeneration = 0
+    private var rewardedLoadWatchdog: DispatchWorkItem?
+    private var rewardedShowDelegate: TiliqShowDelegate?
+    private var rewardedShowGeneration = 0
     private var interstitialCall: CAPPluginCall?
     private var rewardedCall: CAPPluginCall?
 
@@ -42,7 +81,7 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     // uygulamayı zorla kapatmak zorunda kalıyor (TestFlight raporu, 2026-09-15).
     // Bu durumda SDK'nın kendi kurtarma mekanizması yok; biz zorla kapatıyoruz.
     private static let showStartTimeout: TimeInterval = 8
-    private static let showCompletionTimeout: TimeInterval = 75
+    private static let showCompletionTimeout: TimeInterval = 180
     private static let bannerImpressionTimeout: TimeInterval = 15
     fileprivate var interstitialWatchdog: DispatchWorkItem?
     fileprivate var rewardedWatchdog: DispatchWorkItem?
@@ -113,6 +152,10 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     }
 
     @objc func initialize(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { self.initializeOnMain(call) }
+    }
+
+    private func initializeOnMain(_ call: CAPPluginCall) {
         guard let gameId = call.getString("gameId"), !gameId.isEmpty else {
             call.reject("Unity Ads Game ID is missing")
             return
@@ -126,12 +169,20 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
             .with(testMode: testMode)
             .with(logLevel: testMode ? .debug : .error)
             .build()
+        initializationGeneration += 1
+        let generation = initializationGeneration
+        let timeout = DispatchWorkItem { [weak self] in
+            guard let self = self, generation == self.initializationGeneration else { return }
+            self.initializationGeneration += 1
+            call.reject("Unity Ads initialization timed out")
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 25, execute: timeout)
         UnityAds.initialize(config) { [weak self] error in
-            if let error = error {
-                call.reject(error.message)
-            } else {
-                self?.initialized = true
-                call.resolve()
+            DispatchQueue.main.async {
+                guard let self = self, generation == self.initializationGeneration else { return }
+                timeout.cancel()
+                if let error = error { call.reject(error.message) }
+                else { self.initialized = true; call.resolve() }
             }
         }
     }
@@ -144,6 +195,10 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     }
 
     @objc func prepareInterstitial(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { self.prepareInterstitialOnMain(call) }
+    }
+
+    private func prepareInterstitialOnMain(_ call: CAPPluginCall) {
         guard let id = placement(call) else { return }
         guard initialized else { call.reject("Unity Ads is not initialized"); return }
         if interstitialReady && interstitialPlacement == id { call.resolve(); return }
@@ -151,16 +206,46 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         interstitialPlacement = id
         interstitialLoading = true
         interstitialLoadCall = call
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { call.reject("Ads bridge was released"); return }
-            UnityAds.load(id, loadDelegate: self)
+        interstitialLoadGeneration += 1
+        let generation = interstitialLoadGeneration
+        let delegate = TiliqLoadDelegate(loaded: { [weak self] id in
+            guard let self = self, self.interstitialLoading, generation == self.interstitialLoadGeneration else { return }
+            self.interstitialLoadWatchdog?.cancel()
+            self.unityAdsAdLoaded(id)
+        }, failed: { [weak self] id, error, message in
+            guard let self = self, self.interstitialLoading, generation == self.interstitialLoadGeneration else { return }
+            self.interstitialLoadWatchdog?.cancel()
+            self.unityAdsAdFailed(toLoad: id, withError: error, withMessage: message)
+        })
+        interstitialLoadDelegate = delegate
+        let timeout = DispatchWorkItem { [weak self] in
+            guard let self = self, self.interstitialLoading, generation == self.interstitialLoadGeneration else { return }
+            self.interstitialLoading = false
+            self.interstitialReady = false
+            self.interstitialLoadCall?.reject("Ad load timed out")
+            self.interstitialLoadCall = nil
         }
+        interstitialLoadWatchdog = timeout
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20, execute: timeout)
+        UnityAds.load(id, loadDelegate: delegate)
     }
 
     @objc func showInterstitial(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { self.showInterstitialOnMain(call) }
+    }
+
+    private func showInterstitialOnMain(_ call: CAPPluginCall) {
         guard interstitialReady, let id = interstitialPlacement else { call.reject("Interstitial is not loaded"); return }
         guard interstitialCall == nil && rewardedCall == nil else { call.reject("Another full-screen ad is already active"); return }
+        guard UIApplication.shared.applicationState == .active else { call.reject("App is not active"); return }
         guard let vc = topViewController(from: bridge?.viewController) else { call.reject("View controller is unavailable"); return }
+        interstitialShowGeneration += 1
+        let generation = interstitialShowGeneration
+        let delegate = TiliqShowDelegate(owner: self, valid: { [weak self] in
+            guard let self = self else { return false }
+            return generation == self.interstitialShowGeneration && self.interstitialCall != nil
+        })
+        interstitialShowDelegate = delegate
         interstitialReady = false
         interstitialCall = call
         interstitialPresenter = vc
@@ -173,11 +258,15 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         }
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { call.reject("Ads bridge was released"); return }
-            UnityAds.show(vc, placementId: id, showDelegate: self)
+            UnityAds.show(vc, placementId: id, showDelegate: delegate)
         }
     }
 
     @objc func prepareRewardVideoAd(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { self.prepareRewardVideoAdOnMain(call) }
+    }
+
+    private func prepareRewardVideoAdOnMain(_ call: CAPPluginCall) {
         guard let id = placement(call) else { return }
         guard initialized else { call.reject("Unity Ads is not initialized"); return }
         if rewardedReady && rewardedPlacement == id { call.resolve(); return }
@@ -185,16 +274,46 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         rewardedPlacement = id
         rewardedLoading = true
         rewardedLoadCall = call
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { call.reject("Ads bridge was released"); return }
-            UnityAds.load(id, loadDelegate: self)
+        rewardedLoadGeneration += 1
+        let generation = rewardedLoadGeneration
+        let delegate = TiliqLoadDelegate(loaded: { [weak self] id in
+            guard let self = self, self.rewardedLoading, generation == self.rewardedLoadGeneration else { return }
+            self.rewardedLoadWatchdog?.cancel()
+            self.unityAdsAdLoaded(id)
+        }, failed: { [weak self] id, error, message in
+            guard let self = self, self.rewardedLoading, generation == self.rewardedLoadGeneration else { return }
+            self.rewardedLoadWatchdog?.cancel()
+            self.unityAdsAdFailed(toLoad: id, withError: error, withMessage: message)
+        })
+        rewardedLoadDelegate = delegate
+        let timeout = DispatchWorkItem { [weak self] in
+            guard let self = self, self.rewardedLoading, generation == self.rewardedLoadGeneration else { return }
+            self.rewardedLoading = false
+            self.rewardedReady = false
+            self.rewardedLoadCall?.reject("Ad load timed out")
+            self.rewardedLoadCall = nil
         }
+        rewardedLoadWatchdog = timeout
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20, execute: timeout)
+        UnityAds.load(id, loadDelegate: delegate)
     }
 
     @objc func showRewardVideoAd(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { self.showRewardVideoAdOnMain(call) }
+    }
+
+    private func showRewardVideoAdOnMain(_ call: CAPPluginCall) {
         guard rewardedReady, let id = rewardedPlacement else { call.reject("Rewarded ad is not loaded"); return }
         guard interstitialCall == nil && rewardedCall == nil else { call.reject("Another full-screen ad is already active"); return }
+        guard UIApplication.shared.applicationState == .active else { call.reject("App is not active"); return }
         guard let vc = topViewController(from: bridge?.viewController) else { call.reject("View controller is unavailable"); return }
+        rewardedShowGeneration += 1
+        let generation = rewardedShowGeneration
+        let delegate = TiliqShowDelegate(owner: self, valid: { [weak self] in
+            guard let self = self else { return false }
+            return generation == self.rewardedShowGeneration && self.rewardedCall != nil
+        })
+        rewardedShowDelegate = delegate
         rewardedReady = false
         rewardedCall = call
         rewardedPresenter = vc
@@ -208,7 +327,7 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         }
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { call.reject("Ads bridge was released"); return }
-            UnityAds.show(vc, placementId: id, showDelegate: self)
+            UnityAds.show(vc, placementId: id, showDelegate: delegate)
         }
     }
 
@@ -284,7 +403,7 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         notifyListeners("interstitialAdShowed", data: [:])
         let work = DispatchWorkItem { [weak self] in
             guard let self = self, self.interstitialCall != nil else { return }
-            let reason = "Interstitial did not complete within 75 seconds"
+            let reason = "Interstitial did not complete within 180 seconds"
             if let vc = self.interstitialPresenter { self.forceDismissPresentedAd(vc, reason: reason) }
             self.interstitialDidFail(reason)
         }
@@ -315,7 +434,7 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         notifyListeners("onRewardedVideoAdShowed", data: [:])
         let work = DispatchWorkItem { [weak self] in
             guard let self = self, self.rewardedCall != nil else { return }
-            let reason = "Rewarded ad did not complete within 75 seconds"
+            let reason = "Rewarded ad did not complete within 180 seconds"
             if let vc = self.rewardedPresenter { self.forceDismissPresentedAd(vc, reason: reason) }
             self.rewardedDidFail(reason)
         }
@@ -323,7 +442,7 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.showCompletionTimeout, execute: work)
     }
     fileprivate func rewardedDidEarn() {
-        guard rewardedStarted && rewardedCall != nil else { return }
+        guard rewardedCall != nil else { return }
         rewardedEarned = true
     }
     fileprivate func rewardedDidComplete(_ completed: Bool) {
@@ -332,11 +451,11 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         // Emit the reward immediately before dismissal only when the same show
         // both earned a reward and reached Unity's completed state. This blocks
         // stale/partial callbacks from granting a reward after a failed black view.
-        if rewardedStarted && rewardedEarned && completed {
+        if rewardedEarned && completed {
             notifyListeners("onRewardedVideoAdReward", data: ["completed": true])
         }
         notifyListeners("onRewardedVideoAdDismissed", data: ["completed": completed, "earned": rewardedEarned])
-        rewardedCall?.resolve(["completed": completed, "earned": rewardedStarted && rewardedEarned && completed])
+        rewardedCall?.resolve(["completed": completed, "earned": rewardedEarned && completed])
         rewardedCall = nil
         rewardedPresenter = nil
         rewardedEarned = false
@@ -361,11 +480,9 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         guard let vc = bridge?.viewController else { call.reject("View controller is unavailable"); return }
         bannerDesired = true
         if let banner = banner {
-            DispatchQueue.main.async {
-                banner.view.isHidden = false
-                if !self.bannerImpressionReceived { self.armBannerImpressionWatchdog(banner) }
-                call.resolve()
-            }
+            banner.view.isHidden = false
+            if !bannerImpressionReceived { armBannerImpressionWatchdog(banner) }
+            call.resolve()
             return
         }
         guard !bannerLoading else { call.reject("Banner is already loading"); return }

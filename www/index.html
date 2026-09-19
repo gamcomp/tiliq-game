@@ -3143,6 +3143,7 @@ function adServiceAvailable(){
   return ADMOB_ACCOUNT_ACTIVE || window.TiliqUnityAdsProvider?.active === true;
 }
 let _admobListeners=[],_bannerListeners=[];
+let _interPreparePromise=null,_interFlowActive=false;
 let _interReady=false,_interPreparing=false,_fullScreenAdOpen=false,_lastInterstitialAt=0;
 // Banner artık oyun içinde de gösteriliyor (kullanıcı isteği, 2026-07-09) — önceden
 // sadece menüde açıktı ("HUD'u kapatmaz" kuralı gereği tepsi/HUD ile çakışmasın diye
@@ -3176,7 +3177,7 @@ function _setBannerSpacers(px){
 }
 
 function _screenWantsBanner(){
-  if(document.visibilityState==='hidden'||_fullScreenAdOpen||_rewardFlowActive)return false;
+  if(document.visibilityState==='hidden'||_fullScreenAdOpen||_rewardFlowActive||_interFlowActive)return false;
   return !!document.querySelector('#screen-menu.active,#screen-game.active');
 }
 function _clearBannerRetry(){
@@ -3209,6 +3210,7 @@ function _bannerLoaded(height){
 async function _installBannerListeners(AdMob){
   if(_bannerSizeListenerAdded)return;
   _bannerSizeListenerAdded=true;
+  try{
   _bannerListeners.push(await AdMob.addListener('bannerAdSizeChanged',(info)=>{
     if(_bannerNativeExists)_bannerLoaded(info&&info.height);
   }));
@@ -3221,6 +3223,11 @@ async function _installBannerListeners(AdMob){
     _bannerRetryAttempt=0;
     logEvent('ad_impression',{ad_format:'banner'});
   }));
+  }catch(e){
+    _bannerSizeListenerAdded=false;
+    _bannerListeners.splice(0).forEach(h=>{try{Promise.resolve(h?.remove?.()).catch(()=>{});}catch(_){}});
+    throw e;
+  }
 }
 
 // Banner requests are bounded; older hide/show completions cannot change a newer screen.
@@ -3276,46 +3283,66 @@ async function hideBanner(){
   }
 }
 window.addEventListener('online',()=>{
+  if(!_adMobReady||!_adsCanRequest){initAdMob();return;}
+  _prepareRewardedAd();_prepareInterstitial();
   _bannerRetryAttempt=0;
   if(_screenWantsBanner())showBanner();
 });
 
 // ── INTERSTITIAL (tam ekran, oyun bitişinde) ─────────────────────────────────
+function _adDeadline(promise,milliseconds,label){
+  let timer;
+  return Promise.race([promise,new Promise((_,reject)=>{
+    timer=setTimeout(()=>reject(new Error(label)),milliseconds);
+  })]).finally(()=>clearTimeout(timer));
+}
 async function _prepareInterstitial(){
   const AdMob=_getAdMob();
-  if(!adServiceAvailable()||!AdMob||!_adMobReady||!_adsCanRequest||isNoAds()||_interReady||_interPreparing)return;
+  if(_interReady)return true;
+  if(_interPreparePromise)return _interPreparePromise;
+  if(!adServiceAvailable()||!AdMob||!_adMobReady||!_adsCanRequest||isNoAds())return false;
   _interPreparing=true;
-  try{
-    await Promise.race([
-      AdMob.prepareInterstitial({adId:ADMOB_INTERSTITIAL_ID,isTesting:_useAdMobTestAds}),
-      new Promise((_,reject)=>setTimeout(()=>reject(new Error('interstitial timeout')),12000)),
-    ]);
-    _interReady=true;
-  }catch(e){_interReady=false;console.warn('Interstitial prepare:',e);}
-  finally{_interPreparing=false;}
+  _interPreparePromise=(async()=>{
+    try{
+      await _adDeadline(AdMob.prepareInterstitial({adId:ADMOB_INTERSTITIAL_ID,isTesting:_useAdMobTestAds}),22000,'interstitial load timeout');
+      _interReady=true;return true;
+    }catch(e){_interReady=false;console.warn('Interstitial prepare:',e);return false;}
+    finally{_interPreparing=false;_interPreparePromise=null;}
+  })();
+  return _interPreparePromise;
 }
 async function showInterstitial(){
-  if(!adServiceAvailable()||isNoAds()||!_adsCanRequest||_fullScreenAdOpen||Date.now()-_lastInterstitialAt<90000)return;
+  if(!adServiceAvailable()||isNoAds()||!_adsCanRequest||_fullScreenAdOpen||_rewardFlowActive||_interFlowActive||Date.now()-_lastInterstitialAt<90000)return;
   const AdMob=_getAdMob();
-  if(!AdMob||!_adMobReady)return;
+  if(!AdMob||!_adMobReady||document.hidden)return;
+  _interFlowActive=true;
+  const listeners=[];let finished=false,watchdog;
+  let done;const dismissed=new Promise(resolve=>{done=resolve;});
+  const finish=()=>{
+    if(finished)return;finished=true;clearTimeout(watchdog);
+    listeners.splice(0).forEach(h=>{try{Promise.resolve(h?.remove?.()).catch(()=>{});}catch(_){}});
+    _interFlowActive=false;_fullScreenAdOpen=false;
+    try{_restoreAfterAd();}catch(e){console.warn('Interstitial cleanup:',e);}
+    done();
+  };
   try{
-    if(!_interReady) await _prepareInterstitial();
-    if(!_interReady)return;
-    _fullScreenAdOpen=true;_setSkyMusicPaused(true);
-    let interMusicListeners=[];
-    const resumeAfterInterstitial=()=>{
-      _fullScreenAdOpen=false;_setSkyMusicPaused(false);
-      interMusicListeners.forEach(listener=>listener&&listener.remove&&listener.remove());
-      interMusicListeners=[];
-    };
-    try{
-      interMusicListeners.push(await AdMob.addListener('interstitialAdDismissed',resumeAfterInterstitial));
-      interMusicListeners.push(await AdMob.addListener('interstitialAdFailedToShow',resumeAfterInterstitial));
-      _lastInterstitialAt=Date.now();_interReady=false;
-      await AdMob.showInterstitial();
-    }catch(e){resumeAfterInterstitial();throw e;}
-    _prepareInterstitial();         // sonraki için önden hazırla
-  }catch(e){_fullScreenAdOpen=false;_setSkyMusicPaused(false);console.warn('Interstitial show:',e);}
+    if(!_interReady)await _prepareInterstitial();
+    if(!_interReady||document.hidden||!_adsCanRequest||isNoAds())return;
+    _fullScreenAdOpen=true;_setSkyMusicPaused(true);await hideBanner();
+    for(const event of ['interstitialAdDismissed','interstitialAdFailedToShow']){
+      const h=await AdMob.addListener(event,finish);
+      if(finished){try{await h.remove();}catch(_){};return;}
+      listeners.push(h);
+    }
+    _lastInterstitialAt=Date.now();_interReady=false;
+    watchdog=setTimeout(finish,195000);
+    Promise.resolve().then(()=>AdMob.showInterstitial()).then(()=>{
+      // Unity resolves on dismissal. AdMob resolves on presentation.
+      if(AdMob.kind==='unity')finish();
+    },e=>{console.warn('Interstitial show:',e);finish();});
+    await dismissed;
+  }catch(e){console.warn('Interstitial show:',e);}
+  finally{finish();_prepareInterstitial();}
 }
 
 function _getAdMob(){
@@ -3331,7 +3358,8 @@ function _syncAdAudioPolicy(){
 }
 
 async function _resumeBannerAfterForeground(){
-  if(!_screenWantsBanner()||!_adsCanRequest)return;
+  if(!_screenWantsBanner())return;
+  if(!_adMobReady||!_adsCanRequest){await initAdMob();return;}
   _bannerRetryAttempt=0;
   if(_bannerState==='shown')_bannerState='hidden';
   return showBanner();
@@ -3345,7 +3373,7 @@ async function initAdMob(){
     return;
   }
   if(_adMobInitPromise)return _adMobInitPromise;
-  if(_adMobReady)return;
+  if(_adMobReady&&_adsCanRequest)return;
   const AdMob=_getAdMob();
   if(!AdMob)return;
   _adMobInitPromise=(async()=>{
@@ -3371,7 +3399,7 @@ async function initAdMob(){
       // early `canRequestAds` return, so a fresh install could never show ATT.
       if(_isIOS)await _resolveIosTrackingAuthorization(AdMob);
       await initFirebaseAnalytics();
-      await AdMob.initialize({initializeForTesting:_useAdMobTestAds,maxAdContentRating:'General'});
+      if(!_adMobReady)await AdMob.initialize({initializeForTesting:_useAdMobTestAds,maxAdContentRating:'General'});
       _adMobReady=true;
       await _installBannerListeners(AdMob);
 
@@ -3401,7 +3429,7 @@ async function initAdMob(){
       _adMobReady=false;_adsCanRequest=false;_adMobInitPromise=null;
       console.warn('AdMob init:',e);
     }
-  })();
+  })().finally(()=>{_adMobInitPromise=null;});
   return _adMobInitPromise;
 }
 
@@ -3442,7 +3470,7 @@ async function openAdPrivacyOptions(){
 // Şimdi reklam, ihtiyaç duyulmadan ÖNCE (oyun açılışında ve her izlemeden sonra) arka
 // planda hazırlanıyor; buton tıklandığında genelde zaten hazır, anında açılıyor.
 let _rewardReady=false,_rewardPreparing=false,_rewardFlowActive=false,_rewardPreparePromise=null;
-const REWARDED_LOAD_TIMEOUT_MS=20000;
+const REWARDED_LOAD_TIMEOUT_MS=22000;
 const REWARDED_LOAD_ATTEMPTS=2;
 async function _prepareRewardedAd(){
   if(!adServiceAvailable())return false;
@@ -3458,10 +3486,7 @@ async function _prepareRewardedAd(){
     try{
       for(let attempt=1;attempt<=REWARDED_LOAD_ATTEMPTS;attempt++){
         try{
-          await Promise.race([
-            AdMob.prepareRewardVideoAd({adId:ADMOB_REWARDED_ID,isTesting:_useAdMobTestAds}),
-            new Promise((_,reject)=>setTimeout(()=>reject(new Error('rewarded timeout')),REWARDED_LOAD_TIMEOUT_MS)),
-          ]);
+          await _adDeadline(AdMob.prepareRewardVideoAd({adId:ADMOB_REWARDED_ID,isTesting:_useAdMobTestAds}),REWARDED_LOAD_TIMEOUT_MS,'rewarded timeout');
           _rewardReady=true;
           return true;
         }catch(e){
@@ -3559,7 +3584,7 @@ function _runRewardedSession(AdMob,onRewarded){
         await listen('onRewardedVideoAdFailedToShow',()=>{if(!settled&&started)finish('unavailable');});
         if(settled)return;
         started=true;_fullScreenAdOpen=true;
-        watchdog=setTimeout(()=>finish('unavailable'),90000);
+        watchdog=setTimeout(()=>finish('unavailable'),195000);
         const result=await AdMob.showRewardVideoAd();
         if(settled)return;
         showResolved=true;
@@ -3604,7 +3629,7 @@ async function showRewardedAd(onRewarded,meta){
     if(typeof onRewarded==='function')onRewarded();
     return;
   }
-  if(_rewardFlowActive||_fullScreenAdOpen)return {status:'busy'};
+  if(_rewardFlowActive||_fullScreenAdOpen||_interFlowActive)return {status:'busy'};
   _rewardFlowActive=true;
   _beginRewardedFlow(meta);
   const AdMob=_getAdMob();
@@ -3619,6 +3644,7 @@ async function showRewardedAd(onRewarded,meta){
     _clearRewardedListeners();
     if(!_rewardReady)await _prepareRewardedAd();
     if(!_rewardReady){_showAdUnavailable(onRewarded);return {status:'unavailable'};}
+    if(document.hidden){_rewardFlowActive=false;_restoreAfterAd();return {status:'cancelled'};}
     return await _runRewardedSession(AdMob,onRewarded);
   }catch(e){
     console.warn('AdMob rewarded error:',e);
