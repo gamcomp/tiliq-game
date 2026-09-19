@@ -2132,19 +2132,15 @@ function isTreasureClaimed(){
 // Reklamsız satın alma (tiliq_no_ads) sahipleri için reklam atlanır — ücret ödedikleri
 // için tekrar reklam izletmek adil olmaz, ödül direkt verilir.
 function claimTreasure(sourceEl){
-  if(isTreasureClaimed()) return;
+  if(isTreasureClaimed()||_rewardFlowActive||_fullScreenAdOpen) return;
   if(isNoAds()||!adServiceAvailable()){ _grantTreasureReward(sourceEl); return; }
   const btn=sourceEl||document.getElementById('tb-cta')||document.getElementById('dr-claim-btn');
   const _resetBtn=()=>{if(btn){btn.disabled=false;if(btn.dataset._origHtml)btn.innerHTML=btn.dataset._origHtml;}};
   if(btn){btn.disabled=true;btn.dataset._origHtml=btn.innerHTML;btn.innerHTML=`<span class="ui-video-icon" aria-hidden="true"></span><span>${t('adLoading')}</span>`;}
-  // Güvenlik ağı: reklam izlenmeden kapatılırsa showRewardedAd callback'i hiç
-  // çağırmıyor — buton sonsuza dek "yükleniyor" kalmasın diye 45sn sonra sıfırlanır.
-  const _failsafe=setTimeout(_resetBtn,45000);
+  // Butonu yalnızca gerçek reklam sonucu geldikten sonra yeniden etkinleştir.
   showRewardedAd(()=>{
-    clearTimeout(_failsafe);
-    _resetBtn();
     _grantTreasureReward(sourceEl);
-  },adContext('daily'));
+  },adContext('daily')).finally(()=>{if(!isTreasureClaimed())_resetBtn();});
 }
 function _grantTreasureReward(sourceEl){
   if(isTreasureClaimed()) return;
@@ -3516,10 +3512,76 @@ function _hideAdOverlay(resumeMusic=true,resumeBanner=true){
 }
 function _completeRewardedAd(onRewarded){
   _adUnavailableCb=null;
-  _rewardFlowActive=false;_fullScreenAdOpen=false;
-  _hideAdOverlay();
-  if(typeof onRewarded==='function')onRewarded();
-  logEvent('ad_rewarded',{ad_format:'rewarded'});
+  // Reward application must not depend on banner, audio or analytics cleanup.
+  try{if(typeof onRewarded==='function')onRewarded();}
+  finally{
+    _rewardFlowActive=false;_fullScreenAdOpen=false;
+    try{_hideAdOverlay();}catch(e){console.warn('Reward overlay cleanup:',e);}
+    try{logEvent('ad_rewarded',{ad_format:'rewarded'});}catch(e){console.warn('Reward analytics:',e);}
+  }
+}
+
+// One native show owns its listeners until its outcome is reconciled. Dismissal
+// alone is not a reward decision: the reward event / show result may arrive later.
+function _runRewardedSession(AdMob,onRewarded){
+  return new Promise(resolve=>{
+    let settled=false,closed=false,rewarded=false,skipped=false,started=false,showResolved=false;
+    let grace=null,watchdog=null;
+    const handles=[];
+    const remove=handle=>{try{Promise.resolve(handle?.remove?.()).catch(()=>{});}catch(_){}};
+    const finish=(status)=>{
+      if(settled)return;
+      settled=true;clearTimeout(grace);clearTimeout(watchdog);
+      handles.splice(0).forEach(remove);
+      _rewardReady=false;
+      if(status==='earned'){
+        try{_completeRewardedAd(onRewarded);}catch(e){console.error('Reward application:',e);}
+      }else if(status==='skipped'){
+        _rewardFlowActive=false;_fullScreenAdOpen=false;
+        try{_hideAdOverlay();}catch(e){console.warn(e);}
+      }else{
+        try{_showAdUnavailable(onRewarded);}catch(e){console.warn(e);_rewardFlowActive=false;_fullScreenAdOpen=false;}
+      }
+      resolve({status});
+      // A new preload cannot remove listeners belonging to an unfinished show.
+      if(status!=='unavailable')_prepareRewardedAd();
+    };
+    const reconcile=()=>{
+      if(skipped){finish('skipped');return;}
+      if(closed&&rewarded){finish('earned');return;}
+      // Keep this session locked while the bridge delivers adjacent messages.
+      if(closed&&showResolved&&!grace)grace=setTimeout(()=>finish('unavailable'),2500);
+    };
+    const completion=info=>{
+      if(settled||!started)return;
+      closed=true;
+      if(info?.completed===false)skipped=true;
+      if(info?.earned===true)rewarded=true;
+      reconcile();
+    };
+    (async()=>{
+      const listen=async(name,fn)=>{const h=await AdMob.addListener(name,fn);if(settled)remove(h);else handles.push(h);};
+      try{
+        await listen('onRewardedVideoAdReward',()=>{if(settled||!started)return;rewarded=true;reconcile();});
+        await listen('onRewardedVideoAdDismissed',completion);
+        await listen('onRewardedVideoAdFailedToShow',()=>{if(!settled&&started)finish('unavailable');});
+        if(settled)return;
+        started=true;_fullScreenAdOpen=true;
+        try{_hideAdOverlay(false,false);}catch(e){console.warn(e);}
+        watchdog=setTimeout(()=>finish('unavailable'),90000);
+        const result=await AdMob.showRewardVideoAd();
+        if(settled)return;
+        showResolved=true;
+        if(AdMob.kind==='unity'){
+          if(typeof result?.completed==='boolean')completion(result);
+        }else if(result&&Number(result.amount)>0){
+          // AdMob's show promise returns its earned reward, not a load result.
+          rewarded=true;closed=true;reconcile();
+        }
+        reconcile();
+      }catch(e){if(!settled){console.warn('Rewarded show:',e);finish('unavailable');}}
+    })();
+  });
 }
 
 function _clearRewardedListeners(){
@@ -3560,7 +3622,7 @@ async function showRewardedAd(onRewarded,meta){
     if(typeof onRewarded==='function')onRewarded();
     return;
   }
-  if(_rewardFlowActive||_fullScreenAdOpen)return;
+  if(_rewardFlowActive||_fullScreenAdOpen)return {status:'busy'};
   _rewardFlowActive=true;
   _showAdOverlay(meta||adContext('default'),'loading');
   const AdMob=_getAdMob();
@@ -3571,41 +3633,15 @@ async function showRewardedAd(onRewarded,meta){
     try{await initAdMob();}catch(e){console.warn('AdMob reward init:',e);}
   }
   if(!_adMobReady||!_adsCanRequest){_showAdUnavailable(onRewarded);return;}
-  let settled=false;
   try{
-    // Önceki listener'ları temizle
     _clearRewardedListeners();
-    let rewarded=false;
-    const l1=await AdMob.addListener('onRewardedVideoAdReward',()=>{rewarded=true;});
-    const finish=(info)=>{
-      if(settled)return;
-      settled=true;
-      _clearRewardedListeners();_fullScreenAdOpen=false;_rewardFlowActive=false;
-      _rewardReady=false;
-      const earned=info?.completed!==false&&(rewarded||info?.earned===true);
-      if(earned)_completeRewardedAd(onRewarded);
-      else _hideAdOverlay();
-      _prepareRewardedAd();
-    };
-    const l2=await AdMob.addListener('onRewardedVideoAdDismissed',finish);
-    const l3=await AdMob.addListener('onRewardedVideoAdFailedToShow',()=>{
-      if(settled)return;
-      settled=true;_showAdUnavailable(onRewarded);
-    });
-    _admobListeners=[l1,l2,l3];
-    if(!_rewardReady) await _prepareRewardedAd(); // hazır değilse (nadir) burada bekle
-    // Native no-fill/failure durumunda sahte reklamla ödül VERME. Tarayıcıdaki
-    // demo akışı native gelir/ödül akışına hiçbir zaman karışmamalı.
-    if(!_rewardReady){_showAdUnavailable(onRewarded);return;}
-    _setAdOverlayState('loading',t('adPreparing'),t('watchToEnd'));
-    await new Promise(resolve=>setTimeout(resolve,180));
-    _fullScreenAdOpen=true;
-    _hideAdOverlay(false,false);
-    const result=await AdMob.showRewardVideoAd();
-    if(AdMob.kind==='unity'&&typeof result?.completed==='boolean')finish(result);
+    if(!_rewardReady)await _prepareRewardedAd();
+    if(!_rewardReady){_showAdUnavailable(onRewarded);return {status:'unavailable'};}
+    return await _runRewardedSession(AdMob,onRewarded);
   }catch(e){
     console.warn('AdMob rewarded error:',e);
-    if(!settled){settled=true;_showAdUnavailable(onRewarded);}
+    _showAdUnavailable(onRewarded);
+    return {status:'unavailable'};
   }
 }
 
@@ -5312,16 +5348,14 @@ function _setupScoreReward(s){
   if(badge) badge.innerHTML='<img src="assets/sky-harbor/coin.png" alt=""><span>+'+_pendingScoreCoins+'</span>';
 }
 function claimScoreCoins(){
-  if(_scoreCoinsClaimed||_pendingScoreCoins<=0)return;
+  if(_scoreCoinsClaimed||_pendingScoreCoins<=0||_rewardFlowActive||_fullScreenAdOpen)return;
   const btn=document.getElementById('go-reward-btn');
   const _resetBtn=()=>{if(btn)btn.classList.remove('claimed');};
   if(isNoAds()||!adServiceAvailable()){_grantScoreCoins();return;}
   if(btn){btn.classList.add('claimed');}
-  const _failsafe=setTimeout(_resetBtn,45000);
   showRewardedAd(()=>{
-    clearTimeout(_failsafe);
     _grantScoreCoins();
-  },adContext('score',{title:`+${_pendingScoreCoins} Coin`,copy:t('watchToEnd')}));
+  },adContext('score',{title:`+${_pendingScoreCoins} Coin`,copy:t('watchToEnd')})).finally(()=>{if(!_scoreCoinsClaimed)_resetBtn();});
 }
 function _grantScoreCoins(){
   if(_scoreCoinsClaimed||_pendingScoreCoins<=0)return;
