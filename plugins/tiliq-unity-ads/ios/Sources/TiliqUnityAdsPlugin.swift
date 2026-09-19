@@ -55,6 +55,7 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     private var bannerImpressionReceived = false
     private var bannerDesired = false
     private var bannerLoading = false
+    private var bannerGeneration = 0
 
     /// CAPPluginCall metotları Capacitor'ın kendi arka plan kuyruğunda çalışabilir;
     /// DispatchWorkItem/asyncAfter kullanmak Timer'ın gerektirdiği aktif RunLoop
@@ -367,14 +368,19 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
             }
             return
         }
-        guard !bannerLoading else { call.resolve(); return }
+        guard !bannerLoading else { call.reject("Banner is already loading"); return }
         bannerLoading = true
+        let generation = bannerGeneration
         let config = UADSBannerLoadConfigurationBuilder(
             placementId: id, bannerSize: CGSize(width: 320, height: 50), delegate: self
         ).build()
-        DispatchQueue.main.async {
-            UADSBannerAd.load(config) { [weak self] ad, error in
+        UADSBannerAd.load(config) { [weak self] ad, error in
+            DispatchQueue.main.async {
                 guard let self = self else { call.reject("Ads bridge was released"); return }
+                guard generation == self.bannerGeneration else {
+                    call.reject("Banner load was superseded")
+                    return
+                }
                 self.bannerLoading = false
                 guard let ad = ad, error == nil else {
                     let message = error?.message ?? "No banner fill"
@@ -385,28 +391,28 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
                 self.banner = ad
                 self.bannerImpressionReceived = false
                 ad.onAdExpired = { [weak self] expired in
-                    guard let self = self, self.banner === expired else { return }
-                    self.removeBannerView()
-                    self.notifyListeners("bannerAdFailedToLoad", data: ["message": "Banner expired"])
+                    DispatchQueue.main.async {
+                        guard let self = self, self.banner === expired else { return }
+                        self.removeBannerView()
+                        self.notifyListeners("bannerAdFailedToLoad", data: ["message": "Banner expired"])
+                    }
                 }
-                DispatchQueue.main.async {
-                    let view = ad.view
-                    view.isHidden = !self.bannerDesired
-                    view.isOpaque = false
-                    view.backgroundColor = .clear
-                    view.translatesAutoresizingMaskIntoConstraints = false
-                    vc.view.addSubview(view)
-                    NSLayoutConstraint.activate([
-                        view.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
-                        view.bottomAnchor.constraint(equalTo: vc.view.safeAreaLayoutGuide.bottomAnchor),
-                        view.widthAnchor.constraint(equalToConstant: 320),
-                        view.heightAnchor.constraint(equalToConstant: 50)
-                    ])
-                    self.notifyListeners("bannerAdSizeChanged", data: ["height": 50])
-                    self.notifyListeners("bannerAdLoaded", data: [:])
-                    call.resolve()
-                    if self.bannerDesired { self.armBannerImpressionWatchdog(ad) }
-                }
+                let view = ad.view
+                view.isHidden = !self.bannerDesired
+                view.isOpaque = false
+                view.backgroundColor = .clear
+                view.translatesAutoresizingMaskIntoConstraints = false
+                vc.view.addSubview(view)
+                NSLayoutConstraint.activate([
+                    view.centerXAnchor.constraint(equalTo: vc.view.centerXAnchor),
+                    view.bottomAnchor.constraint(equalTo: vc.view.safeAreaLayoutGuide.bottomAnchor),
+                    view.widthAnchor.constraint(equalToConstant: 320),
+                    view.heightAnchor.constraint(equalToConstant: 50)
+                ])
+                self.notifyListeners("bannerAdSizeChanged", data: ["height": 50])
+                self.notifyListeners("bannerAdLoaded", data: [:])
+                call.resolve()
+                if self.bannerDesired { self.armBannerImpressionWatchdog(ad) }
             }
         }
     }
@@ -425,6 +431,8 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
     }
 
     private func removeBannerView() {
+        bannerGeneration += 1
+        bannerLoading = false
         bannerImpressionWatchdog?.cancel()
         bannerImpressionWatchdog = nil
         bannerImpressionReceived = false
@@ -467,7 +475,10 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         }
     }
     @objc func removeBanner(_ call: CAPPluginCall) {
-        removeBannerView()
-        call.resolve()
+        DispatchQueue.main.async {
+            self.bannerDesired = false
+            self.removeBannerView()
+            call.resolve()
+        }
     }
 }

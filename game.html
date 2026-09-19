@@ -2473,6 +2473,7 @@ const GRID=8;
 let _bannerShown=false;
 let _bannerSizeListenerAdded=false;
 let _bannerNativeExists=false,_bannerDesired=false,_bannerState='idle';
+let _bannerLoadTimer=null,_bannerOperation=0,_bannerRemoval=null;
 let _bannerRetryTimer=null,_bannerRetryAttempt=0,_bannerHeight=0,_bannerLastHeight=0;
 let _adMobReady=false,_adsCanRequest=false,_privacyOptionsRequired=false,_adMobInitPromise=null;
 let _useAdMobTestAds=false,_adEnvironmentResolved=false;
@@ -3181,40 +3182,48 @@ function _screenWantsBanner(){
 function _clearBannerRetry(){
   if(_bannerRetryTimer){clearTimeout(_bannerRetryTimer);_bannerRetryTimer=null;}
 }
+function _clearBannerLoadTimer(){
+  if(_bannerLoadTimer){clearTimeout(_bannerLoadTimer);_bannerLoadTimer=null;}
+}
 function _scheduleBannerRetry(){
-  _clearBannerRetry();
-  if(!_bannerDesired||!_adsCanRequest||navigator.onLine===false)return;
-  const delays=[15000,30000,60000,120000,300000];
+  if(_bannerRetryTimer||!_bannerDesired||!_adsCanRequest||navigator.onLine===false)return;
+  const delays=[2000,5000,10000,30000,60000];
   const delay=delays[Math.min(_bannerRetryAttempt++,delays.length-1)];
   _bannerRetryTimer=setTimeout(()=>{_bannerRetryTimer=null;if(_screenWantsBanner())showBanner();},delay);
+}
+function _bannerFailed(AdMob,error){
+  if(_bannerState==='failed')return; // SDK event and rejected call describe the same failure.
+  console.warn('Banner:',error);
+  ++_bannerOperation;_clearBannerLoadTimer();
+  _bannerState='failed';_bannerShown=false;_bannerNativeExists=false;_setBannerSpacers(0);
+  // Finish removal before requesting another banner.
+  _bannerRemoval=Promise.resolve().then(()=>AdMob.removeBanner()).catch(()=>{});
+  _scheduleBannerRetry();
+}
+function _bannerLoaded(height){
+  if(!_bannerDesired||!_screenWantsBanner())return;
+  _clearBannerLoadTimer();_clearBannerRetry();
+  _bannerState='shown';_bannerShown=true;_bannerNativeExists=true;
+  _setBannerSpacers(Number(height)>0?Number(height):(_bannerLastHeight||BANNER_RESERVE_PX-8));
 }
 async function _installBannerListeners(AdMob){
   if(_bannerSizeListenerAdded)return;
   _bannerSizeListenerAdded=true;
   _bannerListeners.push(await AdMob.addListener('bannerAdSizeChanged',(info)=>{
-    if(!_bannerDesired)return;
-    const h=info&&Number(info.height)>0?Number(info.height):BANNER_RESERVE_PX-8;
-    _bannerState='shown';_bannerShown=true;_bannerNativeExists=true;_bannerRetryAttempt=0;
-    _clearBannerRetry();_setBannerSpacers(h);
+    if(_bannerNativeExists)_bannerLoaded(info&&info.height);
   }));
   _bannerListeners.push(await AdMob.addListener('bannerAdLoaded',()=>{
-    if(!_bannerDesired){hideBanner();return;}
-    _bannerState='shown';_bannerShown=true;_bannerNativeExists=true;_bannerRetryAttempt=0;
-    _clearBannerRetry();
-    if(!_bannerHeight)_setBannerSpacers(BANNER_RESERVE_PX-8);
+    if(!_bannerDesired||!_screenWantsBanner()){hideBanner();return;}
+    if(_bannerNativeExists)_bannerLoaded();
   }));
-  _bannerListeners.push(await AdMob.addListener('bannerAdFailedToLoad',(info)=>{
-    console.warn('Banner load:',info);
-    _bannerState='failed';_bannerShown=false;_bannerNativeExists=false;_setBannerSpacers(0);
-    Promise.resolve(AdMob.removeBanner()).catch(()=>{});
-    _scheduleBannerRetry();
-  }));
+  _bannerListeners.push(await AdMob.addListener('bannerAdFailedToLoad',(info)=>_bannerFailed(AdMob,info)));
   _bannerListeners.push(await AdMob.addListener('bannerAdImpression',()=>{
+    _bannerRetryAttempt=0;
     logEvent('ad_impression',{ad_format:'banner'});
   }));
 }
 
-// ── BANNER (alt şerit — menü VE oyun ekranında, tepsi/HUD ile çakışmaz) ──────
+// Banner requests are bounded; older hide/show completions cannot change a newer screen.
 async function showBanner(){
   if(!_screenWantsBanner())return;
   _bannerDesired=true;
@@ -3222,39 +3231,54 @@ async function showBanner(){
   const AdMob=_getAdMob();
   if(!AdMob||!_adMobReady||!_adsCanRequest)return;
   if(_bannerState==='loading'||_bannerState==='shown')return;
+  const resume=_bannerNativeExists&&_bannerState==='hidden';
+  const operation=++_bannerOperation;
+  _clearBannerRetry();_clearBannerLoadTimer();_bannerState='loading';
+  _bannerLoadTimer=setTimeout(()=>{
+    if(operation===_bannerOperation)_bannerFailed(AdMob,new Error('Banner load timeout'));
+  },20000);
   try{
-    _clearBannerRetry();
-    if(_bannerNativeExists&&_bannerState==='hidden'){
-      _bannerState='loading';
-      await AdMob.resumeBanner();
-      if(!_bannerDesired||!_screenWantsBanner()){await hideBanner();return;}
-      _bannerState='shown';_bannerShown=true;
-      _setBannerSpacers(_bannerLastHeight||BANNER_RESERVE_PX-8);
-      return;
+    if(resume){
+      try{await AdMob.resumeBanner();}
+      catch(e){
+        if(operation!==_bannerOperation)return;
+        // An expired cached banner must not incur the network retry delay.
+        _bannerNativeExists=false;
+        await AdMob.removeBanner();
+        if(operation!==_bannerOperation)return;
+        _bannerNativeExists=true;
+        await AdMob.showBanner({adId:ADMOB_BANNER_ID,isTesting:_useAdMobTestAds,
+          adSize:'ADAPTIVE_BANNER',position:'BOTTOM_CENTER',margin:0});
+      }
+    }else{
+      if(_bannerRemoval){await _bannerRemoval;_bannerRemoval=null;}
+      if(operation!==_bannerOperation)return;
+      _bannerNativeExists=true;
+      await AdMob.showBanner({adId:ADMOB_BANNER_ID,isTesting:_useAdMobTestAds,
+        adSize:'ADAPTIVE_BANNER',position:'BOTTOM_CENTER',margin:0});
     }
-    _bannerState='loading';_bannerNativeExists=true;
-    await AdMob.showBanner({
-      adId:ADMOB_BANNER_ID,
-      isTesting:_useAdMobTestAds,
-      adSize:'ADAPTIVE_BANNER',
-      position:'BOTTOM_CENTER',
-      margin:0,
-    });
-  }catch(e){
-    console.warn('Banner show:',e);
-    _bannerState='failed';_bannerShown=false;_bannerNativeExists=false;_setBannerSpacers(0);
-    _scheduleBannerRetry();
-  }
+    if(operation!==_bannerOperation)return;
+    if(!_bannerDesired||!_screenWantsBanner()){await hideBanner();return;}
+    // Unity resolves only after attachment. Other providers still use their loaded event.
+    if(resume||AdMob===window.TiliqUnityAdsProvider)_bannerLoaded();
+  }catch(e){if(operation===_bannerOperation)_bannerFailed(AdMob,e);}
 }
 async function hideBanner(){
-  _bannerDesired=false;_clearBannerRetry();_setBannerSpacers(0);
+  const operation=++_bannerOperation;
+  _bannerDesired=false;_clearBannerRetry();_clearBannerLoadTimer();_setBannerSpacers(0);
+  _bannerShown=false;_bannerState='hidden';
   const AdMob=_getAdMob();
-  if(!AdMob||!_bannerNativeExists){_bannerShown=false;_bannerState='hidden';return;}
-  try{
-    await AdMob.hideBanner();_bannerShown=false;_bannerState='hidden';
-  }catch(e){ console.warn('Banner hide:',e); }
+  if(!AdMob||!_bannerNativeExists)return;
+  try{await AdMob.hideBanner();}
+  catch(e){
+    if(operation===_bannerOperation)_bannerNativeExists=false;
+    console.warn('Banner hide:',e);
+  }
 }
-window.addEventListener('online',()=>{if(_screenWantsBanner()){_bannerDesired=true;showBanner();}});
+window.addEventListener('online',()=>{
+  _bannerRetryAttempt=0;
+  if(_screenWantsBanner())showBanner();
+});
 
 // ── INTERSTITIAL (tam ekran, oyun bitişinde) ─────────────────────────────────
 async function _prepareInterstitial(){
@@ -3308,18 +3332,9 @@ function _syncAdAudioPolicy(){
 
 async function _resumeBannerAfterForeground(){
   if(!_screenWantsBanner()||!_adsCanRequest)return;
-  _bannerDesired=true;
-  const AdMob=_getAdMob();
-  if(AdMob&&_bannerNativeExists){
-    try{
-      await AdMob.resumeBanner();
-      if(!_bannerDesired||!_screenWantsBanner()){await hideBanner();return;}
-      _bannerState='shown';_bannerShown=true;
-      if(!_bannerHeight)_setBannerSpacers(_bannerLastHeight||BANNER_RESERVE_PX-8);
-      return;
-    }catch(e){_bannerNativeExists=false;_bannerState='failed';}
-  }
-  showBanner();
+  _bannerRetryAttempt=0;
+  if(_bannerState==='shown')_bannerState='hidden';
+  return showBanner();
 }
 
 async function initAdMob(){
