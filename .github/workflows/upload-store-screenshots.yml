@@ -19,8 +19,9 @@ jobs:
           node-version: 20
 
       # No npm install needed — the upload script only uses Node built-ins.
-      # Screenshots only — no --cancel-review / --resubmit. This writes the current
-      # store-assets/screenshots/app-store/<locale>/iphone-6.9/*.jpg set onto App Store
-      # Connect's editable app version for every locale in store-metadata.json.
+      # Writes the current store-assets/screenshots/app-store/<locale>/iphone-6.9/*.jpg
+      # set onto App Store Connect for every locale in store-metadata.json. If the
+      # version is locked in review, cancels that review, updates the screenshots, then
+      # resubmits the SAME already-attached build for review (no new binary involved).
       - name: Upload localized screenshots to App Store Connect
-        run: node store-assets/tools/upload-app-store-screenshots.mjs --commit
+        run: node store-assets/tools/upload-app-store-screenshots.mjs --commit --cancel-review --resubmit
