@@ -194,8 +194,21 @@ async function waitForValidBuild(requestedBuildNumber) {
   throw new Error(`App Store build ${requestedBuildNumber} did not become valid within fifteen minutes.`);
 }
 
+async function currentlyAttachedBuildNumber(version) {
+  const linkage = await apiRequest('GET', `/appStoreVersions/${version.id}/relationships/build`);
+  if (!linkage?.data?.id) return null;
+  const build = await apiRequest('GET', `/builds/${linkage.data.id}`);
+  return build?.data?.attributes?.version || null;
+}
+
 async function attachBuildAndResubmit(version, requestedBuildNumber) {
-  if (!requestedBuildNumber) throw new Error('--build-number is required with --resubmit.');
+  if (!requestedBuildNumber) {
+    // Default to whatever build is already attached to this version — resubmitting
+    // after a screenshot-only change should reuse the same reviewed binary, not
+    // require the caller to know its build number ahead of time.
+    requestedBuildNumber = await currentlyAttachedBuildNumber(version);
+  }
+  if (!requestedBuildNumber) throw new Error('--build-number is required with --resubmit (no build is currently attached to this version).');
   const build = await waitForValidBuild(requestedBuildNumber);
   await apiRequest('PATCH', `/appStoreVersions/${version.id}/relationships/build`, {
     body: { data: { type: 'builds', id: build.id } },
