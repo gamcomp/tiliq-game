@@ -36,7 +36,7 @@
 })();
 </script>
 <link rel="icon" type="image/png" href="assets/sky-harbor/tiliq-app-icon.png">
-<link rel="stylesheet" href="crown-quest.css?v=20260921-menu-fit">
+<link rel="stylesheet" href="crown-quest.css?v=20260921-hammer-fit">
 <link rel="stylesheet" href="harbor-polish.css?v=20260909">
 <script src="harbor-polish.js?v=20260909"></script>
 <script src="hammer-i18n.js?v=20260909"></script>
@@ -2512,14 +2512,17 @@ function calcCell(){
   // çıkarılır ve kare tahta hem genişlik hem yükseklik sınırına göre ölçeklenir.
   const hudSpace=outerUiHeight(document.querySelector('.game-hud'),Math.max(124,vw*.31));
   const gameNav=document.querySelector('.game-nav');
-  const bannerSpacer=document.getElementById('banner-spacer-game');
   const navSpace=outerUiHeight(gameNav,vw*.145+8);
-  const chrome=hudSpace+navSpace
-             + (bannerSpacer?bannerSpacer.getBoundingClientRect().height:(_bannerShown?BANNER_RESERVE_PX:0));
-  const vh=window.innerHeight-chrome-8;
-  // Dar telefonlarda tahta kenarlara yapışmasın; referanstaki rahat çerçeve oranı.
+  const rootStyle=getComputedStyle(document.documentElement);
+  const safeBottom=Math.max(8,parseFloat(rootStyle.getPropertyValue('--safe-bottom'))||0);
+  // Use the final banner reservation, not the spacer's animated intermediate height.
+  const bannerSpace=_bannerHeight>0?_bannerHeight+8:0;
+  const container=document.getElementById('game-container');
+  const margin=container?(parseFloat(getComputedStyle(container).marginTop)||0):0;
+  const vh=window.innerHeight-hudSpace-navSpace-safeBottom-bannerSpace-margin-8;
   const byWidth=Math.floor((vw*.84)/GRID);
-  const byHeight=Math.max(20,Math.floor((vh-trayGap()-26)/10.1));
+  // Canvas = 8 cells + 2.05-cell tray + 44px frame/gaps.
+  const byHeight=Math.max(16,Math.floor((vh-44)/10.05));
   return Math.min(byWidth,byHeight,58);
 }
 let CELL=calcCell();
@@ -5885,7 +5888,8 @@ function drawBoard(now){
 }
 
 function drawTray(){
-  if(pieces.length<3)return;
+  // Targeting controls temporarily occupy the tray; the board keeps its coordinates.
+  if(bombMode||pieces.length<3)return;
   const L=trayLayouts(),tc=TC();
   const kingdom=document.body.getAttribute('data-vibe')==='kingdom';
   const now2=performance.now();

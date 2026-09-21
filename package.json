@@ -1,6 +1,6 @@
 {
   "name": "tiliq",
-  "version": "1.3.102",
+  "version": "1.3.103",
   "description": "Tiliq — Mobil Blok Puzzle Oyunu",
   "scripts": {
     "postinstall": "patch-package",
@@ -17,7 +17,8 @@
     "test:rewarded-settlement": "node store-assets/tools/test-rewarded-settlement.mjs",
     "test:banner": "node store-assets/tools/test-banner-flow.mjs",
     "test:ad-lifecycle": "node store-assets/tools/test-ad-lifecycle.mjs",
-    "test:menu-layout": "node store-assets/tools/test-menu-layout.mjs"
+    "test:menu-layout": "node store-assets/tools/test-menu-layout.mjs",
+    "test:hammer-layout": "node store-assets/tools/test-hammer-layout.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^6.0.1",
