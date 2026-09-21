@@ -1,5 +1,4 @@
-• Daha akıcı puan artışı, gelişmiş ses ve kombo efektleri
-• Bomba adı tüm dillerde Çekiç olarak güncellendi
-• Eski kare görünümü korundu; elmas sayacı ve açık/koyu seçimi kaldırıldı
-• Hazır görev ve günlük ödüller için görünür rozetler
-• Arkadaş ekleme penceresinin arkada kalması düzeltildi
+• Reklam sonrası ödül teslimi ve banner kararlılığı iyileştirildi.
+• Gereksiz reklam geçiş ekranı kaldırıldı.
+• Küçük ekranlarda menü ve Çekiç paneli çakışmaları düzeltildi.
+• Arkadaşlar, dünya sıralaması ve günlük posta serisi güncellendi.

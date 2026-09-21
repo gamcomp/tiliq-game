@@ -1,5 +1,4 @@
-• Smoother score updates, improved sound and combo effects
-• Bomb renamed to Hammer in every language
-• Original tiles retained; gem counter and light/dark switch removed
-• Visible badges for claimable missions and daily rewards
-• Fixed the Add Friend window appearing behind rankings
+• Improved ad reward delivery and banner reliability.
+• Removed the extra ad transition screen.
+• Fixed menu and Hammer panel overlaps on smaller screens.
+• Updated friends, world rankings and daily mail streaks.

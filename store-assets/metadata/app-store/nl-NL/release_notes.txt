@@ -1,5 +1,4 @@
-• Soepelere scoreweergave, verbeterde geluiden en combo-effecten
-• Bom heet nu Hamer in alle talen
-• Oorspronkelijke blokken behouden; edelsteenteller en licht/donker-keuze verwijderd
-• Badges voor beschikbare missie- en dagbeloningen
-• Het venster om vrienden toe te voegen verschijnt nu voor de ranglijst
+• Betrouwbaardere advertentiebeloningen en banners.
+• Het extra overgangsscherm bij advertenties is verwijderd.
+• Overlap van het menu en het hamerpaneel op kleinere schermen verholpen.
+• Vrienden, wereldranglijst en dagelijkse postreeks bijgewerkt.

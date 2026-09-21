@@ -1,5 +1,4 @@
-• Punteggio più fluido, suoni ed effetti combo migliorati
-• Bomba rinominata Martello in tutte le lingue
-• Blocchi originali mantenuti; rimossi contatore gemme e scelta chiaro/scuro
-• Indicatori per ricompense delle missioni e giornaliere da ritirare
-• La finestra per aggiungere amici ora appare in primo piano
+• Migliorate le ricompense pubblicitarie e la stabilità dei banner.
+• Rimossa la schermata di transizione aggiuntiva degli annunci.
+• Corretti i problemi di sovrapposizione del menu e del pannello Martello sugli schermi piccoli.
+• Aggiornati amici, classifica mondiale e posta giornaliera.

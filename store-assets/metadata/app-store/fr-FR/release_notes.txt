@@ -1,5 +1,4 @@
-• Compteur de score plus fluide, sons et effets de combo améliorés
-• Bombe renommée Marteau dans toutes les langues
-• Blocs d’origine conservés ; compteur de gemmes et choix clair/sombre retirés
-• Badges pour les récompenses de missions et quotidiennes disponibles
-• Fenêtre d’ajout d’amis corrigée pour apparaître au premier plan
+• Attribution des récompenses publicitaires et affichage des bannières améliorés.
+• Écran de transition publicitaire supprimé.
+• Chevauchements du menu et du panneau Marteau corrigés sur les petits écrans.
+• Amis, classement mondial et série de courrier quotidien mis à jour.

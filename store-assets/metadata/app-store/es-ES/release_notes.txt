@@ -1,5 +1,4 @@
-• Puntuación más fluida, mejores sonidos y efectos de combo
-• Bomba ahora se llama Martillo en todos los idiomas
-• Se conservan los bloques originales; se eliminan las gemas del contador y el selector claro/oscuro
-• Indicadores para recompensas de misiones y diarias disponibles
-• Corregida la ventana de añadir amigos para que aparezca delante
+• Mejoradas las recompensas por anuncios y la estabilidad de los banners.
+• Eliminada la pantalla adicional de transición de anuncios.
+• Corregidos los solapamientos del menú y del panel Martillo en pantallas pequeñas.
+• Actualizados amigos, clasificación mundial y correo diario.

@@ -2,9 +2,12 @@ name: iOS Release
 
 on:
   workflow_dispatch: {}
+  push:
+    tags:
+      - 'ios-release-*'
 
 concurrency:
-  group: tiliq-ios-release
+  group: tiliq-unity-ads-testflight
   cancel-in-progress: false
 
 jobs:
@@ -45,6 +48,9 @@ jobs:
 
       - name: Install npm dependencies
         run: npm install
+
+      - name: Configure production advertising
+        run: node store-assets/tools/configure-ios-production.mjs
 
       - name: Audit store version and prepare localized release notes
         run: node store-assets/tools/prepare-ios-release.mjs
@@ -101,6 +107,17 @@ jobs:
 
       - name: Sync Capacitor web assets into native iOS project
         run: npx cap sync ios
+
+      - name: Verify bundled production advertising
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import vm from 'node:vm';
+          const context={window:{}};
+          vm.runInNewContext(fs.readFileSync('ios/App/App/public/unity-ads-config.js','utf8'),context);
+          if(context.window.TILIQ_UNITY_ADS?.testMode!==false)throw Error('Refusing a production release with test ads');
+          console.log('Bundled iOS ad configuration verified.');
+          NODE
 
       # KRİTİK: Podfile'ı cap sync'ten sonra bilinen-doğru içerikle TAMAMEN yeniden yaz
       - name: Rewrite Podfile

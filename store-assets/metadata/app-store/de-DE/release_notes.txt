@@ -1,5 +1,4 @@
-• Sanftere Punkteanimationen, verbesserter Sound und Kombo-Effekte
-• Bombe heißt jetzt in allen Sprachen Hammer
-• Originalsteine bleiben; Edelsteinanzeige und Hell/Dunkel-Auswahl entfernt
-• Sichtbare Hinweise auf abholbare Missions- und Tagesbelohnungen
-• Fenster zum Hinzufügen von Freunden erscheint jetzt im Vordergrund
+• Zuverlässigere Werbebelohnungen und Banner.
+• Zusätzlicher Übergangsbildschirm nach Werbung entfernt.
+• Überlappungen von Menü und Hammer-Anzeige auf kleinen Bildschirmen behoben.
+• Freunde, Weltrangliste und tägliche Postserie aktualisiert.
