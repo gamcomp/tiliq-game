@@ -1,0 +1,26 @@
+name: Upload App Store Screenshots
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    env:
+      APP_ID: 6789283001
+      APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.ASC_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # No npm install needed — the upload script only uses Node built-ins.
+      # Screenshots only — no --cancel-review / --resubmit. This writes the current
+      # store-assets/screenshots/app-store/<locale>/iphone-6.9/*.jpg set onto App Store
+      # Connect's editable app version for every locale in store-metadata.json.
+      - name: Upload localized screenshots to App Store Connect
+        run: node store-assets/tools/upload-app-store-screenshots.mjs --commit

@@ -6025,3 +6025,72 @@ html.banner-visible #ad-banner-bed { opacity: 1; }
     height: calc(126px + var(--safe-top));
   }
 }
+/* Menu controls share the banner-aware footer boundary. Cards shrink inside
+   their available column instead of being covered by the play button. */
+#screen-menu {
+  --menu-nav-height: 84px;
+  --menu-play-height: clamp(70px, 9.5dvh, 86px);
+  --menu-action-height: clamp(92px, 13dvh, 112px);
+  --menu-footer-bottom: calc(max(8px, var(--safe-bottom)) + var(--banner-h));
+  --menu-play-bottom: calc(var(--menu-footer-bottom) + var(--menu-nav-height) + 14px);
+}
+#screen-menu .btn-play {
+  height: var(--menu-play-height);
+  min-height: var(--menu-play-height);
+  bottom: var(--menu-play-bottom) !important;
+}
+#screen-menu .kingdom-top-cards {
+  bottom: calc(var(--menu-play-bottom) + var(--menu-play-height) + 16px);
+}
+#screen-menu .kingdom-top-cards > .kingdom-card,
+#screen-menu .kingdom-top-cards > #daily-card {
+  flex: 0 1 var(--menu-action-height);
+  min-height: 44px;
+  height: var(--menu-action-height);
+}
+#screen-menu .kingdom-card,
+#screen-menu .treasure-box {
+  padding: 4px 5px 5px;
+}
+#screen-menu .kingdom-card::before,
+#screen-menu .treasure-box::before {
+  height: max(12px, min(68px, calc(100% - 32px)));
+}
+@media (max-width: 390px) {
+  #screen-menu { --menu-nav-height: 76px; }
+}
+@media (max-width: 430px) and (min-height: 720px) {
+  #screen-menu {
+    --menu-nav-height: 72px;
+    --menu-play-height: clamp(66px, 8.7dvh, 76px);
+    --menu-action-height: clamp(86px, 11.5dvh, 100px);
+  }
+}
+@media (max-height: 719px) {
+  #screen-menu {
+    --menu-nav-height: 60px;
+    --menu-play-height: 62px;
+    --menu-action-height: 78px;
+  }
+  #menu-nav .btn-menu { height: 56px; }
+  #screen-menu .kingdom-top-cards {
+    top: calc(var(--safe-top) + 105px);
+    gap: 6px;
+  }
+}
+/* The menu already reserves the native banner through the shared footer.
+   A second flex spacer used to shorten the absolute positioning container. */
+#banner-spacer-menu { display: none; }
+#menu-scroll { flex: 0 0 100%; }
+/* Hammer targeting uses the idle tray area, never the board's bottom rows. */
+#bomb-target-bar {
+  top: calc(var(--board-top, 6px) + var(--board-size, 380px) + 20px);
+  min-height: 60px;
+  grid-template-columns: 44px 35px minmax(0, 1fr) auto;
+}
+.bomb-target-cancel { width: 44px; height: 44px; }
+#bomb-target-confirm { min-height: 44px; }
+@media (max-width: 360px) {
+  #bomb-target-bar { grid-template-columns: 44px minmax(0, 1fr) auto; }
+  #bomb-target-bar .bomb-target-emblem { display: none; }
+}

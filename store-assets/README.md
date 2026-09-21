@@ -51,6 +51,28 @@ To regenerate one locale while reviewing copy or layout:
 node store-assets/tools/capture-screenshots.mjs --locale=tr-TR
 ```
 
+## App preview video
+
+`npm run store:video` (or `node store-assets/tools/build-preview-video.mjs --locale=tr-TR`) builds
+a ~11.4s Ken Burns slideshow — home → gameplay → combo power moment → daily rewards → world
+rankings → customize store → CTA (zooms back out on the home screen for a bookend close) — from
+the already-branded framed screenshots in `screenshots/google-play/<locale>/phone/*.jpg` (produced
+by `store:screenshots`): same golden frame, TILIQ wordmark, tagline headline and corner rivets as
+the store listing images, so the video and screenshots read as one family. Crossfades between
+scenes, a different zoom/pan direction per scene (top/bottom/center, one zoom-out), and the game's
+own "Kargo Ekspresi" track (`music-proposals-2026-09-18/04_kargo_ekspresi.wav`) mixed in. Requires
+`ffmpeg` on PATH (`winget install Gyan.FFmpeg` if missing, or set `FFMPEG_PATH`).
+
+We deliberately do **not** record the live running page for this: an earlier attempt drove the
+real game for ~12s and found the board auto-plays/resolves on its own within a few hundred
+milliseconds of being idle (no user input), which unpredictably emptied the seeded board and
+kicked the UI back to the menu mid-recording — invisible in instant screenshots, but fatal for
+continuous video. Building from static frames instead sidesteps that entirely.
+
+Output: `store-assets/video/tiliq-preview-<locale>.mp4`, 1080×1920, H.264 + AAC audio — fits both
+App Store preview (≤30s) and Google Play (which only accepts a YouTube link, so upload this file
+to YouTube first and paste the link into the Play Console listing).
+
 The capture tool uses the real current `index.html` UI at a 500×932 reference viewport. It seeds only demo score, board, reward, and anonymous ranking data; it does not replace the game UI with a mockup. Final screenshots use localized taglines and an opaque JPEG export.
 
 ## Store specifications used

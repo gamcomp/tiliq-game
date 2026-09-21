@@ -1,6 +1,6 @@
 {
   "name": "tiliq",
-  "version": "1.3.101",
+  "version": "1.3.104",
   "description": "Tiliq — Mobil Blok Puzzle Oyunu",
   "scripts": {
     "postinstall": "patch-package",
@@ -13,10 +13,13 @@
     "store:metadata": "node store-assets/tools/generate-metadata.mjs",
     "store:brand": "node store-assets/tools/generate-google-brand-assets.mjs && node store-assets/tools/generate-native-splashes.mjs",
     "store:screenshots": "node store-assets/tools/capture-screenshots.mjs",
+    "store:video": "node store-assets/tools/build-preview-video.mjs",
     "store:validate": "node store-assets/tools/validate-store-assets.mjs",
     "test:rewarded-settlement": "node store-assets/tools/test-rewarded-settlement.mjs",
     "test:banner": "node store-assets/tools/test-banner-flow.mjs",
-    "test:ad-lifecycle": "node store-assets/tools/test-ad-lifecycle.mjs"
+    "test:ad-lifecycle": "node store-assets/tools/test-ad-lifecycle.mjs",
+    "test:menu-layout": "node store-assets/tools/test-menu-layout.mjs",
+    "test:hammer-layout": "node store-assets/tools/test-hammer-layout.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^6.0.1",
