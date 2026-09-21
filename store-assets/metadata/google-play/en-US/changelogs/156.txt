@@ -1,0 +1,4 @@
+• Improved ad reward delivery and banner reliability.
+• Removed the extra ad transition screen.
+• Fixed menu and Hammer panel overlaps on smaller screens.
+• Updated friends, world rankings and daily mail streaks.

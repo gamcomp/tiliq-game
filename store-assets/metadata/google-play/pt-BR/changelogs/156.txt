@@ -1,0 +1,4 @@
+• Melhoradas as recompensas por anúncios e a estabilidade dos banners.
+• Removida a tela extra de transição dos anúncios.
+• Corrigidas sobreposições do menu e do painel Martelo em telas pequenas.
+• Atualizados amigos, classificação mundial e sequência de correio diário.

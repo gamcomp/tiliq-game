@@ -1,0 +1,4 @@
+• Zuverlässigere Werbebelohnungen und Banner.
+• Zusätzlicher Übergangsbildschirm nach Werbung entfernt.
+• Überlappungen von Menü und Hammer-Anzeige auf kleinen Bildschirmen behoben.
+• Freunde, Weltrangliste und tägliche Postserie aktualisiert.

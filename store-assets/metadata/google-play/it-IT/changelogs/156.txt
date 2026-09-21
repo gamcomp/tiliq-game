@@ -1,0 +1,4 @@
+• Migliorate le ricompense pubblicitarie e la stabilità dei banner.
+• Rimossa la schermata di transizione aggiuntiva degli annunci.
+• Corretti i problemi di sovrapposizione del menu e del pannello Martello sugli schermi piccoli.
+• Aggiornati amici, classifica mondiale e posta giornaliera.

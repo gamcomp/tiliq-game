@@ -1,0 +1,4 @@
+• Attribution des récompenses publicitaires et affichage des bannières améliorés.
+• Écran de transition publicitaire supprimé.
+• Chevauchements du menu et du panneau Marteau corrigés sur les petits écrans.
+• Amis, classement mondial et série de courrier quotidien mis à jour.

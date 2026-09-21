@@ -1,0 +1,4 @@
+• Betrouwbaardere advertentiebeloningen en banners.
+• Het extra overgangsscherm bij advertenties is verwijderd.
+• Overlap van het menu en het hamerpaneel op kleinere schermen verholpen.
+• Vrienden, wereldranglijst en dagelijkse postreeks bijgewerkt.

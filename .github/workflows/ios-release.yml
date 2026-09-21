@@ -225,6 +225,7 @@ jobs:
           app-store-connect publish \
             --path "$(find . -name '*.ipa' | head -1)" \
             --app-store \
+            --cancel-previous-submissions \
             --version-string "$VERSION" \
             --release-type AFTER_APPROVAL \
             --app-store-version-localizations "@file:$RUNNER_TEMP/tiliq-ios-release-localizations.json" \

@@ -1,0 +1,4 @@
+• Reklam sonrası ödül teslimi ve banner kararlılığı iyileştirildi.
+• Gereksiz reklam geçiş ekranı kaldırıldı.
+• Küçük ekranlarda menü ve Çekiç paneli çakışmaları düzeltildi.
+• Arkadaşlar, dünya sıralaması ve günlük posta serisi güncellendi.
