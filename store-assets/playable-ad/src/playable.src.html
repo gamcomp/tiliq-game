@@ -51,9 +51,9 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 (function(){
 'use strict';
 // ── Mağaza linkleri ─────────────────────────────────────────────
-// iOS App Store'da yayınlanınca IOS_URL'e https://apps.apple.com/app/idXXXXXXXXX yazılmalı.
+// Reklamın gösterildiği cihaza göre mağaza: iPhone/iPad → App Store, diğerleri → Google Play.
 const ANDROID_URL='https://play.google.com/store/apps/details?id=com.tiliq.game';
-const IOS_URL='';
+const IOS_URL='https://apps.apple.com/app/id6789283001';
 const BG_SRC='{{BG}}',ICON_SRC='{{ICON}}';
 const MAX_PLAY_MS=40000; // en geç bu süreden sonra bitiş kartı
 
@@ -232,8 +232,8 @@ function showEnd(){
   $('end').classList.add('show');$('end').setAttribute('aria-hidden','false');sfxEnd();
 }
 function openStore(){
-  const ios=/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent)&&'ontouchend' in document;
-  const url=ios&&IOS_URL?IOS_URL:ANDROID_URL;
+  const ua=navigator.userAgent||'',ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1); // iPadOS masaüstü UA gönderir
+  const url=ios?IOS_URL:ANDROID_URL;
   try{if(window.mraid&&typeof mraid.open==='function'){mraid.open(url);return;}}catch(e){}
   window.open(url,'_blank');
 }

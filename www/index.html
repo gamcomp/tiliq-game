@@ -37,7 +37,7 @@
 </script>
 <link rel="icon" type="image/png" href="assets/sky-harbor/tiliq-app-icon.png">
 <link rel="stylesheet" href="crown-quest.css?v=20260921-hammer-fit">
-<link rel="stylesheet" href="harbor-polish.css?v=20261014">
+<link rel="stylesheet" href="harbor-polish.css?v=20261015">
 <script src="harbor-polish.js?v=20261014"></script>
 <script src="tiliq-music.js?v=20261014"></script>
 <script src="hammer-i18n.js?v=20260909"></script>
@@ -490,6 +490,9 @@
         </div>
         <div class="setting-group"><div class="setting-label"><span class="setting-mini-icon vibration" aria-hidden="true"></span><span data-t="haptic">Titreşim</span></div>
           <label class="toggle"><input type="checkbox" id="hap-toggle" checked onchange="updateHaptic()"><span class="tog-track"><span class="tog-thumb"></span></span></label>
+        </div>
+        <div class="setting-group" id="reminder-row" hidden><div class="setting-label" data-t="dailyReminder">Günlük Hatırlatma · 08:00</div>
+          <label class="toggle"><input type="checkbox" id="reminder-toggle" checked onchange="updateReminder()"><span class="tog-track"><span class="tog-thumb"></span></span></label>
         </div>
       </div>
       <!-- Tüm ekranlar tek, tutarlı Crown Quest sanat yönetimini kullanır. -->
@@ -1131,6 +1134,33 @@ function _skyWords(key,values){
   ['music_19',["Epik Filo · Orkestral","Epic Orchestral","エピック・オーケストラ","에픽 오케스트라","Episches Orchester","Orchestral épique","Orquestal épico","Orchestrale epico","Orquestral épico","Эпический оркестр","एपिक ऑर्केस्ट्रा","Episch orkestraal","أوركسترا ملحمية","史诗管弦乐"]],
   ['music_20',["Kelt Rotası · Kelt Jig","Celtic Jig","ケルト・ジグ","켈틱 지그","Keltischer Jig","Gigue celtique","Giga celta","Giga celtica","Jiga celta","Кельтская джига","केल्टिक जिग","Keltische jig","رقصة سلتية","凯尔特吉格舞曲"]],
 ].forEach(([key,values])=>_skyWords(key,values));
+// Günlük görev havuzu başlıkları (2026-10-14). {n}=hedef, {tool}=güç adı (Çekiç / Renk Patlat).
+[
+  ['missionDailySub',["Bugünkü rota · gece yarısı yenilenir","Today's route · refreshes at midnight","今日のルート・深夜に更新","오늘의 항로 · 자정에 갱신","Heutige Route · neu um Mitternacht","Route du jour · renouvelée à minuit","Ruta de hoy · se renueva a medianoche","Rotta di oggi · si rinnova a mezzanotte","Rota de hoje · renova à meia-noite","Маршрут дня · обновится в полночь","आज का मार्ग · आधी रात को नया","Route van vandaag · nieuw om middernacht","مسار اليوم · يتجدد عند منتصف الليل","今日航线 · 午夜刷新"]],
+  ['mt_combos',["{n} kombo yap","Make {n} combos","コンボを{n}回","콤보 {n}회 달성","{n} Combos schaffen","Réussir {n} combos","Haz {n} combos","Fai {n} combo","Faça {n} combos","Сделай {n} комбо","{n} कॉम्बो बनाएँ","Maak {n} combo's","حقّق {n} كومبو","完成{n}次连击"]],
+  ['mt_rows',["{n} satır temizle","Clear {n} lines","{n}ライン消す","{n}줄 지우기","{n} Reihen löschen","Effacer {n} lignes","Limpia {n} líneas","Elimina {n} linee","Limpe {n} linhas","Очисти {n} линий","{n} लाइनें साफ़ करें","Wis {n} rijen","امسح {n} صفوف","消除{n}行"]],
+  ['mt_score',["{n} puan kazan","Score {n} points","{n}点獲得","{n}점 획득","{n} Punkte erzielen","Marquer {n} points","Consigue {n} puntos","Ottieni {n} punti","Marque {n} pontos","Набери {n} очков","{n} अंक बनाएँ","Scoor {n} punten","سجّل {n} نقطة","获得{n}分"]],
+  ['mt_pieces',["{n} parça yerleştir","Place {n} pieces","ピースを{n}個置く","블록 {n}개 배치","{n} Teile platzieren","Placer {n} pièces","Coloca {n} piezas","Posiziona {n} pezzi","Coloque {n} peças","Поставь {n} фигур","{n} टुकड़े रखें","Plaats {n} stukken","ضع {n} قطعة","放置{n}个方块"]],
+  ['mt_games',["{n} oyun oyna","Play {n} games","{n}回プレイ","{n}판 플레이","{n} Runden spielen","Jouer {n} parties","Juega {n} partidas","Gioca {n} partite","Jogue {n} partidas","Сыграй {n} игры","{n} गेम खेलें","Speel {n} potjes","العب {n} جولات","玩{n}局"]],
+  ['mt_multi',["Tek hamlede 2+ hat temizle ({n} kez)","Clear 2+ lines at once ({n}×)","一度に2ライン以上消す（{n}回）","한 번에 2줄 이상 지우기 ({n}회)","2+ Reihen auf einmal löschen ({n}×)","Effacer 2+ lignes d'un coup ({n}×)","Limpia 2+ líneas a la vez ({n}×)","Elimina 2+ linee insieme ({n}×)","Limpe 2+ linhas de uma vez ({n}×)","Очисти 2+ линии за ход ({n}×)","एक साथ 2+ लाइनें साफ़ करें ({n}×)","Wis 2+ rijen tegelijk ({n}×)","امسح صفين أو أكثر دفعة واحدة ({n}×)","一次消除2行以上（{n}次）"]],
+  ['mt_hammer',["{tool} gücünü {n} kez kullan","Use {tool} {n}×","{tool}を{n}回使う","{tool} {n}회 사용","{tool} {n}× einsetzen","Utiliser {tool} {n}×","Usa {tool} {n}×","Usa {tool} {n}×","Use {tool} {n}×","Используй «{tool}» {n} раз","{tool} {n} बार इस्तेमाल करें","Gebruik {tool} {n}×","استخدم {tool} {n} مرة","使用{tool}{n}次"]],
+  ['mt_blast',["{tool} gücünü {n} kez kullan","Use {tool} {n}×","{tool}を{n}回使う","{tool} {n}회 사용","{tool} {n}× einsetzen","Utiliser {tool} {n}×","Usa {tool} {n}×","Usa {tool} {n}×","Use {tool} {n}×","Используй «{tool}» {n} раз","{tool} {n} बार इस्तेमाल करें","Gebruik {tool} {n}×","استخدم {tool} {n} مرة","使用{tool}{n}次"]],
+  ['mt_gameScore',["Tek oyunda {n} puana ulaş","Reach {n} points in one game","1ゲームで{n}点に到達","한 판에 {n}점 달성","{n} Punkte in einer Runde","Atteindre {n} points en une partie","Llega a {n} puntos en una partida","Raggiungi {n} punti in una partita","Alcance {n} pontos em uma partida","Набери {n} очков за одну игру","एक गेम में {n} अंक पाएँ","Haal {n} punten in één potje","اجمع {n} نقطة في جولة واحدة","单局达到{n}分"]],
+  ['mt_bestCombo',["Kombo ×{n} seviyesine ulaş","Reach Combo ×{n}","コンボ×{n}に到達","콤보 ×{n} 달성","Combo ×{n} erreichen","Atteindre combo ×{n}","Alcanza combo ×{n}","Raggiungi combo ×{n}","Alcance combo ×{n}","Достигни комбо ×{n}","कॉम्बो ×{n} तक पहुँचें","Bereik combo ×{n}","اوصل إلى كومبو ×{n}","达到连击×{n}"]],
+  ['mt_perfect',["Tahtayı tamamen temizle","Clear the whole board","盤面を全部消す","보드를 완전히 비우기","Brett komplett leeren","Vider tout le plateau","Vacía todo el tablero","Svuota tutta la griglia","Limpe o tabuleiro todo","Полностью очисти поле","पूरा बोर्ड साफ़ करें","Maak het hele bord leeg","أفرغ اللوحة بالكامل","清空整个棋盘"]],
+].forEach(([key,values])=>_skyWords(key,values));
+// Haftalık posta kutusu notu (2026-10-14)
+[
+  ['mailWeekly',["Posta kutusu her pazartesi yenilenir","Mailbox refreshes every Monday","メールボックスは毎週月曜に更新","우편함은 매주 월요일에 갱신","Postfach wird jeden Montag erneuert","La boîte aux lettres se renouvelle chaque lundi","El buzón se renueva cada lunes","La cassetta postale si rinnova ogni lunedì","A caixa de correio renova toda segunda-feira","Почта обновляется каждый понедельник","मेलबॉक्स हर सोमवार नया होता है","Postvak wordt elke maandag vernieuwd","يتجدد صندوق البريد كل يوم اثنين","邮箱每周一刷新"]],
+].forEach(([key,values])=>_skyWords(key,values));
+// Günlük hatırlatma bildirimi (2026-10-15): ayar etiketi + 4 dönen mesaj
+[
+  ['dailyReminder',["Günlük Hatırlatma · 08:00","Daily Reminder · 8:00 AM","毎日のお知らせ・8:00","매일 알림 · 오전 8시","Tägliche Erinnerung · 8:00","Rappel quotidien · 8 h","Recordatorio diario · 8:00","Promemoria giornaliero · 8:00","Lembrete diário · 8h","Ежедневное напоминание · 8:00","दैनिक रिमाइंडर · सुबह 8 बजे","Dagelijkse herinnering · 8:00","تذكير يومي · 8 صباحًا","每日提醒 · 早上8点"]],
+  ['reminder0',["☀️ Günaydın! Bugünün görevleri hazır, ödüllerini topla.","☀️ Good morning! Today's missions are ready. Go collect your rewards.","☀️ おはよう！今日のミッションが届いたよ。報酬を受け取ろう。","☀️ 좋은 아침! 오늘의 미션이 준비됐어요. 보상을 받아 가세요.","☀️ Guten Morgen! Die heutigen Aufgaben warten auf dich.","☀️ Bonjour ! Les missions du jour sont prêtes, récupère tes récompenses.","☀️ ¡Buenos días! Las misiones de hoy están listas, ve por tus premios.","☀️ Buongiorno! Le missioni di oggi sono pronte, ritira i premi.","☀️ Bom dia! As missões de hoje estão prontas, pegue suas recompensas.","☀️ Доброе утро! Задания на сегодня уже ждут, забирай награды.","☀️ सुप्रभात! आज के मिशन तैयार हैं, अपने इनाम लें।","☀️ Goedemorgen! De missies van vandaag staan klaar.","☀️ صباح الخير! مهام اليوم جاهزة، اجمع مكافآتك.","☀️ 早上好！今日任务已就绪，快来领取奖励。"]],
+  ['reminder1',["📬 Posta kutunda yeni bir mektup var. Bugünkü ödülünü al!","📬 There's a new letter in your mailbox. Claim today's reward!","📬 メールボックスに新しい手紙が届いています。今日の報酬を受け取ろう！","📬 우편함에 새 편지가 도착했어요. 오늘의 보상을 받으세요!","📬 Neue Post im Postfach! Hol dir die heutige Belohnung.","📬 Une nouvelle lettre t'attend. Récupère la récompense du jour !","📬 Tienes una carta nueva en el buzón. ¡Reclama el premio de hoy!","📬 C'è una nuova lettera nella cassetta. Ritira il premio di oggi!","📬 Tem uma carta nova na caixa de correio. Pegue o prêmio de hoje!","📬 В почте новое письмо. Забери сегодняшнюю награду!","📬 आपके मेलबॉक्स में नया पत्र है। आज का इनाम लें!","📬 Er ligt een nieuwe brief in je postvak. Haal je beloning op!","📬 وصلتك رسالة جديدة في صندوق البريد. استلم مكافأة اليوم!","📬 邮箱里有新信件，快来领取今日奖励！"]],
+  ['reminder2',["🏆 Sıralamada rakiplerin yükseliyor. Yerini koru!","🏆 Your rivals are climbing the rankings. Defend your spot!","🏆 ライバルがランキングを上げています。順位を守ろう！","🏆 라이벌들이 순위를 올리고 있어요. 자리를 지키세요!","🏆 Deine Rivalen steigen im Ranking. Verteidige deinen Platz!","🏆 Tes rivaux grimpent au classement. Défends ta place !","🏆 Tus rivales suben en la clasificación. ¡Defiende tu puesto!","🏆 I tuoi rivali salgono in classifica. Difendi il tuo posto!","🏆 Seus rivais estão subindo no ranking. Defenda sua posição!","🏆 Соперники поднимаются в рейтинге. Защити своё место!","🏆 आपके प्रतिद्वंद्वी रैंकिंग में ऊपर जा रहे हैं। अपनी जगह बचाएँ!","🏆 Je rivalen klimmen in de ranglijst. Verdedig je plek!","🏆 منافسوك يتقدمون في الترتيب. حافظ على مكانك!","🏆 你的对手正在攀升排名，守住你的位置！"]],
+  ['reminder3',["🧩 Kısa bir bulmaca molasına ne dersin? Yeni rekor seni bekliyor.","🧩 Time for a quick puzzle break? A new high score is waiting.","🧩 ちょっとパズルで一息つこう。新記録が待っているよ。","🧩 잠깐 퍼즐 한 판 어때요? 새 기록이 기다려요.","🧩 Zeit für eine kurze Rätselpause? Ein neuer Rekord wartet.","🧩 Une petite pause puzzle ? Un nouveau record t'attend.","🧩 ¿Un descanso con un puzle rápido? Te espera un nuevo récord.","🧩 Una pausa con un puzzle veloce? Ti aspetta un nuovo record.","🧩 Que tal uma pausa rápida com um quebra-cabeça? Um novo recorde te espera.","🧩 Как насчёт короткой головоломки? Новый рекорд ждёт.","🧩 एक छोटा पहेली ब्रेक लें? नया रिकॉर्ड आपका इंतज़ार कर रहा है।","🧩 Tijd voor een korte puzzelpauze? Een nieuw record wacht.","🧩 ما رأيك باستراحة ألغاز قصيرة؟ رقم قياسي جديد بانتظارك.","🧩 来一局轻松的拼图吧？新纪录在等你。"]],
+].forEach(([key,values])=>_skyWords(key,values));
 
 function t(k){ return (HAMMER_TEXT[lang]&&HAMMER_TEXT[lang][k]) || (SKY_TEXT[lang]&&SKY_TEXT[lang][k]) || (AUDIO_TEXT[lang]&&AUDIO_TEXT[lang][k]) || (T[lang]&&T[lang][k]) || HAMMER_TEXT.EN[k] || (SKY_TEXT.EN&&SKY_TEXT.EN[k]) || (AUDIO_TEXT.EN&&AUDIO_TEXT.EN[k]) || (T.EN&&T.EN[k]) || ''; }
 function ts(k,fb){ const v=t(k); return v||fb; }
@@ -1229,7 +1259,7 @@ function applyLang(){
   // İsim çeviriyle ezilmesin — gerçek profil adını geri yaz
   if(typeof updateMenuAvatar==='function') updateMenuAvatar();
 }
-function setLang(l){lang=l;applyLang();if(typeof syncWallet==='function')syncWallet();}
+function setLang(l){lang=l;applyLang();if(typeof syncWallet==='function')syncWallet();_syncDailyReminder();}
 
 function applyTheme(){
   theme='dark';
@@ -1358,6 +1388,52 @@ function updateHaptic(){
   localStorage.setItem('tm_hap',hapOn?'on':'off');
   if(typeof syncWallet==='function')syncWallet();
 }
+
+// ── GÜNLÜK HATIRLATMA BİLDİRİMİ (2026-10-15, kullanıcı isteği) ────────────────
+// Her sabah 08:00'de, cihazın yerel saatiyle (= oyuncunun bulunduğu ülkenin saati)
+// yerel bildirim. Haftanın 7 günü için ayrı planlanır; mesaj 4 metin arasında döner.
+// Yalnızca native'de çalışır. İzin ilk oyun sonunda istenir; ayarlardan kapatılabilir.
+var reminderOn=localStorage.getItem('tm_reminder')!=='off';
+var REMINDER_IDS=[8101,8102,8103,8104,8105,8106,8107]; // Capacitor weekday: 1=pazar … 7=cumartesi
+function _localNotif(){return window.Capacitor?.isNativePlatform?.()&&window.Capacitor?.Plugins?.LocalNotifications||null;}
+async function _syncDailyReminder(){
+  const LN=_localNotif();if(!LN||!REMINDER_IDS)return;
+  try{
+    await LN.cancel({notifications:REMINDER_IDS.map(id=>({id}))});
+    if(!reminderOn)return;
+    const perm=await LN.checkPermissions();
+    if(perm.display!=='granted')return;
+    await LN.schedule({notifications:REMINDER_IDS.map((id,i)=>({
+      id,title:'Tiliq',body:t('reminder'+(i%4)),
+      schedule:{on:{weekday:i+1,hour:8,minute:0},allowWhileIdle:true},
+      smallIcon:'ic_stat_tiliq',iconColor:'#E3AD53'
+    }))});
+  }catch(e){console.warn('[reminder]',e);}
+}
+async function _askReminderPermission(){
+  const LN=_localNotif();if(!LN)return;
+  try{
+    let perm=await LN.checkPermissions();
+    if(perm.display==='prompt'||perm.display==='prompt-with-rationale')perm=await LN.requestPermissions();
+  }catch(e){console.warn('[reminder perm]',e);}
+  _syncDailyReminder();
+}
+// İzni ilk açılışta değil, oyuncu bir oyunu bitirince bir kez iste (kabul oranı daha yüksek)
+function _maybeAskReminderPermission(){
+  if(!reminderOn||localStorage.getItem('tm_reminder_asked'))return;
+  localStorage.setItem('tm_reminder_asked','1');
+  setTimeout(_askReminderPermission,1500);
+}
+function updateReminder(){
+  reminderOn=document.getElementById('reminder-toggle').checked;
+  localStorage.setItem('tm_reminder',reminderOn?'on':'off');
+  if(reminderOn)_askReminderPermission();else _syncDailyReminder();
+}
+setTimeout(()=>{
+  const row=document.getElementById('reminder-row');if(row)row.hidden=!_localNotif();
+  const tg=document.getElementById('reminder-toggle');if(tg)tg.checked=reminderOn;
+  _syncDailyReminder(); // açılışta yeniden planla (dil değişmiş olabilir)
+},3000);
 
 // ── ASMR SES SİSTEMİ ─────────────────────────────────────────────────────────
 // GENİŞLETME (2026-08-12, kullanıcı isteği — "sesler daha coşkulu ve gelişmiş
@@ -2138,18 +2214,34 @@ async function _pushXPToFirestore(xp){
 // paketler anlamsızlaşıyordu. Yeni denge: 100'lük paket ≈ 3 gün, 750'lik ≈ 3 hafta.
 // NOT: "undos" ödülü kaldırıldı — Geri Al butonu oyunda mevcut değil (kaldırılmıştı),
 // ödül vermek kullanıcıyı yanıltıyordu (kullanıcı raporu, 2026-07-07). Coin'e çevrildi.
-const DAILY_REWARDS=[
-  {coins:15},                    // 1. gün
-  {coins:20},                    // 2. gün
-  {coins:10,bombs:1},            // 3. gün — bomba
-  {coins:35},                    // 4. gün
-  {coins:30},                    // 5. gün
-  {coins:40},                    // 6. gün
-  {coins:100,bombs:1},           // 7. gün — büyük sandık
+// HAFTALIK POSTA KUTUSU (2026-10-14, kullanıcı isteği: "posta kutusu her hafta yenilensin").
+// Takvim pazartesi (gün 1) başlar, pazar (gün 7) biter ve her pazartesi sıfırlanır; kaçırılan
+// günler "kaçırıldı" görünür. Ödül seti 4 set arasında hafta hafta döner — her setin toplamı
+// eski tek setle aynı (~250 coin + 2 çekiç), ekonomi değişmez. Giriş serisi (tm_streak)
+// yalnızca seri sayacını gösterir, ödülü belirlemez.
+const MAIL_SETS=[
+  [{coins:15},{coins:20},{coins:10,bombs:1},{coins:35},{coins:30},{coins:40},{coins:100,bombs:1}],
+  [{coins:20},{coins:10,bombs:1},{coins:25},{coins:30},{coins:40},{coins:25},{coins:100,bombs:1}],
+  [{coins:25},{coins:15},{coins:30},{coins:10,bombs:1},{coins:35},{coins:45},{coins:90,bombs:1}],
+  [{coins:15},{coins:25},{coins:30},{coins:40},{coins:10,bombs:1},{coins:30},{coins:100,bombs:1}],
 ];
-function dailyReward(streak){
-  const idx=(((streak||1)-1)%7+7)%7;
-  return DAILY_REWARDS[idx];
+function _mailWeekStart(d=new Date()){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
+function mailDayIdx(d=new Date()){return(d.getDay()+6)%7;} // 0=pazartesi … 6=pazar
+function mailSet(d=new Date()){const wi=Math.round((_mailWeekStart(d)-new Date(2026,0,5))/604800000);return MAIL_SETS[((wi%4)+4)%4];}
+function mailReward(d=new Date()){return mailSet(d)[mailDayIdx(d)];}
+function nextMailReward(){const d=new Date();d.setDate(d.getDate()+1);return mailReward(d);}
+function mailState(){
+  let s;try{s=JSON.parse(localStorage.getItem('tm_mail_week')||'null');}catch(_){s=null;}
+  const wk=_localDayKey(_mailWeekStart());
+  if(s&&s.week===wk&&Array.isArray(s.claimed))return s;
+  // Geçiş: haftalık kayıt henüz yokken bugün eski sistemle alınmışsa bugünü alınmış say
+  const legacyToday=!s&&localStorage.getItem('tm_treasure_date')===todayStr();
+  return{week:wk,claimed:legacyToday?[mailDayIdx()]:[]};
+}
+function markMailClaimedToday(){
+  const s=mailState(),i=mailDayIdx();
+  if(!s.claimed.includes(i))s.claimed.push(i);
+  localStorage.setItem('tm_mail_week',JSON.stringify(s));
 }
 function rewardStr(r){
   const parts=[];
@@ -2183,7 +2275,9 @@ function getColorBlast(){return parseInt(localStorage.getItem('tm_inv_colorblast
 function setColorBlast(n){localStorage.setItem('tm_inv_colorblast',String(Math.max(0,Math.min(COLOR_BLAST_MAX,n))));}
 
 function isTreasureClaimed(){
-  return localStorage.getItem('tm_treasure_date')===todayStr();
+  // Yerel günün mektubu alındı mı (haftalık posta kutusu). Buluttan "bugün alındı" gelirse
+  // senkron kodu markMailClaimedToday() ile işaretler — cihazlar arası çift ödül engeli korunur.
+  return mailState().claimed.includes(mailDayIdx());
 }
 
 // Günlük ödül artık reklam izleyerek kazanılıyor (kullanıcı isteği, 2026-07-08).
@@ -2202,12 +2296,13 @@ function claimTreasure(sourceEl){
 }
 function _grantTreasureReward(sourceEl){
   if(isTreasureClaimed()) return;
-  const streak=loadStreak();
-  const reward=dailyReward(streak);
+  loadStreak(); // giriş serisi sayacı güncel kalsın
+  const reward=mailReward();
   const coins=reward.coins||0;
   const xp=Math.max(50,coins*2);
 
-  // Kaydet
+  // Kaydet (tm_treasure_date bulut senkronu için korunur)
+  markMailClaimedToday();
   localStorage.setItem('tm_treasure_date',todayStr());
   if(coins) tmAddCoins(coins); // bekleyen-delta defteri üzerinden — senkron yarışında kaybolmaz
   // Bonus bomba / geri alma → kalıcı envantere ekle
@@ -2259,29 +2354,30 @@ function renderDailyModal(){
   if(!body)return;
   const claimed=isTreasureClaimed();
   const streak=loadStreak();
-  const cycleDay=(((streak||1)-1)%7+7)%7; // 0..6 bugünün döngü indeksi
+  const cycleDay=mailDayIdx(),got=mailState().claimed; // 0=pazartesi … 6=pazar
 
-  const dayCards=DAILY_REWARDS.map((r,i)=>{
-    const done=i<cycleDay||(claimed&&i===cycleDay);
-    const today=i===cycleDay&&!claimed;
-    const locked=!done&&!today;
-    const ico=done?'<span class="daily-check">✓</span>':(i===6?_dailyImg('gift',34):(r.bombs?_dailyImg('bomb',30):r.undos?_dailyImg('undo',28):_dailyImg(locked?'closed':'coin',28)));
-    const amt=done?'':(r.coins?(`<img src="assets/sky-harbor/coin.png" alt="">+${r.coins}`):'');
-    const cls='dr-day'+(done?' done':'')+(today?' today':'')+(locked?' locked':'')+(i===6?' big':'');
+  const dayCards=mailSet().map((r,i)=>{
+    const done=got.includes(i);
+    const today=i===cycleDay&&!done;
+    const missed=i<cycleDay&&!done;
+    const locked=i>cycleDay;
+    const ico=done?'<span class="daily-check">✓</span>':missed?'<span class="daily-missed">–</span>':(i===6?_dailyImg('gift',34):(r.bombs?_dailyImg('bomb',30):r.undos?_dailyImg('undo',28):_dailyImg(locked?'closed':'coin',28)));
+    const amt=done||missed?'':(r.coins?(`<img src="assets/sky-harbor/coin.png" alt="">+${r.coins}`):'');
+    const cls='dr-day'+(done?' done':'')+(today?' today':'')+(locked?' locked':'')+(missed?' missed':'')+(i===6?' big':'');
     return `<div class="${cls}"><div class="dr-day-num">${t('dailyDay')} ${i+1}</div><div class="dr-day-ico">${ico}</div><div class="dr-day-amt">${amt}</div></div>`;
   }).join('');
 
-  const todayReward=dailyReward(streak);
+  const todayReward=mailReward();
   const ctaHtml=claimed
     ? `<button class="dr-cta-big" disabled>${t('dailyClaimedToday')}</button>
-       <div class="dr-next-preview"><span class="ui-clock-icon" aria-hidden="true"></span><span>${t('tomorrow')}</span>${rewardChips(dailyReward(streak+1))}</div>`
+       <div class="dr-next-preview"><span class="ui-clock-icon" aria-hidden="true"></span><span>${t('tomorrow')}</span>${rewardChips(nextMailReward())}</div>`
     : `<button class="dr-cta-big" id="dr-claim-btn" onclick="claimTreasure(this)">${isNoAds()||!adServiceAvailable()?'':'<span class="ui-video-icon" aria-hidden="true"></span>'}<span>${t('dailyCollect')}</span><span class="dr-cta-reward">${rewardChips(todayReward)}</span></button>`;
 
   body.innerHTML=`
     <div class="dr-hero">
       <div class="dr-hero-icon">${claimed?'<span class="daily-check hero">✓</span>':_dailyImg(todayReward.bombs?'bomb':'open',64)}</div>
       <div class="dr-streak-row"><img src="assets/sky-harbor/streak.png" alt=""><span class="n">${streak}</span><span>${t('statStreak')}</span></div>
-      <div class="dr-hero-sub">${t('dailyMailStreak')} · ${t('dailyNote')}</div>
+      <div class="dr-hero-sub">${t('dailyMailStreak')} · ${t('mailWeekly')}</div>
     </div>
     <div class="dr-grid">${dayCards}</div>
     ${ctaHtml}
@@ -2292,7 +2388,7 @@ function renderDailyCard(){
   const claimed=isTreasureClaimed();
   updateRewardIndicators();
   const streak=loadStreak();
-  const reward=dailyReward(streak);
+  const reward=mailReward();
   const xp=getXP();
   const lv=calcLevel(xp);
   const isMaxLv=lv>=MAX_LEVEL;
@@ -2314,7 +2410,7 @@ function renderDailyCard(){
     tbLabel.textContent=t('dailyClaimed');tbLabel.classList.add('claimed');
     tbIcon.innerHTML='';
     // Referans ana kartında yalnızca yarının sayı bilgisi gösterilir; ikon CSS assetidir.
-    const next=dailyReward(streak+1);
+    const next=nextMailReward();
     tbAmount.textContent=String(next.coins||0);
     tbCta.textContent=t('dailyView');tbCta.classList.add('claimed');
   } else {
@@ -2328,15 +2424,15 @@ function renderDailyCard(){
   if(document.getElementById('modal-daily')?.classList.contains('active')) renderDailyModal();
 
   // 7 günlük görsel ödül takvimi — geçmiş ✔, bugün parlak, gelecek kilitli, 7. gün sandık
-  const cycleDay=(((streak||1)-1)%7+7)%7;        // 0..6 bugünün döngü indeksi
-  tbStreak.innerHTML=[...Array(7)].map((_,i)=>{
-    const r=DAILY_REWARDS[i];
-    const done=i<cycleDay||(claimed&&i===cycleDay);
-    const today=i===cycleDay&&!claimed;
-    const locked=!done&&!today;
-    const ico=done?'✓':(i===6?_dailyImg('gift',18):(r.bombs?_dailyImg('bomb',18):r.undos?_dailyImg('undo',17):_dailyImg(locked?'closed':'coin',16)));
-    const amt=done?'':(r.coins||'');
-    const cls='tb-day'+(done?' done':'')+(today?' today':'')+(i===6?' big':'');
+  const cycleDay=mailDayIdx(),got=mailState().claimed,week=mailSet(); // 0=pazartesi … 6=pazar
+  tbStreak.innerHTML=week.map((r,i)=>{
+    const done=got.includes(i);
+    const today=i===cycleDay&&!done;
+    const missed=i<cycleDay&&!done;
+    const locked=i>cycleDay;
+    const ico=done?'✓':missed?'–':(i===6?_dailyImg('gift',18):(r.bombs?_dailyImg('bomb',18):r.undos?_dailyImg('undo',17):_dailyImg(locked?'closed':'coin',16)));
+    const amt=done||missed?'':(r.coins||'');
+    const cls='tb-day'+(done?' done':'')+(today?' today':'')+(missed?' missed':'')+(i===6?' big':'');
     return `<div class="${cls}"><div class="tb-day-ico">${ico}</div><div class="tb-day-amt">${amt}</div></div>`;
   }).join('');
 
@@ -2365,24 +2461,61 @@ function renderDailyCard(){
   }
 }
 
-// Sky Harbor günlük uçuş görevleri. Çekirdek oyun kuralını değiştirmez; mevcut
-// satır/kombo/skor olaylarını dinleyip görev ilerlemesine ve ödüle dönüştürür.
-const SKY_MISSIONS=[
-  {id:'combos',goal:5,reward:60,titleKey:'missionComboTitle',subKey:'missionComboSub',icon:'combo'},
-  {id:'rows',goal:5,reward:80,titleKey:'missionRowsTitle',subKey:'missionRowsSub',icon:'rows'},
-  {id:'score',goal:2500,reward:100,titleKey:'missionScoreTitle',subKey:'missionScoreSub',icon:'score'},
+// GÜNLÜK GÖREV HAVUZU (2026-10-14, kullanıcı isteği: "görevler her gün yenilensin, tekrar
+// tekrar aynı görevler gelmesin"). Her gün yerel tarihe göre 3 farklı tür seçilir; ardışık
+// iki günde aynı tür asla gelmez (aşağıdaki permütasyon zinciri). Hedef zorluğu da günden
+// güne değişir. kind:'max' görevlerde ilerleme toplanmaz, günün en iyi değeri tutulur.
+const SKY_MISSION_POOL=[
+  {type:'combos',goals:[[3,50],[5,60],[8,90]],icon:'combo'},
+  {type:'rows',goals:[[5,60],[10,80],[15,110]],icon:'rows'},
+  {type:'score',goals:[[2500,100],[5000,140]],icon:'score'},
+  {type:'pieces',goals:[[30,50],[60,80]],icon:'rows'},
+  {type:'games',goals:[[2,50],[3,70]],icon:'score'},
+  {type:'multi',goals:[[2,70],[4,100]],icon:'combo'},
+  {type:'hammer',goals:[[1,60],[2,90]],icon:'rows',tool:'bomb'},
+  {type:'blast',goals:[[1,80]],icon:'combo',tool:'colorBlast'},
+  {type:'gameScore',goals:[[3000,80],[6000,120]],icon:'score',kind:'max'},
+  {type:'bestCombo',goals:[[4,70],[6,100]],icon:'combo',kind:'max'},
 ];
+function _missionRng(seed){let h=2166136261;for(const ch of String(seed)){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}
+  return()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return(h>>>0)/4294967296;};}
+function _localDayKey(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _localDayIndex(d=new Date()){return Math.round((new Date(d.getFullYear(),d.getMonth(),d.getDate())-new Date(2026,0,1))/86400000);}
+// Türler, tohumlu permütasyonların art arda eklenmesiyle sonsuz bir diziye dizilir; gün n,
+// dizinin [3n,3n+3) dilimini alır. Her yeni permütasyonun ilk 5 öğesi bir öncekinin son 5
+// öğesinden seçilmez, böylece ardışık herhangi 6 öğe (= ardışık iki gün) birbirinden farklıdır.
+const _missionSeqCache=[];
+function _missionSeq(len){
+  const types=SKY_MISSION_POOL.map(m=>m.type);
+  while(_missionSeqCache.length<len){
+    const k=_missionSeqCache.length/types.length,r=_missionRng('perm'+k),perm=types.slice();
+    for(let i=perm.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[perm[i],perm[j]]=[perm[j],perm[i]];}
+    const last=_missionSeqCache.slice(-5),a=perm.filter(x=>!last.includes(x)),b=perm.filter(x=>last.includes(x));
+    _missionSeqCache.push(...a.slice(0,5),...a.slice(5),...b);
+  }
+  return _missionSeqCache;
+}
+function todayMissions(){
+  const n=Math.max(0,_localDayIndex()),seq=_missionSeq(3*n+3),day=_localDayKey(),r=_missionRng('goal'+day);
+  return seq.slice(3*n,3*n+3).map(type=>{
+    const def=SKY_MISSION_POOL.find(m=>m.type===type),[goal,reward]=def.goals[Math.floor(r()*def.goals.length)];
+    return{id:type,goal,reward,icon:def.icon,kind:def.kind||'sum',tool:def.tool};
+  });
+}
+function missionTitle(m){return t('mt_'+m.id).replace('{n}',m.goal.toLocaleString()).replace('{tool}',m.tool?t(m.tool):'');}
 
 function skyMissionState(){
   const key='tm_sky_missions';
   let state;
   try{state=JSON.parse(localStorage.getItem(key)||'null');}catch(_){state=null;}
-  const today=todayStr();
-  if(!state||state.date!==today){
-    state={date:today,combos:0,rows:0,score:0,claimed:{}};
+  const today=_localDayKey();
+  if(!state||state.date!==today||state.v!==2){
+    // Eski (v1) kayıt aynı güne aitse kombo/satır/skor ilerlemesi korunur
+    const keep=state&&state.v!==2&&(state.date===today||state.date===todayStr());
+    state={v:2,date:today,prog:keep?{combos:state.combos||0,rows:state.rows||0,score:state.score||0}:{},claimed:keep?(state.claimed||{}):{}};
     localStorage.setItem(key,JSON.stringify(state));
   }
-  state.claimed=state.claimed||{};
+  state.prog=state.prog||{};state.claimed=state.claimed||{};
   return state;
 }
 
@@ -2394,15 +2527,16 @@ function saveSkyMissionState(state){
 function updateMissionCardStatus(state=skyMissionState()){
   const el=document.getElementById('mission-card-status');
   if(!el)return;
-  const ready=SKY_MISSIONS.filter(m=>(state[m.id]||0)>=m.goal&&!state.claimed[m.id]).length;
-  const done=SKY_MISSIONS.filter(m=>state.claimed[m.id]).length;
-  el.textContent=ready?t('rewardReadyCount').replace('{n}',ready):done===SKY_MISSIONS.length?t('allRoutesDone'):t('dailyFlightPlan');
+  const list=todayMissions();
+  const ready=list.filter(m=>(state.prog[m.id]||0)>=m.goal&&!state.claimed[m.id]).length;
+  const done=list.filter(m=>state.claimed[m.id]).length;
+  el.textContent=ready?t('rewardReadyCount').replace('{n}',ready):done===list.length?t('allRoutesDone'):t('dailyFlightPlan');
   updateRewardIndicators(state);
 }
 
 // Only earned/unclaimed rewards, never incomplete missions or unread-looking fake counts.
 function updateRewardIndicators(state=skyMissionState()){
-  const missions=SKY_MISSIONS.filter(m=>(state[m.id]||0)>=m.goal&&!state.claimed[m.id]).length;
+  const missions=todayMissions().filter(m=>(state.prog[m.id]||0)>=m.goal&&!state.claimed[m.id]).length;
   const daily=isTreasureClaimed()?0:1;
   const mark=(el,count,label,compact=false)=>{
     if(!el)return;
@@ -2437,12 +2571,12 @@ function renderMissionModal(){
   const state=skyMissionState();
   const reset=document.getElementById('mission-reset');
   if(reset)reset.textContent=missionTimeLeft();
-  list.innerHTML=SKY_MISSIONS.map(m=>{
-    const value=Math.min(m.goal,state[m.id]||0),complete=value>=m.goal,claimed=!!state.claimed[m.id];
+  list.innerHTML=todayMissions().map(m=>{
+    const value=Math.min(m.goal,state.prog[m.id]||0),complete=value>=m.goal,claimed=!!state.claimed[m.id];
     const pct=Math.round(value/m.goal*100),label=claimed?t('claimed'):complete?t('claim'):t('continueLabel');
     return `<div class="mission-row${complete?' done':''}">
       <div class="mission-icon ${m.icon}"></div>
-      <div class="mission-copy"><strong>${t(m.titleKey)}</strong><small>${t(m.subKey)}</small><div class="mission-track"><i style="width:${pct}%"></i></div><div class="mission-reward"><span>${value.toLocaleString()} / ${m.goal.toLocaleString()}</span><span><img src="assets/sky-harbor/coin.png" alt="">${m.reward}</span></div></div>
+      <div class="mission-copy"><strong>${missionTitle(m)}</strong><small>${t('missionDailySub')}</small><div class="mission-track"><i style="width:${pct}%"></i></div><div class="mission-reward"><span>${value.toLocaleString()} / ${m.goal.toLocaleString()}</span><span><img src="assets/sky-harbor/coin.png" alt="">${m.reward}</span></div></div>
       <button class="mission-claim" ${complete&&!claimed?'':'disabled'} onclick="claimSkyMission('${m.id}')">${label}</button>
     </div>`;
   }).join('');
@@ -2455,8 +2589,8 @@ function showMissions(){
 }
 
 function claimSkyMission(id){
-  const mission=SKY_MISSIONS.find(m=>m.id===id),state=skyMissionState();
-  if(!mission||state.claimed[id]||(state[id]||0)<mission.goal)return;
+  const mission=todayMissions().find(m=>m.id===id),state=skyMissionState();
+  if(!mission||state.claimed[id]||(state.prog[id]||0)<mission.goal)return;
   state.claimed[id]=true;
   saveSkyMissionState(state);
   tmAddCoins(mission.reward);
@@ -2465,19 +2599,24 @@ function claimSkyMission(id){
   renderMissionModal();
 }
 
+// id: olay türü. 'max' türündeki görevlerde amount o anki değerdir (ör. tek oyun skoru).
 function progressMission(id,amount){
-  const xpMap={combos:8,rows:15,score:0.02};
+  // score XP oranı 2026-10-14 puan ×2.5 + yerleştirme puanı nedeniyle .02 → .008 (seviye hızı aynı)
+  const xpMap={combos:8,rows:15,score:0.008};
   const gain=Math.round((xpMap[id]||0)*amount);
   if(gain>0)addXP(gain);
-  const state=skyMissionState();
-  if(SKY_MISSIONS.some(m=>m.id===id)){
-    state[id]=Math.max(0,(state[id]||0)+Math.max(0,amount||0));
-    saveSkyMissionState(state);
-    if(document.getElementById('modal-missions')?.classList.contains('active'))renderMissionModal();
-  }
+  const m=todayMissions().find(x=>x.id===id);
+  if(!m)return;
+  const state=skyMissionState(),cur=state.prog[id]||0,val=Math.max(0,amount||0);
+  const next=m.kind==='max'?Math.max(cur,val):cur+val;
+  if(next===cur)return;
+  state.prog[id]=next;
+  saveSkyMissionState(state);
+  if(document.getElementById('modal-missions')?.classList.contains('active'))renderMissionModal();
 }
 
 // ── CELEBRATION ───────────────────────────────────────────────────────────────
+
 let celebs=[];
 function showCelebration(msg,color='#FFD93D'){
   celebs.push({msg,color,t0:performance.now(),x:0,y:0});
@@ -2518,7 +2657,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.10.14-music-library';
+const BUILD_VER='v2026.10.15-missions-mail-bots';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3957,6 +4096,7 @@ function useBomb(row,col){
       vibrate([60,20,40,20,100]);
     }
     playBomb();
+    progressMission('hammer',isSuper?2:1); // süper çekiç 2 çekiç harcar
 
     const scorePerCell=isSuper?12:8;
     setTimeout(()=>{
@@ -4100,6 +4240,7 @@ function useColorBlast(row,col){
   vibrate([70,20,50,20,110]);
   flashScreen('line',500);
   playColorBlast();
+  progressMission('blast',1);
 
   setTimeout(()=>{
     affected.forEach(([r,c])=>{grid[r][c]=0;});
@@ -4456,7 +4597,7 @@ function place(pi,row,col){
   score+=placeGain;acct.total+=placeGain;
   if(score>best)noteNewBest();
   setScoreDisplay(score);
-  progressMission('score',placeGain);
+  progressMission('score',placeGain);progressMission('pieces',1);
   bounce={cells,t0:performance.now()};
   _lastMoveAt=performance.now(); // ipucu sistemi için — her yerleştirmede sıfırlanır
   spawnPlaceDust(cells,p.ci);   // yerleştirme tozu
@@ -4529,6 +4670,8 @@ function place(pi,row,col){
     progressMission('combos',1);
     progressMission('rows',tot);
     progressMission('score',gain);
+    if(tot>=2)progressMission('multi',1);
+    progressMission('bestCombo',cm);
 
     // Kutlama mesajları (combo'ya göre) + eşik flash'ları
     if(cm>=10)    {vibrate([30,10,30,10,60,10,80]);flashScreen('combo',700);}
@@ -5196,6 +5339,7 @@ function spawnColorBlast(cx,cy,affectedCells,color){
 // Perfect clear — tahta tamamen boşaldı: büyük kutlama
 function perfectClear(){
   const cx=GOX()+CELL*GRID/2, cy=GOY+CELL*GRID/2;
+  progressMission('perfect',1);
   flashScreen('combo',900);
   shakeBoard(true);
   vibrate([40,20,60,20,100]);
@@ -5342,6 +5486,8 @@ function showOver(){
   document.getElementById('level-up-flight')?.classList.remove('active');
   clearGameState();
   acct.games++;localStorage.setItem('tm_acct',JSON.stringify(acct));
+  progressMission('games',1);progressMission('gameScore',score); // günlük görevler
+  _maybeAskReminderPermission();
   addXP(Math.floor(score/25)+20); // 2026-10-14: puan ×2.5 → bölen 10→25 (seviye hızı aynı)
   // "Sonraki oyunda çift XP" — bu oyun bitti, bayrağı temizle (bir dahaki oyun
   // normal XP kazansın, sonsuza kadar aktif kalmasın).
@@ -8233,6 +8379,70 @@ async function reportAndBlockPlayer(button){
   alert(t(sent?'reportSent':'reportFailed'));
   renderLB(Math.max(score,acct.best||0));
 }
+// ── SIRALAMA BOTLARI (2026-10-15, kullanıcı isteği) ─────────────────────────────
+// 1500 bot oyuncu dünya sıralamasında görünür. Tamamen deterministik: her cihaz aynı
+// anda aynı isim/skoru üretir; Firestore'a hiçbir şey yazılmaz. Skorlar 2 saatlik
+// periyotlarla güncellenir: botların ~%30'u sabit kalır, kalanı kendi temposunda küçük
+// adımlarla yükselir ve artış doygunluğa yaklaşarak yavaşlar (aşırı şişmez).
+const LB_BOTS=(()=>{
+  const COUNT=1500,PERIOD=2*3600*1000,EPOCH=Date.UTC(2026,9,15,0,0,0);
+  // [bayrak, ağırlık, isim havuzu]
+  const N={
+    tr:['Ahmet','Mehmet','Elif','Zeynep','Can','Ece','Burak','Selin','Emre','Deniz','Kerem','Ayşe','Mert','Yusuf','Defne','Arda','Ceren','Onur','Melis','Kaan','Berk','İrem','Oğuz','Buse','Tolga','Sude','Efe','Nehir','Barış','Gizem'],
+    en:['Jake','Emma','Liam','Olivia','Noah','Ava','Mason','Mia','Ethan','Chloe','Ryan','Grace','Tyler','Lily','Owen','Zoe','Caleb','Ruby','Jack','Ella'],
+    de:['Lukas','Lena','Jonas','Hannah','Felix','Leonie','Paul','Marie','Finn','Anna','Tim','Lea'],
+    fr:['Lucas','Chloé','Hugo','Léa','Nathan','Manon','Louis','Camille','Théo','Inès'],
+    es:['Mateo','Sofía','Diego','Valentina','Pablo','Lucía','Javier','Martina','Carlos','Paula'],
+    pt:['Gabriel','Ana','Rafael','Beatriz','Thiago','Larissa','Pedro','Júlia','Bruno','Camila'],
+    ja:['Haruto','Yui','Sota','Hina','Ren','Sakura','Yuto','Aoi','Kaito','Mei'],
+    ko:['Minjun','Jiwoo','Seoyeon','Hajun','Yuna','Doyun','Siwoo','Chaewon'],
+    zh:['Wei','Lin','Hao','Mei','Jun','Xin','Yu','Lei','Ting','Bo'],
+    ru:['Ivan','Anya','Dmitri','Olga','Nikita','Katya','Artem','Masha','Oleg','Dasha'],
+    ar:['Omar','Layla','Youssef','Fatima','Karim','Nour','Ahmed','Salma','Hassan','Mariam'],
+    hi:['Arjun','Priya','Rohan','Ananya','Aditya','Kavya','Vikram','Isha','Rahul','Neha'],
+    sea:['Budi','Putri','Rizal','Dewi','Linh','Minh','Niran','Somchai','Mark','Angel','Paolo','Bea'],
+    nord:['Daan','Sem','Saga','Elias','Noor','Lars','Ingrid','Aino','Mikko','Sanne'],
+    it:['Marco','Giulia','Luca','Chiara','Matteo','Sara','Andrea','Elena'],
+    eu:['Jakub','Zofia','Andrei','Ioana','Bence','Eliska','Nikos','Eleni','Petra','Tomasz'],
+    af:['Chinedu','Amara','Thabo','Zanele','Tunde','Ngozi','Sipho','Ayo'],
+    ir:['Reza','Sara','Elvin','Aysel','Arash','Leyla','Murad','Nigar'],
+  };
+  const FLAGS=[['🇹🇷',18,'tr'],['🇺🇸',8,'en'],['🇬🇧',3,'en'],['🇨🇦',1,'en'],['🇦🇺',1,'en'],['🇧🇷',6,'pt'],['🇵🇹',1,'pt'],
+    ['🇮🇳',6,'hi'],['🇵🇰',2,'hi'],['🇧🇩',1,'hi'],['🇩🇪',5,'de'],['🇷🇺',4,'ru'],['🇺🇦',2,'ru'],['🇯🇵',4,'ja'],['🇰🇷',3,'ko'],
+    ['🇨🇳',3,'zh'],['🇫🇷',4,'fr'],['🇪🇸',3,'es'],['🇲🇽',3,'es'],['🇦🇷',2,'es'],['🇮🇩',4,'sea'],['🇵🇭',3,'sea'],['🇻🇳',2,'sea'],
+    ['🇹🇭',2,'sea'],['🇸🇦',3,'ar'],['🇪🇬',3,'ar'],['🇮🇹',3,'it'],['🇳🇱',2,'nord'],['🇸🇪',1,'nord'],['🇳🇴',1,'nord'],['🇫🇮',1,'nord'],
+    ['🇵🇱',2,'eu'],['🇷🇴',1,'eu'],['🇭🇺',1,'eu'],['🇨🇿',1,'eu'],['🇬🇷',1,'eu'],['🇳🇬',2,'af'],['🇿🇦',1,'af'],['🇮🇷',1,'ir'],['🇦🇿',2,'ir']];
+  const totalW=FLAGS.reduce((a,f)=>a+f[1],0);
+  const TAGS=['Pro','Ace','Max','Star','Sky','Blitz','King','Queen','Fox','Wolf'];
+  function rnd(i,salt){let h=Math.imul(i+1,2654435761)^Math.imul(salt+7,40503);h^=h>>>15;h=Math.imul(h,2246822519);h^=h>>>13;h=Math.imul(h,3266489917);h^=h>>>16;return(h>>>0)/4294967296;}
+  const bots=[];
+  for(let i=0;i<COUNT;i++){
+    let w=rnd(i,1)*totalW,f=FLAGS[0];for(const x of FLAGS){if((w-=x[1])<0){f=x;break;}}
+    const pool=N[f[2]],first=pool[Math.floor(rnd(i,2)*pool.length)],style=rnd(i,3);
+    const name=style<.38?first+Math.floor(10+rnd(i,4)*989):style<.55?first+'_'+String.fromCharCode(65+Math.floor(rnd(i,5)*26)):style<.7?first+TAGS[Math.floor(rnd(i,6)*TAGS.length)]:style<.8?TAGS[Math.floor(rnd(i,6)*TAGS.length)]+first:first;
+    // Temel skor: ağır kuyruklu dağılım — çoğu 2-40 bin, tepede birkaç ~100 bin
+    const u=rnd(i,7),base=Math.round(1800*Math.exp(u*3.3)*(1+Math.max(0,u-.9)*9)); // üst %10 kademeli güçlenir, kümelenme olmaz
+    const still=rnd(i,8)<.3;                          // sabit kalanlar
+    const rate=.12+rnd(i,9)*.45;                      // 2 saatlik periyotta yükselme sıklığı
+    const room=.25+rnd(i,10)*1.1;                     // uzun vadede en fazla base × (1+room)
+    const tau=100+rnd(i,11)*300;                      // doygunluk hızı: adım başı ~%0.3-1.3 artış
+    bots.push({flag:f[0],name,base,still,rate,room,tau,phase:rnd(i,12),xpk:.25+rnd(i,13)*.5});
+  }
+  let cacheP=-1,cacheRows=null;
+  function rows(){
+    const p=Math.max(0,Math.floor((Date.now()-EPOCH)/PERIOD));
+    if(p===cacheP)return cacheRows;
+    cacheP=p;
+    cacheRows=bots.map(b=>{
+      const steps=b.still?0:Math.floor(p*b.rate+b.phase);
+      const s=Math.round(b.base*(1+b.room*(1-Math.exp(-steps/b.tau))));
+      return{n:b.flag+' '+b.name,s,lv:calcLevel(s*b.xpk+steps*40),bestAt:EPOCH,bot:true};
+    });
+    return cacheRows;
+  }
+  return{rows};
+})();
+
 function _lbRow(i,name,sc,isMe,lv,uid){
   const n=i+1,rc=n===1?'g':n===2?'s':n===3?'b':'',med=n<=3?`<span class="lb-medal ${rc}">${n}</span>`:n;
   const safeName=_escapeMarkup(name);
@@ -8280,6 +8490,8 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
           if(ps>mine.s){ mine.s=ps; try{_firestorePushScore();}catch(_){} }
         }
       }
+      // Bot oyuncular yalnızca dünya (best) sıralamasına eklenir — bkz. LB_BOTS
+      if(field==='best')rows.push(...LB_BOTS.rows());
       // Skor DESC, eşitse tarihe (bestAt) göre ASC
       rows.sort((a,b)=>b.s-a.s || (a.bestAt-b.bestAt));
       const myIdx=rows.findIndex(r=>r.uid===myUID||r.me);
@@ -8416,7 +8628,7 @@ async function _firestoreSync(uid,_isRetry){
         if(_cldDateInt>0&&_cldDateInt>=_locDateInt){
           const _ts=String(_cldDateInt);
           const _tIso=_ts.slice(0,4)+'-'+_ts.slice(4,6)+'-'+_ts.slice(6,8);
-          if(_cldDateInt===_todayInt) localStorage.setItem('tm_treasure_date',todayStr()); // bugün alınmış → çift ödül engeli
+          if(_cldDateInt===_todayInt){localStorage.setItem('tm_treasure_date',todayStr());markMailClaimedToday();} // bugün alınmış → çift ödül engeli
           localStorage.setItem('tm_streak',JSON.stringify({date:_tIso,count:d.dailyStreak||0}));
         }
       }

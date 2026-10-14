@@ -96,6 +96,9 @@ html.harbor-low-motion #screen-menu .btn-play::after {animation:none!important;}
 }
 .music-track-row select option {background:var(--cq-blue-950);color:var(--cq-ivory);}
 .music-track-row select:disabled {opacity:.35;cursor:default;}
+/* Haftalık posta kutusu (2026-10-14): kaçırılan gün soluk ve gri, tik yerine çizgi */
+.dr-day.missed,.tb-day.missed {opacity:.42;filter:grayscale(.85);}
+.daily-missed {font-weight:800;font-size:22px;color:var(--cq-blue-700);line-height:1;}
 button:focus-visible,input:focus-visible {outline:3px solid var(--cq-gold-300);outline-offset:3px;}
 #screen-menu .btn-play {isolation:isolate;}
 #screen-menu .btn-play::after {
