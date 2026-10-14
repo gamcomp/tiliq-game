@@ -6094,3 +6094,39 @@ html.banner-visible #ad-banner-bed { opacity: 1; }
   #bomb-target-bar { grid-template-columns: 44px minmax(0, 1fr) auto; }
   #bomb-target-bar .bomb-target-emblem { display: none; }
 }
+
+/* Short landscape windows keep the existing controls and artwork, using the
+   available width for the board instead of squeezing everything vertically. */
+@media (min-width: 600px) and (max-height: 600px) and (orientation: landscape) {
+  .screen { width: min(100%, 960px); }
+  #screen-menu .kingdom-hud { width: 46%; }
+  #screen-menu .kingdom-top-cards {
+    top: calc(var(--safe-top) + 12px);
+    bottom: calc(var(--safe-bottom) + var(--banner-h) + 12px);
+    left: auto;
+    right: 18px;
+    width: 34%;
+    justify-content: center;
+  }
+  #screen-menu .btn-play { left: 25%; width: 38%; }
+  #menu-nav { left: 8px; right: auto; width: calc(48% - 16px); transform: none; }
+  .game-hud { position: absolute; left: 0; top: 0; width: 44%; }
+  #game-container {
+    position: absolute;
+    top: calc(var(--safe-top) + 8px);
+    left: 45%;
+    width: 55%;
+    margin-top: 0;
+  }
+  .game-nav { left: 8px; right: auto; width: calc(44% - 16px); }
+  #bomb-target-bar { grid-template-columns: 44px minmax(0, 1fr) auto; }
+  #bomb-target-bar .bomb-target-emblem { display: none; }
+  #overlay {
+    position: fixed;
+    inset: auto;
+    top: calc(var(--safe-top) + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    justify-content: flex-start;
+  }
+}

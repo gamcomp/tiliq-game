@@ -68,10 +68,16 @@ const HarborSound = (() => {
     if(!a || document.hidden || volume<=0)return;
     const g=ensure(a), v=Math.min(1,volume);
     const note=(f,d,l,delay=0,type='sine',end=null,pan=0)=>voice(g,f,d,l*v,delay,type,end,pan);
-    if(name==='place') {note('noise',.055,.1,0,'sine',1700);note(620,.13,.12,0,'triangle',360);note(1240,.09,.045,.012);}
+    // place/clear: playable reklamdaki sesler (2026-10-14, kullanıcı isteği) — tok yerleştirme
+    // vuruşu ve komboyla yükselen üçgen dalga arpej.
+    if(name==='place') {note(320,.08,.18,0,'triangle');note(110,.12,.22,0,'sine');}
     if(name==='tap') {note(540,.055,.055,0,'sine',390);}
-    if(name==='clear'||name==='chain') {
-      const notes=[587.33,739.99,880,1174.66,1479.98], count=name==='chain'?3:Math.min(5,n+1);
+    if(name==='clear') {
+      const s=[523,659,784,988,1175,1319], up=Math.max(0,Math.min(2,combo-1));
+      for(let i=0;i<Math.min(6,3+n);i++)note(s[Math.min(5,i+up)],.45,.09,i*.055,'triangle');
+    }
+    if(name==='chain') {
+      const notes=[587.33,739.99,880,1174.66,1479.98], count=3;
       note('noise',.16,.11,0,'sine',2200);note(125,.2,.15,0,'sine',48);
       for(let i=0;i<count;i++){const f=notes[i]*(combo>=5?1.25:1);note(f,.34,.12,i*.045,'sine',null,(i-count/2)*.12);note(f*2,.16,.025,i*.045);}
     }

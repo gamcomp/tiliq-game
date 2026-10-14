@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Tiliq: Block Puzzle</title>
+<!-- Unity Ads playable gereksinimi: mraid.js'i ağ kendisi enjekte eder; tarayıcı önizlemesinde 404 olur, sorun değil -->
+<script src="mraid.js"></script>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#08233c;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;font-family:"Arial Rounded MT Bold","Trebuchet MS",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
+.install{position:fixed;top:max(10px,env(safe-area-inset-top));right:10px;z-index:5;border:2px solid #f8e2aa;border-radius:999px;background:linear-gradient(#f27a5c,#d9563a);color:#fff6e5;font:inherit;font-size:14px;font-weight:900;letter-spacing:.3px;padding:7px 14px;box-shadow:0 3px 0 #8a3a26,0 6px 14px rgba(0,0,0,.3);cursor:pointer}
+.install:active{transform:translateY(2px);box-shadow:0 1px 0 #8a3a26}
+.end{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:16px;background:radial-gradient(circle at 50% 35%,rgba(13,74,123,.72),rgba(8,35,60,.94));opacity:0;pointer-events:none;transition:opacity .35s ease}
+.end.show{opacity:1;pointer-events:auto}
+.card{width:min(360px,100%);box-sizing:border-box;text-align:center;padding:22px 20px 18px;border-radius:26px;background:linear-gradient(#fff6e5,#f3e2bf);border:4px solid #e3ad53;box-shadow:0 0 0 3px #8a5422,0 18px 40px rgba(0,0,0,.45);transform:scale(.86);transition:transform .45s cubic-bezier(.2,1.4,.4,1)}
+.end.show .card{transform:scale(1)}
+.icon{width:96px;height:96px;border-radius:22px;display:block;margin:-62px auto 4px;box-shadow:0 8px 18px rgba(0,0,0,.35)}
+.word{width:170px;margin:0 auto -4px}
+.card h1{margin:4px 0 6px;font-size:24px;color:#0a3157}
+.score{display:inline-flex;gap:8px;align-items:baseline;padding:6px 16px;border-radius:14px;background:#0a3157;border:2px solid #e3ad53;color:#f8e2aa;font-size:13px}
+.score b{font-size:24px;color:#fff6e5}
+.card p{margin:12px 4px 16px;font-size:15px;line-height:1.35;color:#3b4a5c}
+.cta{display:block;width:100%;border:3px solid #f8e2aa;border-radius:18px;padding:15px 10px;font:inherit;font-size:21px;font-weight:900;color:#fff;background:linear-gradient(#f27a5c,#d9563a);box-shadow:0 5px 0 #8a3a26,0 10px 20px rgba(217,86,58,.45);cursor:pointer;animation:pulse 1.1s ease-in-out infinite}
+.cta:active{transform:translateY(3px);box-shadow:0 2px 0 #8a3a26}
+.retry{margin-top:12px;border:0;background:none;font:inherit;font-size:14px;color:#0d4a7b;text-decoration:underline;cursor:pointer}
+@keyframes pulse{50%{transform:scale(1.05)}}
+@media (prefers-reduced-motion:reduce){.cta{animation:none}}
+@media (max-height:420px){.icon{width:64px;height:64px;margin-top:-40px}.card{padding:14px 16px 10px}.card p{margin:8px 4px 10px}.cta{padding:10px}}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<button id="install" class="install" type="button"></button>
+<div id="end" class="end" aria-hidden="true">
+  <div class="card">
+    <img id="endIcon" class="icon" alt="Tiliq">
+    <svg class="word" viewBox="0 0 560 190" role="img" aria-label="Tiliq">
+      <defs><linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14658d"/><stop offset=".52" stop-color="#0a4b72"/><stop offset="1" stop-color="#063756"/></linearGradient></defs>
+      <text x="280" y="148" text-anchor="middle" font-family="Arial Rounded MT Bold, Trebuchet MS, Arial, sans-serif" font-size="150" font-weight="900" letter-spacing="-8" fill="url(#face)" stroke="#f0c66d" stroke-width="7" paint-order="stroke fill">Tiliq</text>
+      <path d="M118 168h324" stroke="#d49a3d" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+    <h1 id="endTitle"></h1>
+    <div class="score"><span id="endScoreLbl"></span><b id="endScore">0</b></div>
+    <p id="endSub"></p>
+    <button id="cta" class="cta" type="button"></button>
+    <button id="retry" class="retry" type="button"></button>
+  </div>
+</div>
+<script>
+(function(){
+'use strict';
+// ── Mağaza linkleri ─────────────────────────────────────────────
+// iOS App Store'da yayınlanınca IOS_URL'e https://apps.apple.com/app/idXXXXXXXXX yazılmalı.
+const ANDROID_URL='https://play.google.com/store/apps/details?id=com.tiliq.game';
+const IOS_URL='';
+const BG_SRC='{{BG}}',ICON_SRC='{{ICON}}';
+const MAX_PLAY_MS=40000; // en geç bu süreden sonra bitiş kartı
+
+// ── 14 dil ──────────────────────────────────────────────────────
+const T={
+ tr:{score:'SKOR',combo:'KOMBO',drag:'Bloğu tahtaya sürükle!',praise:['Harika!','Süper!','Muhteşem!'],endTitle:'Harika oynadın!',endSub:'Daha fazla bulmaca, kombo ve ödül seni bekliyor.',cta:'ÜCRETSİZ OYNA',retry:'Tekrar oyna',install:'İndir',yourScore:'Skorun'},
+ en:{score:'SCORE',combo:'COMBO',drag:'Drag a block onto the board!',praise:['Great!','Super!','Amazing!'],endTitle:'Nicely played!',endSub:'More puzzles, combos and rewards are waiting.',cta:'PLAY FREE',retry:'Play again',install:'Install',yourScore:'Your score'},
+ de:{score:'PUNKTE',combo:'COMBO',drag:'Zieh einen Block aufs Brett!',praise:['Klasse!','Super!','Fantastisch!'],endTitle:'Stark gespielt!',endSub:'Mehr Rätsel, Combos und Belohnungen warten.',cta:'GRATIS SPIELEN',retry:'Nochmal',install:'Laden',yourScore:'Dein Score'},
+ fr:{score:'SCORE',combo:'COMBO',drag:'Glisse un bloc sur le plateau !',praise:['Génial !','Super !','Incroyable !'],endTitle:'Bien joué !',endSub:"Plus de puzzles, de combos et de récompenses t'attendent.",cta:'JOUER GRATUITEMENT',retry:'Rejouer',install:'Installer',yourScore:'Ton score'},
+ es:{score:'PUNTOS',combo:'COMBO',drag:'¡Arrastra un bloque al tablero!',praise:['¡Genial!','¡Súper!','¡Increíble!'],endTitle:'¡Bien jugado!',endSub:'Más puzles, combos y recompensas te esperan.',cta:'JUGAR GRATIS',retry:'Jugar otra vez',install:'Instalar',yourScore:'Tu puntuación'},
+ it:{score:'PUNTI',combo:'COMBO',drag:'Trascina un blocco sulla griglia!',praise:['Grande!','Super!','Incredibile!'],endTitle:'Ben giocato!',endSub:'Altri puzzle, combo e premi ti aspettano.',cta:'GIOCA GRATIS',retry:'Gioca ancora',install:'Installa',yourScore:'Il tuo punteggio'},
+ pt:{score:'PONTOS',combo:'COMBO',drag:'Arraste um bloco para o tabuleiro!',praise:['Ótimo!','Super!','Incrível!'],endTitle:'Mandou bem!',endSub:'Mais quebra-cabeças, combos e prêmios te esperam.',cta:'JOGUE GRÁTIS',retry:'Jogar de novo',install:'Instalar',yourScore:'Sua pontuação'},
+ ru:{score:'ОЧКИ',combo:'КОМБО',drag:'Перетащи блок на поле!',praise:['Отлично!','Супер!','Потрясающе!'],endTitle:'Отличная игра!',endSub:'Тебя ждут новые головоломки, комбо и награды.',cta:'ИГРАТЬ БЕСПЛАТНО',retry:'Ещё раз',install:'Скачать',yourScore:'Твой счёт'},
+ ja:{score:'スコア',combo:'コンボ',drag:'ブロックを盤面にドラッグ！',praise:['いいね！','すごい！','最高！'],endTitle:'ナイスプレイ！',endSub:'もっと多くのパズル、コンボ、報酬が待っています。',cta:'無料でプレイ',retry:'もう一度',install:'インストール',yourScore:'あなたのスコア'},
+ ko:{score:'점수',combo:'콤보',drag:'블록을 보드로 드래그하세요!',praise:['좋아요!','대단해요!','놀라워요!'],endTitle:'멋진 플레이!',endSub:'더 많은 퍼즐과 콤보, 보상이 기다리고 있어요.',cta:'무료로 플레이',retry:'다시 하기',install:'설치',yourScore:'내 점수'},
+ zh:{score:'得分',combo:'连击',drag:'把方块拖到棋盘上！',praise:['不错！','太棒了！','完美！'],endTitle:'玩得漂亮！',endSub:'更多谜题、连击和奖励等着你。',cta:'免费畅玩',retry:'再玩一次',install:'安装',yourScore:'你的得分'},
+ hi:{score:'स्कोर',combo:'कॉम्बो',drag:'ब्लॉक को बोर्ड पर खींचें!',praise:['बढ़िया!','शानदार!','कमाल!'],endTitle:'बहुत बढ़िया खेला!',endSub:'और पहेलियाँ, कॉम्बो और इनाम आपका इंतज़ार कर रहे हैं।',cta:'मुफ़्त खेलें',retry:'फिर से खेलें',install:'इंस्टॉल करें',yourScore:'आपका स्कोर'},
+ ar:{score:'النقاط',combo:'كومبو',drag:'اسحب كتلة إلى اللوحة!',praise:['رائع!','ممتاز!','مذهل!'],endTitle:'أحسنت اللعب!',endSub:'المزيد من الألغاز والكومبو والمكافآت بانتظارك.',cta:'العب مجانًا',retry:'العب مجددًا',install:'تثبيت',yourScore:'نتيجتك'},
+ nl:{score:'SCORE',combo:'COMBO',drag:'Sleep een blok naar het bord!',praise:['Top!','Super!','Geweldig!'],endTitle:'Goed gespeeld!',endSub:"Meer puzzels, combo's en beloningen wachten op je.",cta:'GRATIS SPELEN',retry:'Opnieuw',install:'Installeren',yourScore:'Jouw score'}
+};
+const qLang=(location.search.match(/[?&]lang=([a-z]{2})/)||[])[1];
+const LANG=T[qLang]?qLang:(T[(navigator.language||'en').slice(0,2).toLowerCase()]?(navigator.language||'en').slice(0,2).toLowerCase():'en');
+const S=T[LANG];
+document.documentElement.lang=LANG;
+const $=id=>document.getElementById(id);
+$('install').textContent=S.install;$('endTitle').textContent=S.endTitle;$('endSub').textContent=S.endSub;
+$('cta').textContent=S.cta;$('retry').textContent=S.retry;$('endScoreLbl').textContent=S.yourScore;
+if(LANG==='ar')$('end').dir='rtl';
+
+// ── Sky Harbor paleti ───────────────────────────────────────────
+const COLORS=['#ee6758','#36a9df','#35c2be','#f2b83f','#62b96b','#9a70d3'];
+const GRID=8;
+// Başlangıç tahtası: rakam = renk (1..6), nokta = boş. Üç tepsi parçası
+// sırasıyla 1, 2 ve 2 hattı temizleyecek şekilde kurgulandı (kombo x3).
+const START=[
+ '........',
+ '........',
+ '3.....5.',
+ '33116.55',
+ '44662...',
+ '115552..',
+ '144332..',
+ '22...441'];
+const TRAY=[
+ {cells:[[0,0],[0,1],[0,2]],c:3,target:[7,2]},        // turkuaz I3 → alt satır
+ {cells:[[0,0],[0,1],[1,0],[1,1]],c:4,target:[5,6]},  // sarı kare → iki satır
+ {cells:[[0,0],[1,0],[1,1],[1,2]],c:1,target:[3,5]}]; // kırmızı J → iki satır
+
+const reduced=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const cv=$('cv'),ctx=cv.getContext('2d');
+let W=0,H=0,dpr=1,L=null;
+let grid,used,score,shown,combo,state,drag,fx,parts,texts,ribbon,shake,lastAct,touched,startAt,endTimer;
+
+const bg=new Image();bg.src=BG_SRC;
+const icon=new Image();icon.src=ICON_SRC;$('endIcon').src=ICON_SRC;
+
+function reset(){
+  grid=START.map(row=>[...row].map(ch=>ch==='.'?0:+ch));
+  used=[false,false,false];score=0;shown=0;combo=0;state='play';drag=null;
+  fx=[];parts=[];texts=[];ribbon=null;shake=0;touched=false;
+  lastAct=performance.now();startAt=lastAct;
+  clearTimeout(endTimer);endTimer=setTimeout(showEnd,MAX_PLAY_MS);
+  $('end').classList.remove('show');$('end').setAttribute('aria-hidden','true');
+}
+
+// ── Yerleşim (dikey + yatay) ────────────────────────────────────
+function layout(){
+  W=innerWidth;H=innerHeight;dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  tileCache={};
+  const top=52,bottom=14;
+  if(W>H*1.1){
+    const cw=Math.min(H-top-bottom,(W-40)/1.7,560),side=cw*.62,g=cw*.05;
+    const x0=(W-cw-g-side)/2,y0=top+(H-top-bottom-cw)/2;
+    const hudH=cw*.24,slotH=(cw-hudH-g*3)/3;
+    L=board(x0,y0,cw);
+    L.hud={x:x0+cw+g,y:y0,w:side,h:hudH};
+    L.slots=[0,1,2].map(i=>({x:x0+cw+g,y:y0+hudH+g*(i+1)+slotH*i,w:side,h:slotH}));
+  }else{
+    const cw=Math.min(W-24,500,(H-top-bottom)/1.6),g=cw*.045,hudH=cw*.2,trayH=cw*.3;
+    const total=hudH+g+cw+g+trayH,x0=(W-cw)/2,y0=top+Math.max(0,(H-top-bottom-total)/2);
+    L=board(x0,y0+hudH+g,cw);
+    L.hud={x:x0,y:y0,w:cw,h:hudH};
+    const sw=(cw-g*2)/3;
+    L.slots=[0,1,2].map(i=>({x:x0+i*(sw+g),y:y0+hudH+g+cw+g,w:sw,h:trayH}));
+  }
+}
+function board(x,y,size){const pad=size*.035;return{x,y,size,pad,bx:x+pad,by:y+pad,cell:(size-pad*2)/GRID};}
+
+// ── Çizim yardımcıları ──────────────────────────────────────────
+function rr(g,x,y,w,h,r){r=Math.min(r,w/2,h/2);g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
+function shade(hex,a){const n=parseInt(hex.slice(1),16),f=v=>Math.round(a<0?v*(1+a):v+(255-v)*a);return`rgb(${f(n>>16)},${f(n>>8&255)},${f(n&255)})`;}
+let tileCache={};
+// Sky Harbor bloğu: parlak renkli yüz, sıcak kenar, oval ışık, küçük orta halka
+function tile(ci,s){
+  const key=ci+'_'+Math.round(s*10);if(tileCache[key])return tileCache[key];
+  const c=document.createElement('canvas'),px=Math.ceil(s*dpr);c.width=c.height=px;
+  const g=c.getContext('2d');g.scale(dpr,dpr);const col=COLORS[ci],r=s*.17,i=s*.065;
+  rr(g,0,0,s,s,r);g.fillStyle=shade(col,-.34);g.fill();
+  const gr=g.createLinearGradient(0,0,0,s);gr.addColorStop(0,shade(col,.25));gr.addColorStop(.55,col);gr.addColorStop(1,shade(col,-.08));
+  rr(g,i,i*.7,s-i*2,s-i*2.3,r*.8);g.fillStyle=gr;g.fill();
+  g.strokeStyle='rgba(255,236,190,.4)';g.lineWidth=Math.max(1,s*.025);g.stroke();
+  g.fillStyle='rgba(255,255,255,.45)';g.beginPath();g.ellipse(s*.34,s*.24,s*.19,s*.075,-.25,0,Math.PI*2);g.fill();
+  g.beginPath();g.arc(s/2,s*.49,s*.1,0,Math.PI*2);g.strokeStyle=shade(col,-.25);g.lineWidth=s*.035;g.stroke();
+  return tileCache[key]=c;
+}
+function drawTile(ci,x,y,s,alpha,scale){
+  const k=scale??1,d=s*(1-k)/2;ctx.globalAlpha=alpha??1;
+  ctx.drawImage(tile(ci,s),x+d,y+d,s*k,s*k);ctx.globalAlpha=1;
+}
+function brassPanel(x,y,w,h,r,fill){
+  rr(ctx,x,y,w,h,r);const g=ctx.createLinearGradient(0,y,0,y+h);g.addColorStop(0,'#f8e2aa');g.addColorStop(.5,'#e3ad53');g.addColorStop(1,'#8a5422');ctx.fillStyle=g;ctx.fill();
+  const b=Math.max(2.5,Math.min(w,h)*.045);rr(ctx,x+b,y+b,w-b*2,h-b*2,r-b*.7);
+  if(fill==='navy'){const n=ctx.createLinearGradient(0,y,0,y+h);n.addColorStop(0,'#0d4a7b');n.addColorStop(1,'#08233c');ctx.fillStyle=n;}
+  else ctx.fillStyle=fill;
+  ctx.fill();
+}
+function label(t,x,y,size,color,stroke,align){
+  ctx.font=`900 ${size}px "Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif`;ctx.textAlign=align||'center';ctx.textBaseline='middle';
+  if(stroke){ctx.lineJoin='round';ctx.lineWidth=size*.16;ctx.strokeStyle=stroke;ctx.strokeText(t,x,y);}
+  ctx.fillStyle=color;ctx.fillText(t,x,y);
+}
+function fitSize(t,size,maxW){ctx.font=`900 ${size}px "Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif`;const w=ctx.measureText(t).width;return w>maxW?size*maxW/w:size;}
+const ease=t=>1-Math.pow(1-t,3);
+
+// ── Oyun mantığı ────────────────────────────────────────────────
+function bounds(cells){let mr=0,mc=0;for(const[r,c]of cells){mr=Math.max(mr,r);mc=Math.max(mc,c);}return{rows:mr+1,cols:mc+1};}
+function fits(cells,r0,c0){for(const[r,c]of cells){const R=r0+r,C=c0+c;if(R<0||R>=GRID||C<0||C>=GRID||grid[R][C])return false;}return true;}
+function fullLines(extra){
+  const f=(r,c)=>grid[r][c]||(extra&&extra.has(r*GRID+c));const rows=[],cols=[];
+  for(let i=0;i<GRID;i++){let rf=true,cf=true;for(let j=0;j<GRID;j++){if(!f(i,j))rf=false;if(!f(j,i))cf=false;}if(rf)rows.push(i);if(cf)cols.push(i);}
+  return{rows,cols};
+}
+function anyFits(){for(let i=0;i<3;i++){if(used[i])continue;for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++)if(fits(TRAY[i].cells,r,c))return true;}return false;}
+function snap(px,py){
+  const p=TRAY[drag.i],b=bounds(p.cells),cs=L.cell;
+  const x=px-b.cols*cs/2,y=py-lift()-b.rows*cs/2;
+  const c=Math.round((x-L.bx)/cs),r=Math.round((y-L.by)/cs);
+  return{r,c,ok:fits(p.cells,r,c)};
+}
+function lift(){return L.cell*1.5;}
+
+function place(i,r0,c0){
+  const p=TRAY[i],now=performance.now();used[i]=true;
+  for(const[r,c]of p.cells)grid[r0+r][c0+c]=p.c;
+  score+=p.cells.length*10;sfxPlace();
+  const{rows,cols}=fullLines(),n=rows.length+cols.length;
+  if(n){
+    combo++;const gain=n*100*combo+(n>1?n*50:0);score+=gain;
+    const hit=new Set();rows.forEach(r=>{for(let c=0;c<GRID;c++)hit.add(r*GRID+c);});cols.forEach(c=>{for(let r=0;r<GRID;r++)hit.add(r*GRID+c);});
+    const cr=r0+.5,cc=c0+.5;
+    for(const k of hit){
+      const r=k/GRID|0,c=k%GRID,ci=grid[r][c]-1,delay=Math.hypot(r-cr,c-cc)*28;
+      fx.push({r,c,ci,t0:now+delay});grid[r][c]=0;
+      if(!reduced)for(let q=0;q<3;q++)parts.push({x:L.bx+(c+.5)*L.cell,y:L.by+(r+.5)*L.cell,vx:(Math.random()-.5)*5,vy:-Math.random()*5-1.5,s:L.cell*(.14+Math.random()*.12),ci,t0:now+delay,life:700+Math.random()*300});
+    }
+    if(parts.length>160)parts.splice(0,parts.length-160);
+    const pr=S.praise[Math.min(2,Math.max(n,combo)-1)];
+    texts.push({t:pr,x:L.x+L.size/2,y:L.y+L.size*.42,t0:now,big:true});
+    texts.push({t:'+'+gain,x:L.bx+(c0+1)*L.cell,y:L.by+(r0+1.6)*L.cell,t0:now});
+    if(combo>=2)ribbon={t0:now,n:combo};
+    shake=reduced?0:Math.min(10,4+n*2);sfxClear(n,combo);
+  }else combo=0;
+  if(used.every(Boolean))setTimeout(showEnd,1300);
+  else if(!anyFits())setTimeout(showEnd,900);
+}
+
+// ── Bitiş kartı ve mağaza ───────────────────────────────────────
+function showEnd(){
+  if(state==='end')return;state='end';drag=null;clearTimeout(endTimer);
+  $('endScore').textContent=score.toLocaleString(LANG);
+  $('end').classList.add('show');$('end').setAttribute('aria-hidden','false');sfxEnd();
+}
+function openStore(){
+  const ios=/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent)&&'ontouchend' in document;
+  const url=ios&&IOS_URL?IOS_URL:ANDROID_URL;
+  try{if(window.mraid&&typeof mraid.open==='function'){mraid.open(url);return;}}catch(e){}
+  window.open(url,'_blank');
+}
+$('cta').addEventListener('click',openStore);
+$('install').addEventListener('click',openStore);
+$('endIcon').addEventListener('click',openStore);
+$('retry').addEventListener('click',()=>{reset();});
+
+// ── Ses (Web Audio, ilk dokunuştan sonra) ───────────────────────
+let ac=null;
+function audio(){if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}else if(ac.state==='suspended')ac.resume();}
+function tone(f,dur,type,vol,delay){
+  if(!ac||ac.state!=='running')return;const t=ac.currentTime+(delay||0),o=ac.createOscillator(),g=ac.createGain();
+  o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g).connect(ac.destination);o.start(t);o.stop(t+dur+.02);
+}
+function sfxPlace(){tone(320,.08,'triangle',.18);tone(110,.12,'sine',.22);}
+function sfxClear(n,k){const s=[523,659,784,988,1175,1319];const up=Math.min(2,k-1);for(let i=0;i<3+n;i++)tone(s[Math.min(5,i+up)],.45,'triangle',.09,i*.055);}
+function sfxEnd(){[523,659,784,1047].forEach((f,i)=>tone(f,.6,'sine',.1,i*.09));}
+function pauseAudio(p){if(ac)(p?ac.suspend():ac.resume()).catch(()=>{});}
+document.addEventListener('visibilitychange',()=>pauseAudio(document.hidden));
+
+// ── Giriş ───────────────────────────────────────────────────────
+function slotAt(x,y){return L.slots.findIndex((s,i)=>!used[i]&&x>=s.x&&x<=s.x+s.w&&y>=s.y-10&&y<=s.y+s.h+10);}
+cv.addEventListener('pointerdown',e=>{
+  audio();if(state!=='play')return;const i=slotAt(e.clientX,e.clientY);if(i<0)return;
+  touched=true;lastAct=performance.now();drag={i,x:e.clientX,y:e.clientY,t0:lastAct};
+  try{cv.setPointerCapture(e.pointerId);}catch(_){}
+});
+cv.addEventListener('pointermove',e=>{if(drag){drag.x=e.clientX;drag.y=e.clientY;}});
+function release(){
+  if(!drag)return;const s=snap(drag.x,drag.y),i=drag.i;drag=null;lastAct=performance.now();
+  if(s.ok&&state==='play')place(i,s.r,s.c);
+}
+cv.addEventListener('pointerup',release);cv.addEventListener('pointercancel',()=>{drag=null;});
+
+// ── Kare çizimi ─────────────────────────────────────────────────
+function drawBg(){
+  if(bg.complete&&bg.naturalWidth){const k=Math.max(W/bg.naturalWidth,H/bg.naturalHeight),w=bg.naturalWidth*k,h=bg.naturalHeight*k;ctx.drawImage(bg,(W-w)/2,(H-h)/2,w,h);}
+  else{ctx.fillStyle='#1686c1';ctx.fillRect(0,0,W,H);}
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(8,35,60,.15)');g.addColorStop(1,'rgba(8,35,60,.55)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+function drawHud(now){
+  const h=L.hud,g=h.w*.03,iw=Math.min(h.h,h.w*.22),cw=h.w*.27,sw=h.w-iw-cw-g*2;
+  // uygulama ikonu
+  if(icon.complete&&icon.naturalWidth){const iy=h.y+(h.h-iw)/2;ctx.save();rr(ctx,h.x,iy,iw,iw,iw*.22);ctx.clip();ctx.drawImage(icon,h.x,iy,iw,iw);ctx.restore();}
+  // skor
+  const sx=h.x+iw+g;brassPanel(sx,h.y,sw,h.h,h.h*.3,'navy');
+  shown+=(score-shown)*.18;if(Math.abs(score-shown)<1)shown=score;
+  const st=Math.round(shown).toLocaleString(LANG);
+  label(S.score,sx+sw/2,h.y+h.h*.28,fitSize(S.score,h.h*.17,sw*.8),'#f8e2aa');
+  label(st,sx+sw/2,h.y+h.h*.64,fitSize(st,h.h*.42,sw*.85),'#fff6e5');
+  // kombo
+  const cx=sx+sw+g,pulse=ribbon&&now-ribbon.t0<500?1+Math.sin((now-ribbon.t0)/500*Math.PI)*.08:1;
+  ctx.save();ctx.translate(cx+cw/2,h.y+h.h/2);ctx.scale(pulse,pulse);
+  brassPanel(-cw/2,-h.h/2,cw,h.h,h.h*.3,'navy');
+  label(S.combo,0,-h.h*.22,fitSize(S.combo,h.h*.17,cw*.8),'#f8e2aa');
+  label('×'+combo,0,h.h*.14,h.h*.38,combo>=2?'#70c6e9':'#fff6e5');
+  ctx.restore();
+}
+function drawBoard(now){
+  const{x,y,size,cell,bx,by}=L;
+  brassPanel(x,y,size,size,size*.035,'#d9bf8c');
+  const pre=new Set();let preview=null;
+  if(drag){const s=snap(drag.x,drag.y);if(s.ok){preview=s;for(const[r,c]of TRAY[drag.i].cells)pre.add((s.r+r)*GRID+s.c+c);}}
+  const lines=preview?fullLines(pre):{rows:[],cols:[]};
+  for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++){
+    const cx=bx+c*cell,cy=by+r*cell,s=cell-2;
+    rr(ctx,cx+1,cy+1,s,s,s*.14);ctx.fillStyle='#f6ead2';ctx.fill();
+    ctx.strokeStyle='rgba(138,84,34,.18)';ctx.lineWidth=1;ctx.stroke();
+    const v=grid[r][c];if(v)drawTile(v-1,cx+1,cy+1,s);
+  }
+  if(preview){
+    const ci=TRAY[drag.i].c-1;
+    for(const k of pre)drawTile(ci,bx+(k%GRID)*cell+1,by+(k/GRID|0)*cell+1,cell-2,.42);
+    ctx.globalAlpha=.75+Math.sin(now*.008)*.2;ctx.lineWidth=3;ctx.strokeStyle='#bb762d';ctx.fillStyle='rgba(248,226,170,.28)';
+    for(const r of lines.rows){rr(ctx,bx,by+r*cell,cell*GRID,cell,cell*.18);ctx.fill();ctx.stroke();}
+    for(const c of lines.cols){rr(ctx,bx+c*cell,by,cell,cell*GRID,cell*.18);ctx.fill();ctx.stroke();}
+    ctx.globalAlpha=1;
+  }
+  // temizlenen taşlar: hafif büyü, sonra küçülüp kaybol
+  fx=fx.filter(f=>now-f.t0<380);
+  for(const f of fx){const p=Math.max(0,(now-f.t0)/380),k=p<.3?1+p*.5:1.15*(1-(p-.3)/.7);drawTile(f.ci,bx+f.c*cell+1,by+f.r*cell+1,cell-2,1-p*p,Math.max(.01,k));
+    if(p>0&&p<.6){ctx.globalAlpha=(.6-p)*1.4;rr(ctx,bx+f.c*cell+1,by+f.r*cell+1,cell-2,cell-2,cell*.14);ctx.fillStyle='#fff6e5';ctx.fill();ctx.globalAlpha=1;}}
+}
+function drawTray(){
+  L.slots.forEach((s,i)=>{
+    brassPanel(s.x,s.y,s.w,s.h,Math.min(s.w,s.h)*.12,'navy');
+    if(used[i]||(drag&&drag.i===i))return;
+    const p=TRAY[i],b=bounds(p.cells),cs=Math.min(s.w*.75/Math.max(3,b.cols),s.h*.75/Math.max(2,b.rows),L.cell*.62);
+    const ox=s.x+(s.w-b.cols*cs)/2,oy=s.y+(s.h-b.rows*cs)/2;
+    for(const[r,c]of p.cells)drawTile(p.c-1,ox+c*cs+1,oy+r*cs+1,cs-2);
+  });
+}
+function drawPiece(i,cx,cy,cs,alpha){
+  const p=TRAY[i],b=bounds(p.cells),ox=cx-b.cols*cs/2,oy=cy-b.rows*cs/2;
+  ctx.save();if(!reduced){ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=12;ctx.shadowOffsetY=6;}
+  for(const[r,c]of p.cells)drawTile(p.c-1,ox+c*cs+1,oy+r*cs+1,cs-2,alpha);
+  ctx.restore();
+}
+function hintPiece(){for(let i=0;i<3;i++){if(used[i])continue;const[t0,t1]=TRAY[i].target;if(fits(TRAY[i].cells,t0,t1))return i;}return -1;}
+function drawHint(now){
+  if(state!=='play'||drag)return;
+  const idle=now-lastAct;if(idle<(touched?3500:500))return;
+  const i=hintPiece();if(i<0)return;
+  const p=TRAY[i],b=bounds(p.cells),s=L.slots[i],cell=L.cell;
+  const from={x:s.x+s.w/2,y:s.y+s.h/2},to={x:L.bx+(p.target[1]+b.cols/2)*cell,y:L.by+(p.target[0]+b.rows/2)*cell};
+  const cyc=1900,t=((idle-(touched?3500:500))%cyc)/cyc;
+  const m=t<.18?0:t<.72?ease((t-.18)/.54):1,fade=t>.86?1-(t-.86)/.14:Math.min(1,t/.1);
+  const px=from.x+(to.x-from.x)*m,py=from.y+(to.y-from.y)*m;
+  ctx.globalAlpha=fade;drawPiece(i,px,py,cell,.6*fade);
+  // parmak: parçanın altında halka + nokta
+  const fy=py+b.rows*cell/2+cell*.55,press=t<.18||t>.72?.85:1;
+  ctx.globalAlpha=fade*.9;ctx.beginPath();ctx.arc(px,fy,cell*.42*press,0,Math.PI*2);ctx.fillStyle='rgba(255,246,229,.55)';ctx.fill();
+  ctx.lineWidth=3;ctx.strokeStyle='#fff6e5';ctx.stroke();
+  ctx.beginPath();ctx.arc(px,fy,cell*.16,0,Math.PI*2);ctx.fillStyle='#e96749';ctx.fill();ctx.globalAlpha=1;
+  if(!touched){ // başlangıç tahtasında boş olan üst iki satırın üzerinde
+    const fs=fitSize(S.drag,cell*.42,L.size*.85);
+    ctx.font=`900 ${fs}px "Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif`;
+    const bxw=ctx.measureText(S.drag).width+cell*.8,bh=fs*1.8,byy=L.by+cell-bh/2;
+    brassPanel(L.x+L.size/2-bxw/2,byy,bxw,bh,bh/2,'navy');label(S.drag,L.x+L.size/2,byy+bh/2,fs,'#fff6e5');
+  }
+}
+function drawFx(now){
+  parts=parts.filter(p=>now-p.t0<p.life);
+  for(const p of parts){const t=now-p.t0;if(t<0)continue;const k=t/16;
+    ctx.globalAlpha=1-t/p.life;ctx.fillStyle=COLORS[p.ci];const x=p.x+p.vx*k,y=p.y+p.vy*k+.09*k*k;ctx.fillRect(x-p.s/2,y-p.s/2,p.s,p.s);}
+  ctx.globalAlpha=1;
+  texts=texts.filter(t=>now-t.t0<1200);
+  for(const t of texts){const a=(now-t.t0)/1200,pop=t.big?(a<.15?.6+a/.15*.55:a<.25?1.15-(a-.15):1.05):1,rise=reduced?0:a*(t.big?30:46);
+    ctx.globalAlpha=a>.75?(1-a)/.25:1;
+    if(t.big){const fs=fitSize(t.t,L.cell*1.1,L.size*.9)*pop;label(t.t,t.x,t.y-rise,fs,'#fff6e5','#8a5422');}
+    else label(t.t,t.x,t.y-rise,L.cell*.48,'#f8e2aa','#0a3157');}
+  ctx.globalAlpha=1;
+  if(ribbon){const a=(now-ribbon.t0)/1100;if(a>=1)ribbon=null;else{
+    const txt=S.combo+' ×'+ribbon.n,fs=L.cell*.5,y=L.y+L.size*.6,w=Math.max(L.size*.42,(ctx.font=`900 ${fs}px "Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif`,ctx.measureText(txt).width)+fs*1.6),h=fs*1.8,sc=a<.15?a/.15:1;
+    ctx.save();ctx.globalAlpha=a>.7?(1-a)/.3:1;ctx.translate(L.x+L.size/2,y);ctx.scale(sc,sc);
+    brassPanel(-w/2,-h/2,w,h,h/2,'navy');label(txt,0,1,fs,'#70c6e9');ctx.restore();}}
+}
+function frame(now){
+  requestAnimationFrame(frame);if(!L)return;
+  ctx.save();
+  drawBg();
+  if(shake>.2){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.85;}
+  drawHud(now);drawBoard(now);drawTray();drawFx(now);drawHint(now);
+  if(drag){const b=bounds(TRAY[drag.i].cells);drawPiece(drag.i,drag.x,drag.y-lift(),L.cell);}
+  ctx.restore();
+}
+
+// ── MRAID başlangıcı ────────────────────────────────────────────
+let started=false;
+function start(){if(started)return;started=true;layout();reset();requestAnimationFrame(frame);}
+function boot(){
+  if(window.mraid&&typeof mraid.getState==='function'){
+    const go=()=>{if(mraid.isViewable())start();else mraid.addEventListener('viewableChange',v=>{if(v)start();});
+      mraid.addEventListener('viewableChange',v=>pauseAudio(!v));};
+    if(mraid.getState()==='loading')mraid.addEventListener('ready',go);else go();
+  }else start();
+}
+addEventListener('resize',()=>{if(started)layout();});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
+</body>
+</html>
