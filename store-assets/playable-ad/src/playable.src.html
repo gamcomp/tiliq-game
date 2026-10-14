@@ -21,6 +21,10 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 .score{display:inline-flex;gap:8px;align-items:baseline;padding:6px 16px;border-radius:14px;background:#0a3157;border:2px solid #e3ad53;color:#f8e2aa;font-size:13px}
 .score b{font-size:24px;color:#fff6e5}
 .card p{margin:12px 4px 16px;font-size:15px;line-height:1.35;color:#3b4a5c}
+.feat{display:flex;align-items:center;justify-content:center;gap:8px;margin:-4px 0 14px;padding:8px 12px;border-radius:12px;background:#0a3157;border:2px solid #e3ad53;color:#f8e2aa;font-size:14px;font-weight:800;line-height:1.25}
+.feat svg{flex:none;width:22px;height:22px;color:#e3ad53;animation:spin 2.4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.feat svg{animation:none}}
 .cta{display:block;width:100%;border:3px solid #f8e2aa;border-radius:18px;padding:15px 10px;font:inherit;font-size:21px;font-weight:900;color:#fff;background:linear-gradient(#f27a5c,#d9563a);box-shadow:0 5px 0 #8a3a26,0 10px 20px rgba(217,86,58,.45);cursor:pointer;animation:pulse 1.1s ease-in-out infinite}
 .cta:active{transform:translateY(3px);box-shadow:0 2px 0 #8a3a26}
 .retry{margin-top:12px;border:0;background:none;font:inherit;font-size:14px;color:#0d4a7b;text-decoration:underline;cursor:pointer}
@@ -43,6 +47,7 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
     <h1 id="endTitle"></h1>
     <div class="score"><span id="endScoreLbl"></span><b id="endScore">0</b></div>
     <p id="endSub"></p>
+    <div class="feat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12a7 7 0 1 1-2.05-4.95" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M20 3.5v5h-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="endFeat"></span></div>
     <button id="cta" class="cta" type="button"></button>
     <button id="retry" class="retry" type="button"></button>
   </div>
@@ -59,20 +64,20 @@ const MAX_PLAY_MS=40000; // en geç bu süreden sonra bitiş kartı
 
 // ── 14 dil ──────────────────────────────────────────────────────
 const T={
- tr:{score:'SKOR',combo:'KOMBO',drag:'Bloğu tahtaya sürükle!',rotate:'Döndürmek için dokun!',praise:['Harika!','Süper!','Muhteşem!'],endTitle:'Harika oynadın!',endSub:'Daha fazla bulmaca, kombo ve ödül seni bekliyor.',cta:'ÜCRETSİZ OYNA',retry:'Tekrar oyna',install:'İndir',yourScore:'Skorun'},
- en:{score:'SCORE',combo:'COMBO',drag:'Drag a block onto the board!',rotate:'Tap to rotate!',praise:['Great!','Super!','Amazing!'],endTitle:'Nicely played!',endSub:'More puzzles, combos and rewards are waiting.',cta:'PLAY FREE',retry:'Play again',install:'Install',yourScore:'Your score'},
- de:{score:'PUNKTE',combo:'COMBO',drag:'Zieh einen Block aufs Brett!',rotate:'Tippen zum Drehen!',praise:['Klasse!','Super!','Fantastisch!'],endTitle:'Stark gespielt!',endSub:'Mehr Rätsel, Combos und Belohnungen warten.',cta:'GRATIS SPIELEN',retry:'Nochmal',install:'Laden',yourScore:'Dein Score'},
- fr:{score:'SCORE',combo:'COMBO',drag:'Glisse un bloc sur le plateau !',rotate:'Touche pour pivoter !',praise:['Génial !','Super !','Incroyable !'],endTitle:'Bien joué !',endSub:"Plus de puzzles, de combos et de récompenses t'attendent.",cta:'JOUER GRATUITEMENT',retry:'Rejouer',install:'Installer',yourScore:'Ton score'},
- es:{score:'PUNTOS',combo:'COMBO',drag:'¡Arrastra un bloque al tablero!',rotate:'¡Toca para girar!',praise:['¡Genial!','¡Súper!','¡Increíble!'],endTitle:'¡Bien jugado!',endSub:'Más puzles, combos y recompensas te esperan.',cta:'JUGAR GRATIS',retry:'Jugar otra vez',install:'Instalar',yourScore:'Tu puntuación'},
- it:{score:'PUNTI',combo:'COMBO',drag:'Trascina un blocco sulla griglia!',rotate:'Tocca per ruotare!',praise:['Grande!','Super!','Incredibile!'],endTitle:'Ben giocato!',endSub:'Altri puzzle, combo e premi ti aspettano.',cta:'GIOCA GRATIS',retry:'Gioca ancora',install:'Installa',yourScore:'Il tuo punteggio'},
- pt:{score:'PONTOS',combo:'COMBO',drag:'Arraste um bloco para o tabuleiro!',rotate:'Toque para girar!',praise:['Ótimo!','Super!','Incrível!'],endTitle:'Mandou bem!',endSub:'Mais quebra-cabeças, combos e prêmios te esperam.',cta:'JOGUE GRÁTIS',retry:'Jogar de novo',install:'Instalar',yourScore:'Sua pontuação'},
- ru:{score:'ОЧКИ',combo:'КОМБО',drag:'Перетащи блок на поле!',rotate:'Нажми, чтобы повернуть!',praise:['Отлично!','Супер!','Потрясающе!'],endTitle:'Отличная игра!',endSub:'Тебя ждут новые головоломки, комбо и награды.',cta:'ИГРАТЬ БЕСПЛАТНО',retry:'Ещё раз',install:'Скачать',yourScore:'Твой счёт'},
- ja:{score:'スコア',combo:'コンボ',drag:'ブロックを盤面にドラッグ！',rotate:'タップで回転！',praise:['いいね！','すごい！','最高！'],endTitle:'ナイスプレイ！',endSub:'もっと多くのパズル、コンボ、報酬が待っています。',cta:'無料でプレイ',retry:'もう一度',install:'インストール',yourScore:'あなたのスコア'},
- ko:{score:'점수',combo:'콤보',drag:'블록을 보드로 드래그하세요!',rotate:'탭해서 회전!',praise:['좋아요!','대단해요!','놀라워요!'],endTitle:'멋진 플레이!',endSub:'더 많은 퍼즐과 콤보, 보상이 기다리고 있어요.',cta:'무료로 플레이',retry:'다시 하기',install:'설치',yourScore:'내 점수'},
- zh:{score:'得分',combo:'连击',drag:'把方块拖到棋盘上！',rotate:'点击旋转！',praise:['不错！','太棒了！','完美！'],endTitle:'玩得漂亮！',endSub:'更多谜题、连击和奖励等着你。',cta:'免费畅玩',retry:'再玩一次',install:'安装',yourScore:'你的得分'},
- hi:{score:'स्कोर',combo:'कॉम्बो',drag:'ब्लॉक को बोर्ड पर खींचें!',rotate:'घुमाने के लिए टैप करें!',praise:['बढ़िया!','शानदार!','कमाल!'],endTitle:'बहुत बढ़िया खेला!',endSub:'और पहेलियाँ, कॉम्बो और इनाम आपका इंतज़ार कर रहे हैं।',cta:'मुफ़्त खेलें',retry:'फिर से खेलें',install:'इंस्टॉल करें',yourScore:'आपका स्कोर'},
- ar:{score:'النقاط',combo:'كومبو',drag:'اسحب كتلة إلى اللوحة!',rotate:'اضغط للتدوير!',praise:['رائع!','ممتاز!','مذهل!'],endTitle:'أحسنت اللعب!',endSub:'المزيد من الألغاز والكومبو والمكافآت بانتظارك.',cta:'العب مجانًا',retry:'العب مجددًا',install:'تثبيت',yourScore:'نتيجتك'},
- nl:{score:'SCORE',combo:'COMBO',drag:'Sleep een blok naar het bord!',rotate:'Tik om te draaien!',praise:['Top!','Super!','Geweldig!'],endTitle:'Goed gespeeld!',endSub:"Meer puzzels, combo's en beloningen wachten op je.",cta:'GRATIS SPELEN',retry:'Opnieuw',install:'Installeren',yourScore:'Jouw score'}
+ tr:{score:'SKOR',combo:'KOMBO',drag:'Bloğu tahtaya sürükle!',rotate:'Döndürmek için dokun!',featRotate:'Parçaları döndür, her boşluğa sığdır!',praise:['Harika!','Süper!','Muhteşem!'],endTitle:'Harika oynadın!',endSub:'Daha fazla bulmaca, kombo ve ödül seni bekliyor.',cta:'ÜCRETSİZ OYNA',retry:'Tekrar oyna',install:'İndir',yourScore:'Skorun'},
+ en:{score:'SCORE',combo:'COMBO',drag:'Drag a block onto the board!',rotate:'Tap to rotate!',featRotate:'Rotate pieces to fit any gap!',praise:['Great!','Super!','Amazing!'],endTitle:'Nicely played!',endSub:'More puzzles, combos and rewards are waiting.',cta:'PLAY FREE',retry:'Play again',install:'Install',yourScore:'Your score'},
+ de:{score:'PUNKTE',combo:'COMBO',drag:'Zieh einen Block aufs Brett!',rotate:'Tippen zum Drehen!',featRotate:'Drehe Teile, damit sie überall passen!',praise:['Klasse!','Super!','Fantastisch!'],endTitle:'Stark gespielt!',endSub:'Mehr Rätsel, Combos und Belohnungen warten.',cta:'GRATIS SPIELEN',retry:'Nochmal',install:'Laden',yourScore:'Dein Score'},
+ fr:{score:'SCORE',combo:'COMBO',drag:'Glisse un bloc sur le plateau !',rotate:'Touche pour pivoter !',featRotate:'Fais pivoter les pièces pour combler chaque trou !',praise:['Génial !','Super !','Incroyable !'],endTitle:'Bien joué !',endSub:"Plus de puzzles, de combos et de récompenses t'attendent.",cta:'JOUER GRATUITEMENT',retry:'Rejouer',install:'Installer',yourScore:'Ton score'},
+ es:{score:'PUNTOS',combo:'COMBO',drag:'¡Arrastra un bloque al tablero!',rotate:'¡Toca para girar!',featRotate:'¡Gira las piezas para llenar cualquier hueco!',praise:['¡Genial!','¡Súper!','¡Increíble!'],endTitle:'¡Bien jugado!',endSub:'Más puzles, combos y recompensas te esperan.',cta:'JUGAR GRATIS',retry:'Jugar otra vez',install:'Instalar',yourScore:'Tu puntuación'},
+ it:{score:'PUNTI',combo:'COMBO',drag:'Trascina un blocco sulla griglia!',rotate:'Tocca per ruotare!',featRotate:'Ruota i pezzi per riempire ogni spazio!',praise:['Grande!','Super!','Incredibile!'],endTitle:'Ben giocato!',endSub:'Altri puzzle, combo e premi ti aspettano.',cta:'GIOCA GRATIS',retry:'Gioca ancora',install:'Installa',yourScore:'Il tuo punteggio'},
+ pt:{score:'PONTOS',combo:'COMBO',drag:'Arraste um bloco para o tabuleiro!',rotate:'Toque para girar!',featRotate:'Gire as peças para encaixar em qualquer espaço!',praise:['Ótimo!','Super!','Incrível!'],endTitle:'Mandou bem!',endSub:'Mais quebra-cabeças, combos e prêmios te esperam.',cta:'JOGUE GRÁTIS',retry:'Jogar de novo',install:'Instalar',yourScore:'Sua pontuação'},
+ ru:{score:'ОЧКИ',combo:'КОМБО',drag:'Перетащи блок на поле!',rotate:'Нажми, чтобы повернуть!',featRotate:'Вращай фигуры, чтобы заполнить любой пробел!',praise:['Отлично!','Супер!','Потрясающе!'],endTitle:'Отличная игра!',endSub:'Тебя ждут новые головоломки, комбо и награды.',cta:'ИГРАТЬ БЕСПЛАТНО',retry:'Ещё раз',install:'Скачать',yourScore:'Твой счёт'},
+ ja:{score:'スコア',combo:'コンボ',drag:'ブロックを盤面にドラッグ！',rotate:'タップで回転！',featRotate:'ピースを回転させて、どんな隙間にもはめよう！',praise:['いいね！','すごい！','最高！'],endTitle:'ナイスプレイ！',endSub:'もっと多くのパズル、コンボ、報酬が待っています。',cta:'無料でプレイ',retry:'もう一度',install:'インストール',yourScore:'あなたのスコア'},
+ ko:{score:'점수',combo:'콤보',drag:'블록을 보드로 드래그하세요!',rotate:'탭해서 회전!',featRotate:'블록을 회전해서 어떤 빈칸이든 채우세요!',praise:['좋아요!','대단해요!','놀라워요!'],endTitle:'멋진 플레이!',endSub:'더 많은 퍼즐과 콤보, 보상이 기다리고 있어요.',cta:'무료로 플레이',retry:'다시 하기',install:'설치',yourScore:'내 점수'},
+ zh:{score:'得分',combo:'连击',drag:'把方块拖到棋盘上！',rotate:'点击旋转！',featRotate:'旋转方块，填满每一个空隙！',praise:['不错！','太棒了！','完美！'],endTitle:'玩得漂亮！',endSub:'更多谜题、连击和奖励等着你。',cta:'免费畅玩',retry:'再玩一次',install:'安装',yourScore:'你的得分'},
+ hi:{score:'स्कोर',combo:'कॉम्बो',drag:'ब्लॉक को बोर्ड पर खींचें!',rotate:'घुमाने के लिए टैप करें!',featRotate:'टुकड़ों को घुमाएँ और हर खाली जगह भरें!',praise:['बढ़िया!','शानदार!','कमाल!'],endTitle:'बहुत बढ़िया खेला!',endSub:'और पहेलियाँ, कॉम्बो और इनाम आपका इंतज़ार कर रहे हैं।',cta:'मुफ़्त खेलें',retry:'फिर से खेलें',install:'इंस्टॉल करें',yourScore:'आपका स्कोर'},
+ ar:{score:'النقاط',combo:'كومبو',drag:'اسحب كتلة إلى اللوحة!',rotate:'اضغط للتدوير!',featRotate:'دوّر القطع لتملأ أي فراغ!',praise:['رائع!','ممتاز!','مذهل!'],endTitle:'أحسنت اللعب!',endSub:'المزيد من الألغاز والكومبو والمكافآت بانتظارك.',cta:'العب مجانًا',retry:'العب مجددًا',install:'تثبيت',yourScore:'نتيجتك'},
+ nl:{score:'SCORE',combo:'COMBO',drag:'Sleep een blok naar het bord!',rotate:'Tik om te draaien!',featRotate:'Draai stukken zodat ze overal passen!',praise:['Top!','Super!','Geweldig!'],endTitle:'Goed gespeeld!',endSub:"Meer puzzels, combo's en beloningen wachten op je.",cta:'GRATIS SPELEN',retry:'Opnieuw',install:'Installeren',yourScore:'Jouw score'}
 };
 // Önizleme için dil zorlama: ?lang=xx veya #xx (Unity'de ikisi de yok → cihaz dili)
 const qLang=(location.search.match(/[?&]lang=([a-z]{2})/)||location.hash.match(/^#(?:lang=)?([a-z]{2})$/)||[])[1];
@@ -81,7 +86,7 @@ const S=T[LANG];
 document.documentElement.lang=LANG;
 const $=id=>document.getElementById(id);
 $('install').textContent=S.install;$('endTitle').textContent=S.endTitle;$('endSub').textContent=S.endSub;
-$('cta').textContent=S.cta;$('retry').textContent=S.retry;$('endScoreLbl').textContent=S.yourScore;
+$('cta').textContent=S.cta;$('retry').textContent=S.retry;$('endScoreLbl').textContent=S.yourScore;$('endFeat').textContent=S.featRotate;
 if(LANG==='ar')$('end').dir='rtl';
 
 // ── Sky Harbor paleti ───────────────────────────────────────────
@@ -101,7 +106,7 @@ const START=[
 // goal: hedefe sığan yön. Kırmızı J ters gelir; bir kez döndürülünce (saat yönü) oturur —
 // oyundaki "parçayı döndür" özelliğini reklamda gösterir.
 const TRAY=[
- {cells:[[0,0],[0,1],[0,2]],goal:[[0,0],[0,1],[0,2]],c:3,target:[7,2]},                // turkuaz I3 → alt satır
+ {cells:[[0,0],[1,0],[2,0]],goal:[[0,0],[0,1],[0,2]],c:3,target:[7,2]},                // turkuaz I3 dik gelir: ilk hareket döndürmek → alt satır
  {cells:[[0,0],[0,1],[1,0],[1,1]],goal:[[0,0],[0,1],[1,0],[1,1]],c:4,target:[5,6]},    // sarı kare → iki satır
  {cells:[[0,1],[1,1],[2,0],[2,1]],goal:[[0,0],[1,0],[1,1],[1,2]],c:1,target:[3,5]}];   // kırmızı J (döndür) → iki satır
 
@@ -339,7 +344,27 @@ function drawTray(now){
     if(ra<1){const cx=s.x+s.w/2,cy=s.y+s.h/2;ctx.translate(cx,cy);ctx.rotate(-(1-ease(ra))*Math.PI/2);ctx.translate(-cx,-cy);}
     for(const[r,c]of p.cells)drawTile(p.c-1,ox+c*cs+1,oy+r*cs+1,cs-2);
     ctx.restore();
+    // döndürünce slotun etrafında genişleyip sönen pirinç halka
+    const rf=rotAnim&&rotAnim.i===i&&!reduced?(now-rotAnim.t0)/380:1;
+    if(rf<1){ctx.save();ctx.globalAlpha=(1-rf)*.9;ctx.lineWidth=3+4*(1-rf);ctx.strokeStyle='#f8e2aa';
+      const g=rf*Math.min(s.w,s.h)*.12;rr(ctx,s.x-g,s.y-g,s.w+g*2,s.h+g*2,Math.min(s.w,s.h)*.14+g);ctx.stroke();ctx.restore();}
+    rotateBadge(s,i,now);
   });
+}
+// Her parçanın köşesinde ↻ rozeti: parçaların döndürülebildiğini baştan gösterir.
+// Sırası gelen parçada nabız gibi atar.
+function rotateBadge(s,i,now){
+  const h=hintPiece(),hot=h&&h.mode==='rotate'&&h.i===i,R=Math.max(10,Math.min(s.w,s.h)*.14);
+  const pulse=hot&&!reduced?1+Math.sin(now*.012)*.12:1,cx=s.x+s.w-R*1.05,cy=s.y+R*1.05;
+  ctx.save();ctx.translate(cx,cy);ctx.scale(pulse,pulse);
+  ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);ctx.fillStyle=hot?'#e3ad53':'#0a3157';ctx.fill();
+  ctx.lineWidth=2;ctx.strokeStyle='#e3ad53';ctx.stroke();
+  const c=hot?'#0a3157':'#f8e2aa',r=R*.52,a1=Math.PI*1.65;
+  ctx.lineWidth=Math.max(2,R*.2);ctx.lineCap='round';ctx.strokeStyle=c;ctx.beginPath();ctx.arc(0,0,r,Math.PI*.15,a1);ctx.stroke();
+  const hx=Math.cos(a1)*r,hy=Math.sin(a1)*r,tg=a1+Math.PI/2,hl=R*.42;
+  ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(hx+Math.cos(tg)*hl*.6,hy+Math.sin(tg)*hl*.6);
+  ctx.lineTo(hx+Math.cos(tg+2.3)*hl*.6,hy+Math.sin(tg+2.3)*hl*.6);ctx.lineTo(hx+Math.cos(tg-2.3)*hl*.6,hy+Math.sin(tg-2.3)*hl*.6);ctx.closePath();ctx.fill();
+  ctx.restore();
 }
 function drawPiece(i,cx,cy,cs,alpha){
   const p=pieces[i],b=bounds(p.cells),ox=cx-b.cols*cs/2,oy=cy-b.rows*cs/2;
@@ -396,7 +421,7 @@ function drawHint(now){
   ctx.globalAlpha=fade*.9;ctx.beginPath();ctx.arc(px,fy,cell*.42*press,0,Math.PI*2);ctx.fillStyle='rgba(255,246,229,.55)';ctx.fill();
   ctx.lineWidth=3;ctx.strokeStyle='#fff6e5';ctx.stroke();
   ctx.beginPath();ctx.arc(px,fy,cell*.16,0,Math.PI*2);ctx.fillStyle='#e96749';ctx.fill();ctx.globalAlpha=1;
-  if(!touched)bubble(S.drag);
+  if(!used.some(Boolean))bubble(S.drag); // ilk yerleştirmeye kadar sürükleme ipucu yazısı kalır
 }
 function drawFx(now){
   parts=parts.filter(p=>now-p.t0<p.life);
