@@ -1047,7 +1047,7 @@ function _skyWords(key,values){
   ['missionComboSub',["Türbini art arda hızlandır","Accelerate the turbine repeatedly","タービンを連続加速","터빈을 연속 가속하세요","Turbine mehrfach beschleunigen","Accélérez la turbine à la suite","Acelera la turbina varias veces","Accelera la turbina in serie","Acelere a turbina em sequência","Ускоряйте турбину подряд","टर्बाइन को लगातार तेज करें","Versnel de turbine achter elkaar","سرّع التوربين تباعًا","连续加速涡轮"]],
   ['missionRowsTitle',["5 satır temizle","Clear 5 rows","5列消す","5줄 지우기","5 Reihen löschen","Effacer 5 lignes","Limpia 5 filas","Elimina 5 righe","Limpe 5 linhas","Очистить 5 линий","5 पंक्तियाँ साफ करें","Wis 5 rijen","امسح 5 صفوف","清除5行"]],
   ['missionRowsSub',["Kargo güvertesini boşalt","Clear the cargo deck","貨物デッキを空にする","화물 갑판을 비우세요","Frachtdeck leeren","Videz le pont de chargement","Vacía la cubierta de carga","Svuota il ponte di carico","Esvazie o convés de carga","Освободите грузовую палубу","कार्गो डेक खाली करें","Maak het vrachtdek leeg","أفرغ سطح الشحن","清空货运甲板"]],
-  ['missionScoreTitle',["500 puan kazan","Score 500 points","500点獲得","500점 획득","500 Punkte erzielen","Marquer 500 points","Consigue 500 puntos","Ottieni 500 punti","Marque 500 pontos","Набрать 500 очков","500 अंक बनाएँ","Scoor 500 punten","سجّل 500 نقطة","获得500分"]],
+  ['missionScoreTitle',["1250 puan kazan","Score 1250 points","1250点獲得","1250점 획득","1250 Punkte erzielen","Marquer 1250 points","Consigue 1250 puntos","Ottieni 1250 punti","Marque 1250 pontos","Набрать 1250 очков","1250 अंक बनाएँ","Scoor 1250 punten","سجّل 1250 نقطة","获得1250分"]],
   ['missionScoreSub',["Günlük uçuş rekoruna ulaş","Reach the daily flight record","デイリーフライト記録に到達","일일 비행 기록에 도달하세요","Täglichen Flugrekord erreichen","Atteignez le record de vol quotidien","Alcanza el récord diario de vuelo","Raggiungi il record di volo giornaliero","Alcance o recorde diário de voo","Достигните дневного рекорда","दैनिक उड़ान रिकॉर्ड तक पहुँचें","Behaal het dagelijkse vluchtrecord","حقق رقم الرحلة اليومي","达到每日飞行纪录"]],
   ['rewardReadyCount',["{n} ödül hazır","{n} rewards ready","報酬{n}件を受取可能","보상 {n}개 준비됨","{n} Belohnungen bereit","{n} récompenses prêtes","{n} recompensas listas","{n} premi pronti","{n} recompensas prontas","Наград готово: {n}","{n} इनाम तैयार","{n} beloningen klaar","{n} مكافآت جاهزة","{n}份奖励可领取"]],
   ['allRoutesDone',["Tüm rotalar tamam","All routes complete","全ルート完了","모든 항로 완료","Alle Routen abgeschlossen","Tous les itinéraires terminés","Todas las rutas completadas","Tutte le rotte completate","Todas as rotas concluídas","Все маршруты завершены","सभी मार्ग पूरे","Alle routes voltooid","اكتملت جميع المسارات","所有航线已完成"]],
@@ -2312,7 +2312,7 @@ function renderDailyCard(){
 const SKY_MISSIONS=[
   {id:'combos',goal:5,reward:60,titleKey:'missionComboTitle',subKey:'missionComboSub',icon:'combo'},
   {id:'rows',goal:5,reward:80,titleKey:'missionRowsTitle',subKey:'missionRowsSub',icon:'rows'},
-  {id:'score',goal:500,reward:100,titleKey:'missionScoreTitle',subKey:'missionScoreSub',icon:'score'},
+  {id:'score',goal:1250,reward:100,titleKey:'missionScoreTitle',subKey:'missionScoreSub',icon:'score'},
 ];
 
 function skyMissionState(){
@@ -2460,7 +2460,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.10.14-playable-fx';
+const BUILD_VER='v2026.10.14-score-x2.5';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3683,7 +3683,8 @@ let _invBombsInPlay=0;   // mevcut bombCount içinde envanterden gelen (bonus) b
 // tekrar 2 katına çıkarıldı (aşağıda), bomba/renk patlat XP eşikleri de AYNI
 // oranda (×2) büyütüldü ki kazanma HIZI (oyun süresine göre) değişmesin —
 // sadece görünen sayılar büyüsün, dengesi bozulmasın.
-const BOMB_THRESHOLD=1900,BOMB_MAX_FREE=2,BOMB_MAX_TOTAL=9;
+// 3. TUR (2026-10-14): puan formülü ~×2.5 → eşik 1900→4750 (kazanma hızı aynı).
+const BOMB_THRESHOLD=4750,BOMB_MAX_FREE=2,BOMB_MAX_TOTAL=9;
 let _bombHoldTimer=null,_bombHoldInterval=null,_bombHoldActivated=false;
 
 function updateBombBar(){
@@ -3950,7 +3951,7 @@ function _bombChainCheck(row,col,type){
 // alma aşamasında değil, KULLANIM aşamasında gerekiyor (bombayla birebir aynı
 // desen) — kullanıcı isteği, 2026-07-08.
 let colorBlastXP=0;
-const COLOR_BLAST_THRESHOLD=4800; // bkz. BOMB_THRESHOLD'daki 2026-07-25 notu — aynı ×2 oranı
+const COLOR_BLAST_THRESHOLD=12000; // bkz. BOMB_THRESHOLD notları — 2026-07-25 ×2, 2026-10-14 ×2.5
 function addColorBlastXP(gain){
   if(dead)return;
   if(getColorBlast()>=COLOR_BLAST_MAX)return;
@@ -4115,7 +4116,7 @@ function setScoreDisplay(v){
   const el=document.getElementById('scoreDisplay');
   if(!el)return;
   if(_reducedMotion.matches||document.hidden||v<=_scoreDispVal){_setScoreImmediate(v);return;}
-  const from=_scoreDispVal,to=v,dur=Math.min(700,420+Math.sqrt(to-from)*8),t0=performance.now();
+  const from=_scoreDispVal,to=v,dur=Math.min(380,220+Math.sqrt(to-from)*4),t0=performance.now();
   _scoreTargetVal=to;
   if(_scoreDispRaf!==null)cancelAnimationFrame(_scoreDispRaf);
   function step(now){
@@ -4391,6 +4392,10 @@ function place(pi,row,col){
   const cells=[];
   for(const[dr,dc]of p.shape.cells){grid[row+dr][col+dc]=p.ci+1;cells.push([row+dr,col+dc]);}
   p.placed=true;playTick();vibrate(12);
+  // Yerleştirme puanı: taş başına 10 (playable reklamdaki gibi) — güç eşiklerine sayılmaz
+  score+=cells.length*10;acct.total+=cells.length*10;
+  if(score>best)noteNewBest();
+  setScoreDisplay(score);
   bounce={cells,t0:performance.now()};
   _lastMoveAt=performance.now(); // ipucu sistemi için — her yerleştirmede sıfırlanır
   spawnPlaceDust(cells,p.ci);   // yerleştirme tozu
@@ -4428,7 +4433,10 @@ function place(pi,row,col){
     // tekrar 2 katına çıkarıldı (tot*20→tot*40, bonus 10→20). Kombo çarpanı
     // (min(cm,5)) aynı kaldı — bomba/renk patlat eşikleri de aynı oranda büyütüldü
     // (BOMB_THRESHOLD/COLOR_BLAST_THRESHOLD) ki kazanma hızı değişmesin.
-    const base=tot*40+(tot>1?(tot-1)*20:0),gain=Math.round(base*Math.min(cm,5));
+    // 3. TUR (2026-10-14, kullanıcı isteği: "skor reklamdaki gibi hızlı ve yüksek olsun"):
+    // playable reklamdaki formül — hat×100×kombo + çoklu hat bonusu (~2.5×). Eşikler ve
+    // skor görevi hedefi de ×2.5 büyütüldü.
+    const gain=tot*100*Math.min(cm,5)+(tot>1?tot*50:0);
     score+=gain;acct.total+=gain;
     addBombXP(gain);
     addColorBlastXP(gain); // Renk Patlat SADECE kombodan gelen bu puanla dolar
@@ -5267,7 +5275,7 @@ function showOver(){
   document.getElementById('level-up-flight')?.classList.remove('active');
   clearGameState();
   acct.games++;localStorage.setItem('tm_acct',JSON.stringify(acct));
-  addXP(Math.floor(score/10)+20);
+  addXP(Math.floor(score/25)+20); // 2026-10-14: puan ×2.5 → bölen 10→25 (seviye hızı aynı)
   // "Sonraki oyunda çift XP" — bu oyun bitti, bayrağı temizle (bir dahaki oyun
   // normal XP kazansın, sonsuza kadar aktif kalmasın).
   if(localStorage.getItem('tm_xp_boost')==='1'){
@@ -5345,7 +5353,7 @@ function answerContinue(yes){
 // Skora göre coin ödülü; alabilmek için rewarded reklam izlenmesi gerekir
 // (kullanıcı isteği, 2026-07-08). Reklamsız kullanıcılar direkt alır.
 function coinsFromScore(s){
-  return Math.max(10,Math.min(150,Math.floor((s||0)/40)));
+  return Math.max(10,Math.min(150,Math.floor((s||0)/100))); // 2026-10-14: puan ×2.5 → bölen 40→100 (coin kazancı aynı)
 }
 let _pendingScoreCoins=0,_scoreCoinsClaimed=false;
 function _setupScoreReward(s){
