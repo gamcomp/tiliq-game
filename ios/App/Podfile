@@ -19,6 +19,7 @@ def capacitor_pods
   pod 'CapacitorFirebaseFirestore', :path => '../../node_modules/@capacitor-firebase/firestore'
   pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
   pod 'CapacitorLocalNotifications', :path => '../../node_modules/@capacitor/local-notifications'
+  pod 'AppsflyerCapacitorPlugin', :path => '../../node_modules/appsflyer-capacitor-plugin'
   pod 'TiliqUnityAds', :path => '../../plugins/tiliq-unity-ads'
 end
 

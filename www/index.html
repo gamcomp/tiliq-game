@@ -43,6 +43,7 @@
 <script src="hammer-i18n.js?v=20260909"></script>
 <script src="unity-ads-config.js"></script>
 <script src="unity-ads-provider.js"></script>
+<script src="appsflyer-config.js"></script>
 </head>
 <body data-theme="dark" data-vibe="kingdom" data-visual="sky-harbor">
 <div id="vfx-flash"></div>
@@ -6925,7 +6926,24 @@ const FB_WEB_CLIENT_ID = '158314507461-gok3ji1mum1kofm3g674sm3cn0hl3of8.apps.goo
 let _fbApp=null, _fbAuth=null;
 let _fbAnalytics=null, _fbLogEventFn=null; // gerçek Firebase Analytics (2026-07-08 — bkz. logEvent())
 let _fbAnalyticsInitPromise=null;
+// ── APPSFLYER (2026-10-15) ── Unity Ads kullanıcı edinme kampanyaları kurulum ölçümü
+// (MMP) ister; AppsFlyer bu kurulumları Unity'ye bildirir. Analytics ile aynı anda,
+// yani iOS'ta ATT kararından SONRA başlar. devKey boşsa (appsflyer-config.js) hiç çalışmaz.
+let _afStarted=false;
+async function initAppsFlyer(){
+  if(_afStarted)return;_afStarted=true;
+  const AF=window.Capacitor?.isNativePlatform?.()&&window.Capacitor?.Plugins?.AppsFlyerPlugin;
+  const cfg=window.TILIQ_APPSFLYER||{};
+  if(!AF||!cfg.devKey)return;
+  try{
+    // AB kullanıcılarında UMP/TCF onay metnini okur (onay yoksa kişisel veri paylaşmaz)
+    try{await AF.enableTCFDataCollection({shouldEnableTCFDataCollection:true});}catch(_){}
+    await AF.initSDK({devKey:cfg.devKey,appID:_isIOS?cfg.iosAppId:cfg.androidAppId,isDebug:false,
+      waitForATTUserAuthorization:_isIOS?10:undefined,registerConversionListener:false,registerOnDeepLink:false,minTimeBetweenSessions:6});
+  }catch(e){console.warn('[AppsFlyer]',e);}
+}
 function initFirebaseAnalytics(){
+  initAppsFlyer(); // ATT sonrası tek giriş noktası — bkz. yukarı
   if(_fbAnalyticsInitPromise)return _fbAnalyticsInitPromise;
   _fbAnalyticsInitPromise=(async()=>{
     try{
