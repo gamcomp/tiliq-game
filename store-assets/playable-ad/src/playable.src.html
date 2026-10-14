@@ -74,7 +74,8 @@ const T={
  ar:{score:'النقاط',combo:'كومبو',drag:'اسحب كتلة إلى اللوحة!',rotate:'اضغط للتدوير!',praise:['رائع!','ممتاز!','مذهل!'],endTitle:'أحسنت اللعب!',endSub:'المزيد من الألغاز والكومبو والمكافآت بانتظارك.',cta:'العب مجانًا',retry:'العب مجددًا',install:'تثبيت',yourScore:'نتيجتك'},
  nl:{score:'SCORE',combo:'COMBO',drag:'Sleep een blok naar het bord!',rotate:'Tik om te draaien!',praise:['Top!','Super!','Geweldig!'],endTitle:'Goed gespeeld!',endSub:"Meer puzzels, combo's en beloningen wachten op je.",cta:'GRATIS SPELEN',retry:'Opnieuw',install:'Installeren',yourScore:'Jouw score'}
 };
-const qLang=(location.search.match(/[?&]lang=([a-z]{2})/)||[])[1];
+// Önizleme için dil zorlama: ?lang=xx veya #xx (Unity'de ikisi de yok → cihaz dili)
+const qLang=(location.search.match(/[?&]lang=([a-z]{2})/)||location.hash.match(/^#(?:lang=)?([a-z]{2})$/)||[])[1];
 const LANG=T[qLang]?qLang:(T[(navigator.language||'en').slice(0,2).toLowerCase()]?(navigator.language||'en').slice(0,2).toLowerCase():'en');
 const S=T[LANG];
 document.documentElement.lang=LANG;
