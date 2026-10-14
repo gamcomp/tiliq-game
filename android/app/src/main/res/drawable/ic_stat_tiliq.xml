@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bildirim durum çubuğu simgesi: Tiliq logosundaki blok "T" (beyaz siluet, Android kuralı) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3,2.5h5.5a1,1 0,0 1,1 1v5a1,1 0,0 1,-1 1h-5.5a1,1 0,0 1,-1 -1v-5a1,1 0,0 1,1 -1z
+            M9.25,2.5h5.5a1,1 0,0 1,1 1v5a1,1 0,0 1,-1 1h-5.5a1,1 0,0 1,-1 -1v-5a1,1 0,0 1,1 -1z
+            M15.5,2.5h5.5a1,1 0,0 1,1 1v5a1,1 0,0 1,-1 1h-5.5a1,1 0,0 1,-1 -1v-5a1,1 0,0 1,1 -1z
+            M9.25,10.25h5.5a1,1 0,0 1,1 1v5a1,1 0,0 1,-1 1h-5.5a1,1 0,0 1,-1 -1v-5a1,1 0,0 1,1 -1z
+            M9.25,18h5.5a1,1 0,0 1,1 1v2.5a1,1 0,0 1,-1 1h-5.5a1,1 0,0 1,-1 -1v-2.5a1,1 0,0 1,1 -1z" />
+</vector>

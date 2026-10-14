@@ -15,9 +15,10 @@
   }
   const provider = {
     kind: 'unity',
+    get enabled(){ return ids()?.enabled !== false; },
     get active(){
       const config = ids();
-      return !!(native() && config?.gameId && config?.interstitial &&
+      return !!(provider.enabled && native() && config?.gameId && config?.interstitial &&
         config?.rewarded && config?.banner);
     },
     async initialize(options={}){
@@ -28,7 +29,7 @@
       // silently change Unity's inventory mode.
       await native().initialize({
         gameId: config.gameId,
-        testMode: window.TILIQ_UNITY_ADS.testMode !== false,
+        testMode: (config.testMode ?? window.TILIQ_UNITY_ADS.testMode) !== false,
       });
     },
     // Unity handles its own default consent flow when Developer Consent is not enabled.

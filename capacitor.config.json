@@ -5,6 +5,18 @@
   "server": {
     "androidScheme": "https"
   },
+  "android": {
+    "includePlugins": [
+      "@aparajita/capacitor-secure-storage",
+      "@capacitor-community/in-app-review",
+      "@capacitor-firebase/authentication",
+      "@capacitor-firebase/crashlytics",
+      "@capacitor-firebase/firestore",
+      "@capacitor/app",
+      "@capacitor/local-notifications",
+      "tiliq-unity-ads"
+    ]
+  },
   "ios": {
     "contentInset": "never",
     "backgroundColor": "#F3E4C5",
@@ -14,7 +26,10 @@
   "plugins": {
     "FirebaseAuthentication": {
       "skipNativeAuth": false,
-      "providers": ["google.com", "apple.com"]
+      "providers": [
+        "google.com",
+        "apple.com"
+      ]
     },
     "AdMob": {
       "initializeForTesting": false,
@@ -25,6 +40,10 @@
       "launchShowDuration": 2000,
       "backgroundColor": "#F3E4C5",
       "showSpinner": false
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_tiliq",
+      "iconColor": "#E3AD53"
     }
   }
 }

@@ -151,12 +151,16 @@ try {
     // native reward events: closing early must not grant an optional reward.
     const unityListeners = new Map();
     const unityLoads = [];
+    const unityInitializations = [];
     const unityBridge = {
       addListener: async (name, callback) => {
         unityListeners.set(name, callback);
         return {remove: () => unityListeners.delete(name)};
       },
-      initialize: async ({gameId}) => { unityLoads.push(`game:${gameId}`); },
+      initialize: async (options) => {
+        unityLoads.push(`game:${options.gameId}`);
+        unityInitializations.push(options);
+      },
       prepareRewardVideoAd: async ({adId}) => { unityLoads.push(`rewarded:${adId}`); },
       prepareInterstitial: async ({adId}) => { unityLoads.push(`interstitial:${adId}`); },
       showBanner: async ({adId}) => { unityLoads.push(`banner:${adId}`); },
@@ -167,7 +171,13 @@ try {
     };
     window.Capacitor.getPlatform = () => 'android';
     window.Capacitor.Plugins.TiliqUnityAds = unityBridge;
+    if (!window.TiliqUnityAdsProvider.active) throw new Error('Android release ads are disabled or missing IDs');
+    await window.TiliqUnityAdsProvider.initialize({initializeForTesting:true});
+    if (unityInitializations[0].gameId !== '800393804' || unityInitializations[0].testMode !== false) {
+      throw new Error('Android release must request live inventory for its own Game ID');
+    }
     Object.assign(window.TILIQ_UNITY_ADS.android, {
+      enabled: true,
       gameId: 'android-game', interstitial: 'android-inter',
       rewarded: 'android-reward', banner: 'android-banner',
     });
@@ -230,6 +240,10 @@ try {
     window.Capacitor.getPlatform = () => 'ios';
     const iosUnityActive = window.TiliqUnityAdsProvider.active;
     await window.TiliqUnityAdsProvider.initialize();
+    const iosInitialization = unityInitializations.at(-1);
+    if (iosInitialization.gameId !== '800374323' || iosInitialization.testMode !== true) {
+      throw new Error('Android inventory change affected the existing iOS configuration');
+    }
     await window.TiliqUnityAdsProvider.prepareRewardVideoAd();
     await window.TiliqUnityAdsProvider.prepareInterstitial();
     await window.TiliqUnityAdsProvider.showBanner();

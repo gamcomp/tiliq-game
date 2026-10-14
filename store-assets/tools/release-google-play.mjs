@@ -20,7 +20,7 @@ const track = valueAfter('--track') || 'production';
 const shouldCommit = args.includes('--commit');
 const shouldCheckPermission = args.includes('--check-permission');
 const shouldReadStatus = args.includes('--status');
-const TEST_TRACK_ONLY_VERSION_CODES = new Set([152]);
+const TEST_TRACK_ONLY_VERSION_CODES = new Set([152, 157, 158]);
 
 if (!credentialsPath) throw new Error('Pass --credentials <service-account.json>.');
 if (!shouldReadStatus && !shouldCheckPermission && ((!bundlePath && !existingVersionCode) || !shouldCommit)) {

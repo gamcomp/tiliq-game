@@ -139,6 +139,7 @@ jobs:
             pod 'CapacitorFirebaseCrashlytics', :path => '../../node_modules/@capacitor-firebase/crashlytics'
             pod 'CapacitorFirebaseFirestore', :path => '../../node_modules/@capacitor-firebase/firestore'
             pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+            pod 'CapacitorLocalNotifications', :path => '../../node_modules/@capacitor/local-notifications'
             pod 'AparajitaCapacitorSecureStorage', :path => '../../node_modules/@aparajita/capacitor-secure-storage'
             pod 'TiliqUnityAds', :path => '../../plugins/tiliq-unity-ads'
           end

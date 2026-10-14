@@ -1,3 +1,19 @@
+# Preserve actionable crash traces; Capacitor and Unity ship their own consumer rules.
+-keepattributes SourceFile,LineNumberTable
+
+# Facebook sign-in is not configured or packaged. Firebase Auth's optional
+# provider handler references these types behind its disabled-provider guard.
+-dontwarn com.facebook.CallbackManager
+-dontwarn com.facebook.CallbackManager$Factory
+-dontwarn com.facebook.FacebookCallback
+-dontwarn com.facebook.login.LoginManager
+-dontwarn com.facebook.login.widget.LoginButton
+
+# JavaScript bridges are invoked by WebView rather than ordinary Java calls.
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
 # Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.

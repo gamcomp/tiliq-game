@@ -1,14 +1,15 @@
 // Fill these values from Unity Monetization > Apps > Tiliq > Network/Placements.
 // Empty IDs keep the existing ad-disabled fallback active.
 window.TILIQ_UNITY_ADS = {
-  // TestFlight verification build. Keep test inventory enabled so device tests
-  // never create live impressions; switch this to false for the store release.
+  // Default for platforms without an override; retain the current iOS test setup.
   testMode: true,
   android: {
-    gameId: '',
-    interstitial: '',
-    rewarded: '',
-    banner: '',
+    enabled: true,
+    testMode: false,
+    gameId: '800393804',
+    interstitial: 'BP_Interstitial_Android',
+    rewarded: 'BP_Rewarded_Android',
+    banner: 'BP_Banner_Android',
   },
   ios: {
     gameId: '800374323',
