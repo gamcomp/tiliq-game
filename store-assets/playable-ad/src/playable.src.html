@@ -59,20 +59,20 @@ const MAX_PLAY_MS=40000; // en geç bu süreden sonra bitiş kartı
 
 // ── 14 dil ──────────────────────────────────────────────────────
 const T={
- tr:{score:'SKOR',combo:'KOMBO',drag:'Bloğu tahtaya sürükle!',praise:['Harika!','Süper!','Muhteşem!'],endTitle:'Harika oynadın!',endSub:'Daha fazla bulmaca, kombo ve ödül seni bekliyor.',cta:'ÜCRETSİZ OYNA',retry:'Tekrar oyna',install:'İndir',yourScore:'Skorun'},
- en:{score:'SCORE',combo:'COMBO',drag:'Drag a block onto the board!',praise:['Great!','Super!','Amazing!'],endTitle:'Nicely played!',endSub:'More puzzles, combos and rewards are waiting.',cta:'PLAY FREE',retry:'Play again',install:'Install',yourScore:'Your score'},
- de:{score:'PUNKTE',combo:'COMBO',drag:'Zieh einen Block aufs Brett!',praise:['Klasse!','Super!','Fantastisch!'],endTitle:'Stark gespielt!',endSub:'Mehr Rätsel, Combos und Belohnungen warten.',cta:'GRATIS SPIELEN',retry:'Nochmal',install:'Laden',yourScore:'Dein Score'},
- fr:{score:'SCORE',combo:'COMBO',drag:'Glisse un bloc sur le plateau !',praise:['Génial !','Super !','Incroyable !'],endTitle:'Bien joué !',endSub:"Plus de puzzles, de combos et de récompenses t'attendent.",cta:'JOUER GRATUITEMENT',retry:'Rejouer',install:'Installer',yourScore:'Ton score'},
- es:{score:'PUNTOS',combo:'COMBO',drag:'¡Arrastra un bloque al tablero!',praise:['¡Genial!','¡Súper!','¡Increíble!'],endTitle:'¡Bien jugado!',endSub:'Más puzles, combos y recompensas te esperan.',cta:'JUGAR GRATIS',retry:'Jugar otra vez',install:'Instalar',yourScore:'Tu puntuación'},
- it:{score:'PUNTI',combo:'COMBO',drag:'Trascina un blocco sulla griglia!',praise:['Grande!','Super!','Incredibile!'],endTitle:'Ben giocato!',endSub:'Altri puzzle, combo e premi ti aspettano.',cta:'GIOCA GRATIS',retry:'Gioca ancora',install:'Installa',yourScore:'Il tuo punteggio'},
- pt:{score:'PONTOS',combo:'COMBO',drag:'Arraste um bloco para o tabuleiro!',praise:['Ótimo!','Super!','Incrível!'],endTitle:'Mandou bem!',endSub:'Mais quebra-cabeças, combos e prêmios te esperam.',cta:'JOGUE GRÁTIS',retry:'Jogar de novo',install:'Instalar',yourScore:'Sua pontuação'},
- ru:{score:'ОЧКИ',combo:'КОМБО',drag:'Перетащи блок на поле!',praise:['Отлично!','Супер!','Потрясающе!'],endTitle:'Отличная игра!',endSub:'Тебя ждут новые головоломки, комбо и награды.',cta:'ИГРАТЬ БЕСПЛАТНО',retry:'Ещё раз',install:'Скачать',yourScore:'Твой счёт'},
- ja:{score:'スコア',combo:'コンボ',drag:'ブロックを盤面にドラッグ！',praise:['いいね！','すごい！','最高！'],endTitle:'ナイスプレイ！',endSub:'もっと多くのパズル、コンボ、報酬が待っています。',cta:'無料でプレイ',retry:'もう一度',install:'インストール',yourScore:'あなたのスコア'},
- ko:{score:'점수',combo:'콤보',drag:'블록을 보드로 드래그하세요!',praise:['좋아요!','대단해요!','놀라워요!'],endTitle:'멋진 플레이!',endSub:'더 많은 퍼즐과 콤보, 보상이 기다리고 있어요.',cta:'무료로 플레이',retry:'다시 하기',install:'설치',yourScore:'내 점수'},
- zh:{score:'得分',combo:'连击',drag:'把方块拖到棋盘上！',praise:['不错！','太棒了！','完美！'],endTitle:'玩得漂亮！',endSub:'更多谜题、连击和奖励等着你。',cta:'免费畅玩',retry:'再玩一次',install:'安装',yourScore:'你的得分'},
- hi:{score:'स्कोर',combo:'कॉम्बो',drag:'ब्लॉक को बोर्ड पर खींचें!',praise:['बढ़िया!','शानदार!','कमाल!'],endTitle:'बहुत बढ़िया खेला!',endSub:'और पहेलियाँ, कॉम्बो और इनाम आपका इंतज़ार कर रहे हैं।',cta:'मुफ़्त खेलें',retry:'फिर से खेलें',install:'इंस्टॉल करें',yourScore:'आपका स्कोर'},
- ar:{score:'النقاط',combo:'كومبو',drag:'اسحب كتلة إلى اللوحة!',praise:['رائع!','ممتاز!','مذهل!'],endTitle:'أحسنت اللعب!',endSub:'المزيد من الألغاز والكومبو والمكافآت بانتظارك.',cta:'العب مجانًا',retry:'العب مجددًا',install:'تثبيت',yourScore:'نتيجتك'},
- nl:{score:'SCORE',combo:'COMBO',drag:'Sleep een blok naar het bord!',praise:['Top!','Super!','Geweldig!'],endTitle:'Goed gespeeld!',endSub:"Meer puzzels, combo's en beloningen wachten op je.",cta:'GRATIS SPELEN',retry:'Opnieuw',install:'Installeren',yourScore:'Jouw score'}
+ tr:{score:'SKOR',combo:'KOMBO',drag:'Bloğu tahtaya sürükle!',rotate:'Döndürmek için dokun!',praise:['Harika!','Süper!','Muhteşem!'],endTitle:'Harika oynadın!',endSub:'Daha fazla bulmaca, kombo ve ödül seni bekliyor.',cta:'ÜCRETSİZ OYNA',retry:'Tekrar oyna',install:'İndir',yourScore:'Skorun'},
+ en:{score:'SCORE',combo:'COMBO',drag:'Drag a block onto the board!',rotate:'Tap to rotate!',praise:['Great!','Super!','Amazing!'],endTitle:'Nicely played!',endSub:'More puzzles, combos and rewards are waiting.',cta:'PLAY FREE',retry:'Play again',install:'Install',yourScore:'Your score'},
+ de:{score:'PUNKTE',combo:'COMBO',drag:'Zieh einen Block aufs Brett!',rotate:'Tippen zum Drehen!',praise:['Klasse!','Super!','Fantastisch!'],endTitle:'Stark gespielt!',endSub:'Mehr Rätsel, Combos und Belohnungen warten.',cta:'GRATIS SPIELEN',retry:'Nochmal',install:'Laden',yourScore:'Dein Score'},
+ fr:{score:'SCORE',combo:'COMBO',drag:'Glisse un bloc sur le plateau !',rotate:'Touche pour pivoter !',praise:['Génial !','Super !','Incroyable !'],endTitle:'Bien joué !',endSub:"Plus de puzzles, de combos et de récompenses t'attendent.",cta:'JOUER GRATUITEMENT',retry:'Rejouer',install:'Installer',yourScore:'Ton score'},
+ es:{score:'PUNTOS',combo:'COMBO',drag:'¡Arrastra un bloque al tablero!',rotate:'¡Toca para girar!',praise:['¡Genial!','¡Súper!','¡Increíble!'],endTitle:'¡Bien jugado!',endSub:'Más puzles, combos y recompensas te esperan.',cta:'JUGAR GRATIS',retry:'Jugar otra vez',install:'Instalar',yourScore:'Tu puntuación'},
+ it:{score:'PUNTI',combo:'COMBO',drag:'Trascina un blocco sulla griglia!',rotate:'Tocca per ruotare!',praise:['Grande!','Super!','Incredibile!'],endTitle:'Ben giocato!',endSub:'Altri puzzle, combo e premi ti aspettano.',cta:'GIOCA GRATIS',retry:'Gioca ancora',install:'Installa',yourScore:'Il tuo punteggio'},
+ pt:{score:'PONTOS',combo:'COMBO',drag:'Arraste um bloco para o tabuleiro!',rotate:'Toque para girar!',praise:['Ótimo!','Super!','Incrível!'],endTitle:'Mandou bem!',endSub:'Mais quebra-cabeças, combos e prêmios te esperam.',cta:'JOGUE GRÁTIS',retry:'Jogar de novo',install:'Instalar',yourScore:'Sua pontuação'},
+ ru:{score:'ОЧКИ',combo:'КОМБО',drag:'Перетащи блок на поле!',rotate:'Нажми, чтобы повернуть!',praise:['Отлично!','Супер!','Потрясающе!'],endTitle:'Отличная игра!',endSub:'Тебя ждут новые головоломки, комбо и награды.',cta:'ИГРАТЬ БЕСПЛАТНО',retry:'Ещё раз',install:'Скачать',yourScore:'Твой счёт'},
+ ja:{score:'スコア',combo:'コンボ',drag:'ブロックを盤面にドラッグ！',rotate:'タップで回転！',praise:['いいね！','すごい！','最高！'],endTitle:'ナイスプレイ！',endSub:'もっと多くのパズル、コンボ、報酬が待っています。',cta:'無料でプレイ',retry:'もう一度',install:'インストール',yourScore:'あなたのスコア'},
+ ko:{score:'점수',combo:'콤보',drag:'블록을 보드로 드래그하세요!',rotate:'탭해서 회전!',praise:['좋아요!','대단해요!','놀라워요!'],endTitle:'멋진 플레이!',endSub:'더 많은 퍼즐과 콤보, 보상이 기다리고 있어요.',cta:'무료로 플레이',retry:'다시 하기',install:'설치',yourScore:'내 점수'},
+ zh:{score:'得分',combo:'连击',drag:'把方块拖到棋盘上！',rotate:'点击旋转！',praise:['不错！','太棒了！','完美！'],endTitle:'玩得漂亮！',endSub:'更多谜题、连击和奖励等着你。',cta:'免费畅玩',retry:'再玩一次',install:'安装',yourScore:'你的得分'},
+ hi:{score:'स्कोर',combo:'कॉम्बो',drag:'ब्लॉक को बोर्ड पर खींचें!',rotate:'घुमाने के लिए टैप करें!',praise:['बढ़िया!','शानदार!','कमाल!'],endTitle:'बहुत बढ़िया खेला!',endSub:'और पहेलियाँ, कॉम्बो और इनाम आपका इंतज़ार कर रहे हैं।',cta:'मुफ़्त खेलें',retry:'फिर से खेलें',install:'इंस्टॉल करें',yourScore:'आपका स्कोर'},
+ ar:{score:'النقاط',combo:'كومبو',drag:'اسحب كتلة إلى اللوحة!',rotate:'اضغط للتدوير!',praise:['رائع!','ممتاز!','مذهل!'],endTitle:'أحسنت اللعب!',endSub:'المزيد من الألغاز والكومبو والمكافآت بانتظارك.',cta:'العب مجانًا',retry:'العب مجددًا',install:'تثبيت',yourScore:'نتيجتك'},
+ nl:{score:'SCORE',combo:'COMBO',drag:'Sleep een blok naar het bord!',rotate:'Tik om te draaien!',praise:['Top!','Super!','Geweldig!'],endTitle:'Goed gespeeld!',endSub:"Meer puzzels, combo's en beloningen wachten op je.",cta:'GRATIS SPELEN',retry:'Opnieuw',install:'Installeren',yourScore:'Jouw score'}
 };
 const qLang=(location.search.match(/[?&]lang=([a-z]{2})/)||[])[1];
 const LANG=T[qLang]?qLang:(T[(navigator.language||'en').slice(0,2).toLowerCase()]?(navigator.language||'en').slice(0,2).toLowerCase():'en');
@@ -97,22 +97,25 @@ const START=[
  '115552..',
  '144332..',
  '22...441'];
+// goal: hedefe sığan yön. Kırmızı J ters gelir; bir kez döndürülünce (saat yönü) oturur —
+// oyundaki "parçayı döndür" özelliğini reklamda gösterir.
 const TRAY=[
- {cells:[[0,0],[0,1],[0,2]],c:3,target:[7,2]},        // turkuaz I3 → alt satır
- {cells:[[0,0],[0,1],[1,0],[1,1]],c:4,target:[5,6]},  // sarı kare → iki satır
- {cells:[[0,0],[1,0],[1,1],[1,2]],c:1,target:[3,5]}]; // kırmızı J → iki satır
+ {cells:[[0,0],[0,1],[0,2]],goal:[[0,0],[0,1],[0,2]],c:3,target:[7,2]},                // turkuaz I3 → alt satır
+ {cells:[[0,0],[0,1],[1,0],[1,1]],goal:[[0,0],[0,1],[1,0],[1,1]],c:4,target:[5,6]},    // sarı kare → iki satır
+ {cells:[[0,1],[1,1],[2,0],[2,1]],goal:[[0,0],[1,0],[1,1],[1,2]],c:1,target:[3,5]}];   // kırmızı J (döndür) → iki satır
 
 const reduced=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 const cv=$('cv'),ctx=cv.getContext('2d');
 let W=0,H=0,dpr=1,L=null;
-let grid,used,score,shown,combo,state,drag,fx,parts,texts,ribbon,shake,lastAct,touched,startAt,endTimer;
+let grid,used,score,shown,combo,state,drag,fx,parts,texts,ribbon,shake,lastAct,touched,startAt,endTimer,pieces,rotAnim;
 
 const bg=new Image();bg.src=BG_SRC;
 const icon=new Image();icon.src=ICON_SRC;$('endIcon').src=ICON_SRC;
 
 function reset(){
   grid=START.map(row=>[...row].map(ch=>ch==='.'?0:+ch));
-  used=[false,false,false];score=0;shown=0;combo=0;state='play';drag=null;
+  used=[false,false,false];score=0;shown=0;combo=0;state='play';drag=null;rotAnim=null;
+  pieces=TRAY.map(p=>({...p,cells:p.cells.map(x=>x.slice())}));
   fx=[];parts=[];texts=[];ribbon=null;shake=0;touched=false;
   lastAct=performance.now();startAt=lastAct;
   clearTimeout(endTimer);endTimer=setTimeout(showEnd,MAX_PLAY_MS);
@@ -188,9 +191,9 @@ function fullLines(extra){
   for(let i=0;i<GRID;i++){let rf=true,cf=true;for(let j=0;j<GRID;j++){if(!f(i,j))rf=false;if(!f(j,i))cf=false;}if(rf)rows.push(i);if(cf)cols.push(i);}
   return{rows,cols};
 }
-function anyFits(){for(let i=0;i<3;i++){if(used[i])continue;for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++)if(fits(TRAY[i].cells,r,c))return true;}return false;}
-function snap(px,py){
-  const p=TRAY[drag.i],b=bounds(p.cells),cs=L.cell;
+function anyFits(){for(let i=0;i<3;i++){if(used[i])continue;for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++)if(fits(pieces[i].cells,r,c))return true;}return false;}
+function snap(px,py,pi){
+  const p=pieces[pi??drag.i],b=bounds(p.cells),cs=L.cell;
   const x=px-b.cols*cs/2,y=py-lift()-b.rows*cs/2;
   const c=Math.round((x-L.bx)/cs),r=Math.round((y-L.by)/cs);
   return{r,c,ok:fits(p.cells,r,c)};
@@ -198,7 +201,7 @@ function snap(px,py){
 function lift(){return L.cell*1.5;}
 
 function place(i,r0,c0){
-  const p=TRAY[i],now=performance.now();used[i]=true;
+  const p=pieces[i],now=performance.now();used[i]=true;
   for(const[r,c]of p.cells)grid[r0+r][c0+c]=p.c;
   score+=p.cells.length*10;sfxPlace();
   const{rows,cols}=fullLines(),n=rows.length+cols.length;
@@ -249,6 +252,7 @@ function tone(f,dur,type,vol,delay){
 }
 function sfxPlace(){tone(320,.08,'triangle',.18);tone(110,.12,'sine',.22);}
 function sfxClear(n,k){const s=[523,659,784,988,1175,1319];const up=Math.min(2,k-1);for(let i=0;i<3+n;i++)tone(s[Math.min(5,i+up)],.45,'triangle',.09,i*.055);}
+function sfxRotate(){tone(520,.06,'triangle',.12);tone(780,.08,'triangle',.08,.04);}
 function sfxEnd(){[523,659,784,1047].forEach((f,i)=>tone(f,.6,'sine',.1,i*.09));}
 function pauseAudio(p){if(ac)(p?ac.suspend():ac.resume()).catch(()=>{});}
 document.addEventListener('visibilitychange',()=>pauseAudio(document.hidden));
@@ -257,13 +261,19 @@ document.addEventListener('visibilitychange',()=>pauseAudio(document.hidden));
 function slotAt(x,y){return L.slots.findIndex((s,i)=>!used[i]&&x>=s.x&&x<=s.x+s.w&&y>=s.y-10&&y<=s.y+s.h+10);}
 cv.addEventListener('pointerdown',e=>{
   audio();if(state!=='play')return;const i=slotAt(e.clientX,e.clientY);if(i<0)return;
-  touched=true;lastAct=performance.now();drag={i,x:e.clientX,y:e.clientY,t0:lastAct};
+  touched=true;lastAct=performance.now();drag={i,x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,t0:lastAct,moved:false};
   try{cv.setPointerCapture(e.pointerId);}catch(_){}
 });
-cv.addEventListener('pointermove',e=>{if(drag){drag.x=e.clientX;drag.y=e.clientY;}});
+cv.addEventListener('pointermove',e=>{if(drag){drag.x=e.clientX;drag.y=e.clientY;if(Math.hypot(drag.x-drag.sx,drag.y-drag.sy)>10)drag.moved=true;}});
+// Dokun = döndür (oyundaki gibi saat yönünde), sürükle = yerleştir
+function rotateCW(cells){const b=bounds(cells);return cells.map(([r,c])=>[c,b.rows-1-r]);}
+const shapeKey=cells=>cells.map(x=>x.join(',')).sort().join(';');
+function rotatePiece(i){pieces[i].cells=rotateCW(pieces[i].cells);rotAnim={i,t0:performance.now()};lastAct=rotAnim.t0;sfxRotate();}
 function release(){
-  if(!drag)return;const s=snap(drag.x,drag.y),i=drag.i;drag=null;lastAct=performance.now();
-  if(s.ok&&state==='play')place(i,s.r,s.c);
+  if(!drag)return;const d=drag;drag=null;lastAct=performance.now();
+  if(!d.moved){if(lastAct-d.t0<450&&state==='play')rotatePiece(d.i);return;}
+  const s=snap(d.x,d.y,d.i);
+  if(s.ok&&state==='play')place(d.i,s.r,s.c);
 }
 cv.addEventListener('pointerup',release);cv.addEventListener('pointercancel',()=>{drag=null;});
 
@@ -295,7 +305,7 @@ function drawBoard(now){
   const{x,y,size,cell,bx,by}=L;
   brassPanel(x,y,size,size,size*.035,'#d9bf8c');
   const pre=new Set();let preview=null;
-  if(drag){const s=snap(drag.x,drag.y);if(s.ok){preview=s;for(const[r,c]of TRAY[drag.i].cells)pre.add((s.r+r)*GRID+s.c+c);}}
+  if(drag&&drag.moved){const s=snap(drag.x,drag.y);if(s.ok){preview=s;for(const[r,c]of pieces[drag.i].cells)pre.add((s.r+r)*GRID+s.c+c);}}
   const lines=preview?fullLines(pre):{rows:[],cols:[]};
   for(let r=0;r<GRID;r++)for(let c=0;c<GRID;c++){
     const cx=bx+c*cell,cy=by+r*cell,s=cell-2;
@@ -304,7 +314,7 @@ function drawBoard(now){
     const v=grid[r][c];if(v)drawTile(v-1,cx+1,cy+1,s);
   }
   if(preview){
-    const ci=TRAY[drag.i].c-1;
+    const ci=pieces[drag.i].c-1;
     for(const k of pre)drawTile(ci,bx+(k%GRID)*cell+1,by+(k/GRID|0)*cell+1,cell-2,.42);
     ctx.globalAlpha=.75+Math.sin(now*.008)*.2;ctx.lineWidth=3;ctx.strokeStyle='#bb762d';ctx.fillStyle='rgba(248,226,170,.28)';
     for(const r of lines.rows){rr(ctx,bx,by+r*cell,cell*GRID,cell,cell*.18);ctx.fill();ctx.stroke();}
@@ -316,29 +326,67 @@ function drawBoard(now){
   for(const f of fx){const p=Math.max(0,(now-f.t0)/380),k=p<.3?1+p*.5:1.15*(1-(p-.3)/.7);drawTile(f.ci,bx+f.c*cell+1,by+f.r*cell+1,cell-2,1-p*p,Math.max(.01,k));
     if(p>0&&p<.6){ctx.globalAlpha=(.6-p)*1.4;rr(ctx,bx+f.c*cell+1,by+f.r*cell+1,cell-2,cell-2,cell*.14);ctx.fillStyle='#fff6e5';ctx.fill();ctx.globalAlpha=1;}}
 }
-function drawTray(){
+function drawTray(now){
   L.slots.forEach((s,i)=>{
     brassPanel(s.x,s.y,s.w,s.h,Math.min(s.w,s.h)*.12,'navy');
-    if(used[i]||(drag&&drag.i===i))return;
-    const p=TRAY[i],b=bounds(p.cells),cs=Math.min(s.w*.75/Math.max(3,b.cols),s.h*.75/Math.max(2,b.rows),L.cell*.62);
+    if(used[i]||(drag&&drag.moved&&drag.i===i))return;
+    const p=pieces[i],b=bounds(p.cells),cs=Math.min(s.w*.75/Math.max(3,b.cols),s.h*.75/Math.max(3,b.rows),L.cell*.62);
     const ox=s.x+(s.w-b.cols*cs)/2,oy=s.y+(s.h-b.rows*cs)/2;
+    // döndürme animasyonu: yeni yön 90° geriden başlayıp yerine oturur
+    const ra=rotAnim&&rotAnim.i===i&&!reduced?Math.min(1,(now-rotAnim.t0)/200):1;
+    ctx.save();
+    if(ra<1){const cx=s.x+s.w/2,cy=s.y+s.h/2;ctx.translate(cx,cy);ctx.rotate(-(1-ease(ra))*Math.PI/2);ctx.translate(-cx,-cy);}
     for(const[r,c]of p.cells)drawTile(p.c-1,ox+c*cs+1,oy+r*cs+1,cs-2);
+    ctx.restore();
   });
 }
 function drawPiece(i,cx,cy,cs,alpha){
-  const p=TRAY[i],b=bounds(p.cells),ox=cx-b.cols*cs/2,oy=cy-b.rows*cs/2;
+  const p=pieces[i],b=bounds(p.cells),ox=cx-b.cols*cs/2,oy=cy-b.rows*cs/2;
   ctx.save();if(!reduced){ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=12;ctx.shadowOffsetY=6;}
   for(const[r,c]of p.cells)drawTile(p.c-1,ox+c*cs+1,oy+r*cs+1,cs-2,alpha);
   ctx.restore();
 }
-function hintPiece(){for(let i=0;i<3;i++){if(used[i])continue;const[t0,t1]=TRAY[i].target;if(fits(TRAY[i].cells,t0,t1))return i;}return -1;}
+// Sıradaki ipucu: yönü yanlışsa "dokun, döndür", doğruysa ve sığıyorsa "sürükle"
+function hintPiece(){
+  for(let i=0;i<3;i++){
+    if(used[i])continue;const p=pieces[i];
+    if(shapeKey(p.cells)!==shapeKey(p.goal))return{i,mode:'rotate'};
+    if(fits(p.cells,p.target[0],p.target[1]))return{i,mode:'drag'};
+  }
+  return null;
+}
+function bubble(text){
+  const cell=L.cell,fs=fitSize(text,cell*.42,L.size*.85);
+  ctx.font=`900 ${fs}px "Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif`;
+  const bxw=ctx.measureText(text).width+cell*.8,bh=fs*1.8,byy=L.by+cell-bh/2; // başlangıçta boş olan üst satırların üzerinde
+  brassPanel(L.x+L.size/2-bxw/2,byy,bxw,bh,bh/2,'navy');label(text,L.x+L.size/2,byy+bh/2,fs,'#fff6e5');
+}
+function drawRotateHint(i,now,idle){
+  const s=L.slots[i],cx=s.x+s.w/2,cy=s.y+s.h/2,R=Math.min(s.w,s.h)*.46,t=(idle%1100)/1100,cell=L.cell;
+  // dönen pirinç ok
+  const spin=reduced?0:now*.0025,a0=spin-.4,a1=spin+Math.PI*1.35;
+  ctx.save();ctx.lineCap='round';ctx.strokeStyle='#e3ad53';ctx.lineWidth=Math.max(3,R*.09);
+  ctx.beginPath();ctx.arc(cx,cy,R,a0,a1);ctx.stroke();
+  const hx=cx+Math.cos(a1)*R,hy=cy+Math.sin(a1)*R,tg=a1+Math.PI/2,hl=R*.28;
+  ctx.fillStyle='#e3ad53';ctx.beginPath();ctx.moveTo(hx+Math.cos(tg)*hl,hy+Math.sin(tg)*hl);
+  ctx.lineTo(hx+Math.cos(tg+2.5)*hl*.75,hy+Math.sin(tg+2.5)*hl*.75);ctx.lineTo(hx+Math.cos(tg-2.5)*hl*.75,hy+Math.sin(tg-2.5)*hl*.75);ctx.closePath();ctx.fill();
+  // parmak dokunuşu: basınca küçülür, dalga halkası yayılır
+  const press=t<.25?1-t/.25*.25:t<.4?.75+(t-.25)/.15*.25:1;
+  ctx.globalAlpha=.92;ctx.beginPath();ctx.arc(cx,cy,cell*.42*press,0,Math.PI*2);ctx.fillStyle='rgba(255,246,229,.55)';ctx.fill();
+  ctx.lineWidth=3;ctx.strokeStyle='#fff6e5';ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,cell*.16,0,Math.PI*2);ctx.fillStyle='#e96749';ctx.fill();
+  if(t>.25&&t<.75&&!reduced){const w=(t-.25)/.5;ctx.globalAlpha=(1-w)*.8;ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,cell*(.45+w*.7),0,Math.PI*2);ctx.strokeStyle='#fff6e5';ctx.stroke();}
+  ctx.restore();ctx.globalAlpha=1;
+  bubble(S.rotate);
+}
 function drawHint(now){
   if(state!=='play'||drag)return;
-  const idle=now-lastAct;if(idle<(touched?3500:500))return;
-  const i=hintPiece();if(i<0)return;
-  const p=TRAY[i],b=bounds(p.cells),s=L.slots[i],cell=L.cell;
+  const h=hintPiece();if(!h)return;
+  const wait=h.mode==='rotate'?(touched?1200:500):(touched?3500:500),idle=now-lastAct;if(idle<wait)return;
+  if(h.mode==='rotate'){drawRotateHint(h.i,now,idle-wait);return;}
+  const i=h.i,p=pieces[i],b=bounds(p.cells),s=L.slots[i],cell=L.cell;
   const from={x:s.x+s.w/2,y:s.y+s.h/2},to={x:L.bx+(p.target[1]+b.cols/2)*cell,y:L.by+(p.target[0]+b.rows/2)*cell};
-  const cyc=1900,t=((idle-(touched?3500:500))%cyc)/cyc;
+  const cyc=1900,t=((idle-wait)%cyc)/cyc;
   const m=t<.18?0:t<.72?ease((t-.18)/.54):1,fade=t>.86?1-(t-.86)/.14:Math.min(1,t/.1);
   const px=from.x+(to.x-from.x)*m,py=from.y+(to.y-from.y)*m;
   ctx.globalAlpha=fade;drawPiece(i,px,py,cell,.6*fade);
@@ -347,12 +395,7 @@ function drawHint(now){
   ctx.globalAlpha=fade*.9;ctx.beginPath();ctx.arc(px,fy,cell*.42*press,0,Math.PI*2);ctx.fillStyle='rgba(255,246,229,.55)';ctx.fill();
   ctx.lineWidth=3;ctx.strokeStyle='#fff6e5';ctx.stroke();
   ctx.beginPath();ctx.arc(px,fy,cell*.16,0,Math.PI*2);ctx.fillStyle='#e96749';ctx.fill();ctx.globalAlpha=1;
-  if(!touched){ // başlangıç tahtasında boş olan üst iki satırın üzerinde
-    const fs=fitSize(S.drag,cell*.42,L.size*.85);
-    ctx.font=`900 ${fs}px "Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif`;
-    const bxw=ctx.measureText(S.drag).width+cell*.8,bh=fs*1.8,byy=L.by+cell-bh/2;
-    brassPanel(L.x+L.size/2-bxw/2,byy,bxw,bh,bh/2,'navy');label(S.drag,L.x+L.size/2,byy+bh/2,fs,'#fff6e5');
-  }
+  if(!touched)bubble(S.drag);
 }
 function drawFx(now){
   parts=parts.filter(p=>now-p.t0<p.life);
@@ -375,8 +418,8 @@ function frame(now){
   ctx.save();
   drawBg();
   if(shake>.2){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.85;}
-  drawHud(now);drawBoard(now);drawTray();drawFx(now);drawHint(now);
-  if(drag){const b=bounds(TRAY[drag.i].cells);drawPiece(drag.i,drag.x,drag.y-lift(),L.cell);}
+  drawHud(now);drawBoard(now);drawTray(now);drawFx(now);drawHint(now);
+  if(drag&&drag.moved)drawPiece(drag.i,drag.x,drag.y-lift(),L.cell);
   ctx.restore();
 }
 
