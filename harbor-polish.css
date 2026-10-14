@@ -87,6 +87,15 @@ html.harbor-low-motion #screen-menu .btn-play::after {animation:none!important;}
 .audio-level-row input {width:100%;height:44px;margin:0;accent-color:var(--cq-gold-500);cursor:pointer;}
 .audio-level-row input:disabled {opacity:.35;cursor:default;}
 .audio-level-row output {font-variant-numeric:tabular-nums;text-align:end;}
+/* Müzik parçası seçici (2026-10-14) — seviye satırıyla aynı hizada, pirinç çerçeveli lacivert kutu */
+.music-track-row {grid-template-columns:auto minmax(0,1fr);}
+.music-track-row select {
+  width:100%;min-height:44px;padding:0 34px 0 12px;border-radius:12px;border:1.5px solid var(--cq-gold-line);
+  background:var(--cq-blue-900) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23e3ad53' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;
+  color:var(--cq-ivory);font:inherit;font-size:14px;font-weight:700;appearance:none;-webkit-appearance:none;cursor:pointer;text-overflow:ellipsis;
+}
+.music-track-row select option {background:var(--cq-blue-950);color:var(--cq-ivory);}
+.music-track-row select:disabled {opacity:.35;cursor:default;}
 button:focus-visible,input:focus-visible {outline:3px solid var(--cq-gold-300);outline-offset:3px;}
 #screen-menu .btn-play {isolation:isolate;}
 #screen-menu .btn-play::after {

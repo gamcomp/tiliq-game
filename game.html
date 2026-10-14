@@ -37,8 +37,9 @@
 </script>
 <link rel="icon" type="image/png" href="assets/sky-harbor/tiliq-app-icon.png">
 <link rel="stylesheet" href="crown-quest.css?v=20260921-hammer-fit">
-<link rel="stylesheet" href="harbor-polish.css?v=20260909">
+<link rel="stylesheet" href="harbor-polish.css?v=20261014">
 <script src="harbor-polish.js?v=20261014"></script>
+<script src="tiliq-music.js?v=20261014"></script>
 <script src="hammer-i18n.js?v=20260909"></script>
 <script src="unity-ads-config.js"></script>
 <script src="unity-ads-provider.js"></script>
@@ -478,6 +479,10 @@
           <label for="music-level" data-t="volume">Ses Seviyesi</label>
           <input type="range" id="music-level" min="0" max="100" value="65" oninput="updateMix('music',this.value)">
           <output id="music-level-value" for="music-level">65%</output>
+        </div>
+        <div class="audio-level-row music-track-row">
+          <label for="music-track" data-t="musicTrack">Müzik Parçası</label>
+          <select id="music-track" onchange="setMusicTrack(this.value)"></select>
         </div>
         <div class="setting-group" id="vol-row">
           <div class="setting-label" data-t="audio">Ses ve Müzik</div>
@@ -1047,7 +1052,7 @@ function _skyWords(key,values){
   ['missionComboSub',["Türbini art arda hızlandır","Accelerate the turbine repeatedly","タービンを連続加速","터빈을 연속 가속하세요","Turbine mehrfach beschleunigen","Accélérez la turbine à la suite","Acelera la turbina varias veces","Accelera la turbina in serie","Acelere a turbina em sequência","Ускоряйте турбину подряд","टर्बाइन को लगातार तेज करें","Versnel de turbine achter elkaar","سرّع التوربين تباعًا","连续加速涡轮"]],
   ['missionRowsTitle',["5 satır temizle","Clear 5 rows","5列消す","5줄 지우기","5 Reihen löschen","Effacer 5 lignes","Limpia 5 filas","Elimina 5 righe","Limpe 5 linhas","Очистить 5 линий","5 पंक्तियाँ साफ करें","Wis 5 rijen","امسح 5 صفوف","清除5行"]],
   ['missionRowsSub',["Kargo güvertesini boşalt","Clear the cargo deck","貨物デッキを空にする","화물 갑판을 비우세요","Frachtdeck leeren","Videz le pont de chargement","Vacía la cubierta de carga","Svuota il ponte di carico","Esvazie o convés de carga","Освободите грузовую палубу","कार्गो डेक खाली करें","Maak het vrachtdek leeg","أفرغ سطح الشحن","清空货运甲板"]],
-  ['missionScoreTitle',["1250 puan kazan","Score 1250 points","1250点獲得","1250점 획득","1250 Punkte erzielen","Marquer 1250 points","Consigue 1250 puntos","Ottieni 1250 punti","Marque 1250 pontos","Набрать 1250 очков","1250 अंक बनाएँ","Scoor 1250 punten","سجّل 1250 نقطة","获得1250分"]],
+  ['missionScoreTitle',["2500 puan kazan","Score 2500 points","2500点獲得","2500점 획득","2500 Punkte erzielen","Marquer 2500 points","Consigue 2500 puntos","Ottieni 2500 punti","Marque 2500 pontos","Набрать 2500 очков","2500 अंक बनाएँ","Scoor 2500 punten","سجّل 2500 نقطة","获得2500分"]],
   ['missionScoreSub',["Günlük uçuş rekoruna ulaş","Reach the daily flight record","デイリーフライト記録に到達","일일 비행 기록에 도달하세요","Täglichen Flugrekord erreichen","Atteignez le record de vol quotidien","Alcanza el récord diario de vuelo","Raggiungi il record di volo giornaliero","Alcance o recorde diário de voo","Достигните дневного рекорда","दैनिक उड़ान रिकॉर्ड तक पहुँचें","Behaal het dagelijkse vluchtrecord","حقق رقم الرحلة اليومي","达到每日飞行纪录"]],
   ['rewardReadyCount',["{n} ödül hazır","{n} rewards ready","報酬{n}件を受取可能","보상 {n}개 준비됨","{n} Belohnungen bereit","{n} récompenses prêtes","{n} recompensas listas","{n} premi pronti","{n} recompensas prontas","Наград готово: {n}","{n} इनाम तैयार","{n} beloningen klaar","{n} مكافآت جاهزة","{n}份奖励可领取"]],
   ['allRoutesDone',["Tüm rotalar tamam","All routes complete","全ルート完了","모든 항로 완료","Alle Routen abgeschlossen","Tous les itinéraires terminés","Todas las rutas completadas","Tutte le rotte completate","Todas as rotas concluídas","Все маршруты завершены","सभी मार्ग पूरे","Alle routes voltooid","اكتملت جميع المسارات","所有航线已完成"]],
@@ -1100,6 +1105,31 @@ function _skyWords(key,values){
   ['featured',["ÖNERİLEN","FEATURED","おすすめ","추천","EMPFOHLEN","À LA UNE","DESTACADO","IN EVIDENZA","DESTAQUE","РЕКОМЕНДУЕМ","विशेष","AANBEVOLEN","مميز","推荐"]],
   ['applied',["uygulandı","applied","適用済み","적용됨","angewendet","appliqué","aplicado","applicato","aplicado","применён","लागू हुआ","toegepast","تم التطبيق","已应用"]],
   ['purchased',["satın alındı","purchased","購入済み","구매 완료","gekauft","acheté","comprado","acquistato","comprado","куплено","खरीदा गया","gekocht","تم الشراء","已购买"]]
+].forEach(([key,values])=>_skyWords(key,values));
+// Müzik parçası seçici (2026-10-14): ayar etiketi + 21 parça adı. TR'de parça adı, diğer dillerde tür adı.
+[
+  ['musicTrack',["Müzik Parçası","Music Track","BGM","배경 음악","Musikstück","Morceau","Pista musical","Brano musicale","Faixa musical","Мелодия","संगीत ट्रैक","Muzieknummer","المقطوعة الموسيقية","背景音乐"]],
+  ['music_0',["Bulut Rotası · Klasik","Cloud Route · Classic","クラウドルート・クラシック","구름 항로 · 클래식","Wolkenroute · Klassisch","Route des nuages · Classique","Ruta de nubes · Clásica","Rotta tra le nuvole · Classica","Rota das Nuvens · Clássica","Облачный маршрут · Классика","बादल मार्ग · क्लासिक","Wolkenroute · Klassiek","طريق السحاب · كلاسيكي","云端航线 · 经典"]],
+  ['music_1',["Lo-fi Liman · Lo-fi","Lo-fi Hip Hop","ローファイ・ヒップホップ","로파이 힙합","Lo-Fi Hip-Hop","Lo-fi hip-hop","Lo-fi hip hop","Lo-fi hip hop","Lo-fi hip-hop","Лоу-фай хип-хоп","लो-फ़ाई हिप हॉप","Lo-fi hiphop","لو-فاي هيب هوب","Lo-fi 嘻哈"]],
+  ['music_2',["Kalimba Ninnisi · Ambient","Ambient Kalimba","アンビエント・カリンバ","앰비언트 칼림바","Ambient-Kalimba","Kalimba ambient","Kalimba ambiental","Kalimba ambient","Kalimba ambiente","Эмбиент-калимба","एम्बिएंट कलिम्बा","Ambient-kalimba","كاليمبا هادئة","氛围卡林巴"]],
+  ['music_3',["Bossa Bulutu · Bossa Nova","Bossa Nova","ボサノバ","보사노바","Bossa Nova","Bossa nova","Bossa nova","Bossa nova","Bossa nova","Босса-нова","बोसा नोवा","Bossanova","بوسا نوفا","波萨诺瓦"]],
+  ['music_4',["Reggae Rüzgârı · Reggae","Reggae","レゲエ","레게","Reggae","Reggae","Reggae","Reggae","Reggae","Регги","रेगे","Reggae","ريغي","雷鬼"]],
+  ['music_5',["Caz Kulübü · Swing Caz","Swing Jazz","スウィング・ジャズ","스윙 재즈","Swing-Jazz","Jazz swing","Jazz swing","Jazz swing","Jazz swing","Свинг-джаз","स्विंग जैज़","Swingjazz","جاز سوينغ","摇摆爵士"]],
+  ['music_6',["Neon Zeplin · Synthwave","Synthwave","シンセウェイヴ","신스웨이브","Synthwave","Synthwave","Synthwave","Synthwave","Synthwave","Синтвейв","सिंथवेव","Synthwave","سينثويف","合成波"]],
+  ['music_7',["Tropik Ada · Tropical House","Tropical House","トロピカル・ハウス","트로피컬 하우스","Tropical House","Tropical house","Tropical house","Tropical house","Tropical house","Тропикал-хаус","ट्रॉपिकल हाउस","Tropical house","تروبيكال هاوس","热带浩室"]],
+  ['music_8',["Funky Pervane · Funk","Funk","ファンク","펑크","Funk","Funk","Funk","Funk","Funk","Фанк","फंक","Funk","فانك","放克"]],
+  ['music_9',["Şehir Işıkları · City Pop","City Pop","シティポップ","시티팝","City-Pop","City pop","City pop","City pop","City pop","Сити-поп","सिटी पॉप","Citypop","سيتي بوب","城市流行"]],
+  ['music_10',["Steel Pan Plajı · Calypso","Calypso Steel Pan","カリプソ・スティールパン","칼립소 스틸팬","Calypso-Steelpan","Calypso steel pan","Calipso steel pan","Calypso steel pan","Calipso steel pan","Калипсо","कैलिप्सो स्टील पैन","Calypso-steelpan","كاليبسو","卡利普索钢鼓"]],
+  ['music_11',["Reggaeton Ritmi · Reggaeton","Reggaeton","レゲトン","레게톤","Reggaeton","Reggaeton","Reguetón","Reggaeton","Reggaeton","Реггетон","रेगेटन","Reggaeton","ريغيتون","雷鬼动"]],
+  ['music_12',["Afrobeat Güneşi · Afrobeats","Afrobeats","アフロビーツ","아프로비츠","Afrobeats","Afrobeats","Afrobeats","Afrobeats","Afrobeats","Афробитс","एफ्रोबीट्स","Afrobeats","أفروبيتس","非洲节拍"]],
+  ['music_13',["Doğu Pop · Türk Pop","Turkish Pop","トルコ・ポップ","터키 팝","Türkischer Pop","Pop turque","Pop turco","Pop turco","Pop turco","Турецкий поп","तुर्की पॉप","Turkse pop","بوب تركي","土耳其流行"]],
+  ['music_14',["8-Bit Kargo · Chiptune","8-Bit Chiptune","8ビット・チップチューン","8비트 칩튠","8-Bit-Chiptune","Chiptune 8 bits","Chiptune 8 bits","Chiptune 8 bit","Chiptune 8 bits","8-битный чиптюн","8-बिट चिपट्यून","8-bit chiptune","تشيبتيون 8 بت","8 位芯片音乐"]],
+  ['music_15',["Future Gökyüzü · Future Bass","Future Bass","フューチャーベース","퓨처 베이스","Future Bass","Future bass","Future bass","Future bass","Future bass","Фьюче-бейс","फ़्यूचर बेस","Future bass","فيوتشر باس","未来贝斯"]],
+  ['music_16',["Trap Kulesi · Trap","Trap","トラップ","트랩","Trap","Trap","Trap","Trap","Trap","Трэп","ट्रैप","Trap","تراب","陷阱音乐"]],
+  ['music_17',["Arcade Turbo · Eurodance","Eurodance","ユーロダンス","유로댄스","Eurodance","Eurodance","Eurodance","Eurodance","Eurodance","Евроданс","यूरोडांस","Eurodance","يورودانس","欧陆舞曲"]],
+  ['music_18',["Liquid Uçuş · Drum & Bass","Drum & Bass","ドラムンベース","드럼 앤 베이스","Drum & Bass","Drum & bass","Drum & bass","Drum & bass","Drum & bass","Драм-н-бейс","ड्रम एंड बेस","Drum & bass","درام آند بيس","鼓打贝斯"]],
+  ['music_19',["Epik Filo · Orkestral","Epic Orchestral","エピック・オーケストラ","에픽 오케스트라","Episches Orchester","Orchestral épique","Orquestal épico","Orchestrale epico","Orquestral épico","Эпический оркестр","एपिक ऑर्केस्ट्रा","Episch orkestraal","أوركسترا ملحمية","史诗管弦乐"]],
+  ['music_20',["Kelt Rotası · Kelt Jig","Celtic Jig","ケルト・ジグ","켈틱 지그","Keltischer Jig","Gigue celtique","Giga celta","Giga celtica","Jiga celta","Кельтская джига","केल्टिक जिग","Keltische jig","رقصة سلتية","凯尔特吉格舞曲"]],
 ].forEach(([key,values])=>_skyWords(key,values));
 
 function t(k){ return (HAMMER_TEXT[lang]&&HAMMER_TEXT[lang][k]) || (SKY_TEXT[lang]&&SKY_TEXT[lang][k]) || (AUDIO_TEXT[lang]&&AUDIO_TEXT[lang][k]) || (T[lang]&&T[lang][k]) || HAMMER_TEXT.EN[k] || (SKY_TEXT.EN&&SKY_TEXT.EN[k]) || (AUDIO_TEXT.EN&&AUDIO_TEXT.EN[k]) || (T.EN&&T.EN[k]) || ''; }
@@ -1191,6 +1221,7 @@ function applyLang(){
   if(document.getElementById('store-body')) renderStoreBody();
   if(document.getElementById('modal-daily')?.classList.contains('active')) renderDailyModal();
   updateMissionCardStatus();
+  _renderMusicTrackOptions();
   if(document.getElementById('modal-missions')?.classList.contains('active')) renderMissionModal();
   if(typeof updateBombBar==='function') updateBombBar();
   updateContinueBtn();
@@ -1311,6 +1342,7 @@ function _updateAudioSettingsUI(){
     const output=document.getElementById(id+'-level-value');if(output)output.value=Math.round(value*100)+'%';
   }
   if(AC)HarborSound.level(AC,sndOn?effectsLevel:0);
+  const trackSel=document.getElementById('music-track');if(trackSel)trackSel.disabled=!musicOn;
 }
 function updateVol(v){
   sndVol=v/100;
@@ -1422,6 +1454,8 @@ function _ensureSkyMusicGraph(){
   master.connect(compressor);compressor.connect(a.destination);
   _skyMusic.pluckBuffers.clear();_skyMusic.brushBuffer=null;
   _skyMusic.graph={a,input,master,stringWave};
+  // Yeni parça kütüphanesi aynı master'a bağlanır: seviye/kısma/fade ortak kalır
+  if(typeof TiliqMusic!=='undefined')TiliqMusic.attach(a,master);
   return _skyMusic.graph;
 }
 
@@ -1521,10 +1555,30 @@ function _scheduleSkyStep(step,when,scoreDef,mode){
   }
 }
 
+// ── MÜZİK PARÇASI SEÇİMİ (2026-10-14) ── '0' = eski Bulut Rotası, 1-20 = tiliq-music.js
+// kütüphanesi. Varsayılan ana müzik: 9 (Şehir Işıkları · City Pop).
+var musicTrack=localStorage.getItem('tm_music_track')||'9'; // var: applyLang açılışta daha önce çağrılabilir
+function _usingNewMusic(){return musicTrack!=='0'&&typeof TiliqMusic!=='undefined';}
+function setMusicTrack(id){
+  musicTrack=String(id);localStorage.setItem('tm_music_track',musicTrack);
+  if(typeof TiliqMusic!=='undefined'&&musicTrack==='0')TiliqMusic.setTrack(0);
+  _skyMusic.mode=null; // eski parçaya dönüşte zamanlayıcı baştan kurulur
+  _renderMusicTrackOptions();_syncSkyMusic();
+}
+function _renderMusicTrackOptions(){
+  const sel=document.getElementById('music-track');if(!sel)return;
+  const ids=['0',...(typeof TiliqMusic!=='undefined'?TiliqMusic.TRACKS.map(x=>String(x.id)):[])];
+  sel.innerHTML=ids.map(id=>`<option value="${id}">${t('music_'+id)}</option>`).join('');
+  const curId=musicTrack||localStorage.getItem('tm_music_track')||'9';
+  sel.value=ids.includes(curId)?curId:'0';
+  sel.disabled=!musicOn;
+}
+
 function _runSkyMusicScheduler(){
-  const graph=_skyMusic.graph,scoreDef=SKY_MUSIC_SCORES[_skyMusic.mode];
-  if(!graph||!scoreDef)return;
+  const graph=_skyMusic.graph;if(!graph)return;
   if(_musicDuckUntil&&graph.a.currentTime>=_musicDuckUntil){_musicDuckUntil=0;_setSkyMusicLevel(.3);}
+  if(_usingNewMusic()){TiliqMusic.run(graph.a.currentTime+.55);return;}
+  const scoreDef=SKY_MUSIC_SCORES[_skyMusic.mode];if(!scoreDef)return;
   const eighth=(60/scoreDef.bpm)/2,horizon=graph.a.currentTime+.55;
   while(_skyMusic.next<horizon){
     _scheduleSkyStep(_skyMusic.step,_skyMusic.next,scoreDef,_skyMusic.mode);
@@ -1549,7 +1603,11 @@ function _stopSkyMusic(){
 function _startSkyMusic(mode){
   if(!SKY_MUSIC_SCORES[mode]){_stopSkyMusic();return;}
   const graph=_ensureSkyMusicGraph();if(!graph)return;
-  if(_skyMusic.mode!==mode){
+  if(_usingNewMusic()){
+    // Seçili parça menü ve oyunda kesintisiz çalar; yalnızca parça değişince baştan başlar
+    if(TiliqMusic.current()!==+musicTrack){TiliqMusic.setTrack(musicTrack);TiliqMusic.reset(graph.a.currentTime+.08);}
+    _skyMusic.mode=mode;
+  }else if(_skyMusic.mode!==mode){
     if(_skyMusic.timer)clearInterval(_skyMusic.timer);
     _skyMusic.timer=null;_skyMusic.mode=mode;_skyMusic.step=0;_skyMusic.next=graph.a.currentTime+.08;
   }
@@ -2312,7 +2370,7 @@ function renderDailyCard(){
 const SKY_MISSIONS=[
   {id:'combos',goal:5,reward:60,titleKey:'missionComboTitle',subKey:'missionComboSub',icon:'combo'},
   {id:'rows',goal:5,reward:80,titleKey:'missionRowsTitle',subKey:'missionRowsSub',icon:'rows'},
-  {id:'score',goal:1250,reward:100,titleKey:'missionScoreTitle',subKey:'missionScoreSub',icon:'score'},
+  {id:'score',goal:2500,reward:100,titleKey:'missionScoreTitle',subKey:'missionScoreSub',icon:'score'},
 ];
 
 function skyMissionState(){
@@ -2460,7 +2518,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.10.14-score-x2.5';
+const BUILD_VER='v2026.10.14-music-library';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -4392,10 +4450,13 @@ function place(pi,row,col){
   const cells=[];
   for(const[dr,dc]of p.shape.cells){grid[row+dr][col+dc]=p.ci+1;cells.push([row+dr,col+dc]);}
   p.placed=true;playTick();vibrate(12);
-  // Yerleştirme puanı: taş başına 10 (playable reklamdaki gibi) — güç eşiklerine sayılmaz
-  score+=cells.length*10;acct.total+=cells.length*10;
+  // Yerleştirme puanı: taş başına 10 (playable reklamdaki gibi) — güç eşiklerine sayılmaz,
+  // günlük skor görevine sayılır (2026-10-14, kullanıcı isteği: "her parça koyduğumuzda puan artsın")
+  const placeGain=cells.length*10;
+  score+=placeGain;acct.total+=placeGain;
   if(score>best)noteNewBest();
   setScoreDisplay(score);
+  progressMission('score',placeGain);
   bounce={cells,t0:performance.now()};
   _lastMoveAt=performance.now(); // ipucu sistemi için — her yerleştirmede sıfırlanır
   spawnPlaceDust(cells,p.ci);   // yerleştirme tozu
@@ -4405,6 +4466,12 @@ function place(pi,row,col){
   for(let r=0;r<GRID;r++)if(grid[r].every(v=>v))cR.push(r);
   for(let c=0;c<GRID;c++)if(grid.every(rw=>rw[c]))cC.push(c);
   const tot=cR.length+cC.length;
+  // Hat temizlenmeyen hamlede yerleştirme puanı parçanın üstünde rozetle görünür
+  // (temizlemede zaten büyük hat skoru rozeti çıkıyor, üst üste binmesin)
+  if(!tot){
+    const pb0=bounds(p.shape.cells);
+    floats.push({kind:'scoreTick',x:GOX()+(col+pb0.cols/2)*CELL,y:GOY+row*CELL-CELL*.35,gain:placeGain,a:1,vy:-.3,fade:.025,accent:'#e4b35e'});
+  }
 
   if(tot>0){
     // Combo: temizlenen satır+sütun sayısı kadar artar
