@@ -2658,7 +2658,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.10.15-missions-mail-bots';
+const BUILD_VER='v2026.10.15-bots-always';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -8480,17 +8480,28 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
   // bir süre bekle, yoksa gereksiz yere "giriş yap" mesajı gösterilir.
   await Promise.race([_lbManagerReadyPromise, new Promise(r=>setTimeout(r,1200))]);
   const LB = window._leaderboardManager;
-  if(LB){
+  // Dünya sıralaması bulut okunamasa da (misafir, çevrimdışı, zaman aşımı) botlarla
+  // çizilir — 2026-10-15: botlar yalnızca başarılı bulut okumasında ekleniyordu, misafir
+  // ve hata durumunda liste "Yüklenemedi" kalıyor, 1500 bot hiç görünmüyordu.
+  if(LB||field==='best'){
     try{
       // iOS'ta native anonim oturum henüz kurulmamış olabilir (2026-07-14) — kısa
       // bir süre bekle, yoksa "izin yok" ile sessizce başarısız olur.
-      if(_isIOS) await Promise.race([_nativeAuthReadyPromise, new Promise(r=>setTimeout(r,1200))]);
+      if(LB&&_isIOS) await Promise.race([_nativeAuthReadyPromise, new Promise(r=>setTimeout(r,1200))]);
       // GÜVENLİK AĞI (2026-07-12): önceden burada timeout yoktu — Firestore çağrısı
       // (native veya JS SDK) hiç dönmezse liste sonsuza kadar "yükleniyor" durumunda
       // kalıyordu ("dünya sıralaması gözükmüyor" raporu). 7sn'de yanıt gelmezse
       // hata dalına düşüp kullanıcıya "tekrar dene" göster.
       const _lbTimeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('LB timeout')),7000));
-      const full = await Promise.race([LB.getTopScores(500,field), _lbTimeout]);   // tam sıralı liste (tiebreaker'lı)
+      _lbTimeout.catch(()=>{}); // kullanılmazsa sessizce düşsün
+      let full=[];   // tam sıralı liste (tiebreaker'lı)
+      try{
+        if(!LB)throw new Error('LB manager yok');
+        full=await Promise.race([LB.getTopScores(500,field), _lbTimeout]);
+      }catch(e){
+        if(field!=='best')throw e;
+        console.warn('[LB] bulut okunamadı, dünya sıralaması botlar + oyuncu ile gösteriliyor',e);
+      }
       const myUID = acct.uid||null;
       const myName = displayName(); // DİKKAT: playerLabel() bayrağı da içeriyor — çift bayrağa yol açardı
       const blocked=_blockedPlayerIds();
