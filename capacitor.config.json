@@ -14,7 +14,6 @@
       "@capacitor-firebase/firestore",
       "@capacitor/app",
       "@capacitor/local-notifications",
-      "appsflyer-capacitor-plugin",
       "tiliq-unity-ads"
     ]
   },

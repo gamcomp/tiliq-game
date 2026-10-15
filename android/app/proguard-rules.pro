@@ -9,6 +9,15 @@
 -dontwarn com.facebook.login.LoginManager
 -dontwarn com.facebook.login.widget.LoginButton
 
+# Capacitor reads @CapacitorPlugin / @Permission annotations at runtime (plugin
+# registration and checkPermissions/requestPermissions). In 1.3.110 R8 dropped them and
+# LocalNotifications.checkPermissions crashed the app ~3 s after launch with an NPE in
+# Bridge.getPermissionStates (2026-10-15). Keep the annotation types and their attributes.
+-keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,AnnotationDefault,Signature,InnerClasses,EnclosingMethod
+-keep @interface com.getcapacitor.annotation.** { *; }
+-keep @interface com.getcapacitor.NativePlugin { *; }
+-keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
+
 # JavaScript bridges are invoked by WebView rather than ordinary Java calls.
 -keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;

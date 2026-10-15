@@ -16,7 +16,6 @@ dependencies {
     implementation project(':capacitor-firebase-firestore')
     implementation project(':capacitor-app')
     implementation project(':capacitor-local-notifications')
-    implementation project(':appsflyer-capacitor-plugin')
     implementation project(':tiliq-unity-ads')
 
 }
