@@ -134,24 +134,20 @@ const HarborCombo = (() => {
   function announce(g,x,y,s,now,reduced){
     if(!burst)return;
     const age=now-burst.at;if(age>1100){burst=null;return;}
-    const entry=Math.min(1,age/160),exit=Math.min(1,(1100-age)/240);
-    const scale=reduced?1:1-Math.pow(1-entry,3)*.25+Math.sin(entry*Math.PI)*.06;
-    const width=Math.min(s*.72,250),height=42,cy=y+s*.17;
-    g.save();g.translate(x+s/2,cy-(reduced?0:Math.max(0,age-800)/45));g.scale(scale,scale);
-    g.globalAlpha=Math.min(entry,exit);
-    // Pilot's ribbon: slim wings and an enamel center, using the existing palette.
-    for(const side of [-1,1]){
-      g.save();g.scale(side,1);g.strokeStyle='#e3ad53';g.lineWidth=2;
-      for(let i=0;i<3;i++){g.beginPath();g.moveTo(width/2-2,-8+i*7);g.lineTo(width/2+19-i*5,-11+i*7);g.stroke();}g.restore();
-    }
-    const bg=g.createLinearGradient(0,-height/2,0,height/2);bg.addColorStop(0,'#0d4a7b');bg.addColorStop(1,'#08233c');
-    g.fillStyle=bg;g.strokeStyle='#f8e2aa';g.lineWidth=2;
-    g.beginPath();g.roundRect(-width/2,-height/2,width,height,12);g.fill();g.stroke();
-    g.fillStyle='#fff6e5';g.textAlign='center';g.textBaseline='middle';
-    g.font='750 17px "Tiliq Sans", sans-serif';
-    g.fillText(`${burst.label}  ×${burst.count}`,0,-2,width-24);
-    const tier=Math.min(5,burst.count);
-    for(let i=0;i<5;i++){g.fillStyle=i<tier?'#70c6e9':'#35546b';g.beginPath();g.arc((i-2)*9,13,1.7,0,tau);g.fill();}
+    // 2026-10-15 (kullanıcı isteği): kombo yazısı "Süper!" övgü yazısıyla aynı stilde —
+    // büyük fildişi harf, kalın pirinç kontur, pop ile girer, hafifçe yükselip söner.
+    // Tahtanın üst bölümünde durur; ortadaki övgü yazısıyla çakışmaz.
+    const k=age/1100,cell=s/8;
+    const pop=reduced?1:(k<.15?.6+k/.15*.55:k<.25?1.15-(k-.15):1.05),rise=reduced?0:k*cell*.5;
+    const txt=`${burst.label} ×${burst.count}`;
+    const face=sz=>`700 ${sz}px "Tiliq Display", "Tiliq Sans", sans-serif`;
+    let sz=cell*.9;g.save();g.font=face(sz);
+    const w=g.measureText(txt).width,maxW=s*.9;if(w>maxW)sz*=maxW/w;
+    sz*=pop;g.font=face(sz);
+    g.globalAlpha=k>.75?(1-k)/.25:1;g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';
+    const cx=x+s/2,cy=y+s*.17-rise;
+    g.lineWidth=sz*.16;g.strokeStyle='#8a5422';g.strokeText(txt,cx,cy);
+    g.fillStyle='#fff6e5';g.fillText(txt,cx,cy);
     g.restore();
   }
   return {trigger:(count,label,at)=>{if(count>=2)burst={count,label,at};},clear:()=>{burst=null;},aura,announce};
