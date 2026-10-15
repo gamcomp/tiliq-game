@@ -1,4 +1,5 @@
-• Reklam sonrası ödül teslimi ve banner kararlılığı iyileştirildi.
-• Gereksiz reklam geçiş ekranı kaldırıldı.
-• Küçük ekranlarda menü ve Çekiç paneli çakışmaları düzeltildi.
-• Arkadaşlar, dünya sıralaması ve günlük posta serisi güncellendi.
+• 20 yeni müzik parçası: Ayarlar'dan dilediğini seç.
+• Yeni patlama efektleri ve sesler.
+• Skorlar daha hızlı yükseliyor; her yerleştirdiğin parça puan kazandırıyor.
+• Her gün değişen görevler ve her hafta yenilenen posta kutusu.
+• Sabah hatırlatmalarıyla serini kaçırma.

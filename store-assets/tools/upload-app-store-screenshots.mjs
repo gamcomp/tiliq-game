@@ -14,6 +14,9 @@ const shouldCommit = args.includes('--commit');
 const shouldCancelReview = args.includes('--cancel-review');
 const shouldResubmit = args.includes('--resubmit');
 const shouldResubmitOnly = args.includes('--resubmit-only');
+// --update-text: also writes description, promotional text and release notes from
+// store-metadata.json to each App Store version localization (2026-10-16).
+const shouldUpdateText = args.includes('--update-text');
 const buildNumber = valueAfter('--build-number');
 const appId = valueAfter('--app-id') || process.env.APP_ID;
 const keyId = process.env.ASC_KEY_ID || process.env.APP_STORE_CONNECT_KEY_IDENTIFIER;
@@ -31,7 +34,7 @@ const storeAssetsDir = path.resolve(toolsDir, '..');
 const metadata = JSON.parse(await fs.readFile(path.join(storeAssetsDir, 'store-metadata.json'), 'utf8'));
 const versionString = valueAfter('--version') || metadata.version;
 const localeEntries = Object.values(metadata.locales)
-  .map((entry) => ({ locale: entry.appStoreLocale }))
+  .map((entry) => ({ locale: entry.appStoreLocale, entry }))
   .sort((a, b) => a.locale.localeCompare(b.locale));
 
 const base64url = (value) => Buffer.from(value).toString('base64url');
@@ -302,8 +305,24 @@ if (missingLocales.length) throw new Error(`Missing App Store version localizati
 
 console.log(`App Store version ${versionString} (${version.attributes.appStoreState}) has all ${localeEntries.length} localizations.`);
 
-for (const [index, { locale }] of localeEntries.entries()) {
+for (const [index, { locale, entry }] of localeEntries.entries()) {
   const localization = localizationByLocale.get(locale);
+  if (shouldCommit && shouldUpdateText) {
+    await apiRequest('PATCH', `/appStoreVersionLocalizations/${localization.id}`, {
+      body: {
+        data: {
+          type: 'appStoreVersionLocalizations',
+          id: localization.id,
+          attributes: {
+            description: entry.fullDescription,
+            promotionalText: entry.promotionalText,
+            whatsNew: entry.releaseNotes,
+          },
+        },
+      },
+    });
+    console.log(`[${index + 1}/${localeEntries.length}] ${locale}: description, promotional text and release notes updated.`);
+  }
   const screenshotFiles = (await fs.readdir(path.join(storeAssetsDir, 'screenshots', 'app-store', locale, 'iphone-6.9')))
     .filter((name) => /\.jpe?g$/i.test(name))
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))

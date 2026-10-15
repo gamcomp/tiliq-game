@@ -2,6 +2,10 @@ name: Upload App Store Screenshots
 
 on:
   workflow_dispatch: {}
+  # A `store-assets-*` tag push also runs it (no GitHub API token needed locally).
+  push:
+    tags:
+      - 'store-assets-*'
 
 jobs:
   upload:
@@ -24,4 +28,4 @@ jobs:
       # version is locked in review, cancels that review, updates the screenshots, then
       # resubmits the SAME already-attached build for review (no new binary involved).
       - name: Upload localized screenshots to App Store Connect
-        run: node store-assets/tools/upload-app-store-screenshots.mjs --commit --cancel-review --resubmit
+        run: node store-assets/tools/upload-app-store-screenshots.mjs --commit --cancel-review --resubmit --update-text

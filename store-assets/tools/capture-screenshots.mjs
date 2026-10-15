@@ -199,35 +199,46 @@ const captureRawLocale = async (locale, entry) => {
   });
   await take(2);
 
-  // 3 — High-combo power-up moment with the real board renderer and controls.
+  // 3 — Real two-line clear (2026-10-16): the actual place() call renders the outward
+  // tile-pop wave, confetti, "Combo ×N" and the praise word exactly as players see them.
   await page.evaluate(() => {
-    score = 6840;
-    combo = 7;
+    const sample = [
+      [1, 2, 0, 0, 5, 5, 0, 0],
+      [0, 0, 2, 0, 5, 0, 0, 3],
+      [4, 4, 6, 6, 2, 1, 0, 0],
+      [3, 3, 5, 5, 1, 2, 0, 0],
+      [4, 0, 0, 6, 0, 0, 0, 0],
+      [0, 0, 1, 1, 1, 0, 2, 2],
+      [5, 5, 5, 0, 4, 0, 2, 0],
+      [0, 6, 0, 0, 4, 4, 0, 0],
+    ];
+    for (let row = 0; row < 8; row += 1) for (let col = 0; col < 8; col += 1) grid[row][col] = sample[row][col];
+    score = 5480;
+    combo = 3;
     resetComboTimer();
     bombCount = 2;
     bombXP = BOMB_THRESHOLD;
     colorBlastXP = COLOR_BLAST_THRESHOLD;
     setColorBlast(1);
-    document.getElementById('scoreDisplay').textContent = score.toLocaleString();
+    _setScoreImmediate(score);
     document.getElementById('comboDisplay').textContent = String(combo);
-    const comboChip = document.getElementById('combo-chip');
-    comboChip?.classList.add('c-inferno', 'pop');
     document.getElementById('bomb-btn')?.classList.add('ready', 'lit-super');
     document.getElementById('colorblast-btn')?.classList.add('ready', 'lit-color');
     updateBombBar();
     updateColorBlastBtn();
-    const centerX = GOX() + CELL * GRID / 2;
-    const centerY = GOY + CELL * GRID * 0.43;
-    spawnExplosion(centerX, centerY, '#f4d58e', true);
-    spawnFlame(centerX, centerY, combo);
-    showCelebration(`${t('combo')} ×${combo}`, '#f4d58e');
+    pieces[0] = { shape: { cells: [[0, 0], [0, 1], [1, 0], [1, 1]] }, ci: 3, placed: false };
+    place(0, 2, 6); // fills rows 2 and 3 → double clear, combo ×5, "Super!"
   });
-  await page.waitForTimeout(110);
+  await page.waitForTimeout(230);
   await take(3);
 
-  // 4 — Localized seven-day reward track.
+  // 4 — Localized weekly mailbox. Earlier days of the week are shown as collected so the
+  // listing never shows "missed" days, whatever weekday the capture runs on (2026-10-16).
   await prepareBase(page, entry.gameCode);
   await page.evaluate(() => {
+    const today = mailDayIdx();
+    localStorage.setItem('tm_mail_week', JSON.stringify({ week: _localDayKey(_mailWeekStart()), claimed: [...Array(today).keys()] }));
+    localStorage.removeItem('tm_treasure_date');
     showModal('daily');
     renderDailyModal();
   });

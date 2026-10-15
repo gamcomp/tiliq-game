@@ -1,4 +1,5 @@
-• Improved ad reward delivery and banner reliability.
-• Removed the extra ad transition screen.
-• Fixed menu and Hammer panel overlaps on smaller screens.
-• Updated friends, world rankings and daily mail streaks.
+• 20 new music tracks: pick your favorite in Settings.
+• New blast effects and sounds.
+• Scores climb faster, and every piece you place earns points.
+• Daily missions that change every day and a mailbox that refreshes weekly.
+• Morning reminders to keep your streak alive.

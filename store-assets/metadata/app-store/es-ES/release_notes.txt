@@ -1,4 +1,5 @@
-• Mejoradas las recompensas por anuncios y la estabilidad de los banners.
-• Eliminada la pantalla adicional de transición de anuncios.
-• Corregidos los solapamientos del menú y del panel Martillo en pantallas pequeñas.
-• Actualizados amigos, clasificación mundial y correo diario.
+• 20 nuevas pistas musicales: elige tu favorita en Ajustes.
+• Nuevos efectos de explosión y sonidos.
+• Las puntuaciones suben más rápido y cada pieza colocada da puntos.
+• Misiones que cambian cada día y un buzón que se renueva cada semana.
+• Recordatorios por la mañana para mantener tu racha.
