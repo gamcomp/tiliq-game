@@ -2658,7 +2658,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.10.15-combo-text';
+const BUILD_VER='v2026.10.15-bot-report';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -8394,7 +8394,8 @@ async function reportAndBlockPlayer(button){
       reporterUid:acct.uid,
       reportedUid,
       reportedName:String(reportedName).slice(0,40),
-      reason:'offensive-profile',
+      // Bot bildirimi moderasyonda ayırt edilsin (Firestore kuralı yeni alan kabul etmiyor)
+      reason:LB_BOTS.isBot(reportedUid)?'offensive-profile-bot':'offensive-profile',
       appVersion:'1.3.88',
       ts:Date.now(),
     },false);
@@ -8450,8 +8451,13 @@ const LB_BOTS=(()=>{
     const rate=.12+rnd(i,9)*.45;                      // 2 saatlik periyotta yükselme sıklığı
     const room=.25+rnd(i,10)*1.1;                     // uzun vadede en fazla base × (1+room)
     const tau=100+rnd(i,11)*300;                      // doygunluk hızı: adım başı ~%0.3-1.3 artış
-    bots.push({flag:f[0],name,base,still,rate,room,tau,phase:rnd(i,12),xpk:.25+rnd(i,13)*.5});
+    // Gerçek oyuncu kimliğine benzeyen sabit 28 karakterlik kimlik: bildir/yıldızla akışı
+    // botlarda da gerçek oyuncudaki gibi çalışır (2026-10-15, kullanıcı isteği)
+    const AL='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let uid='';for(let j=0;j<28;j++)uid+=AL[Math.floor(rnd(i,100+j)*AL.length)];
+    bots.push({uid,flag:f[0],name,base,still,rate,room,tau,phase:rnd(i,12),xpk:.25+rnd(i,13)*.5});
   }
+  const botIds=new Set(bots.map(b=>b.uid));
   let cacheP=-1,cacheRows=null;
   function rows(){
     const p=Math.max(0,Math.floor((Date.now()-EPOCH)/PERIOD));
@@ -8460,11 +8466,11 @@ const LB_BOTS=(()=>{
     cacheRows=bots.map(b=>{
       const steps=b.still?0:Math.floor(p*b.rate+b.phase);
       const s=Math.round(b.base*(1+b.room*(1-Math.exp(-steps/b.tau))));
-      return{n:b.flag+' '+b.name,s,lv:calcLevel(s*b.xpk+steps*40),bestAt:EPOCH,bot:true};
+      return{n:b.flag+' '+b.name,flag:b.flag,name:b.name,uid:b.uid,s,lv:calcLevel(s*b.xpk+steps*40),bestAt:EPOCH,bot:true};
     });
     return cacheRows;
   }
-  return{rows};
+  return{rows,isBot:uid=>botIds.has(uid)};
 })();
 
 function _lbRow(i,name,sc,isMe,lv,uid){
@@ -8526,7 +8532,7 @@ async function renderLB(ps,field='best',listId='lb-list',rankId='my-rank',scoreI
         }
       }
       // Bot oyuncular yalnızca dünya (best) sıralamasına eklenir — bkz. LB_BOTS
-      if(field==='best')rows.push(...LB_BOTS.rows());
+      if(field==='best')rows.push(...LB_BOTS.rows().map(b=>blocked.has(b.uid)?{...b,n:b.flag+' '+_maskName(b.name),reported:true}:b));
       // Skor DESC, eşitse tarihe (bestAt) göre ASC
       rows.sort((a,b)=>b.s-a.s || (a.bestAt-b.bestAt));
       const myIdx=rows.findIndex(r=>r.uid===myUID||r.me);
