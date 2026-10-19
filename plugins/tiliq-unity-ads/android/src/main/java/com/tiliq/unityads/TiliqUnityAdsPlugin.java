@@ -4,6 +4,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import com.getcapacitor.JSObject;
+import com.google.android.gms.ads.identifier.AdvertisingIdClient;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -84,6 +85,25 @@ public class TiliqUnityAdsPlugin extends Plugin {
         if (optOut != null) UnityAds.setUserOptOut(optOut);
         if (nonBehavioral != null) UnityAds.setNonBehavioral(nonBehavioral);
         call.resolve();
+    }
+
+    // Unity UA kurulum eşleştirmesi için reklam kimliği (GAID). Kullanıcı reklam
+    // kişiselleştirmeyi kapattıysa "limited" true döner ve kimlik gönderilmez.
+    @PluginMethod
+    public void getAdvertisingId(PluginCall call) {
+        new Thread(() -> {
+            JSObject out = new JSObject();
+            try {
+                AdvertisingIdClient.Info info = AdvertisingIdClient.getAdvertisingIdInfo(getContext());
+                boolean limited = info.isLimitAdTrackingEnabled();
+                out.put("limited", limited);
+                out.put("id", limited || info.getId() == null ? "" : info.getId());
+            } catch (Exception e) {
+                out.put("limited", true);
+                out.put("id", "");
+            }
+            call.resolve(out);
+        }).start();
     }
 
     @PluginMethod

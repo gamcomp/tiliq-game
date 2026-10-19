@@ -2658,7 +2658,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.10.15-bot-report';
+const BUILD_VER='v2026.10.19-ua-attribution';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -3576,6 +3576,26 @@ async function _resumeBannerAfterForeground(){
   return showBanner();
 }
 
+// UNITY UA KURULUM EŞLEŞTİRMESİ (2026-10-19): Unity reklamından gelen kurulumu reklamverene
+// bildirebilmek için ilk açılışta reklam kimliği bir kez Tiliq'in Supabase sunucusuna gider.
+// Yalnızca ATT/UMP çözüldükten ve reklam izni varken çalışır; iOS'ta takip izni yoksa ya da
+// Android'de reklam kişiselleştirme kapalıysa kimlik boş gelir ve hiçbir şey gönderilmez.
+const UA_INSTALL_URL='https://bmjanryocccdcxscaqnw.supabase.co/functions/v1/ua-install';
+async function _reportUaInstall(){
+  try{
+    if(localStorage.getItem('tm_ua_install'))return;
+    const P=window.Capacitor&&window.Capacitor.Plugins;
+    const plat=window.Capacitor&&window.Capacitor.getPlatform?window.Capacitor.getPlatform():'web';
+    if(plat==='web'||!P||!P.TiliqUnityAds||!P.TiliqUnityAds.getAdvertisingId)return;
+    const r=await P.TiliqUnityAds.getAdvertisingId();
+    if(!r||!r.id){localStorage.setItem('tm_ua_install','no-id');return;}
+    const info=P.App&&P.App.getInfo?await P.App.getInfo().catch(()=>null):null;
+    const res=await fetch(UA_INSTALL_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ifa:r.id,platform:plat,appVersion:(info&&info.version)||''})});
+    if(res.ok)localStorage.setItem('tm_ua_install','sent');
+  }catch(e){console.warn('UA install:',e);}
+}
+
 async function initAdMob(){
   if(!adServiceAvailable()){
     const AdMob=_getAdMob();
@@ -3632,6 +3652,7 @@ async function initAdMob(){
       _privacyOptionsRequired=consentInfo.privacyOptionsRequirementStatus==='REQUIRED';
       _updateAdPrivacyUI();
       if(!_adsCanRequest)return;
+      _reportUaInstall();
       _syncAdAudioPolicy();
       _prepareInterstitial();
       _prepareRewardedAd();

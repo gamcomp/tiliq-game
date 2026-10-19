@@ -2,6 +2,8 @@ import Foundation
 import UIKit
 import Capacitor
 import UnityAds
+import AdSupport
+import AppTrackingTransparency
 
 // Each request has its own delegate; late callbacks cannot settle a newer ad.
 private final class TiliqLoadDelegate: NSObject, UnityAdsLoadDelegate {
@@ -47,7 +49,8 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         CAPPluginMethod(name: "showBanner", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "hideBanner", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "resumeBanner", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "removeBanner", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "removeBanner", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getAdvertisingId", returnType: CAPPluginReturnPromise)
     ]
 
     private var initialized = false
@@ -192,6 +195,14 @@ public class TiliqUnityAdsPlugin: CAPPlugin, CAPBridgedPlugin,
         if let optOut = call.getBool("userOptOut") { UnityAds.setUserOptOut(optOut) }
         if let nonBehavioral = call.getBool("nonBehavioral") { UnityAds.setNonBehavioral(nonBehavioral) }
         call.resolve()
+    }
+
+    // Unity UA kurulum eşleştirmesi için IDFA. Yalnızca ATT izni verildiyse dolu döner;
+    // izin sorusu oyunun mevcut ATT akışında (AdMob) zaten soruluyor, burada tekrar sorulmaz.
+    @objc func getAdvertisingId(_ call: CAPPluginCall) {
+        let authorized = ATTrackingManager.trackingAuthorizationStatus == .authorized
+        let id = authorized ? ASIdentifierManager.shared().advertisingIdentifier.uuidString : ""
+        call.resolve(["id": id, "limited": !authorized])
     }
 
     @objc func prepareInterstitial(_ call: CAPPluginCall) {
