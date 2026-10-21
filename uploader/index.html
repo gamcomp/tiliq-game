@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Tiliq Uploader</title>
+<style>
+  :root { --bg:#f6f1e7; --card:#fff; --ink:#16263a; --mute:#5c6b7a; --line:#e6dccb; --acc:#c98a2e; --accInk:#fff; --err:#b3261e; --ok:#1e7b45; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0e1a28; --card:#16263a; --ink:#f3eadb; --mute:#9fb0c2; --line:#26384d; --acc:#e3ad53; --accInk:#16263a; --err:#ff8a80; --ok:#7bd88f; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:640px; margin:0 auto; padding:24px 16px 48px; }
+  header { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  header img { width:44px; height:44px; border-radius:11px; }
+  h1 { font-size:22px; margin:0; }
+  .sub { color:var(--mute); margin:0 0 16px; font-size:14px; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin:14px 0; }
+  h2 { font-size:16px; margin:0 0 10px; }
+  label { display:block; font-weight:600; margin:12px 0 6px; }
+  .hint { color:var(--mute); font-size:13px; margin:4px 0 0; }
+  input[type=text], textarea, select { width:100%; padding:10px; border:1px solid var(--line); border-radius:10px; background:transparent; color:inherit; font:inherit; }
+  textarea { min-height:90px; resize:vertical; }
+  select:invalid { color:var(--mute); }
+  button { font:inherit; font-weight:700; border:0; border-radius:10px; padding:11px 16px; cursor:pointer; background:var(--acc); color:var(--accInk); }
+  button.secondary { background:transparent; color:var(--ink); border:1px solid var(--line); }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .account { display:flex; align-items:center; gap:10px; }
+  .account img { width:40px; height:40px; border-radius:50%; object-fit:cover; background:var(--line); }
+  .check { display:flex; gap:8px; align-items:flex-start; margin:8px 0; font-weight:400; }
+  .check input { margin-top:4px; }
+  .check.disabled { color:var(--mute); }
+  video { width:100%; max-height:420px; border-radius:12px; background:#000; margin-top:10px; }
+  .notice { padding:10px 12px; border-radius:10px; background:color-mix(in srgb, var(--acc) 15%, transparent); margin-top:10px; font-size:14px; }
+  .error { color:var(--err); font-weight:600; }
+  .ok { color:var(--ok); font-weight:600; }
+  .legal { font-size:13px; color:var(--mute); margin:12px 0; }
+  a { color:var(--acc); }
+  .switch { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  td, th { text-align:left; padding:6px 4px; border-bottom:1px solid var(--line); }
+  th { color:var(--mute); font-weight:600; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="../assets/sky-harbor/tiliq-app-icon.png" alt="">
+    <h1>Tiliq Uploader</h1>
+  </header>
+  <p class="sub">Internal tool of Gam.Co for posting our own Tiliq: Block Puzzle gameplay videos to our TikTok account.</p>
+
+  <!-- 1. Sign in -->
+  <section id="signin">
+    <h2>1. Connect TikTok</h2>
+    <p class="hint">Sign in with the TikTok account that should receive the videos.</p>
+    <p><button id="login-btn">Continue with TikTok</button></p>
+    <p id="signin-msg"></p>
+  </section>
+
+  <!-- 2. Compose -->
+  <section id="compose" class="hidden">
+    <div class="row" style="justify-content:space-between">
+      <div class="account">
+        <img id="avatar" alt="">
+        <div>
+          <div class="hint" style="margin:0">Posting to</div>
+          <strong id="nickname"></strong>
+        </div>
+      </div>
+      <button class="secondary" id="logout-btn">Sign out</button>
+    </div>
+
+    <label for="video">Video</label>
+    <input type="file" id="video" accept="video/mp4,video/quicktime,video/webm">
+    <p class="hint" id="duration-hint"></p>
+    <video id="preview" class="hidden" controls playsinline></video>
+
+    <label for="title">Caption</label>
+    <textarea id="title" maxlength="2200" placeholder="Write a caption, #hashtags are supported"></textarea>
+
+    <label for="privacy">Who can view this video</label>
+    <select id="privacy" required><option value="" disabled selected>Select privacy</option></select>
+
+    <label>Allow users to</label>
+    <div class="check" id="c-comment"><input type="checkbox" id="allow-comment"><span>Comment</span></div>
+    <div class="check" id="c-duet"><input type="checkbox" id="allow-duet"><span>Duet</span></div>
+    <div class="check" id="c-stitch"><input type="checkbox" id="allow-stitch"><span>Stitch</span></div>
+
+    <label>Content disclosure</label>
+    <div class="switch">
+      <span>This video promotes yourself, a brand, product, or service</span>
+      <input type="checkbox" id="disclose">
+    </div>
+    <div id="disclose-opts" class="hidden">
+      <div class="check"><input type="checkbox" id="your-brand"><span><strong>Your brand</strong><br><span class="hint">You are promoting yourself or your own business.</span></span></div>
+      <div class="check" id="c-branded"><input type="checkbox" id="branded"><span><strong>Branded content</strong><br><span class="hint">You are promoting another brand or a third party.</span></span></div>
+      <p class="notice hidden" id="label-notice"></p>
+    </div>
+
+    <p class="legal" id="declaration"></p>
+    <p><button id="post-btn" disabled>Post to TikTok</button></p>
+    <p class="hint" id="post-hint"></p>
+    <p id="post-msg"></p>
+  </section>
+
+  <!-- 3. Results -->
+  <section id="results" class="hidden">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">Recent videos</h2>
+      <button class="secondary" id="refresh-btn">Refresh</button>
+    </div>
+    <table>
+      <thead><tr><th>Video</th><th>Views</th><th>Likes</th><th>Comments</th></tr></thead>
+      <tbody id="video-rows"></tbody>
+    </table>
+    <p class="hint" id="videos-msg"></p>
+  </section>
+</main>
+
+<script>
+(() => {
+  // Sandbox client key (public). Production key replaces this after TikTok's review.
+  const CLIENT_KEY = 'aw4cvk1t7kyqtf0c';
+  const API = 'https://bmjanryocccdcxscaqnw.supabase.co/functions/v1/tiktok';
+  const REDIRECT = 'https://gamcomp.github.io/tiliq-game/uploader/';
+  const SCOPES = 'user.info.basic,video.upload,video.publish,video.list';
+  const PRIVACY_LABELS = { PUBLIC_TO_EVERYONE: 'Everyone', MUTUAL_FOLLOW_FRIENDS: 'Friends', FOLLOWER_OF_CREATOR: 'Followers', SELF_ONLY: 'Only me' };
+  const MUSIC = '<a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank" rel="noopener">Music Usage Confirmation</a>';
+  const BRANDED = '<a href="https://www.tiktok.com/legal/page/global/bc-policy/en" target="_blank" rel="noopener">Branded Content Policy</a>';
+
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { sessionStorage.setItem(k, v); } catch {} },
+    del(k) { try { sessionStorage.removeItem(k); } catch {} },
+  };
+  let session = store.get('tiliq_tt_session');
+  let creator = null;
+  let durationOk = false;
+
+  async function call(action, extra = {}) {
+    const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, session, ...extra }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      if (r.status === 401) signOutLocal();
+      throw new Error(j.error || 'Request failed (' + r.status + ')');
+    }
+    return j;
+  }
+
+  function show(el, on) { $(el).classList.toggle('hidden', !on); }
+  function msg(el, text, cls) { const e = $(el); e.textContent = text || ''; e.className = cls || (el.endsWith('hint') ? 'hint' : ''); }
+
+  function signOutLocal() {
+    session = null; creator = null; store.del('tiliq_tt_session');
+    show('signin', true); show('compose', false); show('results', false);
+  }
+
+  // ── Sign in (Login Kit, web) ──
+  $('login-btn').onclick = () => {
+    const state = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
+    store.set('tiliq_tt_state', state);
+    const u = new URL('https://www.tiktok.com/v2/auth/authorize/');
+    u.search = new URLSearchParams({ client_key: CLIENT_KEY, response_type: 'code', scope: SCOPES, redirect_uri: REDIRECT, state }).toString();
+    location.href = u.toString();
+  };
+  $('logout-btn').onclick = async () => { try { await call('logout'); } catch {} signOutLocal(); };
+
+  async function handleRedirect() {
+    const q = new URLSearchParams(location.search);
+    if (!q.has('code') && !q.has('error')) return;
+    history.replaceState(null, '', location.pathname);
+    if (q.get('error')) { msg('signin-msg', 'TikTok sign-in was cancelled: ' + (q.get('error_description') || q.get('error')), 'error'); return; }
+    if (q.get('state') !== store.get('tiliq_tt_state')) { msg('signin-msg', 'Sign-in could not be verified. Please try again.', 'error'); return; }
+    store.del('tiliq_tt_state');
+    msg('signin-msg', 'Connecting…');
+    try {
+      const r = await call('exchange', { code: q.get('code') });
+      session = r.session; store.set('tiliq_tt_session', session);
+      msg('signin-msg', '');
+    } catch (e) { msg('signin-msg', e.message, 'error'); }
+  }
+
+  // ── Creator info (fetched every time the posting form renders) ──
+  async function loadCreator() {
+    creator = await call('creator');
+    $('nickname').textContent = creator.creator_nickname || creator.creator_username || 'TikTok account';
+    $('avatar').src = creator.creator_avatar_url || '';
+    const sel = $('privacy');
+    sel.length = 1; sel.value = '';
+    for (const p of creator.privacy_level_options || []) sel.add(new Option(PRIVACY_LABELS[p] || p, p));
+    for (const [box, wrap, disabled] of [['allow-comment', 'c-comment', creator.comment_disabled], ['allow-duet', 'c-duet', creator.duet_disabled], ['allow-stitch', 'c-stitch', creator.stitch_disabled]]) {
+      $(box).checked = false; $(box).disabled = !!disabled;
+      $(wrap).classList.toggle('disabled', !!disabled);
+      $(wrap).title = disabled ? 'Turned off in this account\'s TikTok privacy settings' : '';
+    }
+    const max = creator.max_video_post_duration_sec;
+    msg('duration-hint', max ? 'Maximum video length for this account: ' + max + ' seconds.' : '');
+    show('signin', false); show('compose', true); show('results', true);
+    update();
+    loadVideos();
+  }
+
+  // ── Video preview + duration check ──
+  $('video').onchange = () => {
+    const f = $('video').files[0];
+    durationOk = false;
+    if (!f) { show('preview', false); update(); return; }
+    const v = $('preview');
+    v.src = URL.createObjectURL(f); show('preview', true);
+    v.onloadedmetadata = () => {
+      const max = creator && creator.max_video_post_duration_sec;
+      durationOk = !max || v.duration <= max;
+      msg('duration-hint', durationOk ? 'Length: ' + v.duration.toFixed(1) + ' s' : 'This video is ' + Math.round(v.duration) + ' s long; the limit for this account is ' + max + ' s.', durationOk ? 'hint' : 'error');
+      update();
+    };
+  };
+
+  // ── Commercial content disclosure rules ──
+  ['disclose', 'your-brand', 'branded', 'privacy', 'title'].forEach((id) => $(id).addEventListener('input', update));
+  $('disclose').addEventListener('change', update);
+
+  function update() {
+    const disclose = $('disclose').checked, yours = $('your-brand').checked, branded = $('branded').checked;
+    show('disclose-opts', disclose);
+    if (!disclose) { $('your-brand').checked = false; $('branded').checked = false; }
+    // Branded content cannot be private: disable "Only me" while branded content is selected
+    const sel = $('privacy');
+    for (const o of sel.options) {
+      if (o.value === 'SELF_ONLY') { o.disabled = disclose && branded; o.title = o.disabled ? 'Branded content visibility cannot be set to private.' : ''; }
+    }
+    if (sel.value === 'SELF_ONLY' && disclose && branded) sel.value = '';
+    const note = $('label-notice');
+    if (disclose && branded) { note.textContent = 'Your video will be labeled "Paid partnership".'; show('label-notice', true); }
+    else if (disclose && yours) { note.textContent = 'Your video will be labeled "Promotional content".'; show('label-notice', true); }
+    else show('label-notice', false);
+    $('declaration').innerHTML = disclose && branded
+      ? 'By posting, you agree to TikTok\'s ' + BRANDED + ' and ' + MUSIC + '.'
+      : 'By posting, you agree to TikTok\'s ' + MUSIC + '.';
+    const needsChoice = disclose && !yours && !branded;
+    const ready = creator && $('video').files[0] && durationOk && sel.value && !needsChoice;
+    $('post-btn').disabled = !ready;
+    $('post-btn').title = needsChoice ? 'You need to indicate if your content promotes yourself, a third party, or both.' : '';
+    msg('post-hint', needsChoice ? 'You need to indicate if your content promotes yourself, a third party, or both.' : (!sel.value ? 'Select who can view this video.' : ''));
+  }
+
+  // ── Post (only after the user presses the button) ──
+  $('post-btn').onclick = async () => {
+    const f = $('video').files[0];
+    $('post-btn').disabled = true;
+    msg('post-msg', 'Uploading…');
+    try {
+      await loadCreatorSilently();
+      const postInfo = {
+        title: $('title').value,
+        privacy_level: $('privacy').value,
+        disable_comment: !$('allow-comment').checked,
+        disable_duet: !$('allow-duet').checked,
+        disable_stitch: !$('allow-stitch').checked,
+        brand_organic_toggle: $('disclose').checked && $('your-brand').checked,
+        brand_content_toggle: $('disclose').checked && $('branded').checked,
+      };
+      const r = await fetch(API + '?action=post', {
+        method: 'POST',
+        headers: { 'x-session': session, 'x-post-info': btoa(unescape(encodeURIComponent(JSON.stringify(postInfo)))), 'Content-Type': 'application/octet-stream' },
+        body: f,
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'Upload failed');
+      msg('post-msg', 'Sent to TikTok. Processing can take a few minutes before the video appears on your profile.', 'ok');
+      pollStatus(j.publish_id);
+    } catch (e) { msg('post-msg', e.message, 'error'); update(); }
+  };
+
+  async function loadCreatorSilently() {
+    const c = await call('creator');
+    if (!(c.privacy_level_options || []).includes($('privacy').value)) throw new Error('The selected privacy option is no longer available for this account. Please choose again.');
+    creator = c;
+  }
+
+  async function pollStatus(id) {
+    const labels = { PROCESSING_UPLOAD: 'Processing upload…', PROCESSING_DOWNLOAD: 'Processing…', SEND_TO_USER_INBOX: 'Sent to your TikTok inbox.', PUBLISH_COMPLETE: 'Published on TikTok.', FAILED: 'Publishing failed' };
+    for (let i = 0; i < 40; i++) {
+      await new Promise((r) => setTimeout(r, 4000));
+      try {
+        const s = await call('status', { publish_id: id });
+        const text = (labels[s.status] || s.status) + (s.fail_reason ? ': ' + s.fail_reason : '');
+        msg('post-msg', 'Status: ' + text, s.status === 'FAILED' ? 'error' : 'ok');
+        if (s.status === 'PUBLISH_COMPLETE' || s.status === 'FAILED') { update(); loadVideos(); return; }
+      } catch (e) { msg('post-msg', e.message, 'error'); return; }
+    }
+    update();
+  }
+
+  // ── Stats (video.list) ──
+  async function loadVideos() {
+    try {
+      const d = await call('videos');
+      const rows = (d.videos || []).map((v) => `<tr><td><a href="${v.share_url}" target="_blank" rel="noopener">${(v.title || 'Untitled').replace(/[<>&]/g, '').slice(0, 40)}</a></td><td>${v.view_count ?? '–'}</td><td>${v.like_count ?? '–'}</td><td>${v.comment_count ?? '–'}</td></tr>`);
+      $('video-rows').innerHTML = rows.join('');
+      msg('videos-msg', rows.length ? '' : 'No public videos yet.');
+    } catch (e) { msg('videos-msg', e.message, 'error'); }
+  }
+  $('refresh-btn').onclick = loadVideos;
+
+  (async () => {
+    await handleRedirect();
+    if (session) { try { await loadCreator(); } catch (e) { msg('signin-msg', e.message, 'error'); } }
+  })();
+})();
+</script>
+</body>
+</html>
