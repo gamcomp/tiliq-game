@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tiliq: Blok Bulmaca – İndir</title>
+<meta name="description" content="Tiliq: Blok Bulmaca ücretsiz. App Store ve Google Play'den indir.">
+<meta property="og:title" content="Tiliq: Blok Bulmaca">
+<meta property="og:description" content="Ücretsiz blok bulmaca oyunu. App Store ve Google Play'den indir.">
+<meta property="og:image" content="https://gamcomp.github.io/tiliq-game/assets/sky-harbor/tiliq-app-icon.png">
+<style>
+  :root { --bg:#0d4a7b; --bg2:#08233c; --ink:#fff6e5; --gold:#e3ad53; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 50% 30%, var(--bg), var(--bg2)); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; text-align:center; padding:24px 16px; }
+  main { max-width:380px; width:100%; }
+  img { width:128px; height:128px; border-radius:28px; box-shadow:0 12px 30px rgba(0,0,0,.45); }
+  h1 { font-size:26px; margin:18px 0 4px; }
+  p { margin:0 0 22px; color:#f8e2aa; }
+  a.btn { display:block; margin:12px 0; padding:14px 18px; border-radius:14px; background:var(--gold); color:#16263a; font-weight:800; text-decoration:none; font-size:17px; }
+  a.btn.alt { background:transparent; color:var(--ink); border:2px solid var(--gold); }
+  small { display:block; margin-top:18px; color:#c9d6e3; }
+</style>
+</head>
+<body>
+<main>
+  <img src="../assets/sky-harbor/tiliq-app-icon.png" alt="Tiliq">
+  <h1>Tiliq: Blok Bulmaca</h1>
+  <p>Ücretsiz • Blokları yerleştir, satırları patlat, kombo yap!</p>
+  <a class="btn" id="ios" href="https://apps.apple.com/app/id6789283001">App Store'dan indir</a>
+  <a class="btn" id="android" href="https://play.google.com/store/apps/details?id=com.tiliq.game&amp;referrer=utm_source%3Dtiktok%26utm_medium%3Dbio">Google Play'den indir</a>
+  <small>Telefonundan açtıysan doğru mağaza kendiliğinden açılır.</small>
+</main>
+<script>
+  // Telefona göre doğru mağazaya yönlendir (iPadOS kendini Mac gibi tanıtır: dokunmatikse iOS say)
+  (() => {
+    const ua = navigator.userAgent || '';
+    const ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const android = /Android/i.test(ua);
+    const target = ios ? 'ios' : android ? 'android' : null;
+    if (!target) return;
+    document.getElementById(target === 'ios' ? 'android' : 'ios').classList.add('alt');
+    setTimeout(() => location.replace(document.getElementById(target).href), 400);
+  })();
+</script>
+</body>
+</html>
