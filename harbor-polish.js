@@ -12,8 +12,8 @@ const HarborMotion=(()=>{
   document.addEventListener('visibilitychange',sync);
   reduced.addEventListener('change',sync);
   document.addEventListener('DOMContentLoaded',()=>{
-    const menu=document.getElementById('screen-menu');
-    if(menu){const sky=document.createElement('div');sky.className='harbor-atmosphere';sky.setAttribute('aria-hidden','true');menu.prepend(sky);}
+    // .harbor-atmosphere bulut katmanı kaldırıldı (2026-10-24): menü görselinin altında kalıp
+    // görünmüyordu ama 24 sn'lik sonsuz animasyonu sürekli çalışıp telefonu ısıtıyordu.
     sync();
   },{once:true});
   return {

@@ -22,15 +22,6 @@ html.harbor-low-motion .reward-badge {animation:none!important;}
 .kingdom-wallet,.home-level-strip,#score-hero,#combo-chip {
   box-shadow:inset 0 1px 0 var(--cq-gold-300),inset 0 -3px 0 #08233c66,0 4px 7px #08233c33;
 }
-.harbor-atmosphere {position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;contain:strict;}
-.harbor-atmosphere::before,.harbor-atmosphere::after {
-  content:"";position:absolute;width:min(70vw,300px);height:96px;
-  background:radial-gradient(ellipse at 25% 65%,#fff6e555,transparent 52%),radial-gradient(ellipse at 65% 45%,#fff6e544,transparent 56%);
-  opacity:.45;animation:harbor-cloud 24s ease-in-out infinite alternate;
-}
-.harbor-atmosphere::before {left:-8%;top:29%;}
-.harbor-atmosphere::after {right:-8%;top:59%;animation-delay:-12s;animation-direction:alternate-reverse;}
-@keyframes harbor-cloud {from{transform:translate3d(-22px,3px,0)}to{transform:translate3d(32px,-9px,0)}}
 .modal-card,#lb-card {
   box-shadow:inset 0 1px 0 var(--cq-gold-300),inset 0 0 0 4px #70c6e914,0 16px 34px #08233c88;
 }
@@ -72,12 +63,12 @@ button:not(:disabled):active {translate:0 2px;}
 @keyframes harbor-reward-hover {0%,100%{translate:0 0;rotate:-2deg}50%{translate:0 -3px;rotate:2deg}}
 .home-level-track i,.level-fill,.game-level-chip em {transition:width .6s cubic-bezier(.2,.7,.3,1);}
 body:has(.modal.active) #screen-menu .mission-propeller {animation-play-state:paused;}
-body:has(.modal.active) .harbor-atmosphere,body:has(#lb-panel.open) .harbor-atmosphere {visibility:hidden;}
 body:has(.modal.active) #screen-menu .btn-play::after,body:has(#lb-panel.open) #screen-menu .btn-play::after {animation-play-state:paused;}
-body:has(.modal.active) .harbor-atmosphere::before,body:has(.modal.active) .harbor-atmosphere::after,
-body:has(#lb-panel.open) .harbor-atmosphere::before,body:has(#lb-panel.open) .harbor-atmosphere::after {animation-play-state:paused;}
 html.harbor-paused *,html.harbor-paused *::before,html.harbor-paused *::after {animation-play-state:paused!important;}
-html.harbor-low-motion .harbor-atmosphere {display:none;}
+/* Görünmezken de dönen sonsuz animasyonlar (seviye atlama kartı, oyuna geçiş pervanesi) yalnızca
+   katman açıkken çalışsın — kapalıyken her karede boşuna stil/çizim işi yapıyorlardı. */
+#level-up-flight:not(.active) .level-up-propeller img,#level-up-flight:not(.active) .level-up-route i,
+#play-transition:not(.active) img {animation:none!important;}
 html.harbor-low-motion :is(.modal.active .modal-card,.mission-row,.power-card,.dr-day,.dr-hero-icon,.mission-propeller),
 html.harbor-low-motion #screen-menu .btn-play::after {animation:none!important;}
 .audio-level-row {

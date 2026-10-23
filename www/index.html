@@ -37,8 +37,8 @@
 </script>
 <link rel="icon" type="image/png" href="assets/sky-harbor/tiliq-app-icon.png">
 <link rel="stylesheet" href="crown-quest.css?v=20260921-hammer-fit">
-<link rel="stylesheet" href="harbor-polish.css?v=20261015">
-<script src="harbor-polish.js?v=20261015"></script>
+<link rel="stylesheet" href="harbor-polish.css?v=20261024">
+<script src="harbor-polish.js?v=20261024"></script>
 <script src="tiliq-music.js?v=20261014"></script>
 <script src="hammer-i18n.js?v=20260909"></script>
 <script src="unity-ads-config.js"></script>
@@ -2658,7 +2658,7 @@ function drawCelebrations(now){
 
 // ── CANVAS SETUP ─────────────────────────────────────────────────────────────
 // Sürüm damgası — her deploy'da güncellenir; Ayarlar'ın altında görünür (cache teşhisi için)
-const BUILD_VER='v2026.10.19-ua-attribution';
+const BUILD_VER='v2026.10.24-cool-render';
 try{document.getElementById('build-ver').textContent=BUILD_VER;console.log('Tiliq',BUILD_VER);}catch(e){}
 
 const canvas=document.getElementById('gameCanvas');
@@ -6549,6 +6549,19 @@ let _rafId=null;
 // loop'tan bağımsız, event bazlı) etkilenmiyor.
 let _lastDrawAt=0;
 const _FRAME_MIN_MS=1000/60-1; // küçük tolerans: tam 16.667 yerine hafif erken tetiklenebilsin
+// ISINMA (2026-10-24, kullanıcı raporu "oyun telefonu ısıtıyor"): tahta, ekranda hiçbir şey
+// değişmezken de saniyede 60 kez (34 gölge/parlama efektiyle) baştan çiziliyordu; GPU hiç
+// dinlenmiyordu. Sakin anlarda 20 fps yeterli (ipucu parlaması, ışık süzmesi gibi yavaş
+// animasyonlar bu hızda da akıcı). Sürükleme, efekt, kombo veya son dokunuştan sonraki 2 sn
+// boyunca tam 60 fps.
+const _FRAME_QUIET_MS=1000/20-1;
+let _lastPointerAt=0;
+['pointerdown','pointermove','touchstart','touchmove'].forEach(t=>window.addEventListener(t,()=>{_lastPointerAt=performance.now();},{passive:true,capture:true}));
+function _boardIsBusy(now){
+  return drag||selPiece!==null||bombMode||colorBlastMode||bounce||combo>0||_fire.scale>0.01||
+    floats.length||sparks.length||shockwaves.length||celebs.length||flames.length||flashes.length||
+    _clearPops.length||_harborClearWaves.length||now-Math.max(_lastMoveAt,_lastPointerAt)<2000;
+}
 function loop(){
   // stopLoop() hiçbir yerden çağrılmıyordu — oyun ekranından menüye/ayarlara/mağazaya
   // dönüldüğünde bile canvas+WebGL ateş katmanı arka planda sonsuza dek 60fps çizilmeye
@@ -6557,7 +6570,7 @@ function loop(){
   const gameActive=document.getElementById('screen-game')?.classList.contains('active');
   if(!gameActive){stopLoop();return;}
   const now=performance.now();
-  if(now-_lastDrawAt>=_FRAME_MIN_MS){
+  if(now-_lastDrawAt>=(_boardIsBusy(now)?_FRAME_MIN_MS:_FRAME_QUIET_MS)){
     _lastDrawAt=now;
     if(grid.length&&pieces.length)draw();
   }
