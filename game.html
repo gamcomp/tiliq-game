@@ -46,6 +46,49 @@
 <script src="appsflyer-config.js"></script>
 </head>
 <body data-theme="dark" data-vibe="kingdom" data-visual="sky-harbor">
+<!-- gam.co stüdyo açılışı (geometrik) — oyundan bağımsız; 3 sn sonra ya da dokununca kapanır -->
+<style>
+#gamco-intro{position:fixed;inset:0;z-index:2147483000;transition:opacity .5s ease}
+#gamco-intro.out{opacity:0;pointer-events:none}
+@font-face{font-family:'GamcoBlack';src:url(data:font/woff2;base64,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) format('woff2');font-display:block}
+.gc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;background:#efe9dc;overflow:hidden}
+.gc-grid{display:grid;grid-template-columns:repeat(3,1fr);width:min(240px,62vw);aspect-ratio:3/2}
+.gc-grid>i{display:grid;place-items:center;animation:gcIn .8s cubic-bezier(.7,0,.2,1) both}
+@keyframes gcIn{from{transform:var(--f)}to{transform:none}}
+.gc-grid>i:nth-child(2){animation-delay:.08s}.gc-grid>i:nth-child(3){animation-delay:.16s}.gc-grid>i:nth-child(4){animation-delay:.24s}.gc-grid>i:nth-child(5){animation-delay:.32s}.gc-grid>i:nth-child(6){animation-delay:.4s}
+.gc-half{width:35%;aspect-ratio:1;border-radius:50%;background:#efe9dc;clip-path:inset(0 0 50% 0);animation:gcSpin .6s 1s cubic-bezier(.7,0,.2,1) both}
+@keyframes gcSpin{to{transform:rotate(180deg)}}
+.gc-dot{width:22%;aspect-ratio:1;border-radius:50%;background:#2357c9}
+.gc-word{margin:0;font:400 clamp(50px,17vw,66px)/1 'GamcoBlack','Archivo Black','Arial Black',sans-serif;letter-spacing:-.03em;color:#1d1d1f;padding:0 .04em .14em;clip-path:inset(0 100% 0 0);animation:gcWipe .7s 1.15s cubic-bezier(.7,0,.2,1) forwards}
+.gc-word b{font-weight:400;color:#d8322b}
+@keyframes gcWipe{to{clip-path:inset(0 0 0 0)}}
+.gc-sub{margin:0;padding-left:.5em;font:600 13px/1 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;letter-spacing:.5em;text-transform:uppercase;color:#4a4a4f;opacity:0;animation:gcFade .5s 1.75s ease forwards}
+@keyframes gcFade{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.gc-grid>i,.gc-half,.gc-word,.gc-sub{animation:none!important;opacity:1;clip-path:none;transform:none}}
+</style>
+<div id="gamco-intro" class="gc" aria-label="gam.co">
+    <div class="gc-grid" aria-hidden="true">
+      <i style="--f:translateX(-110vw);background:#d8322b;border-radius:999px 0 0 999px"></i>
+      <i style="--f:translateY(-110vh);background:#1d1d1f"><span class="gc-half"></span></i>
+      <i style="--f:translateX(110vw);background:#2357c9"></i>
+      <i style="--f:translateY(110vh);background:#f2b81c;clip-path:polygon(0 100%,100% 100%,50% 0)"></i>
+      <i style="--f:scale(0)"><span class="gc-dot"></span></i>
+      <i style="--f:translateX(110vw) rotate(90deg);background:#1d1d1f;border-radius:0 0 999px 0"></i>
+    </div>
+    <p class="gc-word" aria-hidden="true">gam<b>.</b>co</p>
+    <p class="gc-sub" id="gamco-sub">sunar</p>
+</div>
+<script>
+(function(){
+  var el=document.getElementById('gamco-intro'),done=false;
+  try{var l=(localStorage.getItem('tm_lang')||(navigator.language||'en').slice(0,2)).toUpperCase();var m={"TR":"sunar","EN":"presents","DE":"präsentiert","FR":"présente","ES":"presenta","IT":"presenta","PT":"apresenta","RU":"представляет","AR":"تقدّم","JA":"プレゼンツ","KO":"제공","ZH":"出品","HI":"प्रस्तुत करता है","ID":"mempersembahkan","PL":"przedstawia","NL":"presenteert","SV":"presenterar","VI":"giới thiệu","TH":"นำเสนอ","UK":"представляє","AZ":"təqdim edir"};document.getElementById('gamco-sub').textContent=m[l]||m.EN;}catch(e){}
+  var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function hide(){if(done)return;done=true;el.classList.add('out');setTimeout(function(){el.remove();},600);}
+  setTimeout(hide,reduce?1300:3100);
+  el.addEventListener('click',function(e){e.stopPropagation();hide();});
+})();
+</script>
+
 <div id="vfx-flash"></div>
 
 <!-- İNTERNET BAĞLANTISI DUVARI — bağlantı yokken oyun oynanamaz (kullanıcı şartı,
